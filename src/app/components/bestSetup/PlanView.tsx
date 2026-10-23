@@ -21,6 +21,7 @@ import {
   InventoryCell,
   PlanCandidate,
   planItemByName,
+  planAssumptions,
   planLoadoutToPlayer,
   PlanProgress,
   PlanRejection,
@@ -39,6 +40,7 @@ import openInCalculator, { openLoadoutsInCalculator } from '@/app/components/bes
 import DPS_TEXT_CLASS from '@/app/components/bestSetup/styles';
 import RangingImg from '@/public/img/potions/Ranging.png';
 import SuperCombatImg from '@/public/img/potions/Super combat.png';
+import SaturatedHeartImg from '@/public/img/potions/Saturated heart.png';
 import headSlot from '@/public/img/slots/head.png';
 import capeSlot from '@/public/img/slots/cape.png';
 import neckSlot from '@/public/img/slots/neck.png';
@@ -64,9 +66,10 @@ const DEBOUNCE_MS = 500;
 const SUPPLY_IMAGES: Partial<Record<SupplyType, string>> = {
   ranging: RangingImg.src,
   superCombat: SuperCombatImg.src,
+  magic: SaturatedHeartImg.src,
 };
 const SUPPLY_COLOURS: Record<SupplyType, string> = {
-  brew: '#d9b44a', restore: '#b04aa6', ranging: '#3f8fd1', superCombat: '#3c9a3c', food: '#a0522d', other: '#888888',
+  brew: '#d9b44a', restore: '#b04aa6', ranging: '#3f8fd1', superCombat: '#3c9a3c', magic: '#c0392b', food: '#a0522d', other: '#888888',
 };
 
 const SLOT_PLACEHOLDERS: Record<keyof PlayerEquipment, string> = {
@@ -246,7 +249,7 @@ const PlanView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStateI
     cancel();
     setError(null);
     const timer = setTimeout(() => {
-      const prefix = cachePrefix(assumptions, drain);
+      const prefix = cachePrefix(planAssumptions(assumptions, supplies), drain);
       const searchRows: Record<string, SearchRow[]> = {};
       searchCache.forEach((v, k) => {
         if (k.startsWith(prefix)) searchRows[k.slice(prefix.length)] = v;
@@ -291,19 +294,19 @@ const PlanView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStateI
     if (!planned || !firstPhase) return null;
     const enc = planned.encounters[0];
     return buildTargetMonster(findTarget(firstPhase.targetKey), firstPhase.phase, drain, {
-      ...assumptions, fightSeconds: enc.drainFightSeconds ?? assumptions.fightSeconds,
+      ...planAssumptions(assumptions, supplies), fightSeconds: enc.drainFightSeconds ?? assumptions.fightSeconds,
     }).monster;
   };
   const loadWorn = () => {
     const monster = monsterForFirstPhase();
     if (!result || !monster) return;
-    const player = planLoadoutToPlayer(generateEmptyPlayer(), result.kit[0], monster, assumptions);
+    const player = planLoadoutToPlayer(generateEmptyPlayer(), result.kit[0], monster, planAssumptions(assumptions, supplies));
     openInCalculator(player, monster).catch(console.error);
   };
   const loadAll = () => {
     const monster = monsterForFirstPhase();
     if (!result || !monster) return;
-    const players = result.kit.map((c) => planLoadoutToPlayer(generateEmptyPlayer(), c, monster, assumptions));
+    const players = result.kit.map((c) => planLoadoutToPlayer(generateEmptyPlayer(), c, monster, planAssumptions(assumptions, supplies)));
     openLoadoutsInCalculator(players, monster).catch(console.error);
   };
 
@@ -449,6 +452,9 @@ const PlanView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStateI
             <div className="flex flex-col items-center gap-1">
               <div className="text-xs font-semibold">Inventory</div>
               <InventoryGrid cells={result.inventory} />
+              <div className="text-[10px] text-gray-500 dark:text-gray-400 max-w-[190px]" data-testid="spec-note">
+                {`Spec weapons come from "My specs" above${result.specItems.length ? ` (${result.specItems.map((x) => x.name).join(', ')})` : ''}; each takes a slot. Untick a weapon or set Ayak × 0 to free it.`}
+              </div>
             </div>
             <div className="flex flex-col gap-1 text-xs min-w-[300px] flex-1" data-testid="kit-loadouts">
               <div className="font-semibold">{`Kit loadouts (${result.kit.length})`}</div>
@@ -465,9 +471,30 @@ const PlanView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStateI
                   />
                 </div>
               ))}
+              {result.unusedSupplies.map((u) => (
+                <div key={u.type} className="mt-1 px-2 py-1 rounded border border-orange-400 bg-orange-50 dark:bg-orange-900/30 flex flex-wrap items-center gap-2" data-testid="unused-supplies">
+                  <span>{`${u.count} ${u.label} unused by this kit (no ${u.group} loadout).`}</span>
+                  <button
+                    type="button"
+                    className="btn text-xs"
+                    data-testid="drop-supplies"
+                    onClick={() => setSupplies({ ...supplies, [u.type]: 0 })}
+                  >
+                    {`Drop them (+${u.count} slot${u.count === 1 ? '' : 's'})`}
+                  </button>
+                </div>
+              ))}
               {result.unusedCarried.length > 0 && (
-                <div className="text-gray-500 dark:text-gray-400" data-testid="unused-carried">
-                  {`Always brought but in no kit loadout (a slot each): ${result.unusedCarried.map((x) => x.name).join(', ')}`}
+                <div className="mt-1 px-2 py-1 rounded border border-orange-400 bg-orange-50 dark:bg-orange-900/30 flex flex-wrap items-center gap-2" data-testid="unused-carried">
+                  <span>{`Always brought but in no kit loadout: ${result.unusedCarried.map((x) => x.name).join(', ')}.`}</span>
+                  <button
+                    type="button"
+                    className="btn text-xs"
+                    data-testid="drop-pinned"
+                    onClick={() => setPinned(pinned.filter((id) => !result.unusedCarried.some((x) => x.id === id)))}
+                  >
+                    {`Remove these to free ${result.unusedCarried.length} slot${result.unusedCarried.length === 1 ? '' : 's'}`}
+                  </button>
                 </div>
               )}
             </div>
@@ -479,7 +506,7 @@ const PlanView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStateI
                 <th className="px-2 text-left">Encounter</th>
                 <th className="px-2 text-left">Loadout used</th>
                 <th className="px-2 text-left">Style</th>
-                <th className="px-2 text-right" title="Damage ÷ seconds over the encounter's phases">DPS</th>
+                <th className="px-2 text-right" title="Damage ÷ seconds over the encounter's phases (phase rows: that phase's DPS)">avg DPS (time-weighted)</th>
                 <th className="px-2 text-right">Seconds</th>
               </tr>
             </thead>

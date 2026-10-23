@@ -3,6 +3,23 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 17 fixes — review follow-ups (2026-10-23)
+
+- Solo drains: the matrix plans each encounter's drains with that encounter's undrained time with the best single
+  preset / search loadout (`fixedFightSeconds` per encounter; extra undrained pass); the best 5 optimiser kits are
+  re-timed exactly and the fastest wins. Bork + Smorks Solo 210.1 s (= exact; was 225.4 s at a fixed 90 s).
+- Supplies → DPS: new Magic boost (Saturated heart) supply (default 0); a style with 0 of its potion is evaluated
+  without it (`planAssumptions`, `BestSetupAssumptions.withoutPotion` in `applyLoadoutToPlayer`; spec players keep the
+  potion).
+- UX: warnings with one-click fixes for unused potion supplies ("Drop them (+N slots)") and always-brought items in no
+  loadout ("Remove these to free N slots"); note that spec weapons come from "My specs"; "avg DPS (time-weighted)".
+- Tests: Planner.test.ts +3 (Solo matrix DPS within 1% of exact on Bork / Smorks, potion-less styles + unchanged drains,
+  unused supplies reported). `yarn test` 1061 pass / 4 skipped; lint, tsc clean. verifyPhase17.mjs all OK (+ label,
+  note, one-click remove; 16.1 s first run). Screenshots re-shot, + `phase17-unpinned.png`.
+- New default headline (no magic boost by default): worn Ascension crossbows partial switch over Inquisitor's +
+  Obligator, switch Inquisitor's + Obligator, 0 free, AG → Bork + Smorks → Moia → Xarth → Ocellus 23:18.8; removing
+  the 5 unused pinned items → 21:50.1 with Twisted bow added (docs/BEST_SETUP.md, *Plan tab*).
+
 ## Phase 17 — Raid plan tab: kit planner (2026-10-23)
 
 - New `src/lib/fracturedArchive/planner.ts` (pure): phase targets recorded from `compareRoutes`; per-phase searches

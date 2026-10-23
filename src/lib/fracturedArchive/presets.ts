@@ -206,6 +206,11 @@ export interface BestSetupAssumptions {
   fightSeconds: number;
   /** P(floor) at or above which a drain plan counts as reaching the floor (default 0.95). */
   floorThreshold: number;
+  /**
+   * Phase 17 (Plan tab): style groups whose potion isn't brought (0 in the supplies), evaluated without a potion boost.
+   * Not used by the spec / drain model. Undefined everywhere else.
+   */
+  withoutPotion?: StyleGroup[];
 }
 
 /** Drain weapons the user carries (phase 14). */

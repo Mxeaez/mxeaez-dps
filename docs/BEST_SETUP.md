@@ -25,11 +25,18 @@ so a change of supplies / items / route skips the searches.
 specs": Elder maul, DWH, BGS, Tonalztics when ticked, Eye of Ayak when its count > 0 — each takes a slot). In the tab's
 "Assumptions (plan)" box: **Route** — one of the 8, or *Compare all* (default: plan for the fastest route; the route
 table then shows the other routes' times with the same kit); **Supplies** as slot counts (default Saradomin brew 6,
-Super restore 4, Ranging potion 2, Super combat 1, food 0, other 0); **Rune pouch / other non-items** (default 1);
+Super restore 4, Ranging potion 2, Super combat 1, Magic boost (Saturated heart) 0, food 0, other 0); **Rune pouch / other
+non-items** (default 1);
 **Items I always bring** (default Lightbearer, Elder maul, Zaryte crossbow, Kodai wand, Ancestral robe top, Elidinis'
 ward (f); editable with the calculator's item search; each takes a slot unless a kit loadout wears it, and any loadout
-may use them for free). Time-model settings are the Routes tab defaults (`RAID_TIME_DEFAULTS`). DPS always assumes the
-potions in the Assumptions box, whatever the supply counts say.
+may use them for free). Time-model settings are the Routes tab defaults (`RAID_TIME_DEFAULTS`).
+
+**Supplies → DPS** (review fix): Super combat carries the melee boost, Ranging potion the ranged one, the Magic boost
+slot the magic one (`SUPPLY_POTION_GROUP`). A style whose supply count is 0 is evaluated **without a potion**
+(`planAssumptions` → `BestSetupAssumptions.withoutPotion`, honoured by `applyLoadoutToPlayer`); the Assumptions box's
+potion is the one used "if brought". The searches, matrix, exact times and "Load into calculator" all use it; the
+drain / spec model keeps the potions (team carriers bring their own). With the user's defaults the magic boost is 0,
+so magic loadouts get no boost.
 
 **Algorithm** (`plan(inputs, tuning?, hooks?)`; `PLAN_DEFAULTS` holds the caps):
 
@@ -44,9 +51,11 @@ potions in the Assumptions box, whatever the supply counts say.
    pieces first (they're free). Cap `maxCandidates` = 600 (cheapest switches kept first); the default plan has 243
    candidates (12 presets, 45 search rows, 186 partial switches), so the cap doesn't bite.
 3. *DPS matrix*: every candidate × phase target under the drain state, evaluated once (best style option; can't hit or
-   an error → 0). Drains are planned at the fixed fight length (`fightSeconds`, 90 s): exact for Team and None (the Team
-   plan uses the carriers' first round, which doesn't depend on the length), an approximation for Solo
-   (`RaidTimeAssumptions.fixedFightSeconds`, added to raidTime.ts for this).
+   an error → 0). Drains are planned at a fixed fight length (`RaidTimeAssumptions.fixedFightSeconds`, added to
+   raidTime.ts; a number or one per encounter). Team / None: 90 s — exact, the Team plan uses the carriers' first round,
+   which doesn't depend on the length. **Solo** (review fix): each encounter's undrained time with the best single
+   preset / search loadout (one extra undrained pass over those, ~900 evaluations), so the Solo energy budget matches
+   the fight (Bork + Smorks 281 s instead of 90 s; matrix DPS within 1% of the exact times, tested).
 4. *Slot cost*: inventory = |items of all kit loadouts ∪ pinned ∪ spec weapons| − fewest items of any kit loadout (the
    most the bag ever holds: while wearing the smallest loadout; the difference to the worn set is shown as "swap
    space") + supplies + non-items; must be ≤ 28. Shared items count once. The cost doesn't depend on which loadout is
@@ -54,8 +63,9 @@ potions in the Assumptions box, whatever the supply counts say.
 5. *Optimiser* (`optimiseKit`): seeds = the 20 best single loadouts by their own route time (+ the best of each style);
    from each, two greedy passes (add the loadout with the best Δtime ÷ Δslots; add the one with the best Δtime) while
    one fits and helps, then local search (drop a loadout that doesn't help; swap one for any candidate) until stable.
-   Best kit: lowest time, then fewest slots, then fewest loadouts. Deterministic. The kit's times are then recomputed
-   with `createKitEvaluator` + `compareRoutes` (the Routes tab's code); that's what the tab shows.
+   Best kit: lowest time, then fewest slots, then fewest loadouts. Deterministic. The best 5 distinct kits are then
+   re-timed with `createKitEvaluator` + `compareRoutes` (the Routes tab's code, drains planned with each kit's own
+   encounter lengths) and the fastest of those wins; those times are what the tab shows.
 6. *Why*: every candidate that would make the route faster if added (none fits, otherwise the optimiser would have
    added it), top 3 by Δtime with their Δslots; and the best kit of every other style mix (optimised over that mix's
    candidates only; a style the optimiser left out is forced in with its best addition).
@@ -63,33 +73,34 @@ potions in the Assumptions box, whatever the supply counts say.
 **Output.** Free-slot badge; worn set (laid out like the calculator's equipment grid); 4×7 inventory (supplies, switch
 items grouped by style with a coloured border — melee red, ranged green, magic blue —, spec weapons, pinned items, rune
 pouch / other, swap space, free; icons + tooltips; brews / restores / food get a generic potion icon, Ranging / Super
-combat upstream's potion images); kit loadouts with icon rows and where each came from; the per-encounter table
-(loadouts and styles used, damage ÷ seconds, seconds; phase rows under each); the route table; the why list; run
-statistics. "Load worn set into calculator" opens the calculator with the worn set against the route's first phase
+combat / Saturated heart upstream's images; a note that spec weapons come from "My specs"); kit loadouts with icon
+rows and where each came from; warnings with one-click fixes — potion supplies whose style no kit loadout uses ("Drop
+them (+N slots)") and always-brought items no loadout wears ("Remove these to free N slots"), both re-plan; the
+per-encounter table (loadouts and styles used, "avg DPS (time-weighted)" = damage ÷ seconds, seconds; phase rows with
+each phase's DPS); the route table; the why list; run statistics. "Load worn set into calculator" opens the calculator with the worn set against the route's first phase
 (drains as planned; its DPS = the first phase row, checked by `scripts/verifyPhase17.mjs`); "Load all loadouts" adds
 one calculator loadout per kit loadout (or replaces the calculator's loadouts if they don't all fit in 6).
 
-**Timings** (default pool and inputs): browser (headless Chromium, dev server) 16.0 s for the first run (16 searches
-10.4 s, matrix of 8032 evaluations 3.8 s, optimiser 18 591 kits 0.2 s); a supplies / items / route change ~4.5 s
-(cached searches; the matrix is rebuilt). Jest without coverage: 23.6 s. Within the 30 s target, so the caps stayed at
-their defaults.
+**Timings** (default pool and inputs, Team): browser (headless Chromium, dev server) 16.1 s for the first run
+(16 searches ~10 s, matrix ~4 s, optimiser < 1 s); a supplies / items / route change ~5 s (cached searches; the matrix
+is rebuilt). Solo adds the undrained pass (~1 s). Jest without coverage: ~25 s. Within the 30 s target, so the caps
+stayed at their defaults.
 
 **Limits.** Switching is free and instant; supplies are never drunk down; every item is one slot (UNVERIFIED D10–D12).
 Only the candidate pool above is searched (greedy + local search, not exhaustive; exhaustive on the toy cases in the
 tests). The kit's DPS per phase is the best of its loadouts, so per-phase cherry-picking is limited to the kit.
 
-**Headline** (defaults: 6-man, Team drains, the pinned items and supplies above, compare all; 2026-10-23,
-`scripts/verifyPhase17.mjs`): worn **Tumeken's shadow (Ancestral preset)**; switch **Inquisitor's + Obligator**
-(Inquisitor's great helm, hauberk, plateskirt, Obligator, Infernal cape, Amulet of rancour, Ferocious gloves, Ultor
-ring; Rada's blessing and Avernic treads shared); **0 free slots** (13 supplies + rune pouch + 8 switch items + Elder
-maul, Eye of Ayak, Lightbearer, Zaryte crossbow, Kodai wand, Elidinis' ward (f)); fastest route **AG → Bork + Smorks →
-Moia → Xarth → Ocellus, 22:47.7** (AG 212.1 s, Bork + Smorks 195.9, Moia 77.1, Xarth 186.8, Ocellus 695.8). Phase
-16's 21:49.5 is the upper bound with a different loadout on every phase. Rejected: adding Twisted bow (Masori) −46.0 s
-but +9 slots; Ascension crossbows (diamond) −30.8 s, +9 slots; the best melee + ranged kit (Obligator + an Ascension
-crossbows partial switch) +31.1 s at the same slots; magic only +578.7 s; melee only and ranged only can't finish
-Ocellus's last quadrant in the model (UNVERIFIED D7). The Kodai wand and the ward are carried but unused. Brews 6 → 10:
-the kit becomes two partial switches (Shadow + 5 Ancestral pieces over Torva + Obligator), 25:33.7. Without the 2
-Ranging potions (unused by this kit) the planner fits Twisted bow (Masori) worn + Inquisitor's + Obligator: 22:02.4.
+**Headline** (defaults: 6-man, Team drains, the pinned items and supplies above — no magic boost —, compare all;
+2026-10-23 after the review fixes, `scripts/verifyPhase17.mjs`): worn a **partial switch: Ascension crossbows +
+diamond bolts (e) with Masori body / chaps (f), Dizana's quiver, Necklace of anguish, Zaryte vambraces over the
+Inquisitor's + Obligator base** (Inquisitor's great helm, Avernic treads, Ultor ring stay); switch **Inquisitor's +
+Obligator** (7 bag items: Obligator, hauberk, plateskirt, Infernal cape, Amulet of rancour, Ferocious gloves, Rada's
+blessing); **0 free slots**; fastest route **AG → Bork + Smorks → Moia → Xarth → Ocellus, 23:18.8** (AG 191.0 s, Bork +
+Smorks 196.5, Moia 86.8, Xarth 186.8, Ocellus 737.6). Rejected: adding Twisted bow (Masori) −79.0 s but +4 slots;
+the full Ascension crossbows (Masori) −39.7 s, +2 slots; Tumeken's shadow + Inquisitor's + Obligator +56.9 s (no magic
+boost). Five always-brought items are in no loadout (Lightbearer, Zaryte crossbow, Kodai wand, Ancestral robe top,
+Elidinis' ward (f)); removing them (one click) gives Ascension crossbows worn + Inquisitor's + Obligator + Twisted bow,
+**21:50.1** with 1 free slot. Brews 6 → 10: 25:45.9. Solo drains: 24:29.3 (Bork + Smorks 210.1 s, = the exact time).
 
 ## Routes tab (phase 16: raid time model)
 

@@ -93,7 +93,7 @@ export const applyLoadoutToPlayer = (
     prayers: [prayer],
     buffs: {
       ...base.buffs,
-      potions: [potion],
+      potions: assumptions.withoutPotion?.includes(group) ? [] : [potion],
       elementalFragments: group === 'magic' && assumptions.elementalFragments
         ? Object.fromEntries(ALL_ELEMENTS.map((e) => [e, true]))
         : {},

@@ -21,6 +21,8 @@ import {
 import {
   compareRoutes,
   createKitEvaluator,
+  EncounterId,
+  encounterTime,
   enumerateRoutes,
   KitChoice,
   KitLoadout,
@@ -67,7 +69,7 @@ export const INVENTORY_SLOTS = 28;
 
 // --- inputs --------------------------------------------------------------------------------------------------------
 
-export type SupplyType = 'brew' | 'restore' | 'ranging' | 'superCombat' | 'food' | 'other';
+export type SupplyType = 'brew' | 'restore' | 'ranging' | 'superCombat' | 'magic' | 'food' | 'other';
 
 /** Supply types; `image` = file under src/public/img/potions (null = generic icon). */
 export const SUPPLY_TYPES: { id: SupplyType, label: string, image: string | null }[] = [
@@ -75,6 +77,7 @@ export const SUPPLY_TYPES: { id: SupplyType, label: string, image: string | null
   { id: 'restore', label: 'Super restore', image: null },
   { id: 'ranging', label: 'Ranging potion', image: 'Ranging.png' },
   { id: 'superCombat', label: 'Super combat', image: 'Super combat.png' },
+  { id: 'magic', label: 'Magic boost (Saturated heart)', image: 'Saturated heart.png' },
   { id: 'food', label: 'Food', image: null },
   { id: 'other', label: 'Other', image: null },
 ];
@@ -82,7 +85,22 @@ export const SUPPLY_TYPES: { id: SupplyType, label: string, image: string | null
 export type SupplyCounts = Record<SupplyType, number>;
 
 export const DEFAULT_SUPPLIES: SupplyCounts = {
-  brew: 6, restore: 4, ranging: 2, superCombat: 1, food: 0, other: 0,
+  brew: 6, restore: 4, ranging: 2, superCombat: 1, magic: 0, food: 0, other: 0,
+};
+
+/**
+ * The supply that carries each style's boost. A style whose supply count is 0 is evaluated without its potion (the
+ * Assumptions box's potion is the one used "if brought"). The drain / spec model keeps the potions.
+ */
+export const SUPPLY_POTION_GROUP: Partial<Record<SupplyType, StyleGroup>> = {
+  superCombat: 'melee', ranging: 'ranged', magic: 'magic',
+};
+
+/** The best-setup assumptions as the plan uses them: styles whose potion isn't in the supplies lose the boost. */
+export const planAssumptions = (a: BestSetupAssumptions, supplies: SupplyCounts): BestSetupAssumptions => {
+  const without = (Object.entries(SUPPLY_POTION_GROUP) as [SupplyType, StyleGroup][])
+    .filter(([t]) => !(supplies[t] > 0)).map(([, g]) => g);
+  return without.length ? { ...a, withoutPotion: without } : a;
 };
 
 /** Items the user always brings (the user's own kit, 2026-10-23); spec weapons come from "My specs" on top. */
@@ -547,6 +565,9 @@ export const PLAN_DEFAULTS: Required<Omit<PlanTuning, 'search' | 'presets'>> = {
 /** Rows kept per phase search before picking (enough for every weapon's top loadouts). */
 const SEARCH_TOP_N = 80;
 
+/** Best optimiser kits re-timed exactly before the winner is picked (matters for Solo drains). */
+const RETIME_TOP = 5;
+
 export interface PlanProgress {
   stage: 'search' | 'matrix' | 'partials' | 'optimise' | 'final';
   done: number;
@@ -584,6 +605,10 @@ export interface PlanResult {
   planned: number;
   rejected: PlanRejection[];
   alternatives: PlanRejection[];
+  /** Potion supplies whose style no kit loadout uses (they only take slots). */
+  unusedSupplies: { type: SupplyType, label: string, count: number, group: StyleGroup }[];
+  /** The optimiser's (matrix) DPS of the kit per phase key, for checking against the exact times. */
+  matrixDps: Record<string, number>;
   /** Pinned items (not spec weapons) that no kit loadout wears: carried for other reasons, a slot each. */
   unusedCarried: PlanItem[];
   /** Selected search rows per phase key (for the UI cache). */
@@ -596,6 +621,10 @@ export interface PlanResult {
     kitsEvaluated: number;
     /** The optimiser's time of the kit (drains at the fixed fight length; = the exact time for Team / None). */
     objectiveSeconds: number;
+    /** Kits re-timed exactly before picking the winner. */
+    retimed: number;
+    /** Solo: fight length (s) per encounter the drains were planned with in the matrix. */
+    fightSeconds?: Partial<Record<EncounterId, number>>;
     ms: { search: number, matrix: number, optimise: number, total: number };
   };
 }
@@ -616,6 +645,15 @@ export const routePhaseTargets = (routes: Route[], a: RaidTimeAssumptions): { ta
   };
   compareRoutes(recorder, { ...a, drain: 'none' }, routes);
   return Array.from(seen.values());
+};
+
+/** The phase targets of each encounter of these routes (in route order). */
+export const encounterPhaseTargets = (routes: Route[], a: RaidTimeAssumptions): Map<EncounterId, { targetKey: string, phase?: string }[]> => {
+  const out = new Map<EncounterId, { targetKey: string, phase?: string }[]>();
+  routes.forEach((r) => r.encounters.forEach((e) => {
+    if (!out.has(e)) out.set(e, routePhaseTargets([{ id: e, label: e, encounters: [e] }], a));
+  }));
+  return out;
 };
 
 const optionKey = (o: StyleOption) => `${o.style.name}|${o.style.stance}|${o.spell ?? ''}`;
@@ -651,9 +689,8 @@ const presetEquipment = (preset: PresetDef): PlanEquipment => Object.fromEntries
 export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHooks = {}): PlanResult => {
   const t0 = Date.now();
   const cfg = { ...PLAN_DEFAULTS, ...tuning };
-  const {
-    assumptions, drain, settings, basePlayer,
-  } = inputs;
+  const { drain, settings, basePlayer } = inputs;
+  const assumptions = planAssumptions(inputs.assumptions, inputs.supplies);
   const total = inputs.totalSlots ?? INVENTORY_SLOTS;
   const cancelled = () => hooks.shouldCancel?.() === true;
   const progress = (p: PlanProgress) => hooks.onProgress?.(p);
@@ -661,6 +698,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
   const routes = inputs.route === 'all' ? allRoutes : allRoutes.filter((r) => r.id === inputs.route);
   if (!routes.length) throw new Error(`Planner: unknown route '${inputs.route}'`);
   const exactA = raidTimeAssumptionsFrom(assumptions, drain, settings);
+  // Team / None: drains don't depend on the fight length, any fixed length is exact. Solo: set per encounter below.
   const fastA: RaidTimeAssumptions = { ...exactA, fixedFightSeconds: drain === 'none' ? undefined : assumptions.fightSeconds };
 
   const specItems = carriedSpecWeaponNames(assumptions.mySpecs).map(planItemByName);
@@ -681,6 +719,8 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     rejected: [],
     alternatives: [],
     unusedCarried: [],
+    unusedSupplies: [],
+    matrixDps: {},
     searchRows,
     stats: {
       searches: 0,
@@ -691,6 +731,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       evaluations: 0,
       kitsEvaluated: 0,
       objectiveSeconds: Infinity,
+      retimed: 0,
       ms: {
         search: 0, matrix: 0, optimise: 0, total: Date.now() - t0,
       },
@@ -698,7 +739,14 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
   });
 
   // 1. phase targets and searches
-  const targets = routePhaseTargets(routes, fastA);
+  const byEncounter = encounterPhaseTargets(routes, exactA);
+  const targets: { targetKey: string, phase?: string }[] = [];
+  const encounterOfCol: EncounterId[] = [];
+  byEncounter.forEach((ts, e) => ts.forEach((t) => {
+    if (targets.some((x) => phaseKey(x.targetKey, x.phase) === phaseKey(t.targetKey, t.phase))) return;
+    targets.push(t);
+    encounterOfCol.push(e);
+  }));
   const searchRows: Record<string, SearchRow[]> = { ...(inputs.searchRows || {}) };
   const missing = targets.filter((t) => !searchRows[phaseKey(t.targetKey, t.phase)]);
   for (const [i, t] of missing.entries()) {
@@ -772,19 +820,28 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
   }
 
   // 3. DPS matrix (columns = phase targets under the drain state at the fixed fight length)
-  const monsters = targets.map((t) => buildTargetMonster(findTarget(t.targetKey), t.phase, drain, {
-    ...assumptions, fightSeconds: fastA.fixedFightSeconds ?? assumptions.fightSeconds,
-  }).monster);
   const colIx = new Map(targets.map((t, i) => [phaseKey(t.targetKey, t.phase), i]));
   let evaluations = 0;
-  const dpsOn = (c: Pick<PlanCandidate, 'group' | 'options' | 'label'>, eq: PlanEquipment, col: number): { dps: number, option: number } => {
+  const monstersAt = (d: DrainStateId, fightOf: (col: number) => number) => targets.map((t, col) => buildTargetMonster(
+    findTarget(t.targetKey),
+    t.phase,
+    d,
+    { ...assumptions, fightSeconds: fightOf(col) },
+  ).monster);
+  let monsters = monstersAt(drain, () => assumptions.fightSeconds);
+  const dpsOn = (
+    c: Pick<PlanCandidate, 'group' | 'options' | 'label'>,
+    eq: PlanEquipment,
+    col: number,
+    ms = monsters,
+  ): { dps: number, option: number } => {
     let best = { dps: 0, option: 0 };
     const playerEq = toPlayerEquipment(eq);
     c.options.forEach((o, oi) => {
       let dps = 0;
       try {
-        const player = applyLoadoutToPlayer(basePlayer, c.label, c.group, playerEq, o.style, o.spell, monsters[col], assumptions);
-        dps = evaluateLoadout(player, monsters[col], false).dps;
+        const player = applyLoadoutToPlayer(basePlayer, c.label, c.group, playerEq, o.style, o.spell, ms[col], assumptions);
+        dps = evaluateLoadout(player, ms[col], false).dps;
       } catch {
         dps = 0;
       }
@@ -795,6 +852,56 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
   };
   const dps: number[][] = [];
   const bestOpt: number[][] = [];
+  const optLabel = (i: number, col: number) => {
+    const o = candidates[i].options[bestOpt[i]?.[col] ?? 0];
+    return o ? styleLabel(o.style, o.spell) : '-';
+  };
+  const matrixKit = (members: number[], table: number[][] = dps): RaidKit => ({
+    best: (q) => {
+      const col = colIx.get(phaseKey(q.targetKey, q.phase));
+      if (col === undefined) throw new Error(`Planner: phase ${phaseKey(q.targetKey, q.phase)} not in the matrix`);
+      let bi = -1;
+      for (const m of members) {
+        if (bi < 0 || table[m][col] > table[bi][col]) bi = m;
+      }
+      if (bi < 0) return null;
+      return {
+        loadout: candidates[bi].label, style: optLabel(bi, col), group: candidates[bi].group, dps: table[bi][col],
+      };
+    },
+  });
+  // Solo: the drains depend on the fight length. Each encounter's length = its undrained time with the best single
+  // full candidate (one extra undrained pass over the presets + search rows); the matrix plans drains with it.
+  let soloFight: Partial<Record<EncounterId, number>> | undefined;
+  if (drain === 'solo') {
+    try {
+      const noneMonsters = monstersAt('none', () => assumptions.fightSeconds);
+      const noneDps: number[][] = candidates.map((c, i) => {
+        if (cancelled()) throw new PlanCancelled();
+        if (i % 5 === 0) {
+          progress({
+            stage: 'matrix', done: i, total: candidates.length, label: 'fight lengths (undrained)',
+          });
+        }
+        return targets.map((_, col) => dpsOn(c, c.equipment, col, noneMonsters).dps);
+      });
+      const noneA: RaidTimeAssumptions = { ...exactA, drain: 'none' };
+      soloFight = {};
+      for (const e of Array.from(byEncounter.keys())) {
+        let bestT = Infinity;
+        candidates.forEach((_, i) => {
+          const t = encounterTime(e, matrixKit([i], noneDps), noneA).seconds;
+          if (t < bestT) bestT = t;
+        });
+        soloFight[e] = Number.isFinite(bestT) && bestT > 0 ? Math.round(bestT) : assumptions.fightSeconds;
+      }
+    } catch (e) {
+      if (e instanceof PlanCancelled) return emptyResult(searchRows);
+      throw e;
+    }
+    fastA.fixedFightSeconds = soloFight;
+    monsters = monstersAt(drain, (col) => soloFight![encounterOfCol[col]] ?? assumptions.fightSeconds);
+  }
   const fillMatrix = (from: number, stage: PlanProgress['stage']) => {
     for (let i = from; i < candidates.length; i++) {
       if (cancelled()) throw new PlanCancelled();
@@ -892,24 +999,6 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
   const tMatrix = Date.now();
 
   // 5. optimise
-  const optLabel = (i: number, col: number) => {
-    const o = candidates[i].options[bestOpt[i][col]];
-    return o ? styleLabel(o.style, o.spell) : '-';
-  };
-  const matrixKit = (members: number[]): RaidKit => ({
-    best: (q) => {
-      const col = colIx.get(phaseKey(q.targetKey, q.phase));
-      if (col === undefined) throw new Error(`Planner: phase ${phaseKey(q.targetKey, q.phase)} not in the matrix`);
-      let bi = -1;
-      for (const m of members) {
-        if (bi < 0 || dps[m][col] > dps[bi][col]) bi = m;
-      }
-      if (bi < 0) return null;
-      return {
-        loadout: candidates[bi].label, style: optLabel(bi, col), group: candidates[bi].group, dps: dps[bi][col],
-      };
-    },
-  });
   const routeTime = (members: number[]) => {
     const cmp = compareRoutes(matrixKit(members), fastA, routes);
     return cmp.fastest >= 0 ? cmp.routes[cmp.fastest].seconds : Infinity;
@@ -951,9 +1040,9 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     stage: 'final', done: 0, total: 1, label: 'route times',
   });
 
-  // 6. exact times of the chosen kit
-  const members = opt.best.members;
-  const kitLoadouts: KitLoadout[] = members.map((i) => {
+  // 6. exact times: the best RETIME_TOP kits of the optimiser are re-timed with the Routes tab's code (createKitEvaluator
+  // + compareRoutes, drains planned with each kit's own encounter lengths) and the fastest wins (ties: optimiser order)
+  const kitLoadoutsOf = (m: number[]): KitLoadout[] => m.map((i) => {
     const c = candidates[i];
     const eq = toPlayerEquipment(c.equipment);
     return {
@@ -964,8 +1053,30 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       toPlayer: (monster, o) => applyLoadoutToPlayer(basePlayer, c.label, c.group, eq, o.style, o.spell, monster, assumptions),
     };
   });
-  const evaluator = createKitEvaluator(kitLoadouts, assumptions);
-  const comparison = compareRoutes(evaluator, exactA, routes);
+  const sortedFinals = [opt.best, ...opt.finals]
+    .filter((x) => x.used <= total || x === opt.best)
+    .sort((a, b) => (better(a, b, total) ? -1 : Number(better(b, a, total))));
+  const finalists: KitSolution[] = [];
+  sortedFinals.forEach((x) => {
+    const k = [...x.members].sort((a, b) => a - b).join(',');
+    if (finalists.length < RETIME_TOP && !finalists.some((f) => [...f.members].sort((a, b) => a - b).join(',') === k)) finalists.push(x);
+  });
+  let chosen = finalists[0];
+  let evaluator = createKitEvaluator(kitLoadoutsOf(chosen.members), assumptions);
+  let comparison = compareRoutes(evaluator, exactA, routes);
+  let exactEvaluations = evaluator.evaluations();
+  const exactSeconds = (c: RouteComparison) => (c.fastest >= 0 ? c.routes[c.fastest].seconds : Infinity);
+  for (const f of finalists.slice(1)) {
+    const ev = createKitEvaluator(kitLoadoutsOf(f.members), assumptions);
+    const cmp = compareRoutes(ev, exactA, routes);
+    exactEvaluations += ev.evaluations();
+    if (exactSeconds(cmp) < exactSeconds(comparison) - EPS) {
+      chosen = f;
+      evaluator = ev;
+      comparison = cmp;
+    }
+  }
+  const { members } = chosen;
   const planned = comparison.fastest;
   // worn = the loadout used on the planned route's first phase (saves one switch)
   const firstChoice = planned >= 0
@@ -979,7 +1090,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
   const inventory = inventoryGrid(kit, 0, specItems, pinnedItems, inputs.supplies, inputs.nonItemSlots, total);
 
   // 7. why: improvements that don't fit, and the best kit of every other style mix
-  const T = opt.best.time;
+  const T = chosen.time;
   const usedOfKit = (m: number[]) => {
     const allIds = new Set<number>(carried);
     m.forEach((x) => items[x].forEach((id) => allIds.add(id)));
@@ -996,8 +1107,8 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       label: c.label,
       kind: 'addition',
       deltaSeconds: T - t,
-      deltaSlots: used - opt.best.used,
-      reason: used > total ? `needs ${used - opt.best.used} more slot${used - opt.best.used === 1 ? '' : 's'}, ${Math.max(0, total - opt.best.used)} free` : 'fits (not taken)',
+      deltaSlots: used - chosen.used,
+      reason: used > total ? `needs ${used - chosen.used} more slot${used - chosen.used === 1 ? '' : 's'}, ${Math.max(0, total - chosen.used)} free` : 'fits (not taken)',
     });
   });
   additions.sort((a, b) => (b.deltaSeconds - a.deltaSeconds) || (a.deltaSlots - b.deltaSlots) || a.label.localeCompare(b.label));
@@ -1011,7 +1122,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
   }
   const mixOf = (s: KitSolution) => groupsLabel(Array.from(new Set(s.members.map((i) => candidates[i].group))));
   const usedOf = usedOfKit;
-  const chosenMix = mixOf(opt.best);
+  const chosenMix = mixOf(chosen);
   // the best kit of every other style mix: optimised over that mix's candidates only; a group the optimiser left out
   // is forced in with its best addition (fitting if one fits, else the fewest extra slots)
   const MIXES: StyleGroup[][] = [['melee'], ['ranged'], ['magic'], ['melee', 'ranged'], ['melee', 'magic'], ['ranged', 'magic'], GROUP_ORDER];
@@ -1056,7 +1167,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         label: `${label}: ${s.members.map((i) => candidates[i].label).join(' / ')}`,
         kind: 'alternative',
         deltaSeconds: T - s.time,
-        deltaSlots: s.used - opt.best.used,
+        deltaSlots: s.used - chosen.used,
         reason,
       });
     }
@@ -1078,6 +1189,12 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     planned,
     rejected,
     alternatives,
+    unusedSupplies: (Object.entries(SUPPLY_POTION_GROUP) as [SupplyType, StyleGroup][])
+      .filter(([t, g]) => inputs.supplies[t] > 0 && !kit.some((c) => c.group === g))
+      .map(([t, g]) => ({
+        type: t, label: SUPPLY_TYPES.find((x) => x.id === t)!.label, count: inputs.supplies[t], group: g,
+      })),
+    matrixDps: Object.fromEntries(targets.map((t, col) => [phaseKey(t.targetKey, t.phase), Math.max(0, ...members.map((m) => dps[m][col]))])),
     unusedCarried: pinnedItems
       .filter((it, i, all) => all.findIndex((x) => x.id === it.id) === i)
       .filter((it) => !specItems.some((x) => x.id === it.id))
@@ -1089,9 +1206,11 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       candidates: {
         preset: nPreset, search: nSearch, partial: nPartial, total: candidates.length, capped,
       },
-      evaluations: evaluations + evaluator.evaluations(),
+      evaluations: evaluations + exactEvaluations,
       kitsEvaluated: opt.kitsEvaluated,
-      objectiveSeconds: opt.best.time,
+      objectiveSeconds: chosen.time,
+      retimed: finalists.length,
+      ...(soloFight ? { fightSeconds: soloFight } : {}),
       ms: {
         search: tSearch - t0, matrix: tMatrix - tSearch, optimise: tOpt - tMatrix, total: tEnd - t0,
       },

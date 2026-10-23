@@ -256,7 +256,8 @@ export const specPlayer = (
   style,
   null,
   monster,
-  assumptions,
+  // the drain model always assumes the style's potion (phase 17's withoutPotion is for the Plan tab's DPS only)
+  { ...assumptions, withoutPotion: undefined },
 );
 
 const specStyles = (weapon: SpecWeapon): PlayerCombatStyle[] => {

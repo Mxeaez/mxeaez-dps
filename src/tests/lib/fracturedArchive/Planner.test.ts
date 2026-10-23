@@ -14,6 +14,7 @@ import {
   PlanItem,
   planItemByName,
   PlanTuning,
+  planAssumptions,
   routePhaseTargets,
   SupplyCounts,
 } from '@/lib/fracturedArchive/planner';
@@ -21,17 +22,21 @@ import {
   compareRoutes,
   createKitEvaluator,
   enumerateRoutes,
+  phaseKey,
   presetKitLoadout,
   RAID_TIME_DEFAULTS,
   raidTimeAssumptionsFrom,
 } from '@/lib/fracturedArchive/raidTime';
 import { DEFAULT_ASSUMPTIONS, PRESETS } from '@/lib/fracturedArchive/presets';
+import {
+  applyPresetToPlayer, buildTargetMonster, evaluateLoadout, findTarget, presetStyles,
+} from '@/lib/fracturedArchive/bestSetup';
 import { generateEmptyPlayer } from '@/state';
 
 // Phase 17: raid planner (src/lib/fracturedArchive/planner.ts).
 
 const NO_SUPPLIES: SupplyCounts = {
-  brew: 0, restore: 0, ranging: 0, superCombat: 0, food: 0, other: 0,
+  brew: 0, restore: 0, ranging: 0, superCombat: 0, magic: 0, food: 0, other: 0,
 };
 
 const item = (id: number, slot: PlanItem['slot'], twoHanded = false): PlanItem => ({
@@ -307,5 +312,54 @@ describe('plan (reduced pool)', () => {
     });
     expect(r.cancelled).toBe(true);
     expect(r.kit).toEqual([]);
+  });
+});
+
+describe('review fixes', () => {
+  test('Solo: the matrix plans drains with each encounter length; Bork / Smorks DPS within 1% of the exact times', () => {
+    const r = plan(inputs({ drain: 'solo' }), SMALL);
+    expect(r.cancelled).toBe(false);
+    expect(r.stats.fightSeconds?.['bork-smorks']).toBeGreaterThan(90);
+    expect(r.stats.retimed).toBeGreaterThan(0);
+    const bork = r.comparison!.routes[r.planned].encounters.find((e) => e.id === 'bork-smorks')!;
+    expect(bork.phases.length).toBeGreaterThanOrEqual(5);
+    for (const ph of bork.phases) {
+      const m = r.matrixDps[phaseKey(ph.targetKey, ph.phase)];
+      expect(Math.abs(m - ph.dps) / ph.dps).toBeLessThan(0.01);
+    }
+  });
+
+  test('a style whose potion is not in the supplies is evaluated without it; drains keep the potions', () => {
+    const tbow = PRESETS.find((p) => p.name === 'Twisted bow (Masori)')!;
+    const scythe = PRESETS.find((p) => p.name === 'Torva + Scythe (slash)')!;
+    const withPots = planAssumptions(DEFAULT_ASSUMPTIONS, { ...DEFAULT_SUPPLIES, magic: 1 });
+    const noRanging = planAssumptions(DEFAULT_ASSUMPTIONS, { ...DEFAULT_SUPPLIES, ranging: 0, magic: 1 });
+    expect(withPots.withoutPotion).toBeUndefined();
+    expect(noRanging.withoutPotion).toEqual(['ranged']);
+    expect(planAssumptions(DEFAULT_ASSUMPTIONS, DEFAULT_SUPPLIES).withoutPotion).toEqual(['magic']); // no magic boost by default
+    const { monster } = buildTargetMonster(findTarget('xarth'), undefined, 'team', withPots);
+    const dpsOf = (preset: typeof tbow, a: typeof withPots) => evaluateLoadout(
+      applyPresetToPlayer(generateEmptyPlayer(), preset, presetStyles(preset)[0], null, monster, a),
+      monster,
+      false,
+    ).dps;
+    expect(dpsOf(tbow, noRanging)).toBeLessThan(dpsOf(tbow, withPots));
+    expect(dpsOf(scythe, noRanging)).toBe(dpsOf(scythe, withPots));
+    expect(applyPresetToPlayer(generateEmptyPlayer(), tbow, presetStyles(tbow)[0], null, monster, noRanging).buffs.potions).toEqual([]);
+    // the drain model is unchanged
+    const drained = buildTargetMonster(findTarget('xarth'), undefined, 'team', noRanging).monster;
+    expect(drained.inputs.defenceReductions).toEqual(monster.inputs.defenceReductions);
+  });
+
+  test('potions whose style the kit never uses are reported', () => {
+    const r = plan(inputs({ route: ROUTE }), {
+      ...SMALL,
+      search: { weapons: ['Scythe of Vitur'], maxPasses: 1 },
+      presets: PRESETS.filter((p) => p.name === 'Torva + Scythe (slash)'),
+    });
+    expect(r.kit.every((k) => k.group === 'melee')).toBe(true);
+    expect(r.unusedSupplies).toEqual([{
+      type: 'ranging', label: 'Ranging potion', count: 2, group: 'ranged',
+    }]);
   });
 });

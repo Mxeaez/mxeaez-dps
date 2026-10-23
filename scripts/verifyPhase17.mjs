@@ -83,6 +83,13 @@ const main = async () => {
   check(p.encounters.length === 5, `per-encounter table has 5 rows (${p.encounters.length})`);
   const fastestRows = await page.locator('[data-testid="plan-route-row"][data-fastest="true"]').count();
   check(fastestRows === 1 && await page.locator('[data-testid="plan-route-row"]').count() === 8, '8 routes listed with the same kit, one highlighted');
+  check(/avg DPS \(time-weighted\)/.test(await page.locator('[data-testid="plan-encounters"] thead').innerText()), 'encounter DPS column labelled "avg DPS (time-weighted)"');
+  check(/My specs/.test(await page.locator('[data-testid="spec-note"]').innerText()), 'note: spec weapons come from My specs');
+  const unusedText = await page.locator('[data-testid="unused-carried"]').innerText().catch(() => '');
+  console.log(`     unused carried: ${unusedText.replace(/\s+/g, ' ')}`);
+  check(await page.locator('[data-testid="drop-pinned"]').count() === 1, 'unused pinned items warned with a one-click remove');
+  const unusedSup = await page.locator('[data-testid="unused-supplies"]').allInnerTexts();
+  console.log(`     unused supplies: ${unusedSup.join(' | ') || 'none'}`);
   await page.screenshot({ path: 'docs/screenshots/phase17-plan.png', fullPage: true });
   await page.locator('[data-testid="plan-result"]').screenshot({ path: 'docs/screenshots/phase17-kit.png' });
 
@@ -99,6 +106,19 @@ const main = async () => {
     `free slots drop or the switches shrink (${p.free} → ${q.free})`);
   await page.screenshot({ path: 'docs/screenshots/phase17-brews10.png', fullPage: true });
   await page.locator('#plan-supply-brew').fill('6');
+  await waitIdle(page);
+
+  // remove the unused pinned items: they leave the pinned list and the plan re-runs with the freed slots
+  const pinnedBefore = await page.locator('[data-testid="pinned-item"]').count();
+  await page.locator('[data-testid="drop-pinned"]').click();
+  await page.waitForTimeout(700);
+  await waitIdle(page);
+  const pinnedAfter = await page.locator('[data-testid="pinned-item"]').count();
+  const r = await readPlan(page);
+  console.log(`     after removing unused pinned: ${pinnedBefore} → ${pinnedAfter} pinned; ${r.headline}; free ${r.free}; kit ${r.kit.map((k) => k.split('·')[0].trim()).join(' / ')}`);
+  check(pinnedAfter < pinnedBefore && r.cells.filter((c) => c.startsWith('pinned')).length === 0, 'unused pinned items removed in one click; re-planned');
+  await page.screenshot({ path: 'docs/screenshots/phase17-unpinned.png', fullPage: true });
+  await page.getByTestId('plan-pinned').getByRole('button', { name: 'reset' }).click();
   await waitIdle(page);
 
   // load the worn set: calculator DPS = the plan's DPS on the first phase
