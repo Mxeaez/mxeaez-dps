@@ -294,7 +294,8 @@ describe('drain plans respect what can hit the target', () => {
     for (const weapon of ALL_WEAPONS) {
       const plan = maxDrainReductions(m, { weapon, ayak: true });
       noMelee(plan.reductions);
-      expect(plan.reductions.tonalztic).toBeGreaterThan(0);
+      expect(plan.reductions).toEqual({ ...NONE, tonalztic: 2, ayak: plan.reductions.ayak });
+      expect(plan.summary).toBe('2× Tonalztics hits (1 spec) → Def 129');
       expect(plan.reachesFloor).toBe(true);
     }
     // at a corner melee is fine again
@@ -307,6 +308,10 @@ describe('drain plans respect what can hit the target', () => {
       for (const weapon of ALL_WEAPONS) {
         const plan = maxDrainReductions(m, { weapon, ayak: true });
         noMelee(plan.reductions);
+        // accursed + 2 hits ties (same energy / actions); the plan without accursed is found first and kept
+        expect(plan.reductions).toEqual({ ...NONE, tonalztic: 3, ayak: plan.reductions.ayak });
+        expect(drained(m, { ...NONE, accursed: true, tonalztic: 2 }).skills.def).toBe(150);
+        expect(drained(m, { ...NONE, tonalztic: 2 }).skills.def).toBeGreaterThan(150);
         expect(plan.defAfter).toBe(150);
       }
     }

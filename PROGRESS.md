@@ -3,6 +3,21 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 13 fixes — review follow-ups (2026-10-23)
+
+- Summary: assumption changes are debounced (`ASSUMPTION_DEBOUNCE_MS` = 500 ms) before the 51-search run restarts.
+- Wording: SummaryView "51 searches", `styles.ts` no longer mentions Per boss; DATA_SOURCES notes that on Ocellus P3
+  Deflect Melee, Accursed + 2 Tonalztics hits ties the 3-hit plan (100% energy, 3 actions), and the 3-hit plan wins
+  only because it is checked first.
+- Tests pin the plans exactly: P1 walking = 2 hits, P3 Deflect Melee = 3 hits (the accursed + 2 tie is checked too),
+  AG Flying = 4 hits.
+- Dev images: `.env.development` → `NEXT_PUBLIC_CDN_URL=https://dps.mxeaez.com/cdn`, so raid-4 icons load in dev
+  (Search 119/119, Summary 588/588). A dev rewrite proxy was dropped: the deployed site redirects `%27` paths to a
+  host-relative URL. Noted in CLAUDE.md.
+- ROADMAP.md Round 2 section as rewritten by the orchestrator (phases 13–22), unchanged.
+- `yarn test` 959 pass / 4 skipped, lint and `tsc --noEmit` clean; `verifyBestSetup.mjs` (Summary, 51 cells in 47 s)
+  and `verifyBestSetupUx.mjs` all OK.
+
 ## Phase 13 — Round-2 fixes: drains that can hit, Team Ayak count, DPS column (2026-10-23)
 
 - ROADMAP.md: Round 2 table (phases 13-20) and round-2 decisions.

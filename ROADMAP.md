@@ -86,18 +86,24 @@ Requested after the site went live (2026-10-23). Same workflow per phase as abov
 
 | # | Phase | Done when | Status |
 |---|---|---|---|
-| 13 | Round-2 fixes | Drain plans only use weapons that can hit the target in that phase; DPS column highlighted; realistic Team-drain spec counts; tests | in progress |
-| 14 | Raid time model | Pure `raidTime(route, kits)` with per-boss/phase HP weights and documented assumptions; tests | planned |
-| 15 | Raid plan tab | Route, team size, carried specs, supply counts → optimised kit; 4×7 inventory grid + worn gear with icons; load into calculator | planned |
-| 16 | Multi-raid structure | Raid tabs; per-raid config (bosses, phases, scaling inputs); Search/Per-boss/Plan work for any raid | planned |
-| 17 | ToA | Invocation level, party size, path levels; Akkha, Ba-Ba, Kephri, Zebak, Wardens; presets | planned |
-| 18 | CoX | Party size, CM; Tekton, Vasa, Vanguards, Vespula, Muttadiles, Mystics, Shamans, Guardians, Ice demon, Olm | planned |
-| 19 | ToB | Party size, HM; Maiden, Bloat, Nylocas, Sotetseg, Xarpus, Verzik P1–P3 | planned |
-| 20 | Final review (round 2) | Fresh pass; UNVERIFIED.md updated for new raids and planner | planned |
+| 13 | Round-2 fixes | Drain plans only use weapons that can hit the target in that phase; DPS column highlighted; Per-boss tab removed; Summary search-based with icons; tests | in review |
+| 14 | Spec & drain model | Per drain weapon (Elder maul, DWH, BGS, Tonalztics, Ayak, Accursed): spec hit chance and expected damage from the calc per boss/phase; Ayak input = spec count, drain = count × expected damage; spec-energy budget per player (100% start, +10%/30 s, Lightbearer doubles) labels plans solo / solo+Lightbearer / team-only, Solo state shows the partial drain actually reachable; team spec planner: party size + carriers per weapon → P(floor reached from the first round of specs) and a carrier recommendation; tests | planned |
+| 15 | Remaining bosses | Ezekiel, Moia, Dagon'hai Elder + Monks modelled from the wiki (stats already in data; floors 78/117 done) with the same build/review loop, so every route can be compared | planned |
+| 16 | Raid time model | Pure `raidTime(route, kit)` = Σ HP ÷ DPS over the route's bosses/phases, DPS time only (no puzzle/travel); Bork + Smorks killed evenly (Bork damage spread across the 4 armour tiers, Smorks 600 hp on top); Ocellus P2 at 50% carry-over; AG flying/grounded split with shield hp as a setting (unverified); party-size hp table (unverified); route enumeration + comparison; tests | planned |
+| 17 | Raid plan tab | Inputs: party size (default 6), route or compare-all, items always carried (default from the user's kit), spec weapons carried, supply slot counts (default 6 brew / 4 restore / 2 ranging / 1 super combat); optimiser builds partial switches from search results within the free slots to minimise route time; output: worn gear, 4×7 inventory grid with icons, free-slot count, per-boss style/DPS table, load into calculator; brute-force check on small cases | planned |
+| 18 | Raid tabs + ToA | Per-raid config (bosses, phases, scaling inputs) so Search/Summary/Plan work for any raid; ToA with invocation level (default 500), party size, path levels; Akkha, Ba-Ba, Kephri, Zebak, Wardens; presets | planned |
+| 19 | CoX | Normal / CM, team size (Defence scales); Tekton, Vasa, Vanguards, Vespula, Muttadiles, Mystics, Shamans, Guardians, Ice demon, Olm | planned |
+| 20 | ToB | Normal / HM, team size; Maiden, Bloat, Nylocas, Sotetseg, Xarpus, Verzik P1–P3 | planned |
+| 21 | Planner for ToA/CoX/ToB | Fixed routes; time model from upstream's verified hp scaling | planned |
+| 22 | Final review (round 2) | Fresh pass; UNVERIFIED.md updated for new raids and planner (incl. "does FA Defence scale with players?" with an in-game check) | planned |
 
 ### Decisions (round 2)
 
-- Raids are added in the order ToA → CoX → ToB.
-- Planner objective = total raid time: Σ HP ÷ DPS over the route's bosses / phases.
-- The user picks which spec weapons they carry; drains assume the team reaches the floor.
-- Supplies are entered as slot counts by type.
+- Raids are added in the order ToA → CoX → ToB, as tabs on one page.
+- Planner objective = total raid time: Σ HP ÷ DPS over the route's bosses / phases, DPS time only.
+- The planner optimises the user's own kit for the user's DPS; the team matters only for drains.
+- The user picks which spec weapons they carry; Solo drains are limited by the user's spec-energy budget; Team drains assume the team reaches the floor.
+- Supplies are entered as slot counts by type; the planner shows free slots.
+- Routes are compared (Guardian and Ocellus fixed; the middle bosses vary), so Ezekiel, Moia and Dagon'hai must be modelled.
+- Bork and the Smorks are killed evenly, not Bork first.
+- Fractured Archive Defence is assumed not to scale with party size (wiki mentions hp only) — unverified.

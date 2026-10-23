@@ -25,15 +25,19 @@ import { ItemIcon, LoadoutIconRow, WeaponLine } from '@/app/components/bestSetup
 import DPS_TEXT_CLASS from '@/app/components/bestSetup/styles';
 
 // "Summary" tab of /best-setup (phase 13): the top gear-search result for every Summary boss / phase × drain state.
-// The ~54 searches run one after the other in the search worker when the tab opens; results are cached in memory for
-// the session (module scope, so switching tabs keeps them) and keyed by the assumptions, so changing an assumption
-// re-runs. Cancel stops after the current search is terminated; "Continue" resumes with the uncached ones.
+// The 51 searches (17 rows × 3 drain states) run one after the other in the search worker when the tab opens;
+// results are cached in memory for the session (module scope, so switching tabs keeps them) and keyed by the
+// assumptions, so changing an assumption re-runs (debounced by ASSUMPTION_DEBOUNCE_MS, so typing a multi-digit value
+// restarts once). Cancel terminates the current search and stops; "Continue" resumes with the uncached ones.
 
 /** What the table needs of a search (the full result has 10+ rows per search). */
 type SummaryCell = Pick<GearSearchResult, 'drain' | 'bestPreset'> & { top: GearSearchResult['rows'][number] | null };
 
 const cache = new Map<string, SummaryCell>();
 let cacheAssumptions = '';
+
+/** Delay between the last assumption change and the (re)start of the summary searches. */
+export const ASSUMPTION_DEBOUNCE_MS = 500;
 
 const fmt = (n: number) => (Number.isFinite(n) ? n.toFixed(3) : '-');
 
@@ -101,8 +105,12 @@ const SummaryView: React.FC<{ assumptions: BestSetupAssumptions }> = ({ assumpti
       cacheAssumptions = a;
     }
     setCells(cachedCells());
-    run();
-    return () => cancel();
+    cancel();
+    const timer = setTimeout(() => run(), ASSUMPTION_DEBOUNCE_MS);
+    return () => {
+      clearTimeout(timer);
+      cancel();
+    };
   }, [assumptions, cachedCells, run, cancel]);
 
   const onLoad = (q: GearSearchQuery, cell: SummaryCell) => {

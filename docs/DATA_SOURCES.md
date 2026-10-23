@@ -447,8 +447,10 @@ A plan only uses a drain weapon whose style can hit the monster in the selected 
 halberds / salamanders), Ocellus's prayers (`ocellus.ts`) and upstream's immunity lists all apply without a copy of the
 rules. If the named weapon can't hit, the plan is the cheapest among the tools that can: Tonalztics hits, optionally
 after one Accursed sceptre spec (50% energy). The accursed spec's **Defence part counts** (phase 3 reading: AG's
-absorption covers Magic-level effects only), so on AG it is a valid tool; it is just never cheaper than Tonalztics
-here (accursed + 3 hits = 150% vs 4 hits = 100%). Arclight / Emberlight are melee and not used by presets. Ranking as
+absorption covers Magic-level effects only), so on AG it is a valid tool, but never cheaper there (accursed + 3 hits
+= 150% vs 4 hits = 100%). On Ocellus P3 Deflect Melee, accursed + 2 hits (250 → 212 → 150; 100% energy, 3 actions)
+**ties** the 3-hit plan (250 → 150; 100%, 3 actions); the 3-hit plan wins only because plans without accursed are
+checked first and a tie doesn't replace the earlier plan. Arclight / Emberlight are melee and not used by presets. Ranking as
 above (lowest Defence, then energy, then fewest hammer specs, then fewest actions). The Tonalztics finisher is only
 added when ranged can hit. The calculator's "Max drain" buttons grey out (strikethrough) a weapon that can't hit, with
 a tooltip and a line naming the plan actually applied.

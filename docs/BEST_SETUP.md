@@ -33,9 +33,9 @@ weapon, body, shield, legs, hands, feet, ring) with "name (slot)" tooltips; the 
 URLs come from `src/lib/fracturedArchive/loadoutIcons.ts`, which uses the same helper as the calculator's equipment
 slots and monster panel: `getCdnImage('equipment/<image>')` / `getCdnImage('monsters/<image>')` with the `image` field
 of equipment.json / monsters.json. Production therefore serves them from `/cdn/` on our domain
-(`NEXT_PUBLIC_CDN_URL`); dev loads upstream's CDN, which lacks the raid-4 images (Obligator, Ascension crossbows and
-bolts, the bosses) — those icons are hidden in dev (an `<img>` that fails to load hides itself; the name stays as
-text) and load in production. Icons are `loading="lazy"`, `alt` = item name. Spell icons are not shown: upstream loads
+(`NEXT_PUBLIC_CDN_URL`). Since the phase 13 fixes, dev uses the same deployed copy (`.env.development`), so the raid-4
+images (Obligator, Ascension crossbows and bolts, the bosses), which upstream's CDN lacks, load in dev too. An `<img>`
+that fails to load hides itself (the name stays as text). Icons are `loading="lazy"`, `alt` = item name. Spell icons are not shown: upstream loads
 them from the wiki (`getWikiImage`), which would be hotlinking. `LoadoutIcons.test.ts` checks the slot order, URLs,
 weapon lines, and that every preset/pool item and boss image exists in `cdn/` without a `%` in the name (those are
 skipped by the deploy).
