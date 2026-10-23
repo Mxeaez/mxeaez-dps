@@ -3,6 +3,21 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 21 fixes — review follow-ups (2026-10-23)
+
+- The plan no longer swaps a loadout for a cheaper one (it raised ToB 7:32.2 → 7:34.1 to free 3 unused slots):
+  `optimiseKit`'s prune step only drops (≥ max(1 s, 1 s per slot)); new `lightenKit` runs the swaps once on the chosen kit
+  and, when it frees ≥ 1 slot, the plan lists it first under Alternatives as "Lighter kit: … −N slots for +X.X s".
+- Prune is skipped for a kit whose time is ∞ (no cutting to one loadout); the raid-weapon switch label says when the
+  variant also takes ammo / a shield or drops the shield.
+- `verifyPhase20.mjs`: 17 ToB targets in Normal mode (20 in Hard Mode); `verifyPhase21.mjs`: ToB 7:32.2 at 28/28 + the
+  lighter-kit alternative.
+- Docs: BEST_SETUP effect table (ToB 7:32.2, 28/28; lighter kit −3 slots for +1.9 s), UNVERIFIED D13, G12 (you hold the
+  staff; a teammate holding it makes the saving an overstatement).
+- Tests: Phase21.test.ts 23 (lighter-kit swap, ∞ guard; Dawnbringer loadout check relaxed to the staff being free).
+  `yarn test` 1194 pass / 4 skipped; lint, tsc clean; verifyPhase17–21 all OK.
+- Totals (Team, defaults): FA 23:18.8, ToA 14:20.2, CoX 6:41.9, ToB 7:32.2.
+
 ## Phase 21 — Planner for ToA / CoX / ToB: per-raid defaults, raid items, dedupe (2026-10-23)
 
 - **Per-raid Plan defaults** (new `src/lib/raids/planDefaults.ts`, `RaidBase.planDefaults`; `DEFAULT_PINNED_NAMES` /

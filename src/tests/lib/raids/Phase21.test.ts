@@ -7,6 +7,7 @@ import {
   INVENTORY_SLOTS,
   inventoryGrid,
   kitSlotUsage,
+  lightenKit,
   optimiseKit,
   plan,
   PlanItem,
@@ -172,19 +173,32 @@ describe('dedupe rule (SWITCH_MIN_SAVING_SECONDS / SWITCH_MIN_SECONDS_PER_SLOT)'
     expect([...run(2.5)].sort()).toEqual([0, 1]);
   });
 
-  test('a costly variant is swapped for a cheaper one of the same style when its extra slots buy < 1 s each', () => {
-    // D: +2 slots, saves 2.5 s; E (same style, 0 slots: item 5 is carried) saves 2.0 s → D's 2 slots buy 0.5 s
+  test('the plan keeps the faster costly variant; the lighter kit swaps it for the cheaper one (2 slots bought 0.5 s)', () => {
+    // D: +2 slots, saves 2.5 s; E (same style, 0 slots: item 5 is carried) saves 2.0 s
     const its = [[1, 2, 3], [1, 7, 8], [1, 2, 5]];
     const t = (m: number[]) => (m.includes(0) ? 100 : Infinity) - Math.max(m.includes(1) ? 2.5 : 0, m.includes(2) ? 2.0 : 0);
-    const r = optimiseKit({
+    const prob = {
       items: its, carried: [5], fixedSlots: 10, totalSlots: INVENTORY_SLOTS, time: t, seeds: [0], groups: ['melee', 'magic', 'magic'],
+    };
+    const r = optimiseKit(prob);
+    expect([...r.best.members].sort()).toEqual([0, 1]); // minimum time; groups are ignored by the optimiser
+    expect(r.best.time).toBeCloseTo(97.5, 9);
+    const light = lightenKit(prob, r.best.members);
+    expect([...light.members].sort()).toEqual([0, 2]);
+    expect(light.time).toBeCloseTo(98, 9);
+    expect(r.best.used - light.used).toBe(2);
+  });
+
+  test('a kit that cannot clear the route (∞) is not pruned', () => {
+    const its = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
+    const t = () => Infinity;
+    const r = optimiseKit({
+      items: its, carried: [], fixedSlots: 10, totalSlots: INVENTORY_SLOTS, time: t, seeds: [0],
     });
-    expect([...r.best.members].sort()).toEqual([0, 2]);
-    // without groups only drops are tried: D stays (2.5 s ≥ 2 slots × 1 s)
-    const drops = optimiseKit({
-      items: its, carried: [5], fixedSlots: 10, totalSlots: INVENTORY_SLOTS, time: t, seeds: [0],
-    });
-    expect([...drops.best.members].sort()).toEqual([0, 1]);
+    expect(r.best.members).toEqual([0]); // nothing helps, nothing added
+    expect(lightenKit({
+      items: its, carried: [], fixedSlots: 10, totalSlots: INVENTORY_SLOTS, time: t, seeds: [0],
+    }, [0, 1, 2])).toMatchObject({ members: [0, 1, 2] });
   });
 });
 
@@ -244,8 +258,8 @@ describe('ToB: Dawnbringer spec count follows the team-DPS multiplier', () => {
   });
 });
 
-describe('ToB plan (reduced pool): a Dawnbringer loadout at 0 extra slots', () => {
-  test('the kit carries a Dawnbringer loadout that adds no slot; the grid has no Dawnbringer cell', () => {
+describe('ToB plan (reduced pool): a Dawnbringer loadout, the staff at 0 slots', () => {
+  test('the kit carries a Dawnbringer loadout; the grid has no Dawnbringer cell', () => {
     const raid = THEATRE_OF_BLOOD_RAID;
     const res = plan({
       basePlayer: generateEmptyPlayer(),
@@ -268,7 +282,8 @@ describe('ToB plan (reduced pool): a Dawnbringer loadout at 0 extra slots', () =
     const dawn = planItemByName('Dawnbringer').id;
     const i = res.kit.findIndex((c) => c.equipment.weapon?.id === dawn);
     expect(i).toBeGreaterThan(0);
-    expect(res.kitMarginal[i].slots).toBe(0);
+    // the Dawnbringer itself is free: whatever the loadout adds is its other pieces (at most one here)
+    expect(res.kitMarginal[i].slots).toBeLessThanOrEqual(1);
     expect(res.kitMarginal[i].seconds).toBeGreaterThanOrEqual(SWITCH_MIN_SAVING_SECONDS);
     expect(res.inventory.some((c) => c.item?.id === dawn)).toBe(false);
     expect(res.inventory.filter((c) => c.kind !== 'free').length).toBe(res.slots!.used);

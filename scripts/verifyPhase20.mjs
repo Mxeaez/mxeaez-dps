@@ -100,7 +100,8 @@ const main = async () => {
   check((await mode.evaluate((e) => e.selectedOptions[0].textContent)) === 'Normal', 'mode Normal');
   check(await page.locator('#bs-team-mult').inputValue() === '4', 'team-DPS multiplier 4 (= party size)');
   const bosses = await page.locator('[data-testid="boss-select"] option').evaluateAll((els) => els.map((e) => e.value));
-  check(bosses.length === 20, `${bosses.length} ToB targets`);
+  // phase 21: the 3 Prinkipas only in Hard Mode (20 targets there)
+  check(bosses.length === 17, `${bosses.length} ToB targets in Normal mode (17; 20 in Hard Mode)`);
 
   // 3. party 5 vs 4: Maiden hp
   await search(page, 'tob-maiden', 'none');

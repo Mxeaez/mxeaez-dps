@@ -571,7 +571,7 @@ const PlanView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStateI
             ) : <div>No other candidate loadout would make the route faster.</div>}
             {result.alternatives.length > 0 && (
               <>
-                <div>Best kit with other style mixes:</div>
+                <div>Alternatives (a lighter kit, then the best kit of each other style mix):</div>
                 <RejectionList rows={result.alternatives} testId="plan-alternatives" />
               </>
             )}

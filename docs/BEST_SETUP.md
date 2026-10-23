@@ -300,10 +300,12 @@ of the **same weapon** (e.g. "Torva helm + Oathplate + Scythe (slash) + Salve am
 Salve (ei) + Scythe (slash)"). Without them the only way to get the Salve at Bloat was a whole second Scythe set.
 
 **Dedupe rule** (`SWITCH_MIN_SAVING_SECONDS` = 1, `SWITCH_MIN_SECONDS_PER_SLOT` = 1 in planner.ts; the optimiser's
-prune step after every greedy + local search, matrix times): a kit loadout stays only if removing it costs ≥ max(1 s,
-1 s × the slots it frees); and a loadout is swapped for a cheaper one of the same style when the slots it frees bought
-< 1 s each. So a switch that costs 0 extra slots and saves < 1 s (a near-duplicate) is dropped, and each extra slot
-must buy ≥ 1 s. Slots freed this way stay free (shown in the badge). Switching takes ticks in-game but is free in the
+prune step after every greedy + local search, matrix times; skipped for a kit that can't clear the route): a kit
+loadout stays only if removing it costs ≥ max(1 s, 1 s × the slots it frees). So a switch that costs 0 extra slots and
+saves < 1 s (a near-duplicate) is dropped, and each extra slot must buy ≥ 1 s. The plan only drops; it never trades
+time for slots by swapping a loadout. Review fix: the **lighter kit** — the plan with every loadout swapped for a cheaper
+one of the same style whenever the slots it frees bought < 1 s each (`lightenKit`) — is listed first under
+"Alternatives" as "Lighter kit: … −N slots for +X.X s" when it frees at least one slot. Switching takes ticks in-game but is free in the
 model, so differences under a second are noise. The kit table shows each loadout's "+N slots, saves X s" (vs the kit
 without it). The "why" list marks additions that fit but miss the rule.
 
@@ -314,12 +316,11 @@ without it). The "why" list marks additions that fit but miss the rule.
 | FA | 23:18.8 — Ascension crossbows partial over Inquisitor's + Obligator, Inquisitor's + Obligator | 23:18.8 | **23:18.8, unchanged** (both loadouts are needed; 17.4 s in the browser) |
 | ToA | 14:20.0 — Keris partisan of breaching (Torva) worn; Shadow, fang, Scythe, Obligator; 1 free | 14:20.0 — same kit incl. Torva + Obligator (saves 0.2 s for +1 slot); 3 free | **14:20.2** — Torva + Obligator dropped; Keris worn, Shadow, fang, Torva + Scythe; **4 free** (19.3 s) |
 | CoX | 6:59.9 (8 "Other" slots) | 6:41.9 | **6:41.9, same kit** — Inquisitor's + Obligator worn; Shadow, Dragon pickaxe, Inquisitor's + Scythe (0 slots, 2.1 s), Harmonised Nightmare staff, Scythe (Tekton; +1 slot, 3.6 s), Ascension crossbows partial; 0 free (every switch ≥ 1 s per slot; 20.6 s) |
-| ToB | 7:35.5 — Torva + Scythe worn; Torva helm + Oathplate + Scythe, two Scythe search sets, Eye of Ayak, Ascension crossbows partial | 7:32.0 (before the piece swaps) — Torva + Scythe worn; Oathplate + Scythe (+2 slots, 6.0 s), Torva + Salve (ei) + Scythe (+1, 3.8 s), Dawnbringer + 5 Ancestral pieces (+0), Eye of Ayak, Ascension crossbows partial; 0 free | **7:34.1** — worn Torva helm + Oathplate + Scythe; **Dawnbringer (Ancestral) at +0 slots** (its Ancestral pieces are the Shadow's), Tumeken's shadow, Oathplate + Salve amulet(ei) swap, Ascension crossbows partial (+ Masori body); **3 free** (18.2 s) |
+| ToB | 7:35.5 — Torva + Scythe worn; Torva helm + Oathplate + Scythe, two Scythe search sets, Eye of Ayak, Ascension crossbows partial | 7:32.0 (before the piece swaps) — Torva + Scythe worn; Oathplate + Scythe (+2 slots, 6.0 s), Torva + Salve (ei) + Scythe (+1, 3.8 s), Dawnbringer + 5 Ancestral pieces (+0), Eye of Ayak, Ascension crossbows partial; 0 free | **7:32.2, 28/28** — worn Torva helm + Oathplate + Scythe; switches Dawnbringer search set (+1 slot: the staff itself is free), Tumeken's shadow, Oathplate + Salve amulet(ei) swap, Ascension crossbows partial (18.2 s). **Alternative "Lighter kit"**: Dawnbringer (Ancestral) at +0 slots (its Ancestral pieces are the Shadow's) and a smaller Ascension crossbows partial — −3 slots for +1.9 s (7:34.1, 3 free) |
 
 The three ToB Scythe sets each saved ≥ 1 s per slot, so the rule alone didn't drop them; once the single-piece swap
-"Oathplate + Salve (ei)" exists the optimiser keeps one Scythe set + the Salve (7:32.2, 0 free, with drops only), and
-the rule's cheaper-variant swaps (Dawnbringer search set +1 slot → Dawnbringer (Ancestral) +0; a smaller Ascension
-crossbows partial) give up 1.9 s for 3 free slots (< 1 s per slot).
+"Oathplate + Salve (ei)" exists the optimiser keeps one Scythe set + the Salve (7:32.2, 28/28). ToA's 14:20.2 is the
+drop rule (Torva + Obligator: 0.2 s for its slot).
 
 ## Routes tab (phase 16: raid time model)
 

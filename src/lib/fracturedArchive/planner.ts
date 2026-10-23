@@ -410,9 +410,11 @@ export interface KitProblem {
   raidSupplied?: number[];
   /** Phase 21: skip the dedupe rule (the optimiser's prune step); default false. */
   noPrune?: boolean;
+  /** Phase 21 (`lightenKit`): prune this kit with drops and same-group swaps instead of optimising. */
+  lighten?: number[];
   /**
-   * Phase 21: style group (any label) per candidate; the dedupe rule may swap a kit loadout for a cheaper candidate of
-   * the same group. Undefined = drops only.
+   * Phase 21: style group (any label) per candidate, for the "lighter kit" swaps (`lightenKit`): a kit loadout may be
+   * swapped for a cheaper candidate of the same group. Not used by `optimiseKit` (its prune step only drops).
    */
   groups?: string[];
   shouldCancel?: () => boolean;
@@ -487,12 +489,13 @@ export const optimiseKit = (p: KitProblem): KitOptimum => {
     members, time: timeOf(members), used: usedOf(members), seed,
   });
 
-  // the dedupe rule (SWITCH_MIN_*): repeatedly apply the move that breaks it the most, until none does —
-  // drop a loadout that saves less than switchSavingRequired(its slots), or swap one for a cheaper candidate of the same
-  // style (`groups`) when the slots it frees bought less than SWITCH_MIN_SECONDS_PER_SLOT each
+  // the dedupe rule (SWITCH_MIN_*): repeatedly apply the move that breaks it the most, until none does — drop a loadout
+  // that saves less than switchSavingRequired(its slots); with `swaps` (lightenKit only) also swap one for a cheaper
+  // candidate of the same style (`groups`) when the slots it frees bought less than SWITCH_MIN_SECONDS_PER_SLOT each.
+  // A kit that can't clear the route (∞) is left alone.
   const loss = (from: KitSolution, to: KitSolution) => (to.time === from.time ? 0 : to.time - from.time);
-  const prune = (start: KitSolution): KitSolution => {
-    if (p.noPrune) return start;
+  const prune = (start: KitSolution, swaps = false): KitSolution => {
+    if (p.noPrune || !Number.isFinite(start.time)) return start;
     let cur = start;
     for (let iter = 0; iter < 50 && cur.members.length > 0; iter++) {
       let move: { s: KitSolution, margin: number } | null = null;
@@ -502,7 +505,7 @@ export const optimiseKit = (p: KitProblem): KitOptimum => {
           const margin = loss(cur, s) - switchSavingRequired(cur.used - s.used);
           if (margin < -EPS && (!move || margin < move.margin)) move = { s, margin };
         }
-        if (p.groups) {
+        if (swaps && p.groups) {
           for (let c = 0; c < n; c++) {
             if (p.groups[c] !== p.groups[cur.members[i]] || cur.members.includes(c) || (p.allowed && !p.allowed[c])) continue;
             const m = cur.members.map((x, j) => (j === i ? c : x));
@@ -574,6 +577,12 @@ export const optimiseKit = (p: KitProblem): KitOptimum => {
     return cur;
   };
 
+  if (p.lighten) {
+    const start = solution(p.lighten, p.lighten[0] ?? 0);
+    const light = prune(start, true);
+    return { best: light, finals: [light], kitsEvaluated };
+  }
+
   const finals: KitSolution[] = [];
   let best: KitSolution | null = null;
   p.seeds.forEach((seed, i) => {
@@ -589,6 +598,13 @@ export const optimiseKit = (p: KitProblem): KitOptimum => {
   if (!best) throw new Error('Planner: no seeds');
   return { best, finals, kitsEvaluated };
 };
+
+/**
+ * Phase 21: the "lighter kit" of a kit: the dedupe rule plus swaps of a loadout for a cheaper same-group candidate
+ * whenever the slots it frees bought < SWITCH_MIN_SECONDS_PER_SLOT each. Slower (or equal) and lighter; the planner
+ * offers it as an alternative, not as the plan (the plan minimises time within the slots).
+ */
+export const lightenKit = (p: KitProblem, members: number[]): KitSolution => optimiseKit({ ...p, lighten: members, seeds: members }).best;
 
 // --- the real planner ----------------------------------------------------------------------------------------------
 
@@ -1095,13 +1111,16 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         const A = candidates[a];
         if (A.group === B.group || bases.includes(a) || !dps[a].some((d) => d > 0)) continue;
         const v0 = partialSwitchVariants(A.equipment, B.equipment, () => 0)[0];
+        // the variant also takes the partner's ammo / shield (or drops the shield for a two-hander): say so
+        let extras = B.equipment.ammo ? ' + ammo' : '';
+        if ((v0.equipment.shield?.id ?? -1) !== (A.equipment.shield?.id ?? -1)) extras += v0.equipment.shield ? ' + shield' : ', shield removed';
         pending.push({
           label: `${B.equipment.weapon?.name ?? B.label} switch on ${A.label}`,
           kind: 'partial',
           group: B.group,
           equipment: v0.equipment,
           options: B.options,
-          source: `${A.label} → ${B.label}, weapon only (raid item: 0 slots)`,
+          source: `${A.label} → ${B.label}, weapon${extras} (the raid item: 0 slots)`,
           base: A.label,
           partner: B.label,
           pieces: [],
@@ -1188,7 +1207,6 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       seeds: seeds.length ? seeds : [0],
       raidSupplied,
       noPrune: tuning.noPrune,
-      groups: candidates.map((c) => c.group),
       shouldCancel: hooks.shouldCancel,
       onProgress: (done, n) => progress({
         stage: 'optimise', done, total: n, label: 'kits',
@@ -1311,7 +1329,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       const mixSeeds = seeds.filter((i) => allowed[i]).slice(0, 5);
       if (!mixSeeds.length) continue;
       let s = optimiseKit({
-        items, carried, fixedSlots, totalSlots: total, time: routeTime, seeds: mixSeeds, allowed, raidSupplied, noPrune: tuning.noPrune, groups: candidates.map((c) => c.group), shouldCancel: hooks.shouldCancel,
+        items, carried, fixedSlots, totalSlots: total, time: routeTime, seeds: mixSeeds, allowed, raidSupplied, noPrune: tuning.noPrune, shouldCancel: hooks.shouldCancel,
       }).best;
       for (const g of mix) {
         if (s.members.some((i) => candidates[i].group === g)) continue;
@@ -1352,6 +1370,26 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     throw e;
   }
   alternatives.sort((a, b) => (b.deltaSeconds - a.deltaSeconds) || a.label.localeCompare(b.label));
+  // phase 21: the lighter kit (same-style cheaper swaps where the slots bought < 1 s each), listed first when it frees slots
+  try {
+    const light = lightenKit({
+      items, carried, fixedSlots, totalSlots: total, time: routeTime, seeds: members, raidSupplied, groups: candidates.map((c) => c.group), shouldCancel: hooks.shouldCancel,
+    }, members);
+    const freed = chosen.used - light.used;
+    if (freed >= 1 && Number.isFinite(light.time)) {
+      const slower = light.time === T ? 0 : light.time - T;
+      alternatives.unshift({
+        label: `Lighter kit: ${light.members.map((i) => candidates[i].label).join(' / ')}`,
+        kind: 'alternative',
+        deltaSeconds: T - light.time,
+        deltaSlots: -freed,
+        reason: `−${freed} slot${freed === 1 ? '' : 's'} for +${slower.toFixed(1)} s (each freed slot cost < ${SWITCH_MIN_SECONDS_PER_SLOT} s)`,
+      });
+    }
+  } catch (e) {
+    if (e instanceof PlanCancelled) return emptyResult(searchRows);
+    throw e;
+  }
 
   const tEnd = Date.now();
   return {
