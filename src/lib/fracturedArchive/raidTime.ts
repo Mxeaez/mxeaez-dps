@@ -313,6 +313,12 @@ export interface RaidTimeAssumptions {
   settings: RaidTimeSettings;
   /** Fight length handed to the drain planner when the first pass can't kill (infinite time). */
   fallbackFightSeconds: number;
+  /**
+   * Phase 17: when set (and drains are on), skip the undrained first pass and plan every encounter's drains with this
+   * fight length. Exact for Team (the carriers' first round doesn't depend on the length) and None; an approximation
+   * for Solo. The planner's inner loop uses it; its reported times never do.
+   */
+  fixedFightSeconds?: number;
 }
 
 export const raidTimeAssumptionsFrom = (
@@ -398,6 +404,12 @@ const sumSeconds = (rows: PhaseTime[]) => rows.reduce((t, r) => t + r.seconds, 0
  * generous).
  */
 export const encounterTime = (id: EncounterId, kit: RaidKit, a: RaidTimeAssumptions): EncounterTime => {
+  if (a.drain !== 'none' && a.fixedFightSeconds !== undefined) {
+    const phases = evalEncounterPass(id, kit, a, a.drain, a.fixedFightSeconds);
+    return {
+      id, label: ENCOUNTER_LABELS[id], phases, seconds: sumSeconds(phases), drainFightSeconds: a.fixedFightSeconds,
+    };
+  }
   const first = evalEncounterPass(id, kit, a, 'none', a.fallbackFightSeconds);
   const firstSeconds = sumSeconds(first);
   if (a.drain === 'none') {

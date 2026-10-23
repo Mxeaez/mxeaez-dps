@@ -234,7 +234,7 @@ const RoutesView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStat
       <div className="text-xs flex flex-col gap-2" data-testid="kit">
         <div className="flex flex-wrap gap-x-3 gap-y-1 items-center">
           <span className="font-semibold" title="The loadouts you can switch between; the best one is used for every phase">Kit:</span>
-          <span title="The top gear-search result of this style on each phase, under the selected drain state (one search per phase)">Best search result per phase:</span>
+          <span title="The top gear-search result of this style on each phase, under the selected drain state (one search per phase). An upper bound: it assumes a different loadout on every phase, which no inventory holds; the Plan tab finds a kit that fits in 28 slots">Best search result per phase:</span>
           {GROUPS.map((g) => (
             <label key={g} htmlFor={`rt-kit-${g}`} className="flex items-center gap-1 capitalize">
               <input id={`rt-kit-${g}`} type="checkbox" checked={searchGroups.includes(g)} onChange={(e) => toggleGroup(g, e.target.checked)} />

@@ -67,7 +67,7 @@ Dagon'hai 0) match the wiki's Strategies table, the boss pages, the news post an
 | C6 | Obligator (Uncharged) | Same effect as the charged version (by name) | — |
 | C7 | Ocellus P3 combat level 1601 (infobox) vs 1603 (prose) | Infobox | Cosmetic |
 
-## (D) Raid time model (phase 16, Routes tab)
+## (D) Raid time model (phase 16, Routes tab) and planner (phase 17, Plan tab)
 
 These only change route **times** (and which route is fastest), not any DPS. Defaults in `RAID_TIME_DEFAULTS`
 (`src/lib/fracturedArchive/raidTime.ts`); D1–D7 are settings in the "Assumptions (time model)" box. HP scaling (C1)
@@ -81,9 +81,12 @@ applies to every figure.
 | D4 | Ocellus P1 walking share | 0 (all P1 damage at a corner) | Melee kits lose time while he walks (Protect from Melee) | Time the walking segments vs P1 length |
 | D5 | Ocellus P2 length | 0 s = P2 ignored (no time, no carry-over) | The route time misses P2's fixed length (the same for every route, so the fastest route doesn't change) and the carry-over that shortens P3 | Time P2 (three quadrant cycles) and read P3's hp at its start |
 | D6 | Ocellus P2 carry-over | 50% of the Blade damage comes off P3 (wiki: "effectively transferring half") | Only matters with P2 length > 0 | P3 hp at its start vs the damage dealt to the Blade |
-| D7 | Ocellus last quadrant | 25% of P3's (remaining) hp, all of it at the Deflect option that blocks the kit's best style (pessimistic; Soul Split / void-explosion parts not modelled) | Ocellus time off by tens of seconds | Note P3 hp when the last quadrant starts and how long each Deflect / Soul Split part lasts |
+| D7 | Ocellus last quadrant | 25% of P3's (remaining) hp, all of it at the Deflect option that blocks the kit's best style (pessimistic; Soul Split / void-explosion parts not modelled). A melee-only kit therefore shows ∞ on Ocellus (it gets Deflect Melee, the worse one for it); in-game you can wait the Deflect out, so read ∞ as "waits, time unknown", not "can't kill" (same for a ranged-only kit and Deflect Ranged) | Ocellus time off by tens of seconds | Note P3 hp when the last quadrant starts and how long each Deflect / Soul Split part lasts |
 | D8 | No adds / healing / downtime | Dreadnoth jellies, Moia's binders, Dagon'hai imps, Xarth corpse healing, Ezekiel's sword heals, Ocellus Soul Split and all puzzle / travel / invulnerable time are ignored | Absolute times are too low; routes with more of these (Dreadnoth jellies, Ezekiel heals) are favoured | Compare a real run's per-boss times with the Routes tab |
 | D9 | Drains per encounter | Planned with the encounter's undrained time as the fight length (one fixed-point iteration); Defence drains apply per phase target (AG Flying / Grounded and Ocellus P1 / P3 are separate monsters in the calc) | Solo plans slightly generous; drains carried between AG forms / Ocellus phases aren't modelled | — (model choice) |
+| D10 | Plan tab: switching | Switching between kit loadouts is free and instant (no lost ticks, no inventory clicks), as in the Routes tab; the plan only limits *what fits* in 28 slots | Kits with many switch items look better than they play | Count ticks lost per switch in a real run |
+| D11 | Plan tab: slots | Every item is one slot (no stacking besides what the item data implies); supplies are slot counts entered by the user and never drunk down; a two-handed / one-handed + shield change needs the free slot the largest swap requires (counted as "swap space"); spec weapons from "My specs" and the pinned items are always carried | Free-slot count off by a slot or two | — (model choice; check against the in-game inventory) |
+| D12 | Plan tab: candidates | Only the per-phase search results (3 weapons × 2 loadouts per style per phase), the presets, and partial switches between the best 2 loadouts per style are considered (caps in `PLAN_DEFAULTS`, docs/BEST_SETUP.md *Plan tab*). Greedy + local search, not exhaustive | A kit outside the pool (e.g. a weapon only the 4th-best on every phase) is never found | Raise the caps in `PLAN_DEFAULTS` and compare |
 
 ## HP scaling: how to fill the gap
 

@@ -10,6 +10,7 @@ import { GearSearchProgress, GearSearchQuery, GearSearchResult } from '@/lib/fra
 import {
   RouteComparisonProgress, RouteComparisonRequest, RouteComparisonResult,
 } from '@/lib/fracturedArchive/raidTime';
+import { PlanInputs, PlanProgress, PlanResult } from '@/lib/fracturedArchive/planner';
 
 /**
  * Requests
@@ -23,6 +24,7 @@ export enum WorkerRequestType {
   COMPARE,
   BEST_SETUP_SEARCH, // Fractured Archive gear search; own worker (src/worker/searchWorker.ts), sends progress messages
   RAID_ROUTES, // Fractured Archive route comparison (phase 16); same worker and protocol as BEST_SETUP_SEARCH
+  RAID_PLAN, // Fractured Archive raid planner (phase 17); same worker and protocol as BEST_SETUP_SEARCH
 }
 
 export interface WorkerRequest<T extends WorkerRequestType> {
@@ -87,9 +89,14 @@ export interface RaidRoutesRequest extends WorkerRequest<WorkerRequestType.RAID_
   data: RouteComparisonRequest,
 }
 
+export interface RaidPlanRequest extends WorkerRequest<WorkerRequestType.RAID_PLAN> {
+  data: PlanInputs,
+}
+
 export type CalcRequestsUnion =
   BestSetupSearchRequest |
   RaidRoutesRequest |
+  RaidPlanRequest |
   ComputeBasicRequest |
   ComputeReverseRequest |
   CompareRequest |
@@ -149,9 +156,21 @@ export interface RaidRoutesProgressMessage {
   progress: RouteComparisonProgress,
 }
 
+export interface RaidPlanResponse extends WorkerResponse<WorkerRequestType.RAID_PLAN> {
+  payload: PlanResult,
+}
+
+/** Interim message of a RAID_PLAN request. */
+export interface RaidPlanProgressMessage {
+  type: WorkerRequestType.RAID_PLAN,
+  sequenceId: number,
+  progress: PlanProgress,
+}
+
 export type CalcResponsesUnion =
   BestSetupSearchResponse |
   RaidRoutesResponse |
+  RaidPlanResponse |
   ComputeBasicResponse |
   ComputeReverseResponse |
   CompareResponse |

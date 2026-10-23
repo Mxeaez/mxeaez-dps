@@ -3,6 +3,43 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 17 — Raid plan tab: kit planner (2026-10-23)
+
+- New `src/lib/fracturedArchive/planner.ts` (pure): phase targets recorded from `compareRoutes`; per-phase searches
+  (top 3 weapons × 2 loadouts per style) + presets → full candidates; partial switches (base A + partner B's weapon set +
+  its k best pieces, carried pieces first; best 2 bases / 2 partners per style + every carried weapon's best loadout);
+  DPS matrix (candidates × phases, drains at the fixed fight length — new `RaidTimeAssumptions.fixedFightSeconds`,
+  exact for Team / None); slot accounting `kitSlotUsage` (|loadout items ∪ pinned ∪ spec weapons| − smallest loadout +
+  supplies + non-items ≤ 28); `optimiseKit` (20 seeds × ratio / absolute greedy + drop / swap local search,
+  deterministic); exact times via `createKitEvaluator` + `compareRoutes`; worn set = loadout of the route's first
+  phase; `inventoryGrid` (4×7); why list (additions that don't fit, best kit per other style mix); unused carried items.
+  Caps in `PLAN_DEFAULTS` (default plan: 243 candidates = 12 presets + 45 search rows + 186 partials; cap 600 unused).
+- Worker: `WorkerRequestType.RAID_PLAN` in the search worker (progress + cancel by terminate), `startRaidPlan` client.
+  Upstream edit: `CalcWorkerTypes.ts` +19 (UPSTREAM_MERGE.md updated).
+- UI: "Plan" tab, second (Search, Plan, Routes, Summary): drain buttons, "Assumptions (plan)" box (route / compare all,
+  supply counts with icons, rune pouch / non-items, pinned items with the calculator's item search), progress + Cancel,
+  free-slot badge, worn set in the calculator's grid layout, 4×7 inventory grid (icons, tooltips, style borders), kit
+  loadouts, per-encounter table with phase rows, route table, why list, stats; "Load worn set into calculator", "Load
+  all loadouts" (new `openLoadoutsInCalculator`). Search rows cached per session.
+- Phase 16 leftovers: Routes kit tooltip says the per-phase search kit is an upper bound; UNVERIFIED D7 notes a
+  melee-only kit shows ∞ on Ocellus (worse Deflect) though in-game you can wait it out. New D10–D12 (switching free,
+  slot model, candidate pool).
+- Tests: new `Planner.test.ts` (16): union / pinned / supplies / swap-space accounting, free never negative, grid order
+  and count = accounting; partial-switch items (two-handed drops the shield, carried first, k = 0..all); toy 2-phase /
+  3-loadout optimum {A, C} = 30 s = brute force (first candidate alone is ∞, so a no-op fails); single loadout wins when
+  switches don't fit (= brute force), 3-way when they do; determinism, cancellation (optimiser, before searches,
+  during optimise); reduced-pool plan: ≤ 28 slots, 28 cells, worn = first-phase loadout, plan ≤ every single preset,
+  inner-loop time = exact time (Team), cached rows → same plan, brews 40 → overfull single loadout.
+  `yarn test` 1058 pass / 4 skipped; `yarn lint`, `tsc --noEmit` clean.
+- Playwright: new `scripts/verifyPhase17.mjs` all OK (tab order, defaults, worn set + 28-cell grid with icons, free
+  slots, 5 encounter rows, 8 routes; brews 6 → 10 re-runs (17 supply cells, switches shrink); "Load worn set" = 9.064 DPS
+  in the calculator on the AG shield). First run 16.0 s in the browser (search 10.4, matrix 3.8, optimiser 0.2); re-run
+  4.5 s. Screenshots `docs/screenshots/phase17-plan.png`, `-kit.png`, `-brews10.png`, `-loaded.png`.
+- Headline (defaults: 6-man, Team, pinned items + supplies): worn Tumeken's shadow (Ancestral), switch Inquisitor's +
+  Obligator (8 items), 0 free; AG → Bork + Smorks → Moia → Xarth → Ocellus 22:47.7. Rejected: + Twisted bow −46.0 s /
+  +9 slots, + Ascension crossbows −30.8 s / +9; melee + ranged kit +31.1 s. Without the 2 Ranging potions: Twisted bow
+  worn + Inquisitor's + Obligator 22:02.4 (docs/BEST_SETUP.md, *Plan tab*).
+
 ## Phase 16 — Raid time model + route comparison (2026-10-23)
 
 - New `src/lib/fracturedArchive/raidTime.ts` (pure): `ROUTE_SLOTS` → `enumerateRoutes()` (8 routes), `encounterPlan`

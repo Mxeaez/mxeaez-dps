@@ -1,16 +1,95 @@
-# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14; Routes tab phase 16)
+# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14; Routes tab phase 16; Plan tab phase 17)
 
 `/best-setup` (dev: http://localhost:3001/osrs-dps/best-setup; "Best setup" button in the top bar, "Calculator" leads
 back). Tabs, in order: **Search** (the default, phase 9/12, see the end of this file) searches a pool of end-game items
-per slot for setups no preset has and runs automatically; **Summary** (phase 13) shows the top search result for
-every boss/phase; both under three drain states; **Routes** (phase 16, see *Routes tab* below) compares the DPS-only
-clear time of the 8 raid routes for a kit. The page always opens on Search (the last-used tab is deliberately not
+per slot for setups no preset has and runs automatically; **Plan** (phase 17, see *Plan tab* below) finds the worn set
++ switch items that minimise the route time within 28 inventory slots; **Routes** (phase 16, see *Routes tab* below)
+compares the DPS-only clear time of the 8 raid routes for a kit; **Summary** (phase 13) shows the top search result for
+every boss/phase. Search, Plan and Routes take the drain state (None / Solo / Team). The page always opens on Search (the last-used tab is deliberately not
 remembered).
 
 **Phase 13: "Per boss" removed.** The phase 8 preset ranking tab is gone (UI code, the calc-worker `BEST_SETUP`
 request and its handler deleted). The presets stay: they seed the search and give the "vs best preset" column / the
 Summary's "best preset" reference; `computeBestSetup` / `evaluatePreset` stay as tested library code
 (`Presets.test.ts`).
+
+## Plan tab (phase 17: raid kit planner)
+
+Code: `src/lib/fracturedArchive/planner.ts` (pure, tested in `src/tests/lib/fracturedArchive/Planner.test.ts`); UI
+`src/app/components/bestSetup/PlanView.tsx`; runs in the search worker (`WorkerRequestType.RAID_PLAN`, `plan()`),
+progress bar + **Cancel** (terminates the worker). Runs on opening the tab and again 500 ms after any input change;
+"Run again" re-runs. The per-phase search rows are cached in memory for the session (per assumptions + drain + phase),
+so a change of supplies / items / route skips the searches.
+
+**Inputs.** From the boxes above the tabs: party size (default 6), drain state (default Team), spec weapons ("My
+specs": Elder maul, DWH, BGS, Tonalztics when ticked, Eye of Ayak when its count > 0 — each takes a slot). In the tab's
+"Assumptions (plan)" box: **Route** — one of the 8, or *Compare all* (default: plan for the fastest route; the route
+table then shows the other routes' times with the same kit); **Supplies** as slot counts (default Saradomin brew 6,
+Super restore 4, Ranging potion 2, Super combat 1, food 0, other 0); **Rune pouch / other non-items** (default 1);
+**Items I always bring** (default Lightbearer, Elder maul, Zaryte crossbow, Kodai wand, Ancestral robe top, Elidinis'
+ward (f); editable with the calculator's item search; each takes a slot unless a kit loadout wears it, and any loadout
+may use them for free). Time-model settings are the Routes tab defaults (`RAID_TIME_DEFAULTS`). DPS always assumes the
+potions in the Assumptions box, whatever the supply counts say.
+
+**Algorithm** (`plan(inputs, tuning?, hooks?)`; `PLAN_DEFAULTS` holds the caps):
+
+1. *Phase targets*: the (target, phase) pairs the time model queries for the route(s) (16 for compare-all; recorded by
+   running `compareRoutes` with a recording kit). One all-style gear search per phase (`runGearSearch`, top 80 rows),
+   keeping per style group the best `perGroupWeapons` = 3 weapons and up to `perWeapon` = 2 distinct loadouts each.
+2. *Candidates*: those rows + every preset, merged when items and style group are equal (style options are unioned).
+   *Partial switches*: for each base A (the best `bases` = 2 per style by Σ DPS ÷ best DPS over the phases) and partner
+   B of another style (the best `partners` = 2 per style, plus the best loadout of every carried weapon, e.g. Kodai):
+   A with B's weapon (+ B's ammo; B's shield, or none if two-handed; A's shield otherwise) and B's k best other pieces,
+   k = 0..all, pieces ranked by the DPS each adds on B's best phase (where B is closest to the best candidate), carried
+   pieces first (they're free). Cap `maxCandidates` = 600 (cheapest switches kept first); the default plan has 243
+   candidates (12 presets, 45 search rows, 186 partial switches), so the cap doesn't bite.
+3. *DPS matrix*: every candidate × phase target under the drain state, evaluated once (best style option; can't hit or
+   an error → 0). Drains are planned at the fixed fight length (`fightSeconds`, 90 s): exact for Team and None (the Team
+   plan uses the carriers' first round, which doesn't depend on the length), an approximation for Solo
+   (`RaidTimeAssumptions.fixedFightSeconds`, added to raidTime.ts for this).
+4. *Slot cost*: inventory = |items of all kit loadouts ∪ pinned ∪ spec weapons| − fewest items of any kit loadout (the
+   most the bag ever holds: while wearing the smallest loadout; the difference to the worn set is shown as "swap
+   space") + supplies + non-items; must be ≤ 28. Shared items count once. The cost doesn't depend on which loadout is
+   worn, so the **worn set is the loadout used on the route's first phase** (the AG shield; saves a switch).
+5. *Optimiser* (`optimiseKit`): seeds = the 20 best single loadouts by their own route time (+ the best of each style);
+   from each, two greedy passes (add the loadout with the best Δtime ÷ Δslots; add the one with the best Δtime) while
+   one fits and helps, then local search (drop a loadout that doesn't help; swap one for any candidate) until stable.
+   Best kit: lowest time, then fewest slots, then fewest loadouts. Deterministic. The kit's times are then recomputed
+   with `createKitEvaluator` + `compareRoutes` (the Routes tab's code); that's what the tab shows.
+6. *Why*: every candidate that would make the route faster if added (none fits, otherwise the optimiser would have
+   added it), top 3 by Δtime with their Δslots; and the best kit of every other style mix (optimised over that mix's
+   candidates only; a style the optimiser left out is forced in with its best addition).
+
+**Output.** Free-slot badge; worn set (laid out like the calculator's equipment grid); 4×7 inventory (supplies, switch
+items grouped by style with a coloured border — melee red, ranged green, magic blue —, spec weapons, pinned items, rune
+pouch / other, swap space, free; icons + tooltips; brews / restores / food get a generic potion icon, Ranging / Super
+combat upstream's potion images); kit loadouts with icon rows and where each came from; the per-encounter table
+(loadouts and styles used, damage ÷ seconds, seconds; phase rows under each); the route table; the why list; run
+statistics. "Load worn set into calculator" opens the calculator with the worn set against the route's first phase
+(drains as planned; its DPS = the first phase row, checked by `scripts/verifyPhase17.mjs`); "Load all loadouts" adds
+one calculator loadout per kit loadout (or replaces the calculator's loadouts if they don't all fit in 6).
+
+**Timings** (default pool and inputs): browser (headless Chromium, dev server) 16.0 s for the first run (16 searches
+10.4 s, matrix of 8032 evaluations 3.8 s, optimiser 18 591 kits 0.2 s); a supplies / items / route change ~4.5 s
+(cached searches; the matrix is rebuilt). Jest without coverage: 23.6 s. Within the 30 s target, so the caps stayed at
+their defaults.
+
+**Limits.** Switching is free and instant; supplies are never drunk down; every item is one slot (UNVERIFIED D10–D12).
+Only the candidate pool above is searched (greedy + local search, not exhaustive; exhaustive on the toy cases in the
+tests). The kit's DPS per phase is the best of its loadouts, so per-phase cherry-picking is limited to the kit.
+
+**Headline** (defaults: 6-man, Team drains, the pinned items and supplies above, compare all; 2026-10-23,
+`scripts/verifyPhase17.mjs`): worn **Tumeken's shadow (Ancestral preset)**; switch **Inquisitor's + Obligator**
+(Inquisitor's great helm, hauberk, plateskirt, Obligator, Infernal cape, Amulet of rancour, Ferocious gloves, Ultor
+ring; Rada's blessing and Avernic treads shared); **0 free slots** (13 supplies + rune pouch + 8 switch items + Elder
+maul, Eye of Ayak, Lightbearer, Zaryte crossbow, Kodai wand, Elidinis' ward (f)); fastest route **AG → Bork + Smorks →
+Moia → Xarth → Ocellus, 22:47.7** (AG 212.1 s, Bork + Smorks 195.9, Moia 77.1, Xarth 186.8, Ocellus 695.8). Phase
+16's 21:49.5 is the upper bound with a different loadout on every phase. Rejected: adding Twisted bow (Masori) −46.0 s
+but +9 slots; Ascension crossbows (diamond) −30.8 s, +9 slots; the best melee + ranged kit (Obligator + an Ascension
+crossbows partial switch) +31.1 s at the same slots; magic only +578.7 s; melee only and ranged only can't finish
+Ocellus's last quadrant in the model (UNVERIFIED D7). The Kodai wand and the ward are carried but unused. Brews 6 → 10:
+the kit becomes two partial switches (Shadow + 5 Ancestral pieces over Torva + Obligator), 25:33.7. Without the 2
+Ranging potions (unused by this kit) the planner fits Twisted bow (Masori) worn + Inquisitor's + Obligator: 22:02.4.
 
 ## Routes tab (phase 16: raid time model)
 
@@ -106,6 +185,8 @@ skipped by the deploy).
 | `src/app/components/bestSetup/SpecPlanPanel.tsx` | Phase 14: plan text, P(floor) and carrier table under the selectors. |
 | `src/app/components/bestSetup/SummaryView.tsx` | Summary tab (phase 13): sequential searches, session cache, Cancel / Continue. |
 | `src/lib/fracturedArchive/raidTime.ts`, `src/app/components/bestSetup/RoutesView.tsx` | Phase 16: raid time model (routes, encounters, kit evaluator, `RAID_TIME_DEFAULTS`) and the Routes tab. |
+| `src/lib/fracturedArchive/planner.ts`, `src/app/components/bestSetup/PlanView.tsx` | Phase 17: raid kit planner (candidates, partial switches, DPS matrix, slot accounting, optimiser, inventory grid) and the Plan tab. |
+| `src/tests/lib/fracturedArchive/Planner.test.ts`, `scripts/verifyPhase17.mjs` | Phase 17 tests (slot accounting, toy optima vs brute force, partial switches, reduced-pool plans, determinism, cancellation) and the Playwright check (`docs/screenshots/phase17-*.png`). |
 | `src/tests/lib/fracturedArchive/RaidTime.test.ts`, `scripts/verifyPhase16.mjs` | Phase 16 tests (hand-computed times with toy kits, drains per encounter, argmin, monotonicity) and the Playwright check (`docs/screenshots/phase16-*.png`). |
 | `src/tests/lib/fracturedArchive/Presets.test.ts` | Item names resolve, players are valid, the view's numbers equal a direct `PlayerVsNPCCalc`, ranking order, drain spec counts. |
 | `scripts/verifyBestSetup.mjs` | Playwright check of the Summary tab since phase 13 (60 cells since phase 15, Cancel / Continue, cache on tab switch, icons, load a cell; `docs/screenshots/phase13-summary.png`). |

@@ -19,12 +19,14 @@ import SpecPlanPanel from '@/app/components/bestSetup/SpecPlanPanel';
 import SearchView from '@/app/components/bestSetup/SearchView';
 import SummaryView from '@/app/components/bestSetup/SummaryView';
 import RoutesView from '@/app/components/bestSetup/RoutesView';
+import PlanView from '@/app/components/bestSetup/PlanView';
 import { targetImageUrl } from '@/lib/fracturedArchive/loadoutIcons';
 import { ItemIcon } from '@/app/components/bestSetup/ItemIcons';
 
 // Fractured Archive "Best setup" view (phase 8; "Search" tab phase 9). Phase 12: Search is the default tab; item icons.
 // Phase 13: the "Per boss" preset table was removed (the presets still seed the search and give the "vs best preset"
 // column); Summary is search-based (SummaryView.tsx). Phase 16: "Routes" tab (RoutesView.tsx, raid time model).
+// Phase 17: "Plan" tab (PlanView.tsx, kit planner), second tab: Search, Plan, Routes, Summary.
 // Docs: docs/BEST_SETUP.md.
 
 const POTION_OPTIONS = (Object.keys(PotionMap) as unknown as string[])
@@ -211,7 +213,7 @@ const AssumptionsBox: React.FC<{
 
 /** The searches run in their own worker (src/worker/searchWorker.ts), so the main calculator isn't affected. */
 const BestSetup: React.FC = () => {
-  const [mode, setMode] = useState<'summary' | 'search' | 'routes'>('search');
+  const [mode, setMode] = useState<'summary' | 'search' | 'routes' | 'plan'>('search');
   const [targetKey, setTargetKey] = useState(BEST_SETUP_TARGETS[0].key);
   const [phase, setPhase] = useState<string | undefined>(undefined);
   const [drain, setDrain] = useState<DrainStateId>('team');
@@ -258,8 +260,9 @@ const BestSetup: React.FC = () => {
           <h2 className="font-serif text-lg tracking-tight font-bold dark:text-white">Best setup · The Fractured Archive</h2>
           <div className="flex gap-1">
             <button type="button" className={tabClass(mode === 'search')} onClick={() => setMode('search')} data-testid="search-tab">Search</button>
-            <button type="button" className={tabClass(mode === 'summary')} onClick={() => setMode('summary')} data-testid="summary-tab">Summary</button>
+            <button type="button" className={tabClass(mode === 'plan')} onClick={() => setMode('plan')} data-testid="plan-tab">Plan</button>
             <button type="button" className={tabClass(mode === 'routes')} onClick={() => setMode('routes')} data-testid="routes-tab">Routes</button>
+            <button type="button" className={tabClass(mode === 'summary')} onClick={() => setMode('summary')} data-testid="summary-tab">Summary</button>
           </div>
         </div>
         <div className="p-4 flex flex-col gap-3 dark:text-body-200">
@@ -319,6 +322,8 @@ const BestSetup: React.FC = () => {
             />
           )}
           {mode === 'summary' && <SummaryView assumptions={assumptions} />}
+          {mode === 'plan' && drainButtons}
+          {mode === 'plan' && <PlanView assumptions={assumptions} drain={drain} />}
           {mode === 'routes' && drainButtons}
           {mode === 'routes' && <RoutesView assumptions={assumptions} drain={drain} />}
 
