@@ -142,13 +142,13 @@ export const DRAIN_STATES: { id: DrainStateId, label: string, description: strin
     label: 'Solo',
     description: 'My specs within my own spec energy (100% + 10% per 30 s of the fight length, 15 s with Lightbearer), '
       + 'with the weapons ticked under "My specs"; hit chances from the calculator. Ranked at the Defence floor if '
-      + 'P(floor) ≥ the threshold, else at the expected Defence (rounded up); Ayak = specs × expected damage',
+      + 'P(floor) ≥ the threshold, else at the nearest reachable Defence to the expected value; Ayak = specs × expected damage',
   },
   {
     id: 'team',
     label: 'Team',
     description: 'The team\'s carriers each spec twice at the start (first round); ranked at the Defence floor if '
-      + 'P(floor from the first round) ≥ the threshold, else at the expected Defence (rounded up); Ayak: magic def 0 '
+      + 'P(floor from the first round) ≥ the threshold, else at the nearest reachable Defence to the expected value; Ayak: magic def 0 '
       + 'if P(0) ≥ the threshold, else bonus − expected drain',
   },
 ];
@@ -162,7 +162,7 @@ export interface DrainState {
   plan: string;
   /** P(Defence floor) of the plan (undefined for None). */
   pFloor?: number;
-  /** Energy label of the plan (Solo: of the full plan the carried weapons need). */
+  /** Energy label of the Solo plan (of the full plan the carried weapons need); undefined for None / Team. */
   label?: PlanLabel;
   defAfter: number;
   magicDefAfter: number;
@@ -176,7 +176,7 @@ const withInputs = (m: Monster, inputs: Partial<Monster['inputs']>): Monster => 
 /**
  * Phase 14: Solo = `soloSpecPlan` (the user's carried weapons within their own energy budget), Team =
  * `teamSpecPlan` (the carriers' first round). Both rank at the floor if P(floor) ≥ `floorThreshold`, else at the
- * expected Defence rounded up to a reachable state; see teamSpecs.ts. The calculator's Max-drain buttons (drains.ts)
+ * nearest reachable Defence to the expected value; see teamSpecs.ts. The calculator's Max-drain buttons (drains.ts)
  * are unchanged.
  */
 export const drainStateFor = (m: Monster, id: DrainStateId, assumptions: BestSetupAssumptions): DrainState => {
@@ -214,7 +214,6 @@ export const drainStateFor = (m: Monster, id: DrainStateId, assumptions: BestSet
       });
       reductions = p.reductions;
       pFloor = p.firstRound.defence.pFloor;
-      label = p.label;
       plan = `Team (${assumptions.partySize}): ${p.text}`;
       specs = `first round ${describeAttempts(p.firstRound.attempts)} (P floor ${formatProbability(pFloor)})`;
     }

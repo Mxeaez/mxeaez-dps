@@ -467,7 +467,6 @@ export interface TeamSpecPlan {
   firstRound: { attempts: PlannerWeapon[], defence: DefenceOutcome, ayak: AyakOutcome };
   /** Whole fight: every carrier's budget, first round first. */
   fight: { attempts: number, expectedAttemptsToFloor: number, pFloor: number };
-  label: PlanLabel;
   reductions: DefenceReductions;
   text: string;
 }
@@ -499,7 +498,6 @@ export const teamSpecPlan = (model: DrainModel, input: TeamSpecInput): TeamSpecP
   const fightSeq = [...defAttempts, ...later];
   const fight = expectedAttemptsToFloor(model, fightSeq);
 
-  const energy = firstAttempts.reduce((a, w) => a + model.energy[w], 0);
   const noHit = carriers.filter((c) => !model.canHit[c.weapon]).map((c) => LABELS[c.weapon]);
   const parts = [
     `first round ${describeAttempts(firstAttempts)} → ${describeDefence(model, defence, defAttempts.length > 0)}`,
@@ -509,8 +507,12 @@ export const teamSpecPlan = (model: DrainModel, input: TeamSpecInput): TeamSpecP
       ? 'Ayak: magic def already ≤ 0'
       : `Ayak P(magic def 0) ${pct(ayak.pZero)}, ≈ ${ayak.expectedDrain.toFixed(0)} drained → magic def ${ayak.magicDefAfter}`);
   }
+  // The expected attempt count is capped at the attempts available, so it is only shown when the first round already
+  // reaches the floor reliably; otherwise the whole-fight P(floor) is shown instead.
   if (defAttempts.length && defence.bestCaseDef <= model.floor) {
-    parts.push(`whole fight: ${fightSeq.length} attempts, expected ${fight.expected.toFixed(1)} to the floor (P ${pct(fight.pWithin)})`);
+    parts.push(defence.pFloor >= threshold
+      ? `expected attempts to the floor: ${fight.expected.toFixed(1)}`
+      : `whole fight (${fightSeq.length} attempts incl. regen): P(floor) ${pct(fight.pWithin)}`);
   }
   if (noHit.length) parts.push(`${[...new Set(noHit)].join(', ')} can't hit here`);
   if (input.carriers.length > input.partySize) parts.push(`only the first ${input.partySize} carriers count (party size)`);
@@ -519,7 +521,6 @@ export const teamSpecPlan = (model: DrainModel, input: TeamSpecInput): TeamSpecP
     carriers,
     firstRound: { attempts: firstAttempts, defence, ayak },
     fight: { attempts: fightSeq.length, expectedAttemptsToFloor: fight.expected, pFloor: fight.pWithin },
-    label: planLabel(energy, input.fightSeconds),
     reductions: countsToReductions(defence.rankedCounts, ayak.rankedDrain),
     text: parts.join('; '),
   };

@@ -3,6 +3,18 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 14 fixes — review follow-ups (2026-10-23)
+
+- ROADMAP round-2 decision: Solo = budget + carried weapons; Team computed from the carriers (floor when P ≥ 95%, else
+  nearest reachable Defence to the expected value); default 6-man carriers maul 2 / Tonalztics 2 / Ayak 1.
+- UI wording: "nearest reachable Defence to the expected value" (was "rounded up"). Team plans no longer carry a
+  solo / team-only label (it summed all carriers as one player); Solo keeps it.
+- Team text: expected attempts to the floor only when the first round reaches it with P ≥ threshold, else the
+  whole-fight P(floor) (the capped count read as if the floor were reached).
+- Docs: BEST_SETUP notes a single Ayak carrier won't reach 0 on high-magic-def bosses; DATA_SOURCES notes the wiki
+  conflict on the Accursed sceptre (table "if damage is dealt" vs item page "regardless"; item page followed).
+- `yarn test` 993 pass / 4 skipped, lint and tsc clean; verifyPhase14.mjs all OK.
+
 ## Phase 14 — Spec & drain model (2026-10-23)
 
 - New `src/lib/fracturedArchive/specs.ts` (pure): `SPEC_WEAPONS` (Elder maul, DWH, BGS, Tonalztics, Eye of Ayak,

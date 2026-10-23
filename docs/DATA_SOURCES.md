@@ -491,6 +491,10 @@ Saturated heart, best non-defensive style; one-handed weapons get Avernic defend
   "If the roll is from a player, then 0s are pushed up to 1"), so "lands on damage" only differs from "lands on an
   accurate roll" under a flat damage reduction applied afterwards — Bork's flat armour 8 (melee / ranged) and magic
   resistance 2. E.g. Bork DWH: accuracy 69.7%, drain lands 62.1%.
+- **Accursed sceptre, wiki-internal conflict**: the Special attacks table says "If damage is dealt, the target's
+  Defence and Magic are reduced by up to 15%", the item page says "upon a successful hit ... regardless of the damage
+  inflicted" (citing Mod Ash). The code follows the item page (`landsOn: 'accurate'`); the planners don't use the
+  accursed sceptre (only the phase 13 fallback in drains.ts, which assumes it lands). **Unverified.**
 - **Tonalztics rounding**: upstream rounds 1/8 Magic down; the wiki Strategies table matches rounding up (see *Drain
   presets*) — still **unverified**.
 - **Energy**: 10% per 30 s ([Special attacks](https://oldschool.runescape.wiki/w/Special_attacks): "regenerates at a

@@ -134,6 +134,8 @@ export const SPEC_WEAPONS: Record<SpecWeapon, SpecWeaponDef> = {
     drain: 'accursed',
     modifiers: '+50% accuracy and max hit; Defence and Magic −15% on a successful hit regardless of damage, no stacking',
     wiki: 'https://oldschool.runescape.wiki/w/Accursed_sceptre#Special_attack',
+    unverified: 'Wiki conflict: the Special attacks table says "if damage is dealt", the item page "regardless of the '
+      + 'damage" (Mod Ash); the item page is followed. Not used by the planners.',
   },
 };
 

@@ -111,8 +111,14 @@ form (e.g. "first round 4× Elder maul + 4× Tonalztics + 2× Ayak (P floor 99.5
   90 s) every boss is `team-only`: 2 maul attempts use the 130% and the Ayak specs don't fit — the line says so. A floor
   the carried weapons can't reach is shown as a partial drain, e.g. The Smorks: "2× Elder maul → expected Def 145
   (floor 0 not reachable; best case Def 93) → ranked at Def 143".
-- **Team** (`teamSpecPlan`): exact P(floor from the first round), expected Defence, Ayak P(0); the "whole fight" part
-  adds each carrier's later attempts (regen, Lightbearer) and gives the expected attempts to reach the floor.
+- **Team** (`teamSpecPlan`): exact P(floor from the first round), expected Defence, Ayak P(0). When the first round
+  reaches the floor with P ≥ the threshold, the line adds the expected attempts to the floor; otherwise it shows the
+  whole-fight P(floor) (each carrier's later attempts from regen / Lightbearer). (The expected attempt count is capped
+  at the attempts available, so it is not shown when the floor is unlikely.) Team plans have no solo / team-only
+  label (summing every carrier's energy as one player's would always say team-only); Solo plans keep theirs.
+- **Ayak with the default single carrier** (2 specs ≈ 40 damage) won't reach magic defence 0 on high-magic-defence
+  bosses (Bork +300, The Smorks +400, Xarth +205, Ocellus P3 +200): the Team state then uses bonus − expected drain.
+  The carrier table's Ayak row shows how many carriers 0 needs.
 - **Carrier table** (`recommendCarriers`, under the plan): P(floor from the first round) for 1..party-size carriers of
   each weapon, Ayak P(magic def 0), and the fewest carriers (one weapon, or a hammer + Tonalztics/BGS pair) reaching
   95%, e.g. "6-man Bork: 1 Elder maul → 59%, 2 Elder maul → 96%"; "6-man The Smorks: 4 Tonalztics → 84%, 5 Tonalztics

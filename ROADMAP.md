@@ -102,7 +102,7 @@ Requested after the site went live (2026-10-23). Same workflow per phase as abov
 - Raids are added in the order ToA → CoX → ToB, as tabs on one page.
 - Planner objective = total raid time: Σ HP ÷ DPS over the route's bosses / phases, DPS time only.
 - The planner optimises the user's own kit for the user's DPS; the team matters only for drains.
-- The user picks which spec weapons they carry; Solo drains are limited by the user's spec-energy budget; Team drains assume the team reaches the floor.
+- The user picks which spec weapons they carry; Solo drains are limited by the user's spec-energy budget and carried weapons; Team drains are computed from the carriers (floor when P(floor) ≥ 95%, otherwise the nearest reachable Defence to the expected value). Default carriers for a 6-man: Elder maul 2, Tonalztics 2, Ayak 1 (phase 14).
 - Supplies are entered as slot counts by type; the planner shows free slots.
 - Routes are compared (Guardian and Ocellus fixed; the middle bosses vary), so Ezekiel, Moia and Dagon'hai must be modelled.
 - Bork and the Smorks are killed evenly, not Bork first.

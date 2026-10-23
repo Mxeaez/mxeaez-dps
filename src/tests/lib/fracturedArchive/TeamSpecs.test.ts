@@ -222,7 +222,6 @@ describe('real bosses: states map back to the calculator', () => {
     expect(plan.firstRound.defence.pFloor).toBeLessThan(1);
     expect(plan.reductions.elderMaul + plan.reductions.tonalztic).toBeGreaterThan(0);
     expect(plan.reductions.ayak).toBeGreaterThan(30);
-    expect(plan.label).toBe('team-only');
     // carriers beyond the party size don't count
     const small = teamSpecPlan(m, {
       partySize: 2, carriers: carriersFromCounts({ elderMaul: 2, tonalztics: 2 }), fightSeconds: 90,
