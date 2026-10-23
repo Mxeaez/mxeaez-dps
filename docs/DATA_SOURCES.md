@@ -447,6 +447,9 @@ No module: nothing on the wiki changes the damage a player deals beyond the info
 
 ### Phase 16 inputs: HP per encounter (infobox, party-size scaling unverified, C1)
 
+Implemented in phase 16 (`src/lib/fracturedArchive/raidTime.ts`, `encounterPlan`; model and settings in
+docs/BEST_SETUP.md, *Routes tab*; assumptions in UNVERIFIED.md group D).
+
 | Encounter | HP to deal | Not modelled |
 |---|---|---|
 | Archive Guardian | 550 | flying shield ("1490 in 6-scale", UNVERIFIED C4) |

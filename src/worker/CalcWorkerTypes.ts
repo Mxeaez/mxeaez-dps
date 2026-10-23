@@ -7,6 +7,9 @@ import {
 } from '@/lib/Comparator';
 import { BestSetupAssumptions } from '@/lib/fracturedArchive/presets';
 import { GearSearchProgress, GearSearchQuery, GearSearchResult } from '@/lib/fracturedArchive/search';
+import {
+  RouteComparisonProgress, RouteComparisonRequest, RouteComparisonResult,
+} from '@/lib/fracturedArchive/raidTime';
 
 /**
  * Requests
@@ -19,6 +22,7 @@ export enum WorkerRequestType {
   COMPUTE_TTK,
   COMPARE,
   BEST_SETUP_SEARCH, // Fractured Archive gear search; own worker (src/worker/searchWorker.ts), sends progress messages
+  RAID_ROUTES, // Fractured Archive route comparison (phase 16); same worker and protocol as BEST_SETUP_SEARCH
 }
 
 export interface WorkerRequest<T extends WorkerRequestType> {
@@ -79,8 +83,13 @@ export interface BestSetupSearchRequest extends WorkerRequest<WorkerRequestType.
   },
 }
 
+export interface RaidRoutesRequest extends WorkerRequest<WorkerRequestType.RAID_ROUTES> {
+  data: RouteComparisonRequest,
+}
+
 export type CalcRequestsUnion =
   BestSetupSearchRequest |
+  RaidRoutesRequest |
   ComputeBasicRequest |
   ComputeReverseRequest |
   CompareRequest |
@@ -129,8 +138,20 @@ export interface BestSetupSearchProgressMessage {
   progress: GearSearchProgress,
 }
 
+export interface RaidRoutesResponse extends WorkerResponse<WorkerRequestType.RAID_ROUTES> {
+  payload: RouteComparisonResult,
+}
+
+/** Interim message of a RAID_ROUTES request. */
+export interface RaidRoutesProgressMessage {
+  type: WorkerRequestType.RAID_ROUTES,
+  sequenceId: number,
+  progress: RouteComparisonProgress,
+}
+
 export type CalcResponsesUnion =
   BestSetupSearchResponse |
+  RaidRoutesResponse |
   ComputeBasicResponse |
   ComputeReverseResponse |
   CompareResponse |

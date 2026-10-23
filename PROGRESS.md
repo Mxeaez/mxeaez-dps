@@ -3,6 +3,36 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 16 — Raid time model + route comparison (2026-10-23)
+
+- New `src/lib/fracturedArchive/raidTime.ts` (pure): `ROUTE_SLOTS` → `enumerateRoutes()` (8 routes), `encounterPlan`
+  per encounter, `raidTime(route, kit, assumptions)`, `compareRoutes` (each encounter once; fastest = argmin),
+  `RAID_TIME_DEFAULTS` (AG shield 1490 @ 6-scale at Flying DPS, 70% grounded / 30% flying; Bork 4 quarters at armour
+  8/10/12/14 + stun uptime 0 + Smorks 600; Ezekiel 3000, Moia 785, Dreadnoth 2100, Xarth 2600, Dagon'hai 3207;
+  Ocellus P1 2500 (walking 0), P2 length 0 with 50% carry-over, P3 25% last quadrant at the Deflect that blocks the
+  kit's best style). Drains per encounter: a first pass without drains gives the fight length for the drain planner,
+  then one drained pass. HP via the calculator's party scaling (`partyHpFactor` hook; AG shield relative to 6).
+  Real kit: `createKitEvaluator` (memoised per loadout × style × target × phase × drain reductions) over preset,
+  per-phase search-row and calculator-loadout members; `computeRouteComparison` runs the per-phase searches.
+- Worker: `WorkerRequestType.RAID_ROUTES` in the search worker (progress + cancel by terminate),
+  `startRouteComparison` client. Upstream edit: `CalcWorkerTypes.ts` +21 (UPSTREAM_MERGE.md updated).
+- UI: "Routes" tab on `/best-setup` (`RoutesView.tsx`): drain buttons, "Assumptions (time model)" box (7 settings),
+  kit = best search result per style (default melee + ranged + magic) / presets / current calculator loadouts; table
+  of the 8 routes with total and per-encounter seconds, fastest highlighted, "+" for the per-phase breakdown. Session
+  cache of the searches, so a setting change only re-times.
+- Tests: new `RaidTime.test.ts` (18): 8 routes with the right members, hp figures, hand-computed seconds for every
+  encounter (Bork quarters 375/DPS8 + … + 600/DPS Smorks, stun share, AG split, Dagon'hai 3207, Ocellus P2 carry-over
+  5250 − 150, last-quadrant deflect choice), infinite time when nothing hits, drains planned with each encounter's
+  first-pass length, route total = Σ encounters and argmin, monotonicity (better DPS never slower; a bigger kit never
+  slower; Team never slower than None), party-size hook, real preset kit = direct `evaluateLoadout`, cached search rows
+  and calculator loadouts. `yarn test` 1042 pass / 4 skipped; `yarn lint`, `tsc --noEmit` clean.
+- Playwright: new `scripts/verifyPhase16.mjs` all OK (8 routes, one fastest = lowest total, per-phase rows on expand,
+  Bork stun 30% → Bork + Smorks 195.9 → 178.3 s with AG unchanged; first run 16 searches in ~10 s). Screenshots
+  `docs/screenshots/phase16-routes.png`, `-expanded.png`, `-bork-stun.png`.
+- Headline (default kit, Team drains, 6-man): fastest AG → Bork + Smorks → Moia → Xarth → Ocellus 21:49.5 (181.2 /
+  195.9 / 72.0 / 186.8 / 673.5 s); all 8 between 21:49.5 and 23:43.1 (docs/BEST_SETUP.md, *Routes tab*).
+- Unverified: UNVERIFIED.md group D (D1–D9) for every time-model assumption, with in-game checks.
+
 ## Phase 15 fixes — review follow-ups (2026-10-23)
 
 - Docs only: Moia drain wording made precise (Max-drain buttons = 2 Tonalztics hits; Solo with the default Elder maul

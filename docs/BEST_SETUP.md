@@ -1,15 +1,70 @@
-# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14)
+# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14; Routes tab phase 16)
 
 `/best-setup` (dev: http://localhost:3001/osrs-dps/best-setup; "Best setup" button in the top bar, "Calculator" leads
 back). Tabs, in order: **Search** (the default, phase 9/12, see the end of this file) searches a pool of end-game items
 per slot for setups no preset has and runs automatically; **Summary** (phase 13) shows the top search result for
-every boss/phase; both under three drain states. The page always opens on Search (the last-used tab is deliberately
-not remembered).
+every boss/phase; both under three drain states; **Routes** (phase 16, see *Routes tab* below) compares the DPS-only
+clear time of the 8 raid routes for a kit. The page always opens on Search (the last-used tab is deliberately not
+remembered).
 
 **Phase 13: "Per boss" removed.** The phase 8 preset ranking tab is gone (UI code, the calc-worker `BEST_SETUP`
 request and its handler deleted). The presets stay: they seed the search and give the "vs best preset" column / the
 Summary's "best preset" reference; `computeBestSetup` / `evaluatePreset` stay as tested library code
 (`Presets.test.ts`).
+
+## Routes tab (phase 16: raid time model)
+
+Code: `src/lib/fracturedArchive/raidTime.ts` (pure, tested in `src/tests/lib/fracturedArchive/RaidTime.test.ts`); UI
+`src/app/components/bestSetup/RoutesView.tsx`; runs in the search worker (`WorkerRequestType.RAID_ROUTES`,
+`computeRouteComparison`). It is the objective function for the phase 17 planner.
+
+**API.** `raidTime(route, kit, assumptions, cache?) → RouteTime` and `compareRoutes(kit, assumptions) → { routes,
+fastest }`, where a route comes from `enumerateRoutes()` (the cartesian product of `ROUTE_SLOTS`: AG; Ezekiel | Bork +
+Smorks; Moia | Dreadnoth; Dagon'hai | Xarth; Ocellus → 8 routes), a kit is anything with `best(phaseQuery) →
+{ loadout, style, dps, drain }` (the real one: `createKitEvaluator(loadouts, bestSetupAssumptions)`), and
+`assumptions = { partySize, drain, settings, fallbackFightSeconds }` (`raidTimeAssumptionsFrom`). The result is per
+route → per encounter → per phase: damage, chosen loadout + style, DPS, seconds; plus totals and the fastest route
+(argmin; ties keep the first; −1 when no route is finite).
+
+**Model.** Time = Σ over encounters and phases of damage ÷ DPS, with the kit's best loadout + style per phase (switching
+is free). DPS time only: no puzzles, travel, boss invulnerability, healing or adds. A phase that nothing in the kit can
+damage is infinite (shown ∞; e.g. a melee-only kit on the AG shield). Settings (`RAID_TIME_DEFAULTS`, editable in the
+"Assumptions (time model)" box, all **unverified**, UNVERIFIED.md group D):
+
+| Encounter | Phases (damage → DPS of) |
+|---|---|
+| Archive Guardian | flying shield `agShieldHp` 1490 (wiki "1490 health shield in 6-scale", scaled by the party-size table relative to 6) → Flying; 550 × `agGroundedFraction` 70% → Grounded; the remaining 30% → Flying (it flies permanently below 30%). The guardian charges that do ~40% of the shield are not counted (pessimistic) |
+| Bork + Smorks | killed evenly: Bork's 1500 in four quarters at armour 8 / 10 / 12 / 14 (each × (1 − `borkStunUptime`)), + 1500 × `borkStunUptime` (default 0) at Stunned; Smorks 600 |
+| Ezekiel / Moia / Dreadnoth / Xarth | 3000 / 785 / 2100 (jellies ignored) / 2600 |
+| Dagon'hai trio | `dagonhaiEncounterDamage(640)` = 3207 at Shielded |
+| Ocellus | P1 2500 × (1 − `ocellusWalkingFraction`, default 0) at a corner, the rest at Walking; P2 lasts `ocellusP2Seconds` (default 0 = ignored) and the damage dealt to the Blade in that time × `ocellusP2CarryOver` 50% comes off P3's 5250; P3 remainder × (1 − `ocellusLastQuadrantFraction` 25%) at Quadrants 1-3, the rest at the Deflect option that is worse for the kit (= the one blocking the kit's best style; for a magic-best kit, where magic is never deflected in our model, the lower of the two) |
+
+- **Drains** (None / Solo / Team = the drain buttons above the tab): per encounter, a first pass without drains gives
+  the encounter's time; that (rounded) is the fight length for `drainModel` / the Solo spec budget, and the encounter is
+  evaluated again with that drain state (one fixed-point iteration). Team plans don't depend on the length (first
+  round), Solo ones do (more energy in long fights). The second pass is shorter, so a Solo plan gets slightly more energy
+  than the drained fight would give.
+- **Party size**: every hp figure is the calculator's party-scaled hp (`FRACTURED_ARCHIVE_HP_SCALING`, identity today);
+  the AG shield uses the same factor relative to 6 (`partyHpFactor`). Filling that table (phase 22) updates every time.
+- **Kit** (UI): one or more of (a) the **best search result per style** (melee / ranged / magic ticked by default):
+  one all-style gear search per phase target the model queries (16 at the default settings), under the selected drain
+  state, keeping each style's best row; each row is offered on its own phase only, with its own style (an upper bound:
+  a different loadout per phase); (b) **presets** (any of `presets.ts`, each tries its styles / spells per phase);
+  (c) **current calculator loadouts** (read from the calculator's saved session; used as they are: own style, spell,
+  prayers, potions; equipment bonuses recomputed per monster).
+- **Cost**: evaluations are memoised per (loadout, style, target, phase, drain reductions), so the 8 routes share the
+  8 encounters; the default kit needs ~90 evaluations after the searches. Searches are cached in memory per
+  assumptions + drain + phase, so a time-model setting or kit change only re-times (about a second); the first run
+  takes ~10–15 s (16 searches). Changes are debounced (500 ms); **Cancel** stops the run.
+- **Table**: the 8 routes with total (m:ss.s) and per-encounter seconds (boss icons), the fastest highlighted with a
+  "fastest" badge; "+" expands the per-phase breakdown (damage, loadout · style, DPS, seconds, drain plan, and the fight
+  length the drains were planned for).
+
+Headline (default assumptions + kit, Team drains, 6-man, 2026-10-23, `scripts/verifyPhase16.mjs`): fastest **AG → Bork +
+Smorks → Moia → Xarth → Ocellus, 21:49.5** (AG 181.2 s, Bork + Smorks 195.9, Moia 72.0, Xarth 186.8, Ocellus 673.5);
+slowest AG → Ezekiel → Dreadnoth → Dagon'hai → Ocellus 23:43.1. Per slot: Bork + Smorks beats Ezekiel by 17.6 s, Moia
+beats Dreadnoth by 63.0 s, Xarth beats the Dagon'hai by 33.1 s. Absolute seconds are only as good as the hp figures
+(party scaling unverified) and the settings.
 
 ## Summary tab (phase 13)
 
@@ -50,6 +105,8 @@ skipped by the deploy).
 | `src/lib/fracturedArchive/specs.ts`, `teamSpecs.ts` | Phase 14: spec mechanics / hit chances per weapon and energy budget; exact solo / team planners and the carrier recommendation (pure). `loadout.ts`: player assembly split out of bestSetup.ts (re-exported). |
 | `src/app/components/bestSetup/SpecPlanPanel.tsx` | Phase 14: plan text, P(floor) and carrier table under the selectors. |
 | `src/app/components/bestSetup/SummaryView.tsx` | Summary tab (phase 13): sequential searches, session cache, Cancel / Continue. |
+| `src/lib/fracturedArchive/raidTime.ts`, `src/app/components/bestSetup/RoutesView.tsx` | Phase 16: raid time model (routes, encounters, kit evaluator, `RAID_TIME_DEFAULTS`) and the Routes tab. |
+| `src/tests/lib/fracturedArchive/RaidTime.test.ts`, `scripts/verifyPhase16.mjs` | Phase 16 tests (hand-computed times with toy kits, drains per encounter, argmin, monotonicity) and the Playwright check (`docs/screenshots/phase16-*.png`). |
 | `src/tests/lib/fracturedArchive/Presets.test.ts` | Item names resolve, players are valid, the view's numbers equal a direct `PlayerVsNPCCalc`, ranking order, drain spec counts. |
 | `scripts/verifyBestSetup.mjs` | Playwright check of the Summary tab since phase 13 (60 cells since phase 15, Cancel / Continue, cache on tab switch, icons, load a cell; `docs/screenshots/phase13-summary.png`). |
 
@@ -70,8 +127,8 @@ The view tries every listed style (and spell) per preset and shows the one with 
 - Prayers: Piety / Rigour / Augury; "Zeal instead of Piety" switches melee to the raid prayer.
 - Elemental fragments: on for magic presets (all four elements, +2 base max hit to elemental spells). Only the Kodai
   preset casts spells, so only it is affected.
-- **Fight length** 90 s (phase 14): the spec-energy budget's fight length, one rough value for every boss until the
-  phase 16 time model replaces it. **Floor at P ≥** 95%: when a drain plan counts as reaching the floor.
+- **Fight length** 90 s (phase 14): the spec-energy budget's fight length for Search / Summary (one rough value for
+  every boss). The Routes tab (phase 16) uses each encounter's own undrained time instead (90 s only when it can't kill). **Floor at P ≥** 95%: when a drain plan counts as reaching the floor.
 - **My specs** (phase 14, the Solo drain state): `[x] Elder maul [ ] DWH [ ] BGS [ ] Tonalztics`, `Ayak × 2` (with
   "≈ X magic def drained on <boss>" next to it = specs × hit chance × expected damage on a hit, from the calculator),
   `[ ] Lightbearer`, "Energy first to: Defence drains / Ayak".
