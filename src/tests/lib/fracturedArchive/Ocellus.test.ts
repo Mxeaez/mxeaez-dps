@@ -8,6 +8,7 @@ import {
   getTestPlayer,
 } from '@/tests/utils/TestUtils';
 import { scaleMonster } from '@/lib/MonsterScaling';
+import PlayerVsNPCCalc from '@/lib/PlayerVsNPCCalc';
 import {
   MONSTER_PHASES_BY_ID,
   OCELLUS_P1_IDS,
@@ -206,7 +207,9 @@ describe('demonbane effectiveness', () => {
 });
 
 describe('defence floors through drains', () => {
-  test('floor table: P1 129, P2 0 (unverified, page says 150), P3 150', () => {
+  // P2 floor 0 verified: https://secure.runescape.com/m=news/the-fractured-archive---out-today?oldschool=1 "no cap on
+  // their Defence Reduction, meaning their Defence can be reduced to 0: ... The Blade (Ocellus P2)"
+  test('floor table: P1 129, P2 0 (verified, news post), P3 150', () => {
     expect(getFracturedArchiveDefenceFloor(p1())).toBe(129);
     expect(getFracturedArchiveDefenceFloor(p2())).toBe(0);
     expect(getFracturedArchiveDefenceFloor(p3())).toBe(150);
@@ -256,6 +259,11 @@ describe('phase options', () => {
     expect(meleeDps(p1({ phase: corner }))).toBeGreaterThan(0);
     expect(meleeDps(p1({ phase: corner }))).toBe(meleeDps(p1()));
     expect(meleeDps(p1({ phase: walking }))).toBe(0);
+    const walkingMonster = p1({ phase: walking });
+    const blockedIssues = new PlayerVsNPCCalc(swordPlayer(walkingMonster, 'Emberlight'), walkingMonster).userIssues;
+    expect(blockedIssues.map((i) => i.message)).toContain('Ocellus is praying against this combat style.');
+    const cornerIssues = new PlayerVsNPCCalc(swordPlayer(p1(), 'Emberlight'), p1()).userIssues;
+    expect(cornerIssues.map((i) => i.message)).not.toContain('Ocellus is praying against this combat style.');
     expect(meleeDps(ocellus('Phase 1', { phase: OCELLUS_P1_WALKING_PHASE }, 16674))).toBe(0);
     expect(dps(p1({ phase: walking }), rcbPlayer)).toBe(dps(p1(), rcbPlayer));
     expect(dps(p1({ phase: walking }), maxMageShadow)).toBe(dps(p1(), maxMageShadow));

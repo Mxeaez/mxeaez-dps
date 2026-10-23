@@ -23,6 +23,7 @@ import { AttackDistribution, HitDistribution } from '@/lib/HitDist';
 import { Spellement } from '@/types/Spell';
 import { isImmuneToSpell } from '@/lib/fracturedArchive/immunities';
 import { getFracturedArchiveDemonbaneVulnerability } from '@/lib/fracturedArchive/demonbane';
+import { isBlockedByOcellusPrayer } from '@/lib/fracturedArchive/ocellus';
 
 export interface CalcOpts {
   loadoutName?: string,
@@ -831,6 +832,9 @@ export default class BaseCalc {
 
     if (isImmuneToSpell(this.monster, this.player.spell)) {
       this.addIssue(UserIssueType.SPELL_WRONG_MONSTER, 'The selected monster is immune to this spell.');
+    }
+    if (isBlockedByOcellusPrayer(this.monster, this.player.style.type, this.isUsingMeleeStyle())) {
+      this.addIssue(UserIssueType.WEAPON_WRONG_MONSTER, 'Ocellus is praying against this combat style.');
     }
 
     // some weapons are only available to use against certain monsters

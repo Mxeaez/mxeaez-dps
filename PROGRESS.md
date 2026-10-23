@@ -3,6 +3,16 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 6 fixes — review follow-ups (2026-10-22)
+
+- P2 (The Blade) floor 0 now **verified** by the news post's hotfix list ("no cap on their Defence Reduction ...
+  The Blade (Ocellus P2)"); the Ocellus page's 150 is wrong for P2. Docs, code comment and test title updated.
+- P3 "Protect from Melee" hotfix = a P1 → P3 carry-over bug per the same post; correctly unmodelled.
+- DATA_SOURCES: tick-perfect dodge speed-up ("unconfirmed amount") makes last-quadrant rankings low-confidence;
+  magic-deflect resolution (Strategies over page body, still unverified).
+- On-screen warning "Ocellus is praying against this combat style." for a blocked style (BaseCalc, +4 lines; test).
+- `yarn test` 470 pass / 4 skipped; `yarn lint`, `tsc --noEmit` clean.
+
 ## Phase 6 — Ocellus P1/P2/P3 (2026-10-22)
 
 - Wiki re-read (Ocellus page, Strategies *Ocellus* incl. "Phase 4", The Blade, Demon (attribute), Dampen Melee,
@@ -28,7 +38,7 @@ verified, what's unverified / left for later.
 - `yarn test` 470 pass / 4 skipped; `yarn lint`, `tsc --noEmit` clean.
 
 Unverified / open: Deflect block strength (full block assumed) and whether magic is also deflected (page body vs
-Strategies); void explosion rounding; P2 floor 0 vs 150, hp and attributes; when the P3 Protect from Melee shows.
+Strategies); void explosion rounding; P2 hp and attributes; tick-perfect dodge attack speed (last quadrant).
 
 ## Phase 5 — Dreadnoth the Jellied, Jelly, Xarth (2026-10-22)
 

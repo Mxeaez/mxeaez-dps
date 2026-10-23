@@ -34,8 +34,8 @@ const DEFENCE_FLOORS: [ids: number[], floor: number][] = [
   [OCELLUS_P3_IDS, 150], // 250 * 0.6
   [EZEKIEL_IDS, 78], // 130 * 0.6
   [MOIA_IDS, 117], // 195 * 0.6
-  // unverified: the Ocellus page says 150 for phases 2 and 3, the Strategies table (and Gearscape) say The Blade
-  // can be drained to 0. We use 0, see docs/DATA_SOURCES.md.
+  // "no cap on their Defence Reduction ... The Blade (Ocellus P2)" (news post, see docs/DATA_SOURCES.md); the Ocellus
+  // page's "150 in phases 2 and 3" is wrong for P2
   [OCELLUS_P2_IDS, 0],
   [THE_SMORKS_IDS, 0],
   [DREADNOTH_IDS, 0],

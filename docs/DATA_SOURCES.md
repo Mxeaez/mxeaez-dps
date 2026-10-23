@@ -45,8 +45,13 @@ Common sources:
   is NPC-specific and lists a concrete drain sequence (looks empirical), while the page-body sentence reads as
   arithmetic applied to the infobox defence of both 250-defence versions. Keep the floor a per-monster constant so
   it is a one-line change if 150 turns out to be right.
+  **Resolved (phase 6 review, 2026-10-22): 0 is verified.** The official news post (https://secure.runescape.com/m=news/the-fractured-archive---out-today?oldschool=1,
+  hotfix section) says: "The following NPCs should have no cap on their Defence Reduction, meaning their Defence can
+  be reduced to 0: Dreadnoth, the Smorks, the Dagon'Hai Trio, The Blade (Ocellus P2)". The Ocellus page's "150 in
+  phases 2 and 3" is wrong for P2 (150 applies to P3 only).
 - Floors to use: Archive Guardian 156, Ezekiel 78, Bork 180, Moia 117, Xarth 102, Ocellus P1 129 / P3 150;
-  The Smorks, Dreadnoth, Jelly and Ocellus P2 0 (no cap; Jelly not in the table, assumed uncapped, **unverified**).
+  The Smorks, Dreadnoth, Jelly and Ocellus P2 0 (no cap; P2 verified by the news post above; Jelly not in the table or
+  the news list, assumed uncapped, **unverified**).
 - Practice mode lets the boss be started at a chosen phase (raid page) — irrelevant to stats.
 - Monster images in `cdn/monsters/` are committed, but the app loads images from the upstream CDN
   (`getCdnImage` in `src/utils.ts` → `tools.runescape.wiki/osrs-dps/cdn/`), where the raid images don't exist yet, so
@@ -305,12 +310,10 @@ Mechanics (page body + Strategies → *Ocellus*):
   *Phase 1*). Demon (scorching bow can root).
 - P2: only 50% of damage carries over to P3 HP (see above) — DPS vs P2 should be halved for TTK purposes. *Phase 6:* hp kept at 5250, UI hint instead (table below).
 - P3: "Ocellus's Protect from Melee overhead icon will now properly appear in phase 3" (page *Changes*, 21 Oct
-  hotfix) refers to **Ocellus's own prayer**, i.e. he prays against melee in P3, which would make melee loadouts
-  deal 0 (or reduced) damage against him. The wiki is unclear: the same phase is described as a melee-tank phase with
-  melee attacks being "flicked" (Strategies → *Phase 3*, "The correct timing for flicking melee attacks"), which may
-  mean the player flicks Protect from Melee against his attacks, or that he only prays melee at times. Phase 6 should
-  treat "Ocellus praying melee in P3" as a toggle/unknown and not assume melee is always blocked or never blocked
-  (**unverified**). *Phase 6:* not modelled (no option), see the phase 6 table below.
+  hotfix). *Resolved (phase 6 review):* the news post (https://secure.runescape.com/m=news/the-fractured-archive---out-today?oldschool=1) lists it as a bug: "The boss'
+  Protect from Melee can carry over from phase 1 into phase 3, but the overhead icon is not visible, leading to some
+  players suggesting there might be an accuracy bug." So it is a P1 → P3 carry-over bug that was hotfixed, not a P3
+  mechanic; P3 is correctly left without a Protect from Melee option.
 - P3 "Untether...": after a number of special attacks Ocellus floats in the air and "is unable to be reached by melee
   attacks" until he slams down (Strategies → *Phase 3*) — melee uptime in P3 is below 100%.
 - P3 other: Censers: Bandosian = next melee hit is a max
@@ -344,15 +347,15 @@ tests `src/tests/lib/fracturedArchive/Ocellus.test.ts`, UI check `scripts/verify
 | P1 | scorching bow spec roots him (demon); "shield durability" bar | not DPS — not modelled |
 | P2 | The Blade: def 250 / magic 220, stab 150 / slash 120 / crush 10, magic 100, ranged 100/110/80 (infobox v2) | manual entry 100090 (phase 1) |
 | P2 | no attributes (infobox v2 blank) → no demonbane | no table entry; Emberlight/Arclight get no bonus (test) |
-| P2 | floor: page body 150 vs Strategies table / Gearscape 0 | **0** kept (**unverified**, reasons under *Raid-wide notes*) |
+| P2 | floor 0: news post "no cap on their Defence Reduction ... The Blade (Ocellus P2)" (Strategies table and Gearscape agree; the Ocellus page's 150 is wrong for P2) | **0**, verified |
 | P2 | timed (3 quadrant cycles), "half of all damage dealt" goes to P3's bar (Strategies) | **HP decision:** keep hp 5250 (option A). DPS shown is damage dealt to the Blade at its own defence, which is what ranks gear; effective P3 damage is DPS / 2. An "effective HP" of 10500 (option B) would only change TTK, which is meaningless on a timed phase either way. UI: "TTK n/a" tooltip next to Party size on P2 |
 | P3 | demon, 80% demonbane; floor 150; drains persist across quadrants (21 Oct hotfix) | demonbane 80; floor 150 (all phase options) |
-| P3 | "Protect from Melee overhead icon will now properly appear in phase 3" (hotfix) | **not modelled** — when he prays it is not stated (the Strategies page has a melee tank and melee DPS in P3; possibly during Untether). **unverified** |
+| P3 | "Protect from Melee overhead icon will now properly appear in phase 3" (hotfix); news post: "The boss' Protect from Melee can carry over from phase 1 into phase 3, but the overhead icon is not visible" | a hotfixed P1 → P3 carry-over bug, not a P3 mechanic — correctly not modelled |
 | P3 | Untether: floats, "unable to be reached by melee attacks" | positional — not modelled (melee uptime < 100%) |
 | P3 | Censers: Bandosian/Armadylean "appears to make the next melee/ranged attack max hit" | single-hit buff, upstream has no "next hit is max" option (only per-monster `ALWAYS_MAX_HIT_MONSTERS`) — not modelled |
 | P3 last quadrant ("Phase 4") | cycle Deflect Melee (floating) → Soul Split (landed) → Deflect Range → Soul Split (Strategies) | Phase options **Last quadrant: Deflect Melee**, **… Deflect Ranged** (that style deals 0), **… Soul Split** (no reduction; his healing from it is not modelled). Default **Quadrants 1-3** = no prayer |
 | P3 last quadrant | "While the explosions are occurring the boss takes 50% less damage" (Strategies + page body) | Phase options **… Deflect Melee + void explosions**, **… Deflect Ranged + void explosions**: each hitsplat `trunc(hit / 2)` (rounding **unverified**). Explosions happen during the deflect states (Strategies steps 1–3, 6–7) |
-| P3 last quadrant | tick-perfect dodges speed up the next attack ("unconfirmed amount") | not modelled |
+| P3 last quadrant | tick-perfect dodges speed up the player's next attack by an "unconfirmed amount" (Strategies + page body) | not modelled (amount unknown); last-quadrant DPS and rankings are therefore low-confidence, faster weapons may gain more than shown |
 | P3 last quadrant | void crystals always max-hit by standard ranged | adds, not Ocellus — not modelled |
 
 Unverified in the phase 6 model:
@@ -362,10 +365,13 @@ Unverified in the phase 6 model:
   players)", and the Ruinous Powers table lists the old beta Deflect as "reduces damage ... by 90%". We model a
   **full block** (0 damage), like other NPC protection prayers; P1's Protect from Melee likewise.
 - **Magic during deflects.** The Ocellus page body says he prays "reflect melee + mage" and "reflect range + mage";
-  the Strategies page names only Deflect Melee / Deflect Range (and links them). We follow the Strategies page, so
-  magic is never blocked. If the page body is right, magic would deal 0 in all four deflect options.
+  the Strategies page says he "will begin to use the [[Deflect Melee]] prayer" / "the [[Deflect Range]] prayer" with no
+  magic. Resolution (phase 6 review): the Strategies wording (rev 15377829, revised by several editors) is better
+  supported than the page-body sentence (a single edit, rev 15379023, in a *Mechanics* section flagged "Please move
+  information to The Fractured Archive/Strategies"), so magic is never blocked in the model. Still **unverified**; if
+  the page body is right, magic would deal 0 in all four deflect options.
 - Void explosion rounding (rounded down) and whether 1-damage hits become 0 (they do in the model).
-- P2 hp 5250 / no attributes / floor 0 (unchanged from phases 1–2).
+- P2 hp 5250 / no attributes (unchanged from phases 1–2). The P2 floor 0 is now verified (news post).
 
 ## Other raid monsters (came with the refresh, not checked field-by-field)
 
