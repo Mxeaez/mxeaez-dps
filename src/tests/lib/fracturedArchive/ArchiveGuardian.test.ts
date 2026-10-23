@@ -194,6 +194,10 @@ describe('Archive Guardian UI parity (scripts/verifyArchiveGuardian.mjs)', () =>
   // (src/app/components/player/equipment/EquipmentPresets.tsx), Kodai wand, autocast Fire Surge.
   // Max hit: 42% gear magic damage -> 24 + trunc(24 * 420 / 1000) = 34; + trunc(24 * 0.8) = 19 -> 53 (Flying),
   // + trunc(24 * 0.4) = 9 -> 43 (Grounded). DPS also includes the confliction gauntlets' accuracy effect.
+  // Attack roll (99 + 9) * (170 + 64) = 25272, + trunc(25272 * 0.8) = 45489 (Flying) / + trunc(25272 * 0.4) = 35380
+  // (Grounded); defence roll 50246. Confliction gauntlets (one-handed Kodai): acc = fang / (1 + fang - single)
+  // (BaseCalc.getConflictionGauntletsAccuracyRoll) = 0.52441 / 0.42011. Mean accurate hit (0 -> 1): (1 + 53 * 54 / 2) / 54
+  // and (1 + 43 * 44 / 2) / 44; 5-tick autocast = 3 s -> 0.52441 * 1432 / 54 / 3 = 4.636, 0.42011 * 947 / 44 / 3 = 3.014.
   const maxMageKodai = (m: Monster) => getTestPlayer(m, {
     equipment: {
       head: findEquipmentById(21018), // Ancestral hat

@@ -3,6 +3,31 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 4 — The Smorks + Bork (2026-10-22)
+
+- Encounter (Strategies): both attackable, separate HP; kill Bork first (recommended) → Bork's armour is usually 8;
+  heavy cannonball stuns Bork "for a short time" (duration unpublished). Mechanic → model table in
+  `docs/DATA_SOURCES.md` (Bork, *Phase 4*).
+- Bork Phase dropdown (`BORK_FLAT_ARMOUR_BY_PHASE` in `src/lib/fracturedArchive/constants.ts`, registered in
+  `MONSTER_PHASES_BY_ID`): Smorks 100-76% HP (armour 8, **default**), 75-51% (10), 50-26% (12), 25-0% (14), Stunned (0).
+  New `src/lib/fracturedArchive/bork.ts`: `applyBorkFlatArmour` (chained in `applyFracturedArchiveScaling`), magic
+  resistance 2 (0 when stunned) via a hook after upstream's flat armour in `PlayerVsNPCCalc.applyNpcTransforms`, and
+  100% melee accuracy when stunned in `getHitChance`. Upstream edits: `PlayerVsNPCCalc.ts` +11, `constants.ts` +4/−1,
+  `FracturedArchive.ts` +4/−1, `MonsterContainer.tsx` +7.
+- Smorks: infobox stats suffice (flat armour 2, magic def 400, earth 85%, floor 0); nothing else on the wiki changes
+  damage taken.
+- Leftovers: AG UI-parity test has the 4.636 / 3.014 derivation; party size input now defaults to 2 for raid bosses.
+- Tests: `src/tests/lib/fracturedArchive/SmorksAndBork.test.ts` (30): armour per option, hand-derived whip
+  distribution, Scythe per-hitsplat armour, ranged full armour, magic −2 in all unstunned options, stunned melee
+  100% / ranged + magic unchanged, floors 180 / 0, max-scythe sanity DPS (2.429 / 14.712), UI parity.
+  `yarn test` 418 pass / 4 skipped; `yarn lint`, `tsc --noEmit` clean.
+- UI: `node scripts/verifySmorksAndBork.mjs` — Max Melee preset + Scythe: Bork 0.950 / 0.774 / 0.621 / 0.493 / 10.065
+  DPS for the five options, Smorks 2.010, party size 2, default phase armour 8 — all equal to Jest;
+  `docs/screenshots/phase4-bork-armour8/10/12/14/stunned.png`, `phase4-smorks.png`.
+
+Unverified / open: stun duration (no uptime-weighted option); magic resistance removed while stunned; exact 25%
+thresholds; Voidwaker spec vs magic resistance.
+
 ## Phase 3 — Archive Guardian (2026-10-22)
 
 - Re-read the wiki page and Strategies section; mechanic → model table in `docs/DATA_SOURCES.md` (AG, *Phase 3*).
@@ -20,7 +45,7 @@ verified, what's unverified / left for later.
   `docs/screenshots/phase3-ag-flying.png`, `-grounded.png`, `-ancients.png`.
 
 Unverified / open: shield HP and its scaling; last-30% stats = Flying; whether every magic drain is absorbed.
-Noticed: the party size input shows 1 (red) by default for AG; the calc clamps to 2 (phase 2 behaviour, left as is).
+Noticed: the party size input shows 1 (red) by default for AG; the calc clamps to 2 (fixed in phase 4).
 
 ## Phase 2 fixes — review follow-ups (2026-10-22)
 

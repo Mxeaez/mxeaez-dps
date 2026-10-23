@@ -131,6 +131,13 @@ const MonsterContainer: React.FC = observer(() => {
     }
   }, [store, phases]);
 
+  useEffect(() => {
+    // Fractured Archive bosses scale to at least 2 players; show the value the calc uses instead of the default 1
+    if (FRACTURED_ARCHIVE_BOSS_IDS.includes(monster.id) && store.monster.inputs.partySize < 2) {
+      store.updateMonster({ inputs: { partySize: 2 } });
+    }
+  }, [store, monster.id]);
+
   // Don't automatically update the stat inputs if manual editing is on
   const monsterJS = toJS(monster);
   const displayMonster = useMemo(() => {

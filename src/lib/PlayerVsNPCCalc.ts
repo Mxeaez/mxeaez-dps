@@ -92,6 +92,7 @@ import {
 } from '@/lib/dists/bolts';
 import { burningClawDoT, burningClawSpec, dClawDist } from '@/lib/dists/claws';
 import { isImmuneToSpell } from '@/lib/fracturedArchive/immunities';
+import { getMagicResistance, hasGuaranteedMeleeAccuracy } from '@/lib/fracturedArchive/bork';
 
 const PARTIALLY_IMPLEMENTED_SPECS: string[] = [
   'Ancient godsword',
@@ -1256,6 +1257,11 @@ export default class PlayerVsNPCCalc extends BaseCalc {
       return this.track(DetailKey.PLAYER_ACCURACY_FINAL, 1.0);
     }
 
+    // Fractured Archive: stunned Bork
+    if (hasGuaranteedMeleeAccuracy(this.monster) && this.isUsingMeleeStyle()) {
+      return this.track(DetailKey.PLAYER_ACCURACY_FINAL, 1.0);
+    }
+
     if (this.player.style.type === 'magic' && ALWAYS_MAX_HIT_MONSTERS.magic.includes(this.monster.id)) {
       return this.track(DetailKey.PLAYER_ACCURACY_FINAL, 1.0);
     }
@@ -2031,6 +2037,11 @@ export default class PlayerVsNPCCalc extends BaseCalc {
     const flatArmour = this.monster.defensive.flat_armour;
     if (flatArmour && styleType !== 'magic') {
       relevantEffects.push([flatAddTransformer(-flatArmour), { transformInaccurate: false }]);
+    }
+    // Fractured Archive: Bork's magic resistance (flat reduction of magic hits)
+    const magicResistance = getMagicResistance(this.monster);
+    if (magicResistance && styleType === 'magic') {
+      relevantEffects.push([flatAddTransformer(-magicResistance), { transformInaccurate: false }]);
     }
 
     const transformer: HitTransformer = (hitsplat) => {

@@ -1,5 +1,5 @@
 import { CombatStyleStance } from '@/types/PlayerCombatStyle';
-import { FRACTURED_ARCHIVE_BOSS_IDS } from '@/lib/fracturedArchive/constants';
+import { BORK_IDS, BORK_PHASES, FRACTURED_ARCHIVE_BOSS_IDS } from '@/lib/fracturedArchive/constants';
 
 export * from '@/lib/fracturedArchive/constants';
 
@@ -554,6 +554,9 @@ MAGGOT_KING_ID.forEach((id) => { MONSTER_PHASES_BY_ID[id] = MAGGOT_KING_PHASES; 
 export const MAD_ANGEL_IDS = [16309, 16315, 16305, 16314];
 export const MAD_ANGEL_PHASES = ['Standard', 'Sword Cleave', 'Perfect Lightning'];
 MAD_ANGEL_IDS.forEach((id) => { MONSTER_PHASES_BY_ID[id] = MAD_ANGEL_PHASES; });
+
+// Fractured Archive: Bork's flat armour depends on the Smorks' health / stun (src/lib/fracturedArchive)
+BORK_IDS.forEach((id) => { MONSTER_PHASES_BY_ID[id] = BORK_PHASES; });
 
 export const INFINITE_HEALTH_MONSTERS: number[] = [
   14779, // gemstone crab

@@ -143,7 +143,7 @@ Mechanics (Strategies → *Bork and the Smorks*):
 | Fetched | 2026-10-22 |
 | NPC id(s) | 16640 |
 | Verification | All numeric stats match; UI matches (`phase1-bork.png`) |
-| Mismatch | **flat_armour**: wiki infobox is the text `8-14 (Base), 0 (Stunned), 2 (Magic resistance)`, Bucket has no number, so the generator stores `0` (= the stunned state). Left as generated; phase 4 must model it. |
+| Mismatch | **flat_armour**: wiki infobox is the text `8-14 (Base), 0 (Stunned), 2 (Magic resistance)`, Bucket has no number, so the generator stores `0`. monsters.json is left as generated; since phase 4 the calculator sets it from the Phase input (see below). |
 
 Mechanics (page body + Strategies → *Bork and the Smorks*):
 
@@ -153,6 +153,34 @@ Mechanics (page body + Strategies → *Bork and the Smorks*):
 - Stunned by a heavy cannonball: damage reduction removed (flat armour 0) **and all melee attacks are successful
   hits** (100% accuracy) for a short time. Recommended gear assumes "Stunned, reduced Defence".
 - Immune to cannon; xp bonus 60%.
+
+### Phase 4 — Bork and the Smorks, how each mechanic is modelled (re-read 2026-10-22)
+
+Sources: `Bork?action=raw`, `The_Smorks?action=raw`, Strategies → *Bork and the Smorks*, `Flat_armour`,
+`Magic_resistance`, `Successful_hit` (all `?action=raw`, 2026-10-22).
+
+**Encounter flow (wiki):** a duo fight "similar to that of the Royal Titans". Both NPCs are attackable from the start
+and have separate HP bars (Bork 1500, Smorks 600; no shared HP). Bork chases and melees his target; the Smorks sit in the
+centre on a cart, attack everyone else with ranged/magic, and fire incendiary and heavy cannonballs. A heavy cannonball
+that lands on Bork dazes him "for a short time" (no duration given). When one dies the other enrages: Bork dead → the
+Smorks attack faster, hit everyone, hit harder; Smorks dead → Bork's stomps cover the arena. "It is highly recommended
+to kill Bork first." So the number that matters for gear is DPS on Bork with the Smorks near full HP (armour 8), plus
+melee burst during stuns; Smorks DPS matters second (they're killed after Bork, with Bork's armour irrelevant by then).
+The wiki's recommended Bork gear is labelled "Stunned, reduced Defence" with the footnote that Soulreaper/Scythe are
+"Significantly worse when not stunned" (flat armour per hitsplat).
+
+| Mechanic (wiki wording) | Calculator |
+|---|---|
+| "starting at 8 flat armour at 100% health, and adding 2 flat armour every 25% damage the Smorks take", "up to a maximum of 14" | Bork Phase input (`BORK_FLAT_ARMOUR_BY_PHASE`, `src/lib/fracturedArchive/constants.ts`): `Smorks 100-76% HP (armour 8)` (**default**), `75-51% (10)`, `50-26% (12)`, `25-0% HP (14)`, `Stunned (armour 0)`. `applyBorkFlatArmour` (`src/lib/fracturedArchive/bork.ts`, run inside `applyFracturedArchiveScaling`) sets `defensive.flat_armour`; no/unknown phase = 8. Boundaries (exactly 75% HP → 10) and "Smorks dead = 14" are read from "every 25% damage … max 14" (**unverified** at the exact thresholds). |
+| Flat armour: "all melee and ranged attacks are reduced by 8" | Upstream applies `flat_armour` in `applyNpcTransforms` per hitsplat, only to accurate hits, minimum 0, never to magic (matches the `Flat_armour` wiki page). Upstream raises accurate 0s to 1 before that, so an accurate roll ≤ armour deals 0. Multi-hit weapons (Scythe 3 splats on size 4, claws, dual macuahuitl …) lose the armour on every splat. |
+| "2 Magic resistance, meaning that … magic attacks [are reduced] by 2" | New `getMagicResistance` (2 for Bork unless stunned) + a 5-line hook after upstream's flat armour block in `PlayerVsNPCCalc.applyNpcTransforms`: −2 per accurate magic hitsplat, min 0. Applies equally in all four unstunned options. Upstream treats the Voidwaker spec as magic, so it also gets −2 (**unverified**; the wiki says the Voidwaker spec ignores *flat armour*, nothing about magic resistance). |
+| Stunned: "temporarily removing his damage reduction and all melee attacks on him are dealt as successful hits for a short time" | `Stunned (armour 0)`: flat armour 0, magic resistance 0 ("removing his damage reduction"; that this includes the magic resistance is **unverified**), and `hasGuaranteedMeleeAccuracy` → `getHitChance` returns 1.0 for melee styles only (3-line hook next to upstream's Eclipse Moon clone rule). Ranged and magic accuracy unchanged. Stun duration/uptime is not published (**unverified**) — the option shows burst DPS during a stun, not an average. |
+| Defence floor 180 | Phase 2; holds in every Phase option (test). |
+| Incendiary cannonballs hitting Bork ("moderate damage"), burn, thralls, drum attack speed, enrage | Not modelled: external damage or enemy offence only. |
+| Smorks: flat armour 2, magic defence 400, earth 85%, 600 hp, drainable to 0, cannon immune | Infobox stats unchanged; upstream flat armour 2 applies to melee/ranged per hit, not magic. No other damage-changing mechanic on the wiki (no shield/immunity; "If Bork dies first" only changes their attacks). Nothing else needed. |
+
+Party size: the input now shows 2 (not 1) when a Fractured Archive boss is selected (`MonsterContainer` effect,
+same pattern as the phase reset); the calc already clamped to 2.
 
 ## Dreadnoth the Jellied
 

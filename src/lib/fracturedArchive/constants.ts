@@ -8,6 +8,25 @@ export const ARCHIVE_GUARDIAN_IDS = [
 ];
 export const THE_SMORKS_IDS = [16641];
 export const BORK_IDS = [16640];
+
+// Bork's flat armour by phase input; how it's applied: src/lib/fracturedArchive/bork.ts. Sources: docs/DATA_SOURCES.md.
+export const BORK_STUNNED_PHASE = 'Stunned (armour 0)';
+
+/**
+ * "starting at 8 flat armour at 100% health, and adding 2 flat armour every 25% damage the Smorks take", max 14.
+ * The first option is the default (the UI selects phases[0]); the wiki recommends killing Bork first, so the Smorks
+ * are usually near full health while Bork is attacked.
+ */
+export const BORK_FLAT_ARMOUR_BY_PHASE: [phase: string, flatArmour: number][] = [
+  ['Smorks 100-76% HP (armour 8)', 8],
+  ['Smorks 75-51% HP (armour 10)', 10],
+  ['Smorks 50-26% HP (armour 12)', 12],
+  ['Smorks 25-0% HP (armour 14)', 14],
+  // "temporarily removing his damage reduction and all melee attacks on him are dealt as successful hits"
+  [BORK_STUNNED_PHASE, 0],
+];
+
+export const BORK_PHASES = BORK_FLAT_ARMOUR_BY_PHASE.map(([phase]) => phase);
 export const DREADNOTH_IDS = [16665];
 export const DREADNOTH_JELLY_IDS = [16666];
 export const XARTH_IDS = [16684];

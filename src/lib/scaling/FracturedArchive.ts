@@ -15,6 +15,7 @@ import {
   XARTH_IDS,
 } from '@/lib/fracturedArchive/constants';
 import { Factor } from '@/lib/Math';
+import { applyBorkFlatArmour } from '@/lib/fracturedArchive/bork';
 
 export const FRACTURED_ARCHIVE_MIN_PARTY_SIZE = 2;
 export const FRACTURED_ARCHIVE_MAX_PARTY_SIZE = 8;
@@ -70,7 +71,7 @@ export const getFracturedArchivePartySize = (m: Monster): number => Math.min(
   Math.max(FRACTURED_ARCHIVE_MIN_PARTY_SIZE, Math.trunc(m.inputs.partySize || 0)),
 );
 
-const applyFracturedArchiveScaling = (m: Monster): Monster => {
+const applyPartySizeScaling = (m: Monster): Monster => {
   if (!FRACTURED_ARCHIVE_BOSS_IDS.includes(m.id)) {
     return m;
   }
@@ -84,5 +85,7 @@ const applyFracturedArchiveScaling = (m: Monster): Monster => {
     },
   };
 };
+
+const applyFracturedArchiveScaling = (m: Monster): Monster => applyBorkFlatArmour(applyPartySizeScaling(m));
 
 export default applyFracturedArchiveScaling;
