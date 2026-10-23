@@ -96,6 +96,7 @@ import { getMagicResistance, hasGuaranteedMeleeAccuracy } from '@/lib/fracturedA
 import { getOcellusDamageDivisor, isBlockedByOcellusPrayer } from '@/lib/fracturedArchive/ocellus';
 import { isBlockedByToaPrayer } from '@/lib/raids/toa/prayers';
 import { getCoxMeleeDamageDivisor } from '@/lib/raids/cox/damage';
+import { isBlockedByTobStyle, isDawnbringerWrongTarget } from '@/lib/raids/tob/damage';
 import {
   DIAMOND_ASCENSION_BOLTS_E,
   getElementalFragmentBonus,
@@ -2161,6 +2162,10 @@ export default class PlayerVsNPCCalc extends BaseCalc {
       return true;
     }
     if (isBlockedByToaPrayer(this.monster, styleType, this.isUsingMeleeStyle())) {
+      return true;
+    }
+    // Theatre of Blood: nylocas only take damage from their form's style; the Dawnbringer only works on Verzik P1
+    if (isBlockedByTobStyle(this.monster, styleType, this.isUsingMeleeStyle()) || isDawnbringerWrongTarget(this.monster, this.wearing('Dawnbringer'))) {
       return true;
     }
     // Eclipse moon clone is immune to non-melee attacks

@@ -25,6 +25,7 @@ import { isImmuneToSpell, isOutOfMeleeReach } from '@/lib/fracturedArchive/immun
 import { getFracturedArchiveDemonbaneVulnerability } from '@/lib/fracturedArchive/demonbane';
 import { isBlockedByOcellusPrayer } from '@/lib/fracturedArchive/ocellus';
 import { isBlockedByToaPrayer } from '@/lib/raids/toa/prayers';
+import { isBlockedByTobStyle } from '@/lib/raids/tob/damage';
 
 export interface CalcOpts {
   loadoutName?: string,
@@ -839,6 +840,9 @@ export default class BaseCalc {
     }
     if (isBlockedByToaPrayer(this.monster, this.player.style.type, this.isUsingMeleeStyle())) {
       this.addIssue(UserIssueType.WEAPON_WRONG_MONSTER, 'This boss is praying against this combat style.');
+    }
+    if (isBlockedByTobStyle(this.monster, this.player.style.type, this.isUsingMeleeStyle())) {
+      this.addIssue(UserIssueType.WEAPON_WRONG_MONSTER, 'This nylocas only takes damage from the style of its current form.');
     }
     if (isOutOfMeleeReach(this.monster) && this.isUsingMeleeStyle()) {
       this.addIssue(UserIssueType.WEAPON_WRONG_MONSTER, 'Melee can\'t reach this monster: use ranged or magic.');

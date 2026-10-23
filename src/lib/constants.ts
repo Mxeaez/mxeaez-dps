@@ -4,6 +4,7 @@ import {
   OCELLUS_P3_IDS, OCELLUS_P3_PHASES,
 } from '@/lib/fracturedArchive/constants';
 import { AKKHA_PHASES, P2_WARDEN_PHASES } from '@/lib/raids/toa/constants';
+import { NYLOCAS_VASILIAS_IDS, NYLOCAS_VASILIAS_PHASES, VERZIK_P1_PHASES } from '@/lib/raids/tob/constants';
 
 export * from '@/lib/fracturedArchive/constants';
 
@@ -114,6 +115,7 @@ export const TOB_MONSTER_IDS = [
   8359, // bloat
   8342, 8343, 8344, 8345, 8346, 8347, 8348, 8349, 8350, 8351, 8352, 8353, // nylos
   8355, 8356, 8357, // nylo boss
+  8354, // nylo boss (phase 20: the id monsters.json uses; infobox "scaledhp = Yes")
   ...SOTETSEG_IDS,
   8339, 8340, // xarpus
   8372, 8373, 8374, // verzik
@@ -125,7 +127,9 @@ export const TOB_MONSTER_IDS = [
   10813, // bloat
   10791, 10792, 10793, 10794, 10795, 10796, 10797, 10798, 10799, 10800, 10801, 10802, // nylos
   10804, 10805, 10806, // nylo demi-boss
+  10803, // nylo demi-boss, melee (phase 20: the id monsters.json uses)
   10808, 10809, 10810, // nylo boss
+  10807, // nylo boss (phase 20: the id monsters.json uses)
   // sote is above
   10770, 10771, 10772, // xarpus (i think there's an extra one here because of its different p3 behaviour?)
   10850, 10851, 10852, // verzik
@@ -141,6 +145,7 @@ export const TOB_EM_MONSTER_IDS = [
   10774, 10775, 10776,
   10777, 10778, 10779, 10780, 10781, 10782, 10783, 10784, 10785, // nylos
   10787, 10788, 10789, // nylo boss
+  10786, // nylo boss (phase 20: the id monsters.json uses)
   10864, 10865, // sote
   10767, 10768, // xarpus
   10833, 10834, 10835, // verzik
@@ -569,6 +574,9 @@ DAGONHAI_IDS.forEach((id) => { MONSTER_PHASES_BY_ID[id] = DAGONHAI_PHASES; });
 // Tombs of Amascut prayers (phase 18, src/lib/raids/toa/prayers.ts)
 AKKHA_IDS.forEach((id) => { MONSTER_PHASES_BY_ID[id] = AKKHA_PHASES; });
 P2_WARDEN_IDS.forEach((id) => { MONSTER_PHASES_BY_ID[id] = P2_WARDEN_PHASES; });
+// Theatre of Blood: Nylocas Vasilias's form, Verzik P1 with the Dawnbringer elsewhere (phase 20, src/lib/raids/tob/damage.ts)
+NYLOCAS_VASILIAS_IDS.forEach((id) => { MONSTER_PHASES_BY_ID[id] = NYLOCAS_VASILIAS_PHASES; });
+VERZIK_P1_IDS.forEach((id) => { MONSTER_PHASES_BY_ID[id] = VERZIK_P1_PHASES; });
 
 export const INFINITE_HEALTH_MONSTERS: number[] = [
   14779, // gemstone crab

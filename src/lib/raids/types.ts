@@ -6,7 +6,7 @@ import type { BestSetupAssumptions } from '@/lib/fracturedArchive/presets';
  * `src/lib/raids/base.ts`; the full `RaidConfig` (time model, UI) is in `src/lib/raids/index.ts`.
  */
 
-export type RaidId = 'fractured-archive' | 'toa' | 'cox';
+export type RaidId = 'fractured-archive' | 'toa' | 'cox' | 'tob';
 
 export const DEFAULT_RAID: RaidId = 'fractured-archive';
 
@@ -43,6 +43,24 @@ export interface CoxInputs {
 
 export const DEFAULT_COX_INPUTS: CoxInputs = { challengeMode: false };
 
+/** Phase 20: Theatre of Blood mode. Each mode is its own set of monster versions in monsters.json. */
+export type TobMode = 'normal' | 'hard' | 'entry';
+
+/** In the order of the mode input's values (0, 1, 2). */
+export const TOB_MODES: { id: TobMode, label: string }[] = [
+  { id: 'normal', label: 'Normal' },
+  { id: 'hard', label: 'Hard Mode' },
+  { id: 'entry', label: 'Entry Mode' },
+];
+
+/** Phase 20: Theatre of Blood scaling inputs of the best-setup assumptions (party size is shared). */
+export interface TobInputs {
+  /** Normal / Hard Mode / Entry Mode: picks the monster versions (src/lib/raids/tob/targets.ts). */
+  mode: TobMode;
+}
+
+export const DEFAULT_TOB_INPUTS: TobInputs = { mode: 'normal' };
+
 /** A boss / phase the best-setup view can target (Search boss list, Summary rows, time-model phases). */
 export interface BestSetupTarget {
   key: string;
@@ -78,8 +96,13 @@ export interface ScalingInputDef {
   step?: number;
   default: number;
   title?: string;
-  /** Phase 19: 'bool' = a checkbox storing 1 / 0 (CoX Challenge Mode); default 'number'. */
-  kind?: 'number' | 'bool';
+  /**
+   * Phase 19: 'bool' = a checkbox storing 1 / 0 (CoX Challenge Mode); phase 20: 'select' = a dropdown of `options`
+   * (values within min..max; ToB mode); default 'number'.
+   */
+  kind?: 'number' | 'bool' | 'select';
+  /** Phase 20: the dropdown's options (kind 'select'). */
+  options?: { value: number, label: string }[];
   get: (a: BestSetupAssumptions) => number;
   /** Sets the (already clamped) value. */
   set: (a: BestSetupAssumptions, value: number) => BestSetupAssumptions;
@@ -136,4 +159,25 @@ export type CoxTimeSettings = {
   vespulaMethod: 'ground' | 'portal';
   /** Muttadile meat-tree heals, as a share of each muttadile's hp added to the damage needed (0 = tree chopped / frozen). */
   muttadileHeal: number;
+};
+
+/** Theatre of Blood time-model settings (src/lib/raids/tob/time.ts, Encounters tab). */
+export type TobTimeSettings = {
+  /** Maiden: hp healed by leaked Nylocas Matomenos per spawn (70% / 50% / 30%), as a share of her hp (0 = all frozen). */
+  maidenNyloHeal: number;
+  /** Bloat: seconds of damage per down; drains only last the first down ("it will regenerate to full when it stomps"). */
+  bloatDownSeconds: number;
+  /**
+   * Nylocas Vasilias (and Hard Mode's Prinkipas) change form every 10 ticks: true = equal *time* in each form (hp split
+   * by the kit's DPS in each); false = a third of the hp in each form.
+   */
+  nyloRotation: boolean;
+  /** Xarpus: hp healed by exhumeds in P1 on top of the 75% he starts with, as a share of his hp (0 = all intercepted). */
+  xarpusExhumedHeal: number;
+  /** Verzik P1: Dawnbringer specials per player (35% energy each, 75-150 damage; the staff is passed round). */
+  verzikDawnbringerSpecs: number;
+  /** Verzik P2: healing (Athanatos, P2.5 blood spells) as a share of her hp (0 = not counted). */
+  verzikP2Heal: number;
+  /** Verzik P3: healing (enrage tornadoes) as a share of her hp (0 = not counted; Hard Mode's 30% heal is always added). */
+  verzikP3Heal: number;
 };

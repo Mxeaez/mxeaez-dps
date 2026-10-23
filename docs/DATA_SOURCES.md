@@ -559,6 +559,49 @@ total over the extra phase (claw hp total at 8 = at 7).
 | Olm left-hand clench / penultimate heal; head life-siphon heal (5×) | — | documented only (F6) |
 | Defence floors | none in `getDefenceFloor` | none (drains can reach 0) |
 
+## Theatre of Blood (phase 20, read 2026-10-23)
+
+Pages read with `?action=raw`: https://oldschool.runescape.wiki/w/Theatre_of_Blood,
+https://oldschool.runescape.wiki/w/Theatre_of_Blood/Strategies, https://oldschool.runescape.wiki/w/Theatre_of_Blood/Hard_Mode,
+https://oldschool.runescape.wiki/w/Theatre_of_Blood/Entry_Mode, https://oldschool.runescape.wiki/w/Dawnbringer and the
+pages The_Maiden_of_Sugadinti, Pestilent_Bloat, Nylocas, Nylocas_Vasilias, Nylocas_Ischyros, Nylocas_Prinkipas,
+Sotetseg, Xarpus, Verzik_Vitur. Monster stats: upstream's monsters.json (unchanged): every boss has a Normal, Hard
+and Entry version (Bloat HM 2400 hp; Xarpus HM 6000 hp / Defence 200; the others' HM stats equal normal; Entry lower).
+
+**Scaling** — upstream `src/lib/scaling/TheatreOfBlood.ts`, hp only ("tob only scales hp and nothing else"):
+normal / Hard Mode `trunc(hp × (clamp(party, 3, 5) + 3) / 8)`; Entry Mode `trunc(hp × [10, 19, 27, 34, 40][party − 1]
+/ 40)`. Wiki (Theatre of Blood): "With a team of three or fewer players the bosses will have 75% of their original
+hitpoints, with four players the bosses will have 87.5% of their original hitpoints and a team of five players will
+leave the bosses' hitpoints unchanged" (Strategies: "lowered to 87.5% in 4-man encounters and 75.0% in trio and lower
+scales") — matches 6/8, 7/8, 8/8. Cross-checks (tested): wave nylocas "11 health (9 in 4-Scale, 8 in trios)", "22
+health (19 in 4-Scale, 16 in trios)"; Prinkipas "300/350/400 health" (Hard Mode page; = 400 × 6/8, 7/8, 8/8). Worked
+examples at 4: Maiden 3500 → 3062, Bloat 2000 → 1750 (HM 2400 → 2100), Vasilias 2500 → 2187, Sotetseg 4000 → 3500,
+Xarpus 5000 → 4375 (HM 6000 → 5250), Verzik 2000 / 3500 / 3500 → 1750 / 3062 / 3062; Entry Maiden 2000 → 1700 (solo
+500). **Upstream id gap**: the Vasilias infobox has "scaledhp = Yes" and ids 8354-8357 / 10807-10810 / 10786-10789, and
+the Prinkipas 10803-10806, but upstream's lists start at 8355 / 10808 / 10787 / 10804 — monsters.json uses the first
+id, so the boss and the melee Prinkipas weren't scaled. Phase 20 adds 8354, 10807, 10786, 10803.
+
+| Mechanic (source) | Upstream | Phase 20 |
+|---|---|---|
+| Maiden Defence 200, no floor; "two Elder maul special attacks ... and then 85 damage with the Bandos godsword" (Strategies) | no floor | Team carriers 2 Elder maul + 2 BGS (4-scale plan) |
+| Maiden spawns Matomenos "whenever she first reaches 70%, 50%, and 30%"; leaked ones heal "double the amount of their current Hitpoints" | 70/50/30% versions (same stats, hp = remaining; images skipped by copyCdn) | 4 segments; *Maiden nylo leaks* × hp per spawn (default 0) |
+| Matomenos hp: Strategies "200 Hitpoints (175 in 4-man and 150 in trios)" vs infobox / monsters.json 100 | 100 | not a target (frozen and barraged); conflict in UNVERIFIED G8 |
+| Blood spawns (heal her via trails; HM invulnerable) | monster | not counted |
+| Bloat: "any damage dealt to the Bloat while active is halved"; down 32 ticks, "roughly 18 seconds to deal damage"; "If its Defence has been reduced, it will regenerate to full when it stomps" | — | damage only while down; drains for the first down only (`tob-bloat` / `tob-bloat-restored`, *Bloat down* 18 s) |
+| Bloat undead, weak to slash, "highly resistant to magic and ranged" | attribute, bonuses | Salve (ei) preset + pool |
+| Nylocas: "Each spider is immune to damage outside of their combat style"; Vasilias "immune to damage of the wrong combat style", "always spawn in its melee form", "change forms every 10 ticks (6 seconds) to another form" | — | **style gating** (`tob/damage.ts`): Vasilias form = calculator phase, wave nylocas by name, Prinkipas by version; equal time per form (*Nylo form rotation*) |
+| Vasilias wrong style: "the player taking damage they would have dealt to it, and healing it for the same amount" | — | treated as can't hit (the heal isn't modelled) |
+| Waves: 31 waves on a fixed schedule; Hard Mode "Three Nylocas Prinkipas ... on the tenth, twentieth and thirtieth wave" | monsters | waves not counted (not DPS-limited); HM: 3 Prinkipas rotations before the Vasilias |
+| Sotetseg: Defence floor 100; mazes "At 66.6% and 33.3% health"; "After clearing the maze, Sotetseg's Defence level is restored" | floor 100 (normal / HM ids; not the Entry ids) | thirds, each drained again |
+| Xarpus: P1 "starting with 75% of his health", heals from exhumeds; P3 "Upon reaching ~25%" (Entry "below 22.5%"); one infobox for "Phase 2 & 3"; HM "Defence is lowered from 250 to 200" | HM version | P2 75% → 25% (+ *exhumed heals*, default 0), P3 25%; no P3 stat change (the task's "P3 stat change" doesn't exist) |
+| Verzik P1 cap: "capping damage dealt to her with melee at 10, with ranged and magic at 3" (Mod Ash); "The Dawnbringer is the lone exception, which also ignores accuracy rolls" | `linearMinTransformer(10 / 3)` = min(hit, uniform 0..cap); Dawnbringer exempt, accuracy 1, max ÷ 2 | kept; **one Dawnbringer**: P1 phase "Shield (Dawnbringer with a teammate)" (Dawnbringer deals 0) for the other team members |
+| Dawnbringer spec: "75-150 hitpoints of damage ... consuming 35% of the wielder's special attack energy"; energy restored on each boss kill | spec = 75-150 | *Dawnbringer specs / player* (default 2) × 112.5, 4 ticks each |
+| Dawnbringer elsewhere: "After her shield is destroyed, the Dawnbringer will crumble to dust"; upstream warns "This weapon cannot be used against the select monster" | warning only | **deals 0** outside P1 |
+| Verzik: "Her defence cannot be lowered" / "absorbs the defence reduction!" | floor = her Defence | targets `noDrains` (plan text) |
+| Verzik P2: Athanatos heals 9-10 every few ticks; P2.5 "heals for 50% of the damage dealt"; lightning hits her 15-20 | — | *Verzik P2 heals* (default 0) |
+| Verzik P3: webs / yellows invulnerable; enrage tornado heals "triple the damage dealt"; HM "heal 30% of her health" at 5% | — | not DPS time; *Verzik P3 heals* (default 0); HM + 30% always |
+| Entry Mode: "Bloat / the Maiden can scale down to 20% of its original Hitpoints when done in a solo party" | 10/40 = 25% solo | upstream kept (UNVERIFIED G9) |
+
 ## Other raid monsters (came with the refresh, not checked field-by-field)
 
 Ezekiel, Moia and the Dagon'hai were checked in phase 15 (section above).

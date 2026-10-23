@@ -42,9 +42,9 @@ values (Bork's flat armour comes from the phase input, so the generated 0 is exp
 
 | File | +/− | What | Conflict risk |
 |---|---|---|---|
-| `src/lib/PlayerVsNPCCalc.ts` | 62 / 6 | imports; Zorya's tome accuracy, max hit and spec; fragment max-hit bonus; stunned-Bork accuracy; Obligator thrust distribution (+ Maggot King exclusion); ascension (e) bolts added to the diamond/onyx `wearing` lists; Bork magic resistance and Ocellus void-explosion transforms; `isImmune` checks (incl. Moia out of melee reach, phase 15; ToA prayers, phase 18: +4); CoX Olm melee divisor (phase 19: +5); 3 capitalisation fixes in `UNIMPLEMENTED_SPECS` | **Medium–high**: about 9 separate places in upstream's busiest file. Each hunk is 2–6 lines next to an upstream anchor (Eye of Ayak spec, elemental amulet, Eclipse Moon clone, scythe dist, flat armour, `isImmune`), so conflicts are local and easy to redo by hand |
-| `src/lib/BaseCalc.ts` | 24 / 7 | imports; demonbane hook (`?? 100`); spell-immunity, Ocellus-prayer, ToA-prayer (phase 18) and melee-reach (Moia) issues; Blood/Blue/Eclipse Moon and Staff of the Dead name fixes | Medium: the name fixes will conflict if upstream fixes them too. Take upstream's version of those lines |
-| `src/lib/constants.ts` | 19 / 0 | re-export of the raid constants; party-size list; phase dropdowns for Bork / Ocellus / Dagon'hai; Akkha and P2 Warden prayer phases (phase 18, phase names from `src/lib/raids/toa/constants.ts`, upstream's `AKKHA_IDS` / `P2_WARDEN_IDS`) | Low (additions next to the Mad Angel phases and the party-size list) |
+| `src/lib/PlayerVsNPCCalc.ts` | 67 / 6 | imports; Zorya's tome accuracy, max hit and spec; fragment max-hit bonus; stunned-Bork accuracy; Obligator thrust distribution (+ Maggot King exclusion); ascension (e) bolts added to the diamond/onyx `wearing` lists; Bork magic resistance and Ocellus void-explosion transforms; `isImmune` checks (incl. Moia out of melee reach, phase 15; ToA prayers, phase 18: +4); CoX Olm melee divisor (phase 19: +5); ToB nylocas style / Dawnbringer `isImmune` check (phase 20: +5); 3 capitalisation fixes in `UNIMPLEMENTED_SPECS` | **Medium–high**: about 9 separate places in upstream's busiest file. Each hunk is 2–6 lines next to an upstream anchor (Eye of Ayak spec, elemental amulet, Eclipse Moon clone, scythe dist, flat armour, `isImmune`), so conflicts are local and easy to redo by hand |
+| `src/lib/BaseCalc.ts` | 28 / 7 | imports; demonbane hook (`?? 100`); spell-immunity, Ocellus-prayer, ToA-prayer (phase 18), ToB nylocas-style (phase 20) and melee-reach (Moia) issues; Blood/Blue/Eclipse Moon and Staff of the Dead name fixes | Medium: the name fixes will conflict if upstream fixes them too. Take upstream's version of those lines |
+| `src/lib/constants.ts` | 27 / 0 | re-export of the raid constants; party-size list; phase dropdowns for Bork / Ocellus / Dagon'hai; Akkha and P2 Warden prayer phases (phase 18, phase names from `src/lib/raids/toa/constants.ts`, upstream's `AKKHA_IDS` / `P2_WARDEN_IDS`); phase 20: 4 missing ToB ids in `TOB_MONSTER_IDS` / `TOB_EM_MONSTER_IDS` (Vasilias 8354 / 10807 / 10786, Prinkipas 10803 — the ids monsters.json uses) and the Vasilias form / Verzik P1 phases (names from `src/lib/raids/tob/constants.ts`) | Low (additions next to the Mad Angel phases and the party-size list) |
 | `src/lib/Equipment.ts` | 11 / 0 | ascension ammo; Obligator Smash speed; Zorya spec cost | Low |
 | `src/lib/scaling/DefenceReduction.ts` | 9 / 1 | raid floors in `getDefenceFloor`; AG magic-level drain floor | Low–medium (the `floors` line replaces upstream's `const floor = ...` line) |
 | `src/lib/MonsterScaling.ts` | 2 / 0 | `applyFracturedArchiveScaling` after ToA | Low |
@@ -65,6 +65,12 @@ code, and moving them would not make the merge easier.
 
 ## Things upstream might add that overlap with ours
 
+- **ToB** (phase 20): if upstream fixes the Vasilias / Prinkipas ids in `TOB_MONSTER_IDS` itself, drop our four
+  added ids (duplicates are harmless). If upstream gates the nylocas by style or blocks the Dawnbringer off P1, drop
+  `src/lib/raids/tob/damage.ts` and its two hooks and point `tob/targets.ts` / `time.ts` at upstream's phase names
+  (`NYLOCAS_VASILIAS_PHASES`, `VERZIK_P1_PHASES`). If upstream changes the Verzik P1 cap model (`linearMinTransformer`),
+  P1 times and the P1 Search ranking change (UNVERIFIED G1); `src/tests/lib/raids/ToB.test.ts` pins the hp at 4 / 5
+  and the capped max hits.
 - **CoX Olm melee mitigation** (phase 19): if upstream divides melee on the Olm head / right claw itself, drop
   `src/lib/raids/cox/damage.ts` and its hook in `PlayerVsNPCCalc.applyNpcTransforms` (+5 lines). The CoX scaling,
   immunities and Guardian / Ice demon rules are upstream's; `src/tests/lib/raids/CoX.test.ts` pins the hp / Defence at

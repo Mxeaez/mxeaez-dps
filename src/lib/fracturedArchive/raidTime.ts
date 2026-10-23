@@ -16,7 +16,9 @@ import {
   BestSetupAssumptions, DEFAULT_ASSUMPTIONS, PresetDef, StyleGroup,
 } from '@/lib/fracturedArchive/presets';
 import { raidBase, teamDpsMultiplier } from '@/lib/raids/base';
-import { CoxInputs, TimeSettings, ToaInputs } from '@/lib/raids/types';
+import {
+  CoxInputs, TimeSettings, ToaInputs, TobInputs,
+} from '@/lib/raids/types';
 import {
   GearSearchProgress, runGearSearch, SearchRow, searchRowToPlayer, StyleOption,
 } from '@/lib/fracturedArchive/search';
@@ -207,7 +209,7 @@ export const targetHp = (
   targetKey: string,
   phase: string | undefined,
   partySize: number,
-  raidInputs: Pick<BestSetupAssumptions, 'raid' | 'toa' | 'cox'> = {},
+  raidInputs: Pick<BestSetupAssumptions, 'raid' | 'toa' | 'cox' | 'tob'> = {},
 ): number => {
   const key = `${phaseKey(targetKey, phase)}|${clampParty(partySize)}|${partyHpFactor(partySize)}|${partySize}|${JSON.stringify(raidInputs)}`;
   let hp = hpCache.get(key);
@@ -354,6 +356,8 @@ export interface RaidTimeAssumptions {
   toa?: ToaInputs;
   /** Phase 19: Chambers of Xeric inputs (Challenge Mode) for the hp of CoX targets. */
   cox?: CoxInputs;
+  /** Phase 20: Theatre of Blood inputs (mode) for the hp of ToB targets. */
+  tob?: TobInputs;
 }
 
 /**
@@ -390,6 +394,7 @@ export const raidTimeAssumptionsFrom = (
   ...(model ? { model } : {}),
   ...(best.toa ? { toa: best.toa } : {}),
   ...(best.cox ? { cox: best.cox } : {}),
+  ...(best.tob ? { tob: best.tob } : {}),
 });
 
 export const timeOf = (damage: number, dps: number): number => {

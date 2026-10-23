@@ -29,7 +29,8 @@ import { TOA_ROUTE_ID } from '@/lib/raids/toa/time';
 
 describe('RaidConfig: every raid', () => {
   test('raid ids are unique; FA is the default tab', () => {
-    expect(RAIDS.map((r) => r.id)).toEqual(['fractured-archive', 'toa', 'cox']);
+    expect(RAIDS.map((r) => r.id)).toEqual(['fractured-archive', 'toa', 'cox', 'tob']);
+    expect(raidConfig('tob').name).toBe('Theatre of Blood');
     expect(raidConfig(undefined)).toBe(FRACTURED_ARCHIVE_RAID);
     expect(raidConfig('toa')).toBe(TOMBS_OF_AMASCUT_RAID);
     expect(raidConfig('cox').name).toBe('Chambers of Xeric');

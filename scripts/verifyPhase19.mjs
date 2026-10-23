@@ -69,7 +69,7 @@ const main = async () => {
 
   // 1. raid tabs, FA unchanged
   const raids = await page.locator('[data-testid^="raid-tab-"]').allInnerTexts();
-  check(raids.join(',') === 'Fractured Archive,Tombs of Amascut,Chambers of Xeric', `raid tabs: ${raids.join(', ')}`);
+  check(raids.slice(0, 3).join(',') === 'Fractured Archive,Tombs of Amascut,Chambers of Xeric', `raid tabs: ${raids.join(', ')}`); // phase 20: + Theatre of Blood
   await faXarth(page, 'before');
 
   // 2. CoX tab

@@ -1,6 +1,8 @@
 import { PlayerEquipment } from '@/types/Player';
 import Potion from '@/enums/Potion';
-import { CoxInputs, RaidId, ToaInputs } from '@/lib/raids/types';
+import {
+  CoxInputs, RaidId, ToaInputs, TobInputs,
+} from '@/lib/raids/types';
 
 /**
  * Named setups for the "Best setup" view (phase 8, /best-setup). Plain data — edit freely.
@@ -221,6 +223,8 @@ export interface BestSetupAssumptions {
   toa?: ToaInputs;
   /** Phase 19: Chambers of Xeric inputs (Challenge Mode; party size is `partySize`). */
   cox?: CoxInputs;
+  /** Phase 20: Theatre of Blood inputs (mode; party size is `partySize`). */
+  tob?: TobInputs;
   /**
    * Phase 18: players assumed to deal the user's DPS in every time display (Search TTK, Routes / Encounters, Plan,
    * Summary). Undefined = the raid's default (`teamDpsMultiplier` in src/lib/raids/base.ts: the party size where boss hp

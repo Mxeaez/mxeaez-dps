@@ -3,6 +3,37 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 20 — Theatre of Blood (2026-10-23)
+
+- **Config**: `src/lib/raids/theatreOfBlood.ts` + `src/lib/raids/tob/{constants,targets,presets,searchPool,damage,time}.ts`;
+  `THEATRE_OF_BLOOD_BASE` in base.ts (party 1-5, default 4; mode select Normal / Hard Mode / Entry Mode; Team carriers
+  2 Elder maul + 2 BGS). Shared code stays raid-agnostic: `ScalingInputDef.kind: 'select'` + `options` (UI + Summary
+  label), `RaidBase.resolveTarget` (ToB swaps the monster version per mode; used by `buildTargetMonster`),
+  `assumptions.tob` / `RaidTimeAssumptions.tob`.
+- **Scaling**: upstream's, hp only (75% at 1-3, 87.5% at 4, 100% at 5 — the wiki's numbers; Entry Mode its own table).
+  Upstream missed the ids monsters.json uses for the Nylocas Vasilias (8354 / 10807 / 10786) and the melee Prinkipas
+  (10803): added to `TOB_MONSTER_IDS` / `TOB_EM_MONSTER_IDS`, so the boss now scales (2187 hp at 4, was 2500).
+- **Mechanics**: upstream already had Verzik P1's cap (min(hit, uniform 0..10 / 0..3)) + the Dawnbringer's exemption,
+  Sotetseg floor 100, Verzik no drains. New: nylocas style gating (Vasilias form phase, wave nylocas, Prinkipas),
+  Dawnbringer deals 0 off P1 and under the new P1 phase "Shield (Dawnbringer with a teammate)" (one staff), Bloat's
+  drain reset (`tob-bloat-restored`, `noDrains`), Verzik `noDrains`; encounter model (Maiden 4 segments + leak heals,
+  Bloat first down drained / rest restored, Vasilias equal time per form + HM Prinkipas, Sotetseg thirds re-drained,
+  Xarpus 75 → 25% + P3, Verzik Dawnbringer specs + 1 holder / (team − 1) without + P2 + P3 (+30% HM)). Documented only:
+  UNVERIFIED G1-G11 (cap model, heals, walks, waves, Matomenos hp conflict, Entry solo 20% vs 25%, …) and F9 (phase 19
+  review leftover: Lizardman shaman count, table max 5 vs prose "capped at 4"; code follows the table).
+- Tests: new `src/tests/lib/raids/ToB.test.ts` (22: hp at 4 / 5 / 1-3 with derivation, nylocas / Prinkipas vs the
+  wiki's scale numbers, id fix, HM / EM versions, inputs, floors, drains, style gating, P1 cap (Scythe 30 = 3 × 10, Tbow
+  / Shadow 3, Dawnbringer uncapped, accuracy 1), Dawnbringer off P1, Salve on Bloat, pool / presets, route order,
+  plans at 4, HM / EM plans, settings, times with toy kits, required targets, searches on the Vasilias magic form and
+  Verzik P1, reduced-pool planner). RaidConfig.test.ts: + 'tob'. `yarn test` 1171 pass / 4 skipped; lint, tsc clean.
+- Playwright: new `scripts/verifyPhase20.mjs` all OK (4 raid tabs; party 4 / mode select / team ×4; 20 targets;
+  Maiden 3062 → 3500 at 5; Xarpus 4375 / Def 250 → HM 5250 / 200; P1 max hits Scythe 30, Tbow 3, Shadow 3, Dawnbringer
+  23; Vasilias magic form: Shadow on top, Scythe / Tbow can't hit; Encounters 6 encounters 7:27.7; Plan 16.3 s, 28
+  cells; CoX Tekton 1200 / 215, ToA Zebak 8000, FA Xarth 12.839). `verifyPhase19.mjs` tab check relaxed for the 4th
+  tab. Screenshots `docs/screenshots/phase20-*.png`.
+- Headline (normal, 4-man, Team drains): Encounters 7:27.7; Plan 7:35.5 (Torva + Scythe worn; Scythe sets, Eye of
+  Ayak and Ascension crossbows switches); same kit in Hard Mode 8:33.5 (docs/BEST_SETUP.md).
+
 ## Phase 19 — Chambers of Xeric (2026-10-23)
 
 - **Config**: `src/lib/raids/chambersOfXeric.ts` + `src/lib/raids/cox/{constants,targets,presets,searchPool,damage,time}.ts`;

@@ -68,6 +68,22 @@ const ScalingInputs: React.FC<{
           </label>
         );
       }
+      if (d.kind === 'select') {
+        return (
+          <label key={d.key} htmlFor={id} className="flex items-center gap-1" title={d.title}>
+            {d.label}
+            <select
+              id={id}
+              className="form-control text-xs py-0.5"
+              value={d.get(value)}
+              data-testid={`scaling-${d.key}`}
+              onChange={(e) => onChange(withScalingInput(value, d, Number(e.target.value)))}
+            >
+              {(d.options || []).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </label>
+        );
+      }
       return (
         <label key={d.key} htmlFor={id} className="flex items-center gap-1" title={d.title}>
           {d.label}

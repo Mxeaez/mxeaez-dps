@@ -1,4 +1,4 @@
-# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14; Routes tab phase 16; Plan tab phase 17; raid tabs + ToA phase 18; CoX phase 19)
+# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14; Routes tab phase 16; Plan tab phase 17; raid tabs + ToA phase 18; CoX phase 19; ToB phase 20)
 
 `/best-setup` (dev: http://localhost:3001/osrs-dps/best-setup; "Best setup" button in the top bar, "Calculator" leads
 back). Tabs, in order: **Search** (the default, phase 9/12, see the end of this file) searches a pool of end-game items
@@ -131,6 +131,49 @@ best search result per style: **6:25.6** (Olm 185.5 s). **Plan** (20.8 s): worn 
 Tumeken's shadow (Ancestral), Dragon pickaxe, Kodai + best Surge (Ice demon), Ascension crossbows (weapon-only switch
 on the Shadow set, Salve (ei)); 0 free slots; **6:59.9**. Same kit in **Challenge Mode** (6-man): **9:12.5** (Olm 199.2
 s vs 197.5 s — Olm keeps its hp).
+
+## Theatre of Blood (phase 20)
+
+Fourth raid tab, same code (`THEATRE_OF_BLOOD_RAID`, `src/lib/raids/theatreOfBlood.ts`; `src/lib/raids/tob/*`).
+
+- **Inputs** ("Raid scaling" row): party size **1-5** (default **4**: the Strategies page describes the roles "as they
+  appear in a 4-Scale"; the shared default 6 is out of range) and a **mode** select — Normal / Hard Mode / Entry Mode
+  (scaling inputs can now be `kind: 'select'` with `options`). Each mode is its own set of monsters in monsters.json,
+  so the mode swaps the target's monster version (`RaidBase.resolveTarget`, used by `buildTargetMonster`; the table is
+  `TOB_VERSIONS` in `tob/targets.ts`). No calculator input changes.
+- **Scaling** is upstream's and hp only: normal / Hard Mode 75% at 1-3 players, 87.5% at 4, 100% at 5; Entry Mode
+  25 / 47.5 / 67.5 / 85 / 100% (see DATA_SOURCES *Theatre of Blood*). Upstream missed the Nylocas Vasilias / melee
+  Prinkipas ids monsters.json uses (8354, 10807, 10786, 10803): added to `TOB_MONSTER_IDS` / `TOB_EM_MONSTER_IDS`.
+- **Targets** (20): Maiden; Bloat + "Bloat (after a stomp: Defence restored)" (`noDrains`); Nylocas Vasilias melee /
+  ranged / magic form (one phase each); wave nylocas Ischyros / Toxobolos / Hagios small + big and Hard Mode's
+  Prinkipas melee / ranged / magic (not in the Summary); Sotetseg; Xarpus; Verzik P1 / P2 / P3 (`noDrains`: "absorbs
+  the defence reduction"). The Maiden's 70 / 50 / 30% versions have her normal stats (and no image): encounter phases.
+- **Damage rules**: upstream has Verzik P1's cap (melee 10 / otherwise 3, modelled as min(hit, uniform 0..cap)), the
+  Dawnbringer's exemption, guaranteed hit and halved max hit, and the floors (Sotetseg 100, Verzik = her Defence).
+  New in `tob/damage.ts`: **nylocas style gating** (Vasilias by its form phase "Melee / Ranged / Magic form", default
+  melee; wave nylocas by name; Prinkipas by version; Verzik's nylocas not gated) and **Dawnbringer only on Verzik P1**
+  — and not under P1's new phase "Shield (Dawnbringer with a teammate)" (one staff per raid).
+- **Defaults**: Super combat / Ranging / Saturated heart (no raid boost; potions are supplies), Piety / Rigour / Augury,
+  Team carriers **2 Elder maul + 2 BGS** (Strategies 4-scale Maiden plan), team-DPS multiplier = party size.
+- **Presets** = FA list + "Torva + Salve (ei) + Scythe (slash)" (Bloat is undead) and "Dawnbringer (Ancestral)".
+  **Pool** = FA pool + Blade of Saeldor (c), Abyssal tentacle, Eye of Ayak, Dawnbringer, Salve amulet(ei) (kept) in
+  every neck slot.
+- **Encounters** (one fixed route; `tob/time.ts`): Maiden 30 / 20 / 20 / 30% (+ leaked-nylo heal per spawn, default
+  0); Bloat: the first down (18 s, setting) at the drained target, the rest at the restored one; Nylocas: (Hard Mode: 3
+  Prinkipas, then) the Vasilias in **equal time per form** (like Akkha; setting), the waves aren't counted (fixed spawn
+  schedule); Sotetseg in thirds (Defence restored after each maze: each third drained again); Xarpus P2 75% → 25% (+
+  exhumed heals, default 0; Entry 22.5%), P3 25% (same stats); Verzik P1 = Dawnbringer specs (2 per player × 112.5,
+  each costs one 4-tick attack: specs × 2.4 s ÷ team) + the rest at **1 player × the kit's best + (team − 1) × the
+  kit's best without the Dawnbringer**, P2 (+ heals, default 0), P3 (+ heals; Hard Mode always +30%).
+- **Plan**: supplies brew 4 / restore 3 / one of each potion.
+
+**Headline (normal, 4-man, Team drains, 2026-10-23)** — top search result per target: Maiden Ascension crossbows +
+onyx (e) 14.792; Bloat Scythe 16.383; Vasilias melee form Scythe 14.592, ranged form Ascension crossbows + diamond (e)
+13.887, magic form Tumeken's shadow 11.426; Sotetseg Scythe 11.875; Xarpus Scythe 14.566; Verzik P1 **Dawnbringer**
+4.809 (Scythe 4.01: the cap), P2 Scythe 9.933, P3 Scythe 11.813. Encounters with the best search result per style:
+**7:27.7** (Verzik 197.1 s). **Plan** (16.3 s): worn Torva + Scythe (slash); switches Torva helm + Oathplate + Scythe,
+search-found Scythe sets for Bloat (×2) and Verzik P2, Eye of Ayak and Ascension crossbows partial switches; **7:35.5**. Same kit in **Hard
+Mode** (4-man): **8:33.5** (Bloat 33.6, Nylocas 67.2 with the Prinkipas, Xarpus 67.5, Verzik 219.1 s).
 
 ## Plan tab (phase 17: raid kit planner)
 

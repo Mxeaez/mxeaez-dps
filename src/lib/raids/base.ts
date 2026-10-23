@@ -5,7 +5,8 @@ import {
 import { SEARCH_POOL, StylePool } from '@/lib/fracturedArchive/searchCandidates';
 import { BEST_SETUP_TARGETS } from '@/lib/fracturedArchive/targets';
 import {
-  BestSetupTarget, DEFAULT_COX_INPUTS, DEFAULT_RAID, DEFAULT_TOA_INPUTS, RaidId, ScalingInputDef, TOA_PATHS,
+  BestSetupTarget, DEFAULT_COX_INPUTS, DEFAULT_RAID, DEFAULT_TOA_INPUTS, DEFAULT_TOB_INPUTS, RaidId, ScalingInputDef,
+  TOA_PATHS, TOB_MODES,
 } from '@/lib/raids/types';
 import { TOA_TARGETS } from '@/lib/raids/toa/targets';
 import { TOA_DEFAULT_ASSUMPTIONS, TOA_PRESETS } from '@/lib/raids/toa/presets';
@@ -16,6 +17,10 @@ import { COX_SEARCH_POOL } from '@/lib/raids/cox/searchPool';
 import {
   COX_MAX_COMBAT_LEVEL, COX_MAX_HP_LEVEL, COX_MAX_PARTY, COX_MIN_PARTY, COX_MINING_LEVEL,
 } from '@/lib/raids/cox/constants';
+import { TOB_TARGETS, TOB_VERSIONS } from '@/lib/raids/tob/targets';
+import { TOB_DEFAULT_ASSUMPTIONS, TOB_PRESETS } from '@/lib/raids/tob/presets';
+import { TOB_SEARCH_POOL } from '@/lib/raids/tob/searchPool';
+import { TOB_MAX_PARTY, TOB_MIN_PARTY } from '@/lib/raids/tob/constants';
 
 /**
  * Phase 18: the per-raid rules the pure best-setup modules need (bestSetup.ts, search.ts, raidTime.ts, planner.ts look
@@ -41,6 +46,11 @@ export interface RaidBase {
    * raid itself (ToA: Smelling salts from the supply chest), every style keeps it.
    */
   boostsNeedSupplies: boolean;
+  /**
+   * Phase 20: the monster version a target uses for these assumptions (ToB: one monster per mode). Undefined = the
+   * target's own name / version. Applied by buildTargetMonster.
+   */
+  resolveTarget?: (target: BestSetupTarget, a: BestSetupAssumptions) => BestSetupTarget;
 }
 
 const partyInput = (min: number, max: number, title: string): ScalingInputDef => ({
@@ -153,7 +163,50 @@ export const CHAMBERS_OF_XERIC_BASE: RaidBase = {
   boostsNeedSupplies: false,
 };
 
-export const RAID_BASES: RaidBase[] = [FRACTURED_ARCHIVE_BASE, TOMBS_OF_AMASCUT_BASE, CHAMBERS_OF_XERIC_BASE];
+const tobOf = (a: BestSetupAssumptions) => a.tob || DEFAULT_TOB_INPUTS;
+
+/**
+ * Phase 20: Theatre of Blood. Upstream scales ToB monsters' hp (only hp: "tob only scales hp and nothing else") from
+ * the calculator's party size (src/lib/scaling/TheatreOfBlood.ts: normal / Hard Mode (party 3-5) / 8, i.e. 75% at 1-3,
+ * 87.5% at 4, 100% at 5; Entry Mode 10-40 / 40 for 1-5). The mode is a monster version, not a calculator input, so this
+ * raid swaps the target's version (`resolveTarget`, TOB_VERSIONS).
+ */
+export const THEATRE_OF_BLOOD_BASE: RaidBase = {
+  id: 'tob',
+  targets: TOB_TARGETS,
+  partySize: { min: TOB_MIN_PARTY, max: TOB_MAX_PARTY },
+  hpScalesWithParty: true,
+  monsterInputs: () => ({}),
+  scalingInputs: [
+    {
+      ...partyInput(TOB_MIN_PARTY, TOB_MAX_PARTY, 'Party size 1-5: hp scaling (75% at 1-3, 87.5% at 4, 100% at 5; Entry Mode 25-100%; upstream, wiki) and the team spec planner'),
+      default: TOB_DEFAULT_ASSUMPTIONS.partySize,
+    },
+    {
+      key: 'tobMode',
+      label: 'mode',
+      kind: 'select',
+      min: 0,
+      max: TOB_MODES.length - 1,
+      default: 0,
+      options: TOB_MODES.map((m, i) => ({ value: i, label: m.label })),
+      title: 'Normal / Hard Mode / Entry Mode: each mode has its own monsters (Hard Mode: Bloat 2400 hp, Xarpus 6000 hp and Defence 200, three Nylocas Prinkipas, Verzik heals 30% at 5%)',
+      get: (a) => Math.max(0, TOB_MODES.findIndex((m) => m.id === tobOf(a).mode)),
+      set: (a, v) => ({ ...a, tob: { ...tobOf(a), mode: (TOB_MODES[v] ?? TOB_MODES[0]).id } }),
+    },
+  ],
+  defaultAssumptions: TOB_DEFAULT_ASSUMPTIONS,
+  presets: TOB_PRESETS,
+  searchPool: TOB_SEARCH_POOL,
+  // ToB has no raid boost: the potions are brought
+  boostsNeedSupplies: true,
+  resolveTarget: (target, a) => {
+    const version = TOB_VERSIONS[target.key]?.[tobOf(a).mode];
+    return version && version !== target.version ? { ...target, version } : target;
+  },
+};
+
+export const RAID_BASES: RaidBase[] = [FRACTURED_ARCHIVE_BASE, TOMBS_OF_AMASCUT_BASE, CHAMBERS_OF_XERIC_BASE, THEATRE_OF_BLOOD_BASE];
 
 export const raidBase = (id: RaidId | undefined): RaidBase => RAID_BASES.find((r) => r.id === (id ?? DEFAULT_RAID)) ?? FRACTURED_ARCHIVE_BASE;
 

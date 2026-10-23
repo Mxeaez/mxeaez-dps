@@ -187,7 +187,8 @@ export const buildTargetMonster = (
   const phases = targetPhases(target);
   const raid = raidBase(target.raid);
   let m: Monster = {
-    ...baseMonster(target),
+    // phase 20: the raid may pick another version of the monster from its inputs (ToB mode)
+    ...baseMonster(raid.resolveTarget ? raid.resolveTarget(target, assumptions) : target),
     inputs: {
       ...INITIAL_MONSTER_INPUTS,
       defenceReductions: { ...INITIAL_MONSTER_INPUTS.defenceReductions },

@@ -11,6 +11,8 @@ The rows are grouped by how much a wrong assumption would matter:
 - **(C)** it only changes cosmetic values or the TTK
 - **(D)** it changes the phase 16 route times (Routes tab), not any DPS
 - **(E)** Tombs of Amascut time-model readings (phase 18)
+- **(F)** Chambers of Xeric readings (phase 19)
+- **(G)** Theatre of Blood readings (phase 20)
 
 Some checks need the NPC's current stats. The tips assume a RuneLite plugin that shows an NPC's current Defence or
 Magic (search the Plugin Hub for "defence"), or you can count hits. "Max hit" checks need many hits (50 or more) and
@@ -119,6 +121,25 @@ Stats, hp / Defence scaling and the damage rules are upstream's (verified in-gam
 | F6 | Olm | Hand phases = both claws' hp each; left-hand clench, penultimate heal, head siphon heal and transitions not modelled; melee on the head / right claw ÷3 from the wiki's "66% damage mitigation" (upstream lacks it) | Olm time too low; head / right-claw melee misjudged if the mitigation reading is wrong | Hit the head with melee in the final phase |
 | F7 | Drains on Olm | Each Olm target (each claw per phase, the head) gets the team's fresh first round of specs ("His stats also reset when a new phase starts"); spec energy across the 7 targets isn't budgeted | Olm drained DPS overstated for Team / Solo | — (model choice) |
 | F8 | Party range | 1-15 in the tab (CoX allows 1-100); a second extra Olm phase (16+) is out of range | — | — |
+| F9 | Lizardman shaman count | `shamanCount` follows the Strategies **table** (1-4 → 2, 5-9 → 3, 10-14 → 4, 15+ → 5); the Strategies **prose** says the count is "capped at 4". Wiki conflict (phase 19 review); the table is followed | Shaman time +25% at 15+ players if the prose is right (the tab stops at 15) | Count the shamans in a 15+ raid |
+
+## (G) Theatre of Blood (phase 20, Encounters tab / planner)
+
+Stats, hp scaling, Verzik P1's cap and the Sotetseg / Verzik floors are upstream's; these are the readings on top.
+
+| # | What | Assumed | Impact if wrong | In-game check |
+|---|---|---|---|---|
+| G1 | Verzik P1 cap model | Upstream's `linearMinTransformer`: damage = min(hit, a uniform roll 0..10 melee / 0..3 otherwise). The wiki / Mod Ash only say "capping damage ... at 10 / 3". With a plain min(hit, cap) the Scythe would deal ~2.4× more and beat the Dawnbringer's autos; under upstream's model the Dawnbringer is the best single loadout on P1 | P1 time and the P1 Search ranking | Hit splats on the shield: are 10s (melee) common or uniform-ish? |
+| G2 | One Dawnbringer | Its holder uses the kit's best on P1, the other (team − 1) the best without it (phase "Shield (Dawnbringer with a teammate)"); specs: 2 per player × 112.5 average, each one 4-tick attack of one player's time | P1 time ± a few s | — (model choice) |
+| G3 | Bloat downs | Damage only while down; drains only for the first 18 s down ("roughly 18 seconds"; the stomp restores Defence); walking time, halved damage while walking and later BGS run-bys not counted | Bloat time off by the walks (DPS time only) and by any re-drains | Time a down; read Bloat's Defence after a run-by and after the stomp |
+| G4 | Vasilias rotation | Equal time in each form (it changes every 10 ticks to a form "it is not currently using", random); wrong-style hits = can't hit (their reflect / heal isn't modelled); waves not counted | Nylocas time for kits weak in one style | Time each form over a few kills |
+| G5 | Maiden / Xarpus / Verzik heals | 0 by default (settings): leaked Matomenos, blood spawns, exhumeds, Athanatos, P2.5 blood spells, enrage tornadoes. Hard Mode Verzik's 30% heal is always added | Absolute times too low when heals happen | Time a few kills |
+| G6 | Xarpus phases | P1 starts at 75%; P2 → 25% (Entry 22.5%), P3 same stats (one "Phase 2 & 3" infobox); P3 quadrant stare not modelled | — | — (wiki) |
+| G7 | Sotetseg drains | Each third gets a fresh first round of specs ("Defence level is restored" after each maze); spec energy across thirds isn't budgeted. Upstream's 100 floor covers the normal / HM ids, not the Entry ids (10864 / 10865) | Drained Sotetseg DPS slightly overstated; Entry Sotetseg can be drained below 100 | Read Sotetseg's Defence after specs in Entry Mode |
+| G8 | Matomenos hp | monsters.json / infobox 100 (Maiden version), the Strategies page "200 Hitpoints (175 in 4-man and 150 in trios)". Wiki conflict; not a target here (no impact on times) | — | Monster Examine a Matomenos |
+| G9 | Entry Mode solo scaling | Upstream 10/40 = 25% at 1 player; the Maiden / Bloat pages say Entry Mode "can scale down to 20% ... in a solo party". Upstream kept | Entry solo hp +25% if the pages are right | Monster Examine a boss in a solo Entry raid |
+| G10 | Hard Mode extras | Bloat (2400 hp), Xarpus (6000 hp, Defence 200), 3 Prinkipas (each one rotation of its hp), Verzik +30% are modelled; other HM mechanic changes (Maiden's extra nylocas, falling flesh, poison pools, Verzik P3 aggro) are survival mechanics, not counted | Absolute HM times too low | — |
+| G11 | Default party / carriers | Party 4; carriers 2 Elder maul + 2 BGS (Strategies 4-scale Maiden plan) for every boss | Drained DPS where the real spec plan differs (Xarpus / Sotetseg roles) | — (choice) |
 
 ## HP scaling: how to fill the gap
 
