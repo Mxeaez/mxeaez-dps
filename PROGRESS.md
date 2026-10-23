@@ -3,6 +3,35 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 9 — Full gear search (2026-10-22)
+
+- "Search" tab on `/best-setup` (shares boss/phase/drains and assumptions with "Per boss"): style filter, Run, progress
+  bar (evaluations / estimate, current weapon), Cancel, top-10 table (DPS, gain vs best preset, TTK for the winner, max
+  hit, accuracy, style, full loadout, seed, Load into calculator), "Best per weapon" toggle, can't-hit weapons listed.
+- Pool `src/lib/fracturedArchive/searchCandidates.ts`: melee 14 weapons / 31 slot items / 5 set seeds; ranged 9 weapons
+  (12 ammo variants) / 22 + 4 atlatl-only items / 4 sets; magic 8 weapons (+ spells per boss) / 25 items / 4 sets.
+  2h → no shield (from item data); ammo per weapon (checked against `ammoApplicability`); blowpipe dart in itemVars.
+- Search `src/lib/fracturedArchive/search.ts` (pure): weapon × ammo × style/spell enumerated; per-slot dominance
+  pruning (relevant offensive stats, `keep` for effect items); coordinate ascent from pool defaults + every preset's
+  armour + every full set, max 3 passes, memoised; top-N distinct loadouts. `bestSetup.ts`: `applyLoadoutToPlayer`
+  extracted from `applyPresetToPlayer`; `styleLabel` / `cantHitReason` / `NON_CANDIDATE_STANCES` exported.
+- Worker: `WorkerRequestType.BEST_SETUP_SEARCH` (CalcWorkerTypes +23), own worker per run (`src/worker/searchWorker.ts`
+  + `searchWorkerClient.ts`) streaming progress; cancel = terminate. Page: BestSetup.tsx (+tab, shared selectors,
+  "load into calculator" moved to `loadIntoCalculator.ts`), new `SearchView.tsx`.
+- Results (Solo, default phase): the search confirms the best preset everywhere except **Jelly**: Ascension crossbows +
+  onyx (e) with **Elite void** 14.922 vs the Masori preset 14.053 (+6.2%). Notable: AG Flying Harmonised staff + Fire
+  Surge + Tome of Fire 10.264 > Shadow 9.753. Table in docs/BEST_SETUP.md "Search results".
+- Timing: ~1,200–1,330 evaluations per boss, all styles; browser 0.9–3.9 s (budget 15 s), Jest ~3–5 s.
+- Tests: `src/tests/lib/fracturedArchive/Search.test.ts` (171: names/slots/ammo/2h, pruning, spells, top >= best preset
+  on Xarth / AG Flying / Jelly / P2, Jelly void find, calculator parity, determinism, cancellation, toy brute force).
+  `yarn test` 926 (922 pass / 4 skipped), `yarn lint`, `tsc --noEmit`, `yarn build` clean.
+- UI: `node scripts/verifyGearSearch.mjs` — Xarth None top Obligator 12.839 / 58, Ocellus P2 Team 15.551 / 58 (= Jest),
+  loaded into the calculator: identical; Cancel OK; wall 1.3–5.4 s. Screenshots `docs/screenshots/phase9-search-*.png`.
+- CLAUDE.md: delete `.next` before `yarn build` too (a dev `.next` fails the build with PageNotFoundError /_document).
+
+Unverified / open: results inherit the Obligator one-accuracy-roll model and ascension (e) bolt procs; coordinate ascent
+only finds set effects that are seeded; only pool items are considered.
+
 ## Phase 8 fixes — review follow-ups (2026-10-22)
 
 - Boots: every preset now uses "Avernic treads (max)" (BiS for all styles; Primordial/Pegasian/Eternal documented as

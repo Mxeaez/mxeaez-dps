@@ -7,6 +7,7 @@ import {
 } from '@/lib/Comparator';
 import { BestSetupQuery, BestSetupResult } from '@/lib/fracturedArchive/bestSetup';
 import { BestSetupAssumptions } from '@/lib/fracturedArchive/presets';
+import { GearSearchProgress, GearSearchQuery, GearSearchResult } from '@/lib/fracturedArchive/search';
 
 /**
  * Requests
@@ -19,6 +20,7 @@ export enum WorkerRequestType {
   COMPUTE_TTK,
   COMPARE,
   BEST_SETUP, // Fractured Archive "Best setup" view (src/lib/fracturedArchive/bestSetup.ts)
+  BEST_SETUP_SEARCH, // Fractured Archive gear search; own worker (src/worker/searchWorker.ts), sends progress messages
 }
 
 export interface WorkerRequest<T extends WorkerRequestType> {
@@ -80,8 +82,17 @@ export interface BestSetupRequest extends WorkerRequest<WorkerRequestType.BEST_S
   },
 }
 
+export interface BestSetupSearchRequest extends WorkerRequest<WorkerRequestType.BEST_SETUP_SEARCH> {
+  data: {
+    basePlayer: Player,
+    query: GearSearchQuery,
+    assumptions: BestSetupAssumptions,
+  },
+}
+
 export type CalcRequestsUnion =
   BestSetupRequest |
+  BestSetupSearchRequest |
   ComputeBasicRequest |
   ComputeReverseRequest |
   CompareRequest |
@@ -123,8 +134,20 @@ export interface BestSetupResponse extends WorkerResponse<WorkerRequestType.BEST
   payload: BestSetupResult[],
 }
 
+export interface BestSetupSearchResponse extends WorkerResponse<WorkerRequestType.BEST_SETUP_SEARCH> {
+  payload: GearSearchResult,
+}
+
+/** Interim message of a BEST_SETUP_SEARCH (searchWorker.ts posts these before the final response). */
+export interface BestSetupSearchProgressMessage {
+  type: WorkerRequestType.BEST_SETUP_SEARCH,
+  sequenceId: number,
+  progress: GearSearchProgress,
+}
+
 export type CalcResponsesUnion =
   BestSetupResponse |
+  BestSetupSearchResponse |
   ComputeBasicResponse |
   ComputeReverseResponse |
   CompareResponse |

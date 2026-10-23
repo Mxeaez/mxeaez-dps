@@ -3,12 +3,9 @@
 import React, {
   useCallback, useEffect, useMemo, useState,
 } from 'react';
-import localforage from 'localforage';
 import { CalcProvider, useCalc } from '@/worker/CalcWorker';
 import { BestSetupRequest, WorkerRequestType } from '@/worker/CalcWorkerTypes';
 import { generateEmptyPlayer } from '@/state';
-import { ImportableData, IMPORT_VERSION } from '@/types/State';
-import { NUMBER_OF_LOADOUTS } from '@/lib/constants';
 import { PotionMap } from '@/utils';
 import Potion from '@/enums/Potion';
 import Spinner from '@/app/components/Spinner';
@@ -27,8 +24,10 @@ import {
 import {
   BestSetupAssumptions, DEFAULT_ASSUMPTIONS, PRESETS, StyleGroup,
 } from '@/lib/fracturedArchive/presets';
+import openInCalculator from '@/app/components/bestSetup/loadIntoCalculator';
+import SearchView from '@/app/components/bestSetup/SearchView';
 
-// Fractured Archive "Best setup" view (phase 8). Computation: src/lib/fracturedArchive/bestSetup.ts, run in the calc
+// Fractured Archive "Best setup" view (phase 8; "Search" tab phase 9). Computation: src/lib/fracturedArchive/bestSetup.ts, run in the calc
 // web worker (WorkerRequestType.BEST_SETUP). Docs: docs/BEST_SETUP.md.
 
 const fmt = (n: number, digits = 3) => (Number.isFinite(n) ? n.toFixed(digits) : '-');
@@ -41,10 +40,7 @@ const POTION_OPTIONS = (Object.keys(PotionMap) as unknown as string[])
 
 const GROUP_PRAYER: Record<StyleGroup, string> = { melee: 'Piety', ranged: 'Rigour', magic: 'Augury' };
 
-/**
- * Writes the preset + boss + drains into the main calculator's saved session (as a new loadout, or replacing the
- * selected one when all loadouts are used) and opens the calculator, which restores it on load.
- */
+/** Adds the preset with the boss + drains to the main calculator's saved session and opens the calculator. */
 const loadIntoCalculator = async (
   row: PresetResult,
   targetKey: string,
@@ -55,28 +51,7 @@ const loadIntoCalculator = async (
   const preset = PRESETS.find((p) => p.name === row.preset)!;
   const { monster } = buildTargetMonster(findTarget(targetKey), phase, drain, assumptions);
   const player = applyPresetToPlayer(generateEmptyPlayer(row.preset), preset, row.style, row.spell, monster, assumptions);
-
-  let data: ImportableData = {
-    serializationVersion: IMPORT_VERSION,
-    loadouts: [player],
-    selectedLoadout: 0,
-    monster,
-  };
-  try {
-    const saved = await localforage.getItem<ImportableData>('dps-calc-state');
-    if (saved && saved.serializationVersion === IMPORT_VERSION && saved.loadouts?.length) {
-      const loadouts = [...saved.loadouts];
-      let ix = loadouts.length;
-      if (ix >= NUMBER_OF_LOADOUTS) {
-        ix = saved.selectedLoadout || 0;
-      }
-      loadouts[ix] = player;
-      data = { ...data, loadouts, selectedLoadout: ix };
-    }
-  } catch (e) { /* no saved session: start a fresh one */ }
-
-  await localforage.setItem('dps-calc-state', data);
-  window.location.assign(`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/`);
+  await openInCalculator(player, monster);
 };
 
 const AssumptionsBox: React.FC<{
@@ -261,7 +236,7 @@ const SummaryView: React.FC<{ results: BestSetupResult[] }> = ({ results }) => (
 
 const BestSetupInner: React.FC = () => {
   const calc = useCalc();
-  const [mode, setMode] = useState<'boss' | 'summary'>('boss');
+  const [mode, setMode] = useState<'boss' | 'summary' | 'search'>('boss');
   const [targetKey, setTargetKey] = useState(BEST_SETUP_TARGETS[0].key);
   const [phase, setPhase] = useState<string | undefined>(undefined);
   const [drain, setDrain] = useState<DrainStateId>('team');
@@ -276,6 +251,9 @@ const BestSetupInner: React.FC = () => {
     let cancelled = false;
     setResults(null);
     setError(null);
+    if (mode === 'search') {
+      return undefined; // the Search tab runs its own worker on demand
+    }
     const req: BestSetupRequest = {
       type: WorkerRequestType.BEST_SETUP,
       data: {
@@ -321,12 +299,13 @@ const BestSetupInner: React.FC = () => {
           <div className="flex gap-1">
             <button type="button" className={tabClass(mode === 'boss')} onClick={() => setMode('boss')}>Per boss</button>
             <button type="button" className={tabClass(mode === 'summary')} onClick={() => setMode('summary')} data-testid="summary-tab">Summary</button>
+            <button type="button" className={tabClass(mode === 'search')} onClick={() => setMode('search')} data-testid="search-tab">Search</button>
           </div>
         </div>
         <div className="p-4 flex flex-col gap-3 dark:text-body-200">
           <AssumptionsBox value={assumptions} onChange={setAssumptions} />
 
-          {mode === 'boss' && (
+          {(mode === 'boss' || mode === 'search') && (
             <div className="flex flex-wrap gap-3 items-center">
               <label htmlFor="bs-boss" className="flex items-center gap-1 text-sm">
                 Boss
@@ -375,8 +354,16 @@ const BestSetupInner: React.FC = () => {
             </div>
           )}
 
+          {mode === 'search' && (
+            <SearchView
+              targetKey={targetKey}
+              phase={phase ?? phases[0]}
+              drain={drain}
+              assumptions={assumptions}
+            />
+          )}
           {error && <div className="text-red-600">{`Error: ${error}`}</div>}
-          {!results && !error && (
+          {mode !== 'search' && !results && !error && (
             <div className="flex items-center gap-2 text-sm" data-testid="loading">
               <Spinner className="w-4" />
               Computing…

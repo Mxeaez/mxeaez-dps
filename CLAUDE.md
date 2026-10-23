@@ -9,7 +9,8 @@ finder. Read `ROADMAP.md` (phases, decisions, data gaps) and `PROGRESS.md` (what
 - `yarn dev` → http://localhost:3001/osrs-dps (port 3000 is occupied on this machine; check the "Local:" line).
 - `yarn test` (Jest, ~10 s) and `yarn lint` must both be green before a phase is called done.
 - `yarn build` → static export in `out/`. **Stop `yarn dev` first** — a build while the dev server runs corrupts its
-  `.next` ("Cannot find module './NNNN.js'"); delete `.next` and restart `yarn dev` after building.
+  `.next` ("Cannot find module './NNNN.js'"); delete `.next` and restart `yarn dev` after building. Delete `.next`
+  before building too — a dev `.next` makes the build fail with "PageNotFoundError: /_document".
 - Playwright: `npx playwright screenshot --browser chromium --wait-for-timeout 4000 <url> <png>` for quick checks, or
   write a script using `@playwright/test`. Use it to verify UI changes: select the monster, set inputs, read the DPS
   numbers on screen, and save a screenshot under `docs/screenshots/`.

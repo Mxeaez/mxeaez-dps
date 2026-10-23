@@ -262,7 +262,7 @@ export const potionBoosts = (skills: PlayerSkills, potions: Player['buffs']['pot
   return boosts;
 };
 
-const NON_CANDIDATE_STANCES = ['Defensive', 'Defensive Autocast', 'Manual Cast'];
+export const NON_CANDIDATE_STANCES = ['Defensive', 'Defensive Autocast', 'Manual Cast'];
 
 /** The combat styles a preset tries (deduplicated by name + stance). */
 export const presetStyles = (preset: PresetDef): PlayerCombatStyle[] => {
@@ -276,6 +276,46 @@ export const presetStyles = (preset: PresetDef): PlayerCombatStyle[] => {
 export const presetSpells = (preset: PresetDef): (string | null)[] => (preset.spells?.length ? preset.spells : [null]);
 
 /**
+ * {@link applyPresetToPlayer} with already-resolved equipment (used by the gear search, phase 9, which resolves its
+ * pool once). `equipment` is merged over the base player's equipment.
+ */
+export const applyLoadoutToPlayer = (
+  base: Player,
+  name: string,
+  group: StyleGroup,
+  equipment: Partial<PlayerEquipment>,
+  style: PlayerCombatStyle,
+  spellName: string | null,
+  monster: Monster,
+  assumptions: BestSetupAssumptions,
+): Player => {
+  const potion = assumptions.potions[group];
+  const prayer = group === 'melee' && assumptions.useZeal ? Prayer.ZEAL : PRAYERS[group];
+  const spell = spellName ? spells.find((s) => s.name === spellName) : null;
+  if (spellName && !spell) {
+    throw new Error(`Best setup: no spell named '${spellName}'`);
+  }
+
+  const player: Player = {
+    ...base,
+    name,
+    equipment: { ...base.equipment, ...equipment },
+    style,
+    spell: spell || null,
+    prayers: [prayer],
+    buffs: {
+      ...base.buffs,
+      potions: [potion],
+      elementalFragments: group === 'magic' && assumptions.elementalFragments
+        ? Object.fromEntries(ALL_ELEMENTS.map((e) => [e, true]))
+        : {},
+    },
+  };
+  player.boosts = { ...player.boosts, ...potionBoosts(player.skills, player.buffs.potions) };
+  return { ...player, ...calculateEquipmentBonusesFromGear(player, monster) };
+};
+
+/**
  * Applies a preset to a base player (pass `generateEmptyPlayer()` from '@/state'; taken as a parameter so this module
  * stays importable from the worker): 99s, equipment, style, spell, potion, prayer, fragments, then the bonuses and
  * attack speed exactly as the store computes them.
@@ -287,32 +327,16 @@ export const applyPresetToPlayer = (
   spellName: string | null,
   monster: Monster,
   assumptions: BestSetupAssumptions,
-): Player => {
-  const potion = assumptions.potions[preset.group];
-  const prayer = preset.group === 'melee' && assumptions.useZeal ? Prayer.ZEAL : PRAYERS[preset.group];
-  const spell = spellName ? spells.find((s) => s.name === spellName) : null;
-  if (spellName && !spell) {
-    throw new Error(`Best setup: no spell named '${spellName}'`);
-  }
-
-  const player: Player = {
-    ...base,
-    name: preset.name,
-    equipment: { ...base.equipment, ...resolvePresetEquipment(preset) },
-    style,
-    spell: spell || null,
-    prayers: [prayer],
-    buffs: {
-      ...base.buffs,
-      potions: [potion],
-      elementalFragments: preset.group === 'magic' && assumptions.elementalFragments
-        ? Object.fromEntries(ALL_ELEMENTS.map((e) => [e, true]))
-        : {},
-    },
-  };
-  player.boosts = { ...player.boosts, ...potionBoosts(player.skills, player.buffs.potions) };
-  return { ...player, ...calculateEquipmentBonusesFromGear(player, monster) };
-};
+): Player => applyLoadoutToPlayer(
+  base,
+  preset.name,
+  preset.group,
+  resolvePresetEquipment(preset),
+  style,
+  spellName,
+  monster,
+  assumptions,
+);
 
 // --- evaluation ----------------------------------------------------------------------------------------------------
 
@@ -364,9 +388,9 @@ export interface PresetResult {
   error?: string;
 }
 
-const styleLabel = (style: PlayerCombatStyle, spell: string | null): string => `${style.name} (${style.stance})${spell ? `, ${spell}` : ''}`;
+export const styleLabel = (style: PlayerCombatStyle, spell: string | null): string => `${style.name} (${style.stance})${spell ? `, ${spell}` : ''}`;
 
-const cantHitReason = (monster: Monster, style: PlayerCombatStyle, issues: string[]): string => {
+export const cantHitReason = (monster: Monster, style: PlayerCombatStyle, issues: string[]): string => {
   if (issues.length) return issues.join(' ');
   if (monster.attributes.includes(MonsterAttribute.FLYING) && ['stab', 'slash', 'crush'].includes(style.type || '')) {
     return 'Flying: melee can\'t reach it';
