@@ -15,6 +15,7 @@ import { ttkDist } from '@/worker/ttkWorker';
 import { range } from 'd3-array';
 import { DeferredPromise, WORKER_JSON_REPLACER, WORKER_JSON_REVIVER } from '@/utils';
 import { NUMBER_OF_LOADOUTS } from '@/lib/constants';
+import { computeBestSetup } from '@/lib/fracturedArchive/bestSetup';
 
 const computePvMValues: Handler<WorkerRequestType.COMPUTE_BASIC> = async (data) => {
   const { loadouts, monster, calcOpts } = data;
@@ -240,6 +241,11 @@ self.onmessage = async (evt: MessageEvent<string>) => {
 
       case WorkerRequestType.COMPUTE_TTK_PARALLEL: {
         res.payload = await ttkDistParallel(data, req);
+        break;
+      }
+
+      case WorkerRequestType.BEST_SETUP: {
+        res.payload = computeBestSetup(data.basePlayer, data.queries, data.assumptions, undefined, data.ttk);
         break;
       }
 

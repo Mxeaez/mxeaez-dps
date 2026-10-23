@@ -1,0 +1,211 @@
+import { PlayerEquipment } from '@/types/Player';
+import Potion from '@/enums/Potion';
+
+/**
+ * Named setups for the "Best setup" view (phase 8, /best-setup). Plain data — edit freely.
+ *
+ * HOW TO ADD / EDIT A PRESET
+ * - Copy an entry below and change `name` (shown in the table; must be unique) and the items.
+ * - Items are referenced by their exact name in cdn/json/equipment.json (the name shown in the calculator's item
+ *   search). If an item has several versions (e.g. "Charged" / "Uncharged", "Restored", "Unpoisoned"), the plain one is
+ *   picked automatically (see `ITEM_VERSION_PREFERENCE` in bestSetup.ts); to force one, write `['Name', 'Version']`.
+ *   `src/tests/lib/fracturedArchive/Presets.test.ts` fails if a name doesn't exist, so run `yarn test` after editing.
+ * - Leave a slot out to keep it empty. Two-handed weapons must not have a `shield`.
+ * - `group` picks the potion and prayer from the assumptions box (melee: Piety or Zeal; ranged: Rigour; magic: Augury).
+ * - `styles`: combat style names to try (as in the calculator's style list, e.g. 'Chop', 'Jab', 'Rapid'); every style
+ *   with that name is tried and the best one per boss is shown. Leave it out to try every non-defensive style.
+ * - `spells`: for autocasting presets, spell names to try (the best one per boss is shown).
+ * - `note`: optional short text shown under the name.
+ *
+ * Substitutions vs the user's list (ROADMAP.md, "Presets for phase 8"), all items checked to exist in the data:
+ * - Melee neck: Amulet of rancour (BiS) instead of Amulet of torture; swap the name to use torture.
+ * - Plain variants used where a cosmetic/upgraded one exists: "Amulet of torture" not "(or)", "Torva full helm"
+ *   (Restored) not Sanguine, "Oathplate chest" not Radiant, "Scythe of Vitur" (Charged) not Holy/Sanguine,
+ *   "Dizana's quiver" (Charged) not Blessed, "Elidinis' ward (f)" (the BiS shield for the Kodai preset; "(or)" is
+ *   cosmetic). Masori uses the "(f)" pieces (fortified, BiS) as asked.
+ * - Shadow / Zorya's tome / Twisted bow / Scythe / Obligator / Ascension crossbows are two-handed → no shield.
+ * - Boots: Primordial / Pegasian / Eternal (Avernic treads variants exist in the data but aren't used here).
+ * - Added "Ancestral + Kodai (best Surge)" so the elemental weaknesses and fragment toggles have a spell to act on.
+ */
+
+export type StyleGroup = 'melee' | 'ranged' | 'magic';
+
+/** Item name, or [name, version] to pick a specific version. */
+export type ItemRef = string | [name: string, version: string];
+
+export interface PresetDef {
+  name: string;
+  group: StyleGroup;
+  equipment: Partial<Record<keyof PlayerEquipment, ItemRef>>;
+  styles?: string[];
+  spells?: string[];
+  note?: string;
+}
+
+// Shared slot fillers (best in slot per style)
+const MELEE_FILL = {
+  cape: 'Infernal cape',
+  neck: 'Amulet of rancour',
+  hands: 'Ferocious gloves',
+  feet: 'Primordial boots',
+  ring: 'Ultor ring',
+  ammo: "Rada's blessing 4",
+};
+
+const INQUISITOR = {
+  head: "Inquisitor's great helm",
+  body: "Inquisitor's hauberk",
+  legs: "Inquisitor's plateskirt",
+};
+
+const TORVA = {
+  head: 'Torva full helm',
+  body: 'Torva platebody',
+  legs: 'Torva platelegs',
+};
+
+const MASORI_F = {
+  head: 'Masori mask (f)',
+  body: 'Masori body (f)',
+  legs: 'Masori chaps (f)',
+  cape: "Dizana's quiver",
+  neck: 'Necklace of anguish',
+  hands: 'Zaryte vambraces',
+  feet: 'Pegasian boots',
+  ring: 'Venator ring',
+};
+
+const ANCESTRAL = {
+  head: 'Ancestral hat',
+  body: 'Ancestral robe top',
+  legs: 'Ancestral robe bottom',
+  cape: 'Imbued Guthix cape',
+  neck: 'Occult necklace',
+  hands: 'Confliction gauntlets',
+  feet: 'Eternal boots',
+  ring: 'Magus ring',
+  ammo: "Rada's blessing 4",
+};
+
+export const PRESETS: PresetDef[] = [
+  // --- melee ---
+  {
+    name: "Inquisitor's mace (full crush)",
+    group: 'melee',
+    equipment: {
+      ...MELEE_FILL, ...INQUISITOR, weapon: "Inquisitor's mace", shield: 'Avernic defender',
+    },
+    styles: ['Pound', 'Pummel'],
+  },
+  {
+    name: "Inquisitor's + Scythe (slash)",
+    group: 'melee',
+    equipment: { ...MELEE_FILL, ...INQUISITOR, weapon: 'Scythe of Vitur' },
+    styles: ['Reap', 'Chop'],
+  },
+  {
+    name: "Inquisitor's + Scythe (crush)",
+    group: 'melee',
+    equipment: { ...MELEE_FILL, ...INQUISITOR, weapon: 'Scythe of Vitur' },
+    styles: ['Jab'],
+  },
+  {
+    name: 'Torva + Scythe (slash)',
+    group: 'melee',
+    equipment: { ...MELEE_FILL, ...TORVA, weapon: 'Scythe of Vitur' },
+    styles: ['Reap', 'Chop'],
+  },
+  {
+    name: 'Torva helm + Oathplate + Scythe (slash)',
+    group: 'melee',
+    equipment: {
+      ...MELEE_FILL,
+      head: 'Torva full helm',
+      body: 'Oathplate chest',
+      legs: 'Oathplate legs',
+      weapon: 'Scythe of Vitur',
+    },
+    styles: ['Reap', 'Chop'],
+  },
+  {
+    name: "Inquisitor's + Obligator",
+    group: 'melee',
+    equipment: { ...MELEE_FILL, ...INQUISITOR, weapon: 'Obligator' },
+    styles: ['Thrust', 'Smash'],
+  },
+  {
+    name: 'Torva + Obligator',
+    group: 'melee',
+    equipment: { ...MELEE_FILL, ...TORVA, weapon: 'Obligator' },
+    styles: ['Thrust', 'Smash'],
+  },
+
+  // --- ranged ---
+  {
+    name: 'Twisted bow (Masori)',
+    group: 'ranged',
+    equipment: { ...MASORI_F, weapon: 'Twisted bow', ammo: ['Dragon arrow', 'Unpoisoned'] },
+    styles: ['Accurate', 'Rapid'],
+  },
+  {
+    name: 'Ascension crossbows + diamond (e) (Masori)',
+    group: 'ranged',
+    equipment: { ...MASORI_F, weapon: 'Ascension crossbows', ammo: 'Diamond ascension bolts (e)' },
+    styles: ['Accurate', 'Rapid'],
+  },
+  {
+    name: 'Ascension crossbows + onyx (e) (Masori)',
+    group: 'ranged',
+    equipment: { ...MASORI_F, weapon: 'Ascension crossbows', ammo: 'Onyx ascension bolts (e)' },
+    styles: ['Accurate', 'Rapid'],
+  },
+
+  // --- magic ---
+  {
+    name: "Tumeken's shadow (Ancestral)",
+    group: 'magic',
+    equipment: { ...ANCESTRAL, weapon: "Tumeken's shadow" },
+  },
+  {
+    name: "Zorya's tome (Ancestral)",
+    group: 'magic',
+    equipment: { ...ANCESTRAL, weapon: "Zorya's tome" },
+    note: 'Spec and empowered follow-up attacks not modelled',
+  },
+  {
+    name: 'Kodai + best Surge (Ancestral)',
+    group: 'magic',
+    equipment: { ...ANCESTRAL, weapon: 'Kodai wand', shield: "Elidinis' ward (f)" },
+    styles: ['Spell'],
+    spells: ['Fire Surge', 'Water Surge', 'Earth Surge', 'Wind Surge'],
+  },
+];
+
+/**
+ * Player assumptions for every preset (editable in the view's "Assumptions" box). All skills are 99.
+ * Potions: CoX-only (Overload, super ranging/magic) and ToA-only (Smelling salts) boosts are excluded by default since
+ * they don't work in the Fractured Archive.
+ */
+export interface BestSetupAssumptions {
+  potions: Record<StyleGroup, Potion>;
+  /** Melee presets use Zeal (Fractured Archive prayer) instead of Piety. */
+  useZeal: boolean;
+  /** Magic presets have all four elemental fragments unlocked (+2 base max hit for elemental spells). */
+  elementalFragments: boolean;
+  /** Party size (2-8); HP scaling is currently an identity table (unverified), so this only matters once it's filled. */
+  partySize: number;
+  /** Eye of Ayak damage assumed for the "Solo" drain state (capped at the boss's magic defence bonus). */
+  soloAyakDamage: number;
+}
+
+export const DEFAULT_ASSUMPTIONS: BestSetupAssumptions = {
+  potions: {
+    melee: Potion.SUPER_COMBAT,
+    ranged: Potion.RANGING,
+    magic: Potion.SATURATED_HEART,
+  },
+  useZeal: false,
+  elementalFragments: true,
+  partySize: 2,
+  soloAyakDamage: 80,
+};

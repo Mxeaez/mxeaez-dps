@@ -5,6 +5,8 @@ import { CalcOpts } from '@/lib/BaseCalc';
 import {
   CompareResult, CompareXAxis, CompareYAxis,
 } from '@/lib/Comparator';
+import { BestSetupQuery, BestSetupResult } from '@/lib/fracturedArchive/bestSetup';
+import { BestSetupAssumptions } from '@/lib/fracturedArchive/presets';
 
 /**
  * Requests
@@ -16,6 +18,7 @@ export enum WorkerRequestType {
   COMPUTE_TTK_PARALLEL,
   COMPUTE_TTK,
   COMPARE,
+  BEST_SETUP, // Fractured Archive "Best setup" view (src/lib/fracturedArchive/bestSetup.ts)
 }
 
 export interface WorkerRequest<T extends WorkerRequestType> {
@@ -68,7 +71,17 @@ export interface TtkRequestParallel extends WorkerRequest<WorkerRequestType.COMP
   data: TtkRequest['data']
 }
 
+export interface BestSetupRequest extends WorkerRequest<WorkerRequestType.BEST_SETUP> {
+  data: {
+    basePlayer: Player,
+    queries: BestSetupQuery[],
+    assumptions: BestSetupAssumptions,
+    ttk: 'all' | 'top',
+  },
+}
+
 export type CalcRequestsUnion =
+  BestSetupRequest |
   ComputeBasicRequest |
   ComputeReverseRequest |
   CompareRequest |
@@ -106,7 +119,12 @@ export interface TtkResponseParallel extends WorkerResponse<WorkerRequestType.CO
   payload: TtkResponse['payload'],
 }
 
+export interface BestSetupResponse extends WorkerResponse<WorkerRequestType.BEST_SETUP> {
+  payload: BestSetupResult[],
+}
+
 export type CalcResponsesUnion =
+  BestSetupResponse |
   ComputeBasicResponse |
   ComputeReverseResponse |
   CompareResponse |

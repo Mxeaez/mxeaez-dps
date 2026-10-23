@@ -2,13 +2,17 @@ import { useStore } from '@/state';
 import {
   IconBrandDiscord,
   IconShare2,
+  IconTrophy,
 } from '@tabler/icons-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import wiki from '@/public/img/Wiki@2x.webp';
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 
 const TopBar: React.FC = observer(() => {
   const store = useStore();
+  const onBestSetup = usePathname()?.endsWith('/best-setup');
 
   return (
     <div className="mx-auto px-3 sm:px-6 lg:px-8 bg-btns-400 dark:bg-dark-500 shadow border-b-4 border-body-500 dark:border-dark-200">
@@ -25,6 +29,14 @@ const TopBar: React.FC = observer(() => {
           </div>
           <div className="block ml-6">
             <div className="flex text-body-200 text-xs font-medium space-x-2">
+              {/* Fractured Archive "Best setup" view (src/app/best-setup) */}
+              <Link
+                href={onBestSetup ? '/' : '/best-setup'}
+                className="transition-all hover:scale-105 no-underline text-white border border-body-500 bg-[#3e2816] py-1.5 px-2.5 rounded-md dark:bg-dark-300 dark:border-dark-200 flex items-center gap-1"
+              >
+                <IconTrophy size={20} aria-label="Best setup" />
+                <div className="hidden md:block">{onBestSetup ? 'Calculator' : 'Best setup'}</div>
+              </Link>
               <a
                 href="https://discord.gg/JXeUnR9stP"
                 target="_blank"

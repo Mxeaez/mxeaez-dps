@@ -3,6 +3,34 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 8 — Best setup view (2026-10-22)
+
+- New route `/best-setup` (static export → `out/best-setup.html`), "Best setup" button in the top bar (TopBar +12).
+  "Per boss" table: every preset ranked by DPS with best style, expected TTK, max hit, accuracy, DPS under the other
+  drain states, greyed "can't hit" rows with the reason, "Load into calculator" (adds a loadout with the boss, phase and
+  drains and opens the calculator). "Summary": best preset per boss/phase (17 rows incl. Bork armour 8 + Stunned,
+  P1 both options, all P3 options) × None / Solo / Team. Assumptions box: potions per style, Zeal, elemental
+  fragments, party size, solo Ayak damage.
+- Presets: `src/lib/fracturedArchive/presets.ts` (13: Inquisitor's mace, Inquisitor's/Torva/Torva+Oathplate Scythe,
+  Inquisitor's Scythe crush, Obligator ×2, Twisted bow, Ascension crossbows diamond/onyx (e), Shadow, Zorya's tome,
+  Kodai + best Surge). Computation: `src/lib/fracturedArchive/bestSetup.ts` (pure; `evaluateLoadout` = the worker's
+  COMPUTE_BASIC calls), run in the calc worker via new `WorkerRequestType.BEST_SETUP` (CalcWorkerTypes +18,
+  worker.ts +6). Drain states: None; Solo = Elder maul floor + Ayak 80 (capped); Team = floor + Ayak to 0.
+- 7b leftovers: Maggot King "Melee Punish" no longer replaces Obligator thrust with a plain roll (best-of rolls kept,
+  then ×1.5; PlayerVsNPCCalc +4/−1); alias script uses "Holy/Sanguine Scythe of Vitur".
+- Tests: `src/tests/lib/fracturedArchive/Presets.test.ts` (item names/slots, valid players per style, boosts, Zeal and
+  fragments, targets/phases, phase 7 spec counts per boss, Shadow vs AG Flying Team == direct PlayerVsNPCCalc (69 /
+  10.427), computeBestSetup == evaluateLoadout, sorted ranking, can't-hit reasons, P2 TTK n/a, Maggot King punish).
+  `yarn test` 754 (750 pass / 4 skipped), `yarn lint`, `tsc --noEmit`, `yarn build` clean.
+- UI: `node scripts/verifyBestSetup.mjs` — Shadow AG Flying Team 10.427 / 69 (= Jest), 7 melee rows greyed, Bork Team
+  drains "2× Elder maul, 8× Ayak (300 dmg)", P2 TTK n/a, Summary 17 rows; "Load into calculator" for Bork Team
+  (Inquisitor's + Obligator 10.496 / 50) and AG Flying Solo (Twisted bow 10.055 / 81) shows the same numbers in the main
+  calculator. Screenshots `docs/screenshots/phase8-bork.png`, `-ocellus-p2.png`, `-summary.png`, `-loaded-*.png`.
+- Docs: `docs/BEST_SETUP.md` (editing presets, assumptions, drain states, caveats).
+
+Unverified / open: TTK uses unscaled HP (relative only); last-quadrant rankings low-confidence; Obligator "one accuracy
+roll" reading drives most melee wins; Zorya's tome spec/follow-ups not modelled (undervalued).
+
 ## Phase 7b — Equipment refresh: Fractured Archive rewards (2026-10-22)
 
 - Re-ran `scripts/generateEquipment.py` (minimal Windows UTF-8 fix). equipment.json 5436 → 5463: 27 new entries

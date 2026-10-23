@@ -1663,6 +1663,9 @@ export default class PlayerVsNPCCalc extends BaseCalc {
 
     if (this.isUsingMeleeStyle() && isObligatorThrust(this.player)) {
       dist = new AttackDistribution([obligatorHitDistribution(firstHitAcc, min, max, this.monster)]);
+      if (isMaggotKingMeleePunish) {
+        dist = dist.scaleDamage(150, 100);
+      }
     }
 
     if (this.isUsingMeleeStyle() && this.wearing('Dual macuahuitl')) {
@@ -1788,7 +1791,7 @@ export default class PlayerVsNPCCalc extends BaseCalc {
       dist = dist.scaleDamage(6, 5);
     }
 
-    if (!(this.isWearingScythe() || this.isWearingTwoHitWeapon() || this.wearing('Dual macuahuitl') || this.isWearingDharok()) && isMaggotKingMeleePunish) {
+    if (!(this.isWearingScythe() || this.isWearingTwoHitWeapon() || this.wearing('Dual macuahuitl') || this.isWearingDharok() || isObligatorThrust(this.player)) && isMaggotKingMeleePunish) {
       dist = new AttackDistribution([
         HitDistribution.linear(firstHitAcc, min, Math.max(min, max)),
       ]);
