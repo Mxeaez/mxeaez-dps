@@ -90,6 +90,9 @@ Best preset per boss/phase (default option), DPS under None / Solo / Team:
 
 ## Known caveats
 
+Every unverified reading, with how to check it in-game, is in [UNVERIFIED.md](UNVERIFIED.md); group (A) there lists
+the ones that could change a winner.
+
 - **HP scaling is unverified** (identity table, infobox HP at every party size) → expected TTK is only useful to
   compare setups, not as real kill times.
 - **Ocellus P2 (The Blade)**: DPS is damage to the Blade (50% transfers to P3); TTK shown as n/a.

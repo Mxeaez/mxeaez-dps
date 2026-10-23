@@ -10,7 +10,9 @@ What this fork adds on top of upstream:
 * **Best setup** (`/best-setup`): ranks gear presets per boss and runs a full gear **search** in a web worker.
 * Images served from this repo's `cdn/` folder, so new monsters have images.
 
-Data sources and unverified values are listed in [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md); the work is logged in
+Unverified values and how to check them in-game: [docs/UNVERIFIED.md](docs/UNVERIFIED.md). Data sources:
+[docs/DATA_SOURCES.md](docs/DATA_SOURCES.md). Merging upstream: [docs/UPSTREAM_MERGE.md](docs/UPSTREAM_MERGE.md).
+The work is logged in
 [ROADMAP.md](ROADMAP.md) and [PROGRESS.md](PROGRESS.md). See [NOTICE](NOTICE) for license and modification notes,
 and [docs/DEPLOY.md](docs/DEPLOY.md) for the Cloudflare Pages setup.
 

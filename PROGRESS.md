@@ -3,6 +3,27 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 11 — Final review (2026-10-22)
+
+- Cross-cutting pass over `src/lib/fracturedArchive/*`, `src/lib/scaling/FracturedArchive.ts` and every upstream hook.
+  Checked: Obligator best-of-N × stunned Bork (accuracy 1, armour 0) and × Bork armour phases; Ocellus void explosions
+  × Obligator; drain plans × phase options (no phase changes Defence); AG ancient immunity × search spell list (uses
+  `isImmuneToSpell`); demonbane table × TD logic (Xarth not a TD); every id list built from the `*_IDS` constants
+  (P1 16673/16674, P2 100090/16675/16676, AG 16660, Dagon'hai unshielded); every hook gated by id. No code defects
+  found. New `src/tests/lib/fracturedArchive/CrossCutting.test.ts` (5 tests) pins these interactions, including "no
+  raid hook fires for a non-raid monster that has a raid phase string or party size".
+- Stale docs fixed: DATA_SOURCES Ocellus P2 floor line (now "0, verified") and the CDN-images note (fixed in phase 10
+  for production).
+- New `docs/UNVERIFIED.md`: every unverified value with the assumption, where it's used, the impact if wrong and an
+  in-game check, grouped (A) could change the winner / (B) numbers only / (C) TTK or cosmetic. Also covers how to
+  record HP at 2–3 team sizes for `FRACTURED_ARCHIVE_HP_SCALING`, and known limitations.
+- New `docs/UPSTREAM_MERGE.md`: merge steps, regenerating monsters/equipment, upstream files touched with line counts
+  and conflict risk (highest: `PlayerVsNPCCalc.ts` ~9 small hunks; `Prayer.ts` Zeal = 21 if upstream adds a prayer).
+  No consolidation (hooks are already minimal).
+- ROADMAP: phase status column, "Known data gaps" now points to UNVERIFIED.md, "Future work" section. README,
+  DATA_SOURCES and BEST_SETUP link to UNVERIFIED.md. `git grep` for personal info: none.
+- `yarn test` 932 pass / 4 skipped; `yarn lint`, `tsc --noEmit` clean.
+
 ## Phase 10 fixes — review follow-ups (2026-10-22)
 
 - DEPLOY.md: correct largest-file sizes (equipment.json 3.2 MB, monsters.json 2.5 MB, JS chunk ~2 MB); primary build

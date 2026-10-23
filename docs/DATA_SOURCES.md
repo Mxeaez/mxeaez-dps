@@ -15,7 +15,8 @@ https://github.com/runelite/runelite/blob/master/runelite-api/src/main/java/net/
 NPC 16683 (cutscene/entry, not a combat target), Xarth 16684.
 
 Fields marked **unverified** are not taken from the wiki or are guesses. Anything not listed as unverified matches
-the wiki infobox exactly.
+the wiki infobox exactly. **The user-facing checklist of every unverified value, with how to check it in-game, is
+[UNVERIFIED.md](UNVERIFIED.md).**
 
 Common sources:
 
@@ -53,9 +54,9 @@ Common sources:
   The Smorks, Dreadnoth, Jelly and Ocellus P2 0 (no cap; P2 verified by the news post above; Jelly not in the table or
   the news list, assumed uncapped, **unverified**).
 - Practice mode lets the boss be started at a chosen phase (raid page) — irrelevant to stats.
-- Monster images in `cdn/monsters/` are committed, but the app loads images from the upstream CDN
-  (`getCdnImage` in `src/utils.ts` → `tools.runescape.wiki/osrs-dps/cdn/`), where the raid images don't exist yet, so
-  raid monster images show as broken locally. Fix at deploy time (phase 10) if wanted.
+- Monster images in `cdn/monsters/` are committed. Production serves them from our own `/cdn` (phase 10,
+  `NEXT_PUBLIC_CDN_URL`); `yarn dev` still loads images from the upstream CDN, where the raid images don't exist, so
+  they show as broken locally only.
 
 ## Party-size HP scaling (phase 2 research, 2026-10-22)
 
@@ -301,7 +302,7 @@ stab 150 / slash 120 / crush 10 / magic 100 / light 100 / standard 110 / heavy 8
 Mechanics (page body + Strategies → *Ocellus*):
 
 - Defence floor 129 in P1 (`215 × 0.6`), 150 in P3 (`250 × 0.6`) — page body. P2: page body says 150, Strategies
-  table says 0 — see the conflict note under *Raid-wide notes* (recommendation: 0). 21 Oct hotfix: "Ocellus will
+  table says 0 — resolved: **0, verified** by the news post (see *Raid-wide notes*). 21 Oct hotfix: "Ocellus will
   no longer restore his Defence when moving to a new quadrant during phase 3" (page *Changes*) — drains persist
   through P3/P4.
 - Multi-id: P1 uses ids 16673 and 16674; any `OCELLUS_IDS` constant in phase 6 should list 16673, 16674, 16677 and
