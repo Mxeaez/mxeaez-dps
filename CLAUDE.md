@@ -15,7 +15,8 @@ finder. Read `ROADMAP.md` (phases, decisions, data gaps) and `PROGRESS.md` (what
 - Monster data refresh: `cd scripts; uv run generateMonsters.py` (writes `cdn/json/monsters.json`, downloads images to `cdn/monsters/`).
 - Wiki Bucket API (what the generator uses), one monster per query:
   `https://oldschool.runescape.wiki/api.php?action=bucket&format=json&query=bucket('infobox_monster').select('page_name_sub','hitpoints',...).where('page_name','Xarth').run()`
-  Send a `User-Agent` header. `where(...,'in',{...})` is not supported.
+  Send a generic `User-Agent` header such as `mxeaez-dps (private fork of osrs-dps-calc)` — no personal info (no
+  email or names). `where(...,'in',{...})` is not supported.
 
 ## Where things live
 

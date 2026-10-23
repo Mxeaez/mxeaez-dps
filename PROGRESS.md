@@ -3,6 +3,16 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 1 fixes — review follow-ups (2026-10-22)
+
+- DATA_SOURCES.md: added the Strategies "Maximum defence reduction" table (Smorks 0, Dreadnoth 0, The Blade/P2 0);
+  recorded the P2 floor conflict (Ocellus page 150 vs table 0) and recommend 0 for phase 2 (**unverified**).
+- Ocellus P2: noted NPC The Blade (Repaired) id 16683; kept synthetic id 100090 (reason in DATA_SOURCES.md);
+  P2 is time-limited so HP-dependent effects are unreliable.
+- Ocellus P3: Untether (out of melee range) and the unclear "Protect from Melee overhead" hotfix documented.
+- Xarth "stats unchanged in phase 2" marked as inference; flying note mentions salamanders.
+- CLAUDE.md: generic User-Agent, no personal info.
+
 ## Phase 1 — Data refresh (2026-10-22)
 
 - Re-ran `scripts/generateMonsters.py` (minimal Windows fix: open JSON files as UTF-8). monsters.json 2860 → 2918

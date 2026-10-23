@@ -26,8 +26,21 @@ Common sources:
 - Defence drain cap of 60% of base defence (21 Oct 2026 hotfix). **Sources disagree on the list:** the raid page
   *Changes* section lists Archive Guardian, Ezekiel, Moia, Xarth, Ocellus; the news quote on every boss page lists
   Archive Guardian, **Bork**, Ezekiel, Moia, Xarth, Ocellus. Bork's own page states his floor (180), so we treat Bork
-  as capped. The Smorks, Dreadnoth, Jelly, Dagon'hai: no cap mentioned (assume uncapped, **unverified**).
-- Floors stated on the wiki: Archive Guardian 156, Bork 180, Xarth 102, Ocellus 129 (P1) / 150 (P2, P3).
+  as capped.
+- **"Maximum defence reduction" table** (Strategies → *Equipment/Inventory* section, wikitable captioned
+  "Maximum defence reduction", columns initial / lowest defence / reduction method) gives lowest defence:
+  Archive Guardian 156, Ezekiel 78, Bork 180, **The Smorks 0**, Moia 117, **Dreadnoth 0**, Xarth 102,
+  Ocellus P1 129, **The Blade (Phase 2) 0**, Ocellus P3 150; Dagon'hai Elder/Monk "-" (not given).
+  This is consistent with the 60% cap applying only to the hotfix NPCs and everything else being fully drainable.
+- **Conflict — Ocellus P2 floor:** the Ocellus page body says "150 in phases 2 and 3 (`250 × 0.6`)"; the Strategies
+  table says The Blade (Phase 2) can be drained to **0** (2 Elder Maul + 4 Tonalztics of Ralos).
+  **Recommendation for phase 2: use 0 for P2** (uncapped), marked **unverified**. Reasons: the P2 target is a separate
+  NPC (The Blade, id 16683 — see Ocellus section), the hotfix/news list names "Ocellus" and not The Blade, the table
+  is NPC-specific and lists a concrete drain sequence (looks empirical), while the page-body sentence reads as
+  arithmetic applied to the infobox defence of both 250-defence versions. Keep the floor a per-monster constant so
+  it is a one-line change if 150 turns out to be right.
+- Floors to use: Archive Guardian 156, Ezekiel 78, Bork 180, Moia 117, Xarth 102, Ocellus P1 129 / P3 150;
+  The Smorks, Dreadnoth, Jelly and Ocellus P2 0 (no cap; Jelly not in the table, assumed uncapped, **unverified**).
 - Practice mode lets the boss be started at a chosen phase (raid page) — irrelevant to stats.
 - Monster images in `cdn/monsters/` are committed, but the app loads images from the upstream CDN
   (`getCdnImage` in `src/utils.ts` → `tools.runescape.wiki/osrs-dps/cdn/`), where the raid images don't exist yet, so
@@ -50,7 +63,7 @@ Mechanics for later phases:
 - Immune to Ancient Magicks (page body). The calculator has no immunity field for this — phase 3 must block/flag it.
 - "Magic level reducing effects (Accursed sceptre, etc.) seem to be absorbed" (page body) — magic drains don't work.
 - Flying vs Grounded: while flying only ranged, magic and halberds can hit it (Strategies → *Archive Guardian*);
-  the `flying` attribute already makes upstream block non-halberd melee. Grounded after the shield bar is depleted.
+  the `flying` attribute already makes upstream block melee except halberds and salamanders (`PlayerVsNPCCalc.ts`, `MonsterAttribute.FLYING` check). Grounded after the shield bar is depleted.
 - Fire weakness 80% flying → 40% grounded (page body + infobox).
 - Shield bar: damage while flying goes to a shield, not HP; charging the inert guardians does ~40% of the shield
   ("596 damage to 1490 health shield in 6-scale") (Strategies → *Archive Guardian*). Shield HP is not in the infobox
@@ -70,7 +83,7 @@ Mechanics for later phases:
 
 Mechanics (Strategies → *Bork and the Smorks*):
 
-- No drain cap mentioned (assume uncapped, **unverified**).
+- Not in the hotfix cap list; Strategies "Maximum defence reduction" table: 220 → **0** (fully drainable).
 - Immune to cannon; not burn immune.
 - If Bork dies first, the Smorks enrage (faster, stronger attacks — doesn't change defensive stats).
 - Every 25% damage taken by the Smorks adds +2 flat armour to Bork (see Bork).
@@ -106,7 +119,7 @@ Mechanics (page body + Strategies → *Bork and the Smorks*):
 
 Mechanics (Strategies → *Dreadnoth the Jellied*):
 
-- No drain cap mentioned (**unverified**).
+- Not in the hotfix cap list; Strategies "Maximum defence reduction" table: 125 → **0** (fully drainable).
 - Demon, but "has low demonbane values" — exact demonbane vulnerability % is not on the wiki (**unverified**; upstream
   has a `demonbaneVulnerability` monster input that phase 5 can set).
 - Freeze resistance 40%; scorching bow spec can root him (demon).
@@ -141,7 +154,7 @@ Mechanics (page body + Strategies → *Xarth*):
 - Demon; "susceptible to demonbane" (page body). He is a Tormented Demon but **has no shield** (Strategies →
   *Phase 1*), so upstream's TD shield logic (`TD_IDS` in `src/lib/constants.ts`) must **not** be applied to 16684.
 - Phase 2 at 50% HP: summons Corpses (`Corpse (Xarth)` ids 16687 Normal / 16688 Doused, 20 hp, now in monsters.json)
-  that heal him for their remaining HP if they reach him; fire spells make him summon more corpses. Stats don't change.
+  that heal him for their remaining HP if they reach him; fire spells make him summon more corpses. That his stats don't change in phase 2 is the builder's inference (the wiki has a single infobox and says nothing either way) — **unverified**.
 
 ## Ocellus
 
@@ -153,6 +166,17 @@ Mechanics (page body + Strategies → *Xarth*):
 | Verification | P1 and P3 match infobox; P2 matches the infobox values that exist; UI matches (`phase1-ocellus-p1/p2/p3.png`) |
 
 Ocellus Phase 2 — decision: **attackable, added as a manual entry** in `scripts/manual_monster.json`.
+
+The thing being hit is most likely the NPC **The Blade (Repaired)**, id **16683**
+(https://oldschool.runescape.wiki/w/The_Blade, *Repaired* tab — Infobox NPC, no combat stats); the Strategies drain
+table also calls the P2 row "The Blade (Phase 2)". The manual entry nevertheless keeps the synthetic id **100090**:
+the stat block comes from Ocellus's infobox version 2, not from The Blade's page, so tying it to 16683 is an
+inference; and if the wiki later adds an `infobox_monster` row for The Blade, the generator would emit a real 16683
+entry next to ours and the duplicate id would make id lookups ambiguous. Phase 6 should include **16683** (and
+100090) in the Ocellus id list.
+
+P2 is limited by time (three quadrant cycles, Strategies → *Phase 2*), not by HP, so HP-dependent effects (ruby bolt
+procs scaling with current HP, TTK, overkill, any "% of HP" effect) are unreliable for this entry.
 Strategies → *Ocellus / Phase 2*: "Players attack the charging sword during phase 2 … The Blade stores all damage
 dealt during this phase and releases it at the end of each quadrant, effectively transferring half of all damage dealt
 to the boss's phase 3 health bar." So P2 is attackable with its own defence (wiki infobox version 2: def 250, magic 220,
@@ -161,7 +185,7 @@ stab 150 / slash 120 / crush 10 / magic 100 / light 100 / standard 110 / heavy 8
 | Ocellus P2 field | Value | Status |
 |---|---|---|
 | id | 100090 | **non-wiki** (manual id, same 1000xx scheme as upstream's Yama entries) |
-| hitpoints | 5250 | **unverified** — no P2 HP exists; set to the P3 pool its damage feeds (at 50%) |
+| hitpoints | 5250 | **unverified** — no P2 HP exists (phase is time-limited); set to the P3 pool its damage feeds (at 50%) |
 | level (combat) | 0 | **unverified** — blank on wiki; not used by the calculator |
 | attributes | none | **unverified** — wiki lists `demon` only for versions 1 and 3; version 2 is blank (the target is the Blade/sword, so plausibly not a demon) |
 | offensive bonuses | 0 | wiki blank for version 2; P2 doesn't attack (attack speed 0) |
@@ -169,7 +193,8 @@ stab 150 / slash 120 / crush 10 / magic 100 / light 100 / standard 110 / heavy 8
 
 Mechanics (page body + Strategies → *Ocellus*):
 
-- Defence floor 129 in P1 (`215 × 0.6`), 150 in P2 and P3 (`250 × 0.6`) — page body. 21 Oct hotfix: "Ocellus will
+- Defence floor 129 in P1 (`215 × 0.6`), 150 in P3 (`250 × 0.6`) — page body. P2: page body says 150, Strategies
+  table says 0 — see the conflict note under *Raid-wide notes* (recommendation: 0). 21 Oct hotfix: "Ocellus will
   no longer restore his Defence when moving to a new quadrant during phase 3" (page *Changes*) — drains persist
   through P3/P4.
 - Multi-id: P1 uses ids 16673 and 16674; any `OCELLUS_IDS` constant in phase 6 should list 16673, 16674, 16677 and
@@ -177,7 +202,16 @@ Mechanics (page body + Strategies → *Ocellus*):
 - P1: the Strategies page calls the P1 bar "shield durability" (presumably the infobox P1 hitpoints, 2500 — **unverified**); Protect from Melee while walking between corners (Strategies →
   *Phase 1*). Demon (scorching bow can root).
 - P2: only 50% of damage carries over to P3 HP (see above) — DPS vs P2 should be halved for TTK purposes.
-- P3: melee tank phase, Protect from Melee overhead (page *Changes*). Censers: Bandosian = next melee hit is a max
+- P3: "Ocellus's Protect from Melee overhead icon will now properly appear in phase 3" (page *Changes*, 21 Oct
+  hotfix) refers to **Ocellus's own prayer**, i.e. he prays against melee in P3, which would make melee loadouts
+  deal 0 (or reduced) damage against him. The wiki is unclear: the same phase is described as a melee-tank phase with
+  melee attacks being "flicked" (Strategies → *Phase 3*, "The correct timing for flicking melee attacks"), which may
+  mean the player flicks Protect from Melee against his attacks, or that he only prays melee at times. Phase 6 should
+  treat "Ocellus praying melee in P3" as a toggle/unknown and not assume melee is always blocked or never blocked
+  (**unverified**).
+- P3 "Untether...": after a number of special attacks Ocellus floats in the air and "is unable to be reached by melee
+  attacks" until he slams down (Strategies → *Phase 3*) — melee uptime in P3 is below 100%.
+- P3 other: Censers: Bandosian = next melee hit is a max
   hit, Armadylean = next ranged hit is a max hit, Zarosian = 50% spec restore (Strategies → *Phase 3*).
 - "P4" (last quadrant, Strategies → *Phase 4*; same NPC/stats as P3 on the wiki): alternates **Deflect Melee**
   (+Magic per page body) and **Deflect Range** (+Magic), and Soul Split; during the six void explosions Ocellus takes
