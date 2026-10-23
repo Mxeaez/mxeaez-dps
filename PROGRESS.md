@@ -3,6 +3,31 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 7b — Equipment refresh: Fractured Archive rewards (2026-10-22)
+
+- Re-ran `scripts/generateEquipment.py` (minimal Windows UTF-8 fix). equipment.json 5436 → 5463: 27 new entries
+  (Obligator ×2, Zorya's tome ×2, Ascension crossbows, Ascension/Diamond/Onyx ascension bolts (+ (e)), Rondache,
+  Living record tiers 1–5, Imbued ancient cape/max cape/hood variants, Corrupted Scythe of Vitur ×2, Dizana's quiver
+  locked ×2); 44 entries renamed by the wiki (capitalisation, e.g. "Blood Moon helm", "Toxic Staff of the Dead") →
+  name checks in `BaseCalc.ts` / `PlayerVsNPCCalc.ts` updated (Blood/Blue/Eclipse Moon sets were silently broken);
+  image renames fixed in the git index (Windows is case-insensitive). 26 new images.
+- Stats of every raid item checked against the wiki infoboxes: all match. No manual entries needed.
+- Effects (`src/lib/fracturedArchive/equipment.ts`, small hooks upstream): Obligator new "Extending Chain Mace"
+  category (Thrust ×2 / Smash), thrust = best of 2–4 damage rolls + 20/40% vs 2x2/3x3, smash 3 ticks; Zorya's tome
+  base max hit 18, spec ×2.5 accuracy ×1.6 damage (partially implemented: empowered follow-ups not modelled);
+  Ascension crossbows ammo list + diamond/onyx ascension bolt (e) effects; elemental fragments as a per-element player
+  toggle (+2 base max hit, before magic damage/weakness); Zeal prayer (25/28/25%). Rondache stats only.
+- Tests: `src/tests/lib/fracturedArchive/Equipment.test.ts` (29: stats vs wiki, rename regression, each effect with
+  hand-derived rolls, DPS vs Xarth / Dreadnoth / Archive Guardian). `yarn test` 585 (581 pass / 4 skipped),
+  `yarn lint` clean, `tsc --noEmit` clean.
+- UI: `node scripts/verifyFracturedArchiveEquipment.mjs` — on-screen max hit / DPS equal Jest for Obligator (thrust,
+  Xarth 25 / 4.153), Zorya's tome (Dreadnoth 20 / 1.740), Ascension crossbows (AG flying 20 / 1.431), diamond/onyx
+  (e) max hits 23 / 24; Zeal button present. Screenshots `docs/screenshots/phase7b-*.png`.
+
+Unverified / open: Obligator "damage rolls" = one accuracy roll, size bonus per hit and thrust-only; Zorya's tome flat
+18 (no formula on the wiki), spec factor ordering, follow-up attacks not modelled; ascension (e) bolts assumed to use
+the normal proc numbers. Details: docs/DATA_SOURCES.md "Equipment".
+
 ## Phase 7 fixes — review follow-ups (2026-10-22)
 
 - `drains.ts`: Tonalztics energy now counted in whole charged specs (ceil(hits / 2) × 50%), tie-break fewest hammer

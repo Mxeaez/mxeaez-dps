@@ -512,6 +512,11 @@ export const CombatStyleMap: { [k in EquipmentCategory]: { [k: string]: { image:
     Bash: { image: '266' },
     Pound: { image: '267' },
   },
+  [EquipmentCategory.EXTENDING_CHAIN_MACE]: {
+    // no dedicated sprites known; reuse the bludgeon ones
+    Thrust: { image: '255' },
+    Smash: { image: '253' },
+  },
   [EquipmentCategory.BLUDGEON]: {
     Smash: { image: '253' },
     Pound: { image: '255' },
@@ -715,6 +720,14 @@ export const getCombatStylesForCategory = (style: EquipmentCategory): PlayerComb
         { name: 'Slash', type: 'slash', stance: 'Aggressive' },
         { name: 'Lunge', type: 'stab', stance: 'Controlled' },
         { name: 'Block', type: 'slash', stance: 'Defensive' },
+      ];
+      break;
+    case EquipmentCategory.EXTENDING_CHAIN_MACE:
+      // https://oldschool.runescape.wiki/w/Obligator (Module:CombatStyles); smash attacks every 3 ticks
+      ret = [
+        { name: 'Thrust', type: 'crush', stance: 'Accurate' },
+        { name: 'Thrust', type: 'crush', stance: 'Aggressive' },
+        { name: 'Smash', type: 'crush', stance: 'Aggressive' },
       ];
       break;
     case EquipmentCategory.BLUDGEON:

@@ -41,6 +41,7 @@ fix → `yarn test` + `yarn lint` green → Playwright check where UI changed �
 | 5 | Dreadnoth + Xarth | Dreadnoth, Jelly, Xarth correct; special mechanics modelled; tests. |
 | 6 | Ocellus P1/P2/P3 | Three selectable phases with correct stats; floors; tests. |
 | 7 | Debuff toggles | Existing defence-reduction inputs (DWH, Elder maul, BGS, Eye of Ayak, …) verified against raid floors; a "max drain" quick preset; tests. |
+| 7b | Equipment refresh | `generateEquipment.py` re-run; Fractured Archive rewards (Obligator, Zorya's tome, Ascension crossbows + bolts, Rondache, elemental fragments, Zeal) in the data with wiki-checked stats and their DPS effects modelled in `src/lib/fracturedArchive/equipment.ts`; tests + Playwright check. |
 | 8 | Preset comparison | New "Best setup" view: user's named presets (see below) ranked by DPS and expected TTK per boss/phase, with party size and drains applied; Playwright-verified. |
 | 9 | Full gear search | Search over end-game items per slot (per style) and report best setup per boss/phase; runs in the web worker; results reproducible by tests. |
 | 10 | Deploy | `.env.production` for dps.mxeaez.com (base path `/`), static export builds, Cloudflare Pages project + custom domain. **Needs user's Cloudflare login.** |
@@ -55,6 +56,12 @@ fix → `yarn test` + `yarn lint` green → Playwright check where UI changed �
 - Full Torva + Scythe (slash)
 - Torva helm + Oathplate chest & legs + Scythe (slash)
 - Full Ancestral + Tumeken's shadow (with Eye of Ayak magic-defence drain toggle)
+
+Extra candidates from phase 7b (raid rewards):
+
+- Obligator crush setup (thrust style; e.g. Inquisitor's armour + Zeal)
+- Zorya's tome + Shadow/other staff (tome is two-handed and a 3-tick powered staff; its spec is a swap)
+- Ascension crossbows setup (rapid, 2 ticks; diamond/onyx ascension bolts (e))
 
 ## Decisions already made (don't re-ask)
 

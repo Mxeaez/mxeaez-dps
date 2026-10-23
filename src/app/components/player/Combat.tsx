@@ -8,6 +8,7 @@ import SpellContainer from '@/app/components/player/combat/SpellContainer';
 import UserIssueWarning from '@/app/components/generic/UserIssueWarning';
 import { canUseSunfireRunes } from '@/types/Spell';
 import sunfire_rune from '@/public/img/misc/sunfire_rune.webp';
+import FracturedArchiveFragmentToggle from '@/app/components/player/combat/FracturedArchiveFragmentToggle';
 
 const Combat: React.FC = observer(() => {
   const store = useStore();
@@ -39,6 +40,7 @@ const Combat: React.FC = observer(() => {
               <SpellSelect />
             </div>
             <div className="my-4">
+              <FracturedArchiveFragmentToggle />
               {
                 canUseSunfireRunes(spell) && (
                   <Toggle

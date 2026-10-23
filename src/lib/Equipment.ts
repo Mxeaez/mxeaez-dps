@@ -13,6 +13,13 @@ import {
   TOMBS_OF_AMASCUT_MONSTER_IDS,
 } from '@/lib/constants';
 import { sum } from 'd3-array';
+import {
+  ASCENSION_BOLT_IDS,
+  ASCENSION_CROSSBOWS_ID,
+  getObligatorAttackSpeed,
+  ZORYAS_TOME,
+  ZORYAS_TOME_SPEC_COST,
+} from '@/lib/fracturedArchive/equipment';
 import equipment from '../../cdn/json/equipment.json';
 import generatedEquipmentAliases from './EquipmentAliases';
 
@@ -164,6 +171,7 @@ const ammoForRangedWeapons: { [weapon: number]: number[] } = {
   28869: [28872, 28878], // Hunters' sunlight crossbow
   29000: [28991], // Eclipse atlatl
   33245: commonAmmoCategories().bow_t60, // Nature's recurve
+  [ASCENSION_CROSSBOWS_ID]: ASCENSION_BOLT_IDS, // Ascension crossbows (Fractured Archive)
 };
 
 export enum AmmoApplicability {
@@ -265,6 +273,8 @@ export const calculateAttackSpeed = (player: Player, monster: Monster): number =
       attackSpeed = 5;
     }
   }
+
+  attackSpeed = getObligatorAttackSpeed(player) ?? attackSpeed;
 
   // Giant rat (Scurrius)
   if (monster.id === 7223 && player.style.stance !== 'Manual Cast') {
@@ -442,6 +452,7 @@ export const WEAPON_SPEC_COSTS: { [canonicalName: string]: number } = {
   'Eye of Ayak': 50,
   'Crimson kisten': 50,
   'Sunspear': 50,
+  [ZORYAS_TOME]: ZORYAS_TOME_SPEC_COST,
 
   'Magic shortbow': 55,
   'Dark bow': 55,

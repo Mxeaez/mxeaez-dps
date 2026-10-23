@@ -436,3 +436,37 @@ The Elder maul page says its drain rounds down (75 → 49 example), so Tonalztic
 explanation — unverified, 1 Defence difference, kept as upstream computes it. Smorks ties at 250% energy between
 1 + 7, 2 + 5, 3 + 3 and 4 + 2; the fewest-hammer-specs tie-break picks 1 + 7 (phase 7 review). The Ayak
 "specs" column is only damage / 40 — the real count depends on the player's spec damage (use `ayakSpecsToZero`).
+
+## Equipment (phase 7b, 2026-10-22)
+
+Sources (all fetched 2026-10-22, wikitext via `?action=raw`): item pages
+https://oldschool.runescape.wiki/w/Obligator, /Zorya's_tome, /Ascension_crossbows, /Ascension_bolts,
+/Diamond_ascension_bolts_(e), /Onyx_ascension_bolts_(e), /Rondache, /Fragment_of_burning_fire (and the other three
+fragments), /Horn_of_Bran, /Zeal; the raid page's *Rewards* section; /Module:CombatStyles (Extending Chain Mace styles);
+news pages Update:The Fractured Archive - Rewards Poll Blog and - Out Today. Gearscape's API has none of these items yet
+(`/api/equipment/id/34725` etc. → not found). Code: `src/lib/fracturedArchive/equipment.ts`; tests:
+`src/tests/lib/fracturedArchive/Equipment.test.ts`.
+
+**Data refresh.** `scripts/generateEquipment.py` re-run (same minimal Windows UTF-8 fix as the monsters script).
+`cdn/json/equipment.json` 5436 → 5463 entries. New: Obligator (Charged 34715 / Uncharged 34717), Zorya's tome (Charged
+34725 / Uncharged 34727), Ascension crossbows 34681, Ascension bolts 34684, Diamond ascension bolts 34690 / (e) 34696,
+Onyx ascension bolts 34702 / (e) 34708, Rondache 34719, Living record (tier 1–5) capes (no stats), Imbued ancient cape
+(Normal/Broken/Locked + Deadman) and Imbued ancient max cape/hood, Corrupted Scythe of Vitur (Charged/Uncharged),
+Dizana's quiver (Locked + Charged/Uncharged) — 27 new entries. 44 entries (43 image files) were **renamed** by the wiki (capitalisation: "Blood Moon
+helm", "Blue Moon spear", "Eclipse Moon tassets", "Holy/Sanguine Scythe of Vitur", "Toxic Staff of the Dead", "... of
+Ruin", "Cape of Legends", "Robin Hood hat", "Necklace of Fangs", "Seal of Passage"); the name checks in `BaseCalc.ts`
+/ `PlayerVsNPCCalc.ts` were updated (Blood Moon set, Blue/Eclipse Moon sets, staff-of-the-dead spell checks;
+"Staff of the Dead" was already wrong upstream). 74 cosmetic items changed `category` "Unarmed" → "" (no effect).
+`generateEquipmentAliases.py` was not run: its header says it only bootstraps `EquipmentAliases.ts`. Not in the
+data: Archivist's folio (teleport, skipped), Horn of Bran (unlock item), elemental fragments (not equippable).
+`scripts/manual_equipment.json` unchanged (every raid item was in the Bucket data).
+
+| Item | Stats vs wiki infobox | Effect → model | Unverified |
+|---|---|---|---|
+| Obligator | match (2h, speed 5, crush +120, str +40, prayer +3; category "Extending Chain Mace" → new styles Thrust/Accurate, Thrust/Aggressive, Smash/Aggressive) | Thrust: one accuracy roll, damage = best of 2 rolls + 1 per stab/slash defence bonus above crush (max 4); then +20% (2x2) / +40% (3x3+) per hit. Smash: 3-tick attacks, single roll, no bonus. | "damage rolls" read as one accuracy roll; size bonus per hit (not max hit) and not on Smash (`OBLIGATOR_SIZE_BONUS_PERCENT`). Uncharged version gets the same effect (upstream convention: name-based). |
+| Zorya's tome | match (2h powered staff, speed 3, magic +45, 15% magic dmg, prayer +2) | Built-in spell base max hit 18 (`ZORYAS_TOME_BASE_MAX_HIT`). Spec *Zorya's flow* (50%): ×2.5 attack roll, ×1.6 max hit. Marked partially implemented: the 3 (or 5) empowered follow-up attacks at 2 ticks are not modelled (constants exported for the gear finder). No element (elemental weakness/fragments don't apply). Not a shield-slot tome: it is the weapon, so it can't be combined with Tome of fire/water/earth or a staff. | Flat 18 at every Magic level (wiki gives no formula); spec factors' order (accuracy on the final roll, damage after magic damage). |
+| Ascension crossbows | match (2h crossbow, speed 3 → rapid 2, ranged +34, magic +3) | Heavy ranged; ammo restricted to ascension bolts (and only they; other crossbows can't use them). Dual-wield is cosmetic (one attack per cycle). No spec. | — |
+| Ascension bolts / diamond / onyx (e) | match (ranged str 53 / 58 / 58) | Diamond (e) / Onyx (e) use the regular diamond (armour piercing) / onyx (life leech) bolt effects (rewards blog wording). | Proc chances and multipliers assumed equal to the normal (e) bolts (`DIAMOND_ASCENSION_BOLTS_E`, `ONYX_ASCENSION_BOLTS_E`). |
+| Rondache | match (shield, str +8, def 35/41/38/-6/55) | Stats only. +2 flat armour / magic resistance (defensive) and the energy-free *Shield Slam* (x + x% damage from charges) are not modelled. | — |
+| Elemental fragments | n/a (not equipped) | Player unlock per element (`buffs.elementalFragments`, toggle under the spell selector): +2 base max hit for that element's spells, added before magic damage and elemental weakness (as the wiki states). | — |
+| Zeal (Horn of Bran) | n/a | New prayer: attack ×1.25, strength ×1.28, defence ×1.25; same drain as Piety; replaces Piety in-game (separate button here, mutually exclusive like other offensive prayers). | — |

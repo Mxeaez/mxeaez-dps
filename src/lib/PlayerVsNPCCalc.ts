@@ -94,9 +94,21 @@ import { burningClawDoT, burningClawSpec, dClawDist } from '@/lib/dists/claws';
 import { isImmuneToSpell } from '@/lib/fracturedArchive/immunities';
 import { getMagicResistance, hasGuaranteedMeleeAccuracy } from '@/lib/fracturedArchive/bork';
 import { getOcellusDamageDivisor, isBlockedByOcellusPrayer } from '@/lib/fracturedArchive/ocellus';
+import {
+  DIAMOND_ASCENSION_BOLTS_E,
+  getElementalFragmentBonus,
+  isObligatorThrust,
+  obligatorHitDistribution,
+  ONYX_ASCENSION_BOLTS_E,
+  ZORYAS_TOME,
+  ZORYAS_TOME_BASE_MAX_HIT,
+  ZORYAS_TOME_SPEC_ACCURACY,
+  ZORYAS_TOME_SPEC_DAMAGE,
+} from '@/lib/fracturedArchive/equipment';
 
 const PARTIALLY_IMPLEMENTED_SPECS: string[] = [
   'Ancient godsword',
+  ZORYAS_TOME, // the empowered follow-up attacks are not modelled
 ];
 
 // https://oldschool.runescape.wiki/w/Category:Weapons_with_Special_attacks
@@ -105,7 +117,7 @@ const UNIMPLEMENTED_SPECS: string[] = [
   'Abyssal tentacle',
   'Ancient mace',
   'Armadyl crossbow',
-  'Blue moon spear',
+  'Blue Moon spear',
   'Bone dagger',
   'Brine sabre',
   'Darklight',
@@ -122,8 +134,8 @@ const UNIMPLEMENTED_SPECS: string[] = [
   'Rune claws',
   'Staff of balance',
   'Staff of light',
-  'Staff of the dead',
-  'Toxic staff of the dead',
+  'Staff of the Dead',
+  'Toxic Staff of the Dead',
   'Ursine chainmace',
   'Zamorakian hasta',
   'Zamorakian spear',
@@ -894,6 +906,8 @@ export default class PlayerVsNPCCalc extends BaseCalc {
         attackRoll = this.trackFactor(DetailKey.PLAYER_ACCURACY_SPEC, attackRoll, [3, 2]);
       } else if (this.wearing('Eye of Ayak')) {
         attackRoll = this.trackFactor(DetailKey.PLAYER_ACCURACY_SPEC, attackRoll, [2, 1]);
+      } else if (this.wearing(ZORYAS_TOME)) {
+        attackRoll = this.trackFactor(DetailKey.PLAYER_ACCURACY_SPEC, attackRoll, ZORYAS_TOME_SPEC_ACCURACY);
       }
     }
 
@@ -949,6 +963,8 @@ export default class PlayerVsNPCCalc extends BaseCalc {
       maxHit = Math.max(1, Math.trunc(magicLevel / 3) + 1);
     } else if (this.wearing('Eye of Ayak')) {
       maxHit = Math.max(1, Math.trunc(magicLevel / 3) - 6);
+    } else if (this.wearing(ZORYAS_TOME)) {
+      maxHit = ZORYAS_TOME_BASE_MAX_HIT;
     } else if (this.wearing('Warped sceptre')) {
       maxHit = Math.max(1, Math.trunc((8 * magicLevel + 96) / 37));
     } else if (this.wearing('Bone staff')) {
@@ -997,6 +1013,10 @@ export default class PlayerVsNPCCalc extends BaseCalc {
     }
     if (this.hasMatchingElementalAmulet()) {
       maxHit += 2;
+    }
+    const fragmentBonus = getElementalFragmentBonus(this.player);
+    if (fragmentBonus > 0) {
+      maxHit = this.trackAdd(DetailKey.MAX_HIT_ELEMENTAL_FRAGMENT, maxHit, fragmentBonus);
     }
 
     // We need the basehit value for the elemental bonus later.
@@ -1050,6 +1070,8 @@ export default class PlayerVsNPCCalc extends BaseCalc {
     if (this.opts.usingSpecialAttack) {
       if (this.isWearingAccursedSceptre()) {
         maxHit = this.trackFactor(DetailKey.MAX_HIT_SPEC, maxHit, [3, 2]);
+      } else if (this.wearing(ZORYAS_TOME)) {
+        maxHit = this.trackFactor(DetailKey.MAX_HIT_SPEC, maxHit, ZORYAS_TOME_SPEC_DAMAGE);
       }
     }
 
@@ -1639,6 +1661,10 @@ export default class PlayerVsNPCCalc extends BaseCalc {
       dist = new AttackDistribution(hits);
     }
 
+    if (this.isUsingMeleeStyle() && isObligatorThrust(this.player)) {
+      dist = new AttackDistribution([obligatorHitDistribution(firstHitAcc, min, max, this.monster)]);
+    }
+
     if (this.isUsingMeleeStyle() && this.wearing('Dual macuahuitl')) {
       let firstMax = Math.trunc(max / 2);
       const secondMax = max - firstMax;
@@ -1816,11 +1842,11 @@ export default class PlayerVsNPCCalc extends BaseCalc {
         dist = dist.transform(opalBolts(boltContext));
       } else if (this.wearing(['Pearl bolts (e)', 'Pearl dragon bolts (e)'])) {
         dist = dist.transform(pearlBolts(boltContext));
-      } else if (this.wearing(['Diamond bolts (e)', 'Diamond dragon bolts (e)'])) {
+      } else if (this.wearing(['Diamond bolts (e)', 'Diamond dragon bolts (e)', DIAMOND_ASCENSION_BOLTS_E])) {
         dist = dist.transform(diamondBolts(boltContext));
       } else if (this.wearing(['Dragonstone bolts (e)', 'Dragonstone dragon bolts (e)'])) {
         dist = dist.transform(dragonstoneBolts(boltContext));
-      } else if (this.wearing(['Onyx bolts (e)', 'Onyx dragon bolts (e)']) && !mattrs.includes(MonsterAttribute.UNDEAD)) {
+      } else if (this.wearing(['Onyx bolts (e)', 'Onyx dragon bolts (e)', ONYX_ASCENSION_BOLTS_E]) && !mattrs.includes(MonsterAttribute.UNDEAD)) {
         dist = dist.transform(onyxBolts(boltContext));
       }
     }

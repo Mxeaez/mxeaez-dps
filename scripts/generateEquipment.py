@@ -255,14 +255,14 @@ def main():
 
     # add manual equipment that isn't pulled from the wiki
     # this should ONLY be used for upcoming items that are not yet released
-    with open('manual_equipment.json', 'r') as f:
+    with open('manual_equipment.json', 'r', encoding='utf-8') as f:
         manual_data = json.load(f)
         new_data = new_data + manual_data
 
     print('Total equipment: ' + str(len(new_data)))
     new_data.sort(key=lambda d: d.get('name'))
 
-    with open(FILE_NAME, 'w') as f:
+    with open(FILE_NAME, 'w', encoding='utf-8') as f:
         print('Saving to JSON at file: ' + FILE_NAME)
         json.dump(new_data, f, ensure_ascii=False, indent=2)
 
