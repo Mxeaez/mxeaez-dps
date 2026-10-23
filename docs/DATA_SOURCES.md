@@ -467,6 +467,48 @@ Best setup: targets `ezekiel`, `moia` (note "Out of melee reach"), `dagonhai` (p
 row = Shielded only, as Unshielded has the same DPS). Summary: 20 rows × None / Solo / Team = 60 searches. Search spell
 list: Fire Surge + the weakness surge (Earth on Ezekiel, Wind on Moia; Fire only on the Dagon'hai).
 
+## Tombs of Amascut (phase 18, read 2026-10-23)
+
+Pages read with `?action=raw`: https://oldschool.runescape.wiki/w/Tombs_of_Amascut,
+https://oldschool.runescape.wiki/w/Tombs_of_Amascut/Strategies, https://oldschool.runescape.wiki/w/Akkha,
+https://oldschool.runescape.wiki/w/Akkha%27s_Shadow, https://oldschool.runescape.wiki/w/Ba-Ba,
+https://oldschool.runescape.wiki/w/Kephri, https://oldschool.runescape.wiki/w/Zebak,
+https://oldschool.runescape.wiki/w/Elidinis%27_Warden, https://oldschool.runescape.wiki/w/Tumeken%27s_Warden,
+https://oldschool.runescape.wiki/w/Obelisk_(Tombs_of_Amascut). Monster stats: upstream's monsters.json (unchanged).
+
+**Scaling** (upstream `src/lib/scaling/TombsOfAmascut.ts`, verified in-game by upstream's test data): raid page —
+"for every 5 raid levels, an NPC's hitpoints, defence, accuracy, and damage are increased by 2% additively"; "the
+2nd-3rd member will add 90% of the base health of bosses each, while the 4th and beyond will add 60% each"; "The first
+path level will modify most enemy hitpoints and damage by +8%, with every additional level modifying these stats by
++5%". Core: "The health scaling of the core has been reduced by 75%" (Balance Changes Revisited). Worked example
+(tested): Akkha 400 → +200% at 500 = 1200 → × 4.6 (6 players) = 5520.
+
+| Mechanic (source) | Upstream | Phase 18 |
+|---|---|---|
+| Akkha "will always pray against the same style with which he is currently attacking" (Akkha) | no | phase options + `isImmune` (prayers.ts); time model splits his hp in thirds (setting) |
+| Akkha's shadows: "After reaching 80% ... four shadows ... Once one of these four shadows are dispelled ... repeated at 60%, 40% and 20%"; "fully restores all damaged shadows" (Strategies) | monster only | 4 × shadow hp in the time model |
+| Akkha's final stand: "restoring 20% of his maximum health ... with Protect from Magic and Missiles simultaneously active" | no | phase option (melee only) + 20% of hp in the time model |
+| Akkha: "he will remain in one quadrant until three successful hits are made" (final stand) | — | documented only (movement, not DPS) |
+| Akkha: Defence floor 70; "restores drained levels significantly faster" | floor yes | floor; faster restore not modelled |
+| Ba-Ba: floor 60; Rolling Stones at 66% / 33% (boulders take max hits) | floor yes | documented only |
+| Kephri: "After the third shield is cleared ... fourth and final phase"; Defence "restored when she enters final phase" (Strategies) | monsters, floor | 3 × Shielded hp + Aggressive hp; drains planned per phase target |
+| Kephri: swarms "recover Kephri's shields, usually ~10% or lower ... per swarm"; "capped to roughly ~15% over her max capacity" | no | *Kephri swarm leak* setting (default 0, unverified) |
+| Kephri: "first shield threshold ... Spitting Scarab ..., the second ... a Soldier and Arcane Scarab" | monsters (no def-roll scaling) | included (setting, default on) |
+| Kephri / scarabs kalphite: keris +33% accuracy (breaching), damage bonus | yes | — |
+| Zebak: floor 50; "Upon reaching ~25% of his health, Zebak will become enraged, significantly increasing his attack speed" | floor yes | same stats: one target |
+| Obelisk: "lowered by a maximum of 40 levels, reducing ... to a minimum of 60" | floor yes | P1 = obelisk hp |
+| P2 Warden: "100% accuracy regardless of equipment; however, the damage dealt corresponds to the player's accuracy bonuses" | yes (damage modifier, double Tbow scaling) | — |
+| P2 Warden prayers: "Protect from Melee being always active; however Tumeken's Warden will always initially pray against magic, while Elidinis' will always initially pray against ranged" | no | phase options + `isImmune`; time model uses the initial prayers all fight (unverified) |
+| P2 core: "Damage dealt to the core deals five times the damage towards the Warden"; "Players will always deal their max hit when using melee against the Warden's core" | always-max melee yes; ×5 no | ×5 in the time model |
+| P2 core exposure 21 / 29 / 37 ticks at Warden hp 100-80% / 79.9-60% / 59.9-0% (Strategies table) | no | `CORE_EXPOSURE_TICKS` |
+| P2 shield per down = the Active entry's hp (140 base) | — | **unverified** reading (infobox hp of the Active version) |
+| P3: floor 120; "Upon reaching 5% of its health ... a one-time heal of 20.0% of its maximum health ... Defence ... raised 30 levels to 180" | floor, Enraged entry (def 180) | 95% at Damaged + 25% at Enraged |
+| P3 energy siphons: reversed siphons deal "damage that scales to a percentage of their maximum health" | no | *P3 siphons* setting (default 0; % unpublished) |
+| Tumeken's shadow ×4 / fang double accuracy roll / Keris partisan of the sun / Keris partisan of amascut (ToA-only stats) | yes | — |
+
+Invocations other than raid / path level (e.g. Overclocked, Stay Vigilant, Blood Thinners) change attack speeds and
+mechanics, not the player's DPS against the bosses, and aren't modelled.
+
 ## Other raid monsters (came with the refresh, not checked field-by-field)
 
 Ezekiel, Moia and the Dagon'hai were checked in phase 15 (section above).

@@ -1,4 +1,4 @@
-# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14; Routes tab phase 16; Plan tab phase 17)
+# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14; Routes tab phase 16; Plan tab phase 17; raid tabs + ToA phase 18)
 
 `/best-setup` (dev: http://localhost:3001/osrs-dps/best-setup; "Best setup" button in the top bar, "Calculator" leads
 back). Tabs, in order: **Search** (the default, phase 9/12, see the end of this file) searches a pool of end-game items
@@ -12,6 +12,72 @@ remembered).
 request and its handler deleted). The presets stay: they seed the search and give the "vs best preset" column / the
 Summary's "best preset" reference; `computeBestSetup` / `evaluatePreset` stay as tested library code
 (`Presets.test.ts`).
+
+## Raid tabs and Tombs of Amascut (phase 18)
+
+**Raid tabs** at the top of `/best-setup`: *Fractured Archive* (default) and *Tombs of Amascut* (CoX and ToB come in
+phases 19-20). Each raid keeps its own assumptions while you switch; the four tabs (Search, Plan, Routes / Encounters,
+Summary) are the same code driven by a **`RaidConfig`** (`src/lib/raids/index.ts`):
+
+| Field | Fractured Archive | Tombs of Amascut |
+|---|---|---|
+| `targets` (boss / phase list) | `BEST_SETUP_TARGETS` (bestSetup.ts) | `TOA_TARGETS` (`src/lib/raids/toa/targets.ts`): Kephri Shielded / Unshielded, Spitting / Soldier / Arcane Scarab, Zebak, Akkha (prayer phases), Akkha's Shadow, Ba-Ba, Obelisk, Elidinis' / Tumeken's Warden P2 (prayer phases), Warden core, Tumeken's Warden P3 / P3 enraged |
+| `scalingInputs` | party size 2-8 (Team row, as before) | "Raid scaling" row: party size 1-8, raid level (default **500**), path level per path (Het, Apmeken, Scabaras, Crondis; default 0) |
+| `defaultAssumptions` | `DEFAULT_ASSUMPTIONS` | `TOA_DEFAULT_ASSUMPTIONS`: Smelling salts for all styles, Piety / Rigour / Augury, no Zeal / fragments (hidden), same spec carriers |
+| `presets` | `PRESETS` | FA list + Osmumten's fang, Keris partisan of breaching, Ghrazi rapier (Torva + Avernic defender) |
+| `searchPool` | `SEARCH_POOL` | FA pool + Keris partisan of breaching, Keris partisan of amascut, Blade of Saeldor (c), Eye of Ayak |
+| `time` (encounter model) | `FA_TIME_MODEL` (raidTime.ts): 8 routes | `TOA_TIME_MODEL` (`src/lib/raids/toa/time.ts`): one fixed route |
+| routes tab | "Routes" | "Encounters" (the single route, breakdown open) |
+
+The raid is `assumptions.raid` (undefined = Fractured Archive), so every cache key, the worker requests and the
+pure modules pick the raid from the assumptions: `findTarget` searches every raid's targets (ToA keys start with
+`toa-`), `buildTargetMonster` sets the calculator's ToA inputs (`toaInvocationLevel`, `toaPathLevel` of the target's
+path, party size 1-8), the search and planner default to the raid's presets / pool (`src/lib/raids/data.ts`), and the
+worker hands Routes / Plan the raid's time model. Fractured Archive behaviour is unchanged (all phase 8-17 tests pass
+as they were).
+
+**Tombs of Amascut — what comes from upstream** (not re-modelled): hp scaling by raid level (+4% per 10 levels; the
+core +1%), path level (+8% at level 1, +5% per further level; path bosses and their adds) and party size (+90% for the
+2nd-3rd member, +60% for each further one), rounded like the game (`src/lib/scaling/TombsOfAmascut.ts`, checked
+against in-game hp by upstream's `TombsOfAmascut.test.ts`), so the times are real for that team; NPC defence roll ×
+(250 + raid level) / 250; Defence floors (`getDefenceFloor`: Akkha 70, Ba-Ba 60, Kephri 60, Zebak 50, Obelisk 60, P3
+Warden 120; P2 Warden and the core: none); weaknesses (Kephri fire 40 / 35, Akkha's Shadow air 60, Wardens earth 50);
+Tumeken's shadow ×4 in ToA; Osmumten's fang's double accuracy roll in ToA; keris bonuses on kalphites (Kephri,
+scarabs; breaching +33% accuracy); Keris partisan of the sun below 25% hp; the P2 Warden's 100% accuracy with damage
+scaled by accuracy (and the double Twisted bow scaling there); melee always max hits on the core.
+
+**What phase 18 adds** (`src/lib/raids/toa/*`, tests in `src/tests/lib/raids/ToA.test.ts`):
+
+- **Prayers** (`prayers.ts`, hooked into `isImmune` + a calculator warning): Akkha phase options *Not praying against
+  your style* (default, = upstream), *Praying Melee / Ranged / Magic*, *Final stand (Protect from Magic + Missiles)*;
+  P2 Warden (Active) options *Not praying* (default, = upstream), *Praying Melee + Ranged* (Elidinis' initial),
+  *Praying Melee + Magic* (Tumeken's initial). The best-setup P2 targets default to each warden's initial prayers.
+- **Encounter model** (`time.ts`): time = damage ÷ (party size × your DPS), i.e. every member deals your DPS:
+  - Kephri: 3 × shield hp (+ *swarm leak* × shield per intermission, default 0) + Spitting / Soldier / Arcane Scarab
+    (setting, default on) + the unshielded hp.
+  - Zebak, Ba-Ba: their hp.
+  - Akkha: his hp split in thirds over *Praying Melee / Ranged / Magic* (setting *Akkha prayer rotation*, default on;
+    off = always an unprotected style) + 4 × Akkha's Shadow + 20% of his hp in the final stand (melee only, so a kit
+    without melee shows ∞ — you can't finish Akkha without it).
+  - Wardens: P1 obelisk hp; P2 downs: each = the Active warden's hp (the shield) at the warden's prayers, then the
+    core for 21 / 29 / 37 ticks (Warden ≥ 80% / ≥ 60% / below) at core DPS × 5 Warden hp, until the Warden's hp (the
+    Core-ejected entry's 4500-based hp) is gone; P3 95% of hp + 25% enraged (5% left + 20% heal, Defence 180, floor
+    120); *P3 siphons* share (default 0). *P2 warden* setting: Elidinis' (default; magic only) or Tumeken's (ranged
+    only); P3 uses Tumeken's entries (identical stats).
+- **Plan tab**: the same planner; ToA supplies default to 8 "Other" slots (salts / nectar / tears from the supply
+  chest) and every style keeps the salts boost.
+- Not modelled: invulnerable time (Akkha's memory blast, Ba-Ba's rolling stones, Zebak's specials, siphon phases),
+  paths and puzzles, the phantoms in P3, Kephri's healing (soldier scarab swarms), boulders / swarms / eggs (max hits),
+  the warden switching prayers between downs, specs during the core (dragon dagger + liquid adrenaline).
+
+**Headline (raid level 500, 6-man, path 0, Team drains, 2026-10-23)** — top search result per boss: Kephri (Shielded
+and Unshielded) Keris partisan of breaching 9.520; Zebak Ascension crossbows + diamond (e) 10.633 (Shadow 10.055);
+Akkha Tumeken's shadow 13.020, final stand Osmumten's fang 9.035; Akkha's Shadow Ascension crossbows + onyx (e)
+15.262; Ba-Ba Ascension crossbows + diamond (e) 9.441; Obelisk Shadow 13.002; P2 Warden (Elidinis', praying melee +
+ranged) Shadow 14.167; core Scythe of Vitur 31.333 (always max hits); P3 Shadow 12.493. Encounters with the best search
+result per style: 14:02.9 (Kephri 145.5, Zebak 125.4, Akkha 138.1, Ba-Ba 92.5, Wardens 341.5 s). **Plan** (defaults:
+pinned items, 8 supply slots): worn Keris partisan of breaching (Torva), switches Tumeken's shadow (Ancestral),
+Osmumten's fang, Scythe and Obligator (Torva), 1 free slot, **14:22.4**.
 
 ## Plan tab (phase 17: raid kit planner)
 

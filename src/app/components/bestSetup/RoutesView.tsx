@@ -9,9 +9,8 @@ import { ImportableData } from '@/types/State';
 import { Player } from '@/types/Player';
 import Spinner from '@/app/components/Spinner';
 import { DrainStateId, findTarget } from '@/lib/fracturedArchive/bestSetup';
-import { BestSetupAssumptions, PRESETS, StyleGroup } from '@/lib/fracturedArchive/presets';
+import { BestSetupAssumptions, StyleGroup } from '@/lib/fracturedArchive/presets';
 import {
-  EncounterId,
   EncounterTime,
   formatDuration,
   PhaseSearchBest,
@@ -19,8 +18,9 @@ import {
   RaidTimeSettings,
   RouteComparisonProgress,
   RouteComparisonResult,
-  ROUTE_SLOTS,
 } from '@/lib/fracturedArchive/raidTime';
+import { RaidConfig, ToaTimeSettings } from '@/lib/raids';
+import { TOA_TIME_DEFAULTS } from '@/lib/raids/toa/time';
 import { RoutesJob, startRouteComparison } from '@/worker/searchWorkerClient';
 import { targetImageUrl } from '@/lib/fracturedArchive/loadoutIcons';
 import { ItemIcon } from '@/app/components/bestSetup/ItemIcons';
@@ -30,24 +30,14 @@ import DPS_TEXT_CLASS from '@/app/components/bestSetup/styles';
 // (src/lib/fracturedArchive/raidTime.ts). Everything runs in the search worker (RAID_ROUTES): the per-phase gear searches
 // the kit needs, then the route times. Search results are cached in memory for the session (module scope) per
 // assumptions + drain state + phase, so changing a time-model setting or the kit only re-times (a second or two).
-// Docs: docs/BEST_SETUP.md (Routes tab).
+// Docs: docs/BEST_SETUP.md (Routes tab). Phase 18: per raid (RaidConfig); a raid with one fixed route (ToA) shows it
+// as "Encounters" with the per-phase breakdown open.
 
 const searchCache = new Map<string, PhaseSearchBest[string]>();
 const cachePrefix = (a: BestSetupAssumptions, drain: DrainStateId) => `${JSON.stringify(a)}|${drain}|`;
 
 const DEBOUNCE_MS = 500;
 const GROUPS: StyleGroup[] = ['melee', 'ranged', 'magic'];
-
-const ENCOUNTER_TARGET: Record<EncounterId, string> = {
-  'archive-guardian': 'ag-flying',
-  ezekiel: 'ezekiel',
-  'bork-smorks': 'bork',
-  moia: 'moia',
-  dreadnoth: 'dreadnoth',
-  dagonhai: 'dagonhai',
-  xarth: 'xarth',
-  ocellus: 'ocellus-p1',
-};
 
 /** Seconds as sent by the worker (Infinity is serialised as null). */
 const secs = (v: number | null | undefined): number => (typeof v === 'number' ? v : Infinity);
@@ -57,7 +47,7 @@ const fmtS = (v: number | null | undefined) => {
 };
 
 const SETTING_FIELDS: {
-  key: keyof RaidTimeSettings, label: string, unit: '%' | 's' | 'hp', title: string, max?: number,
+  key: Exclude<keyof RaidTimeSettings, 'toa'>, label: string, unit: '%' | 's' | 'hp', title: string, max?: number,
 }[] = [
   {
     key: 'agShieldHp', label: 'AG shield', unit: 'hp', title: 'Archive Guardian flying shield hp at 6 players (wiki: "1490 health shield in 6-scale", unverified), dealt at the Flying version\'s DPS; scaled by the (identity, unverified) party-size table',
@@ -118,6 +108,66 @@ const TimeSettingsBox: React.FC<{ value: RaidTimeSettings, onChange: (s: RaidTim
   </div>
 );
 
+/** Phase 18: the Tombs of Amascut time-model settings (src/lib/raids/toa/time.ts). */
+const ToaTimeSettingsBox: React.FC<{
+  value: RaidTimeSettings, onChange: (s: RaidTimeSettings) => void, reset: RaidTimeSettings,
+}> = ({ value, onChange, reset }) => {
+  const toa: ToaTimeSettings = { ...TOA_TIME_DEFAULTS, ...(value.toa || {}) };
+  const set = (patch: Partial<ToaTimeSettings>) => onChange({ ...value, toa: { ...toa, ...patch } });
+  const pctInput = (key: 'kephriSwarmLeak' | 'p3SiphonFraction', label: string, title: string) => (
+    <label htmlFor={`rt-toa-${key}`} className="flex items-center gap-1" title={title}>
+      {label}
+      <input
+        id={`rt-toa-${key}`}
+        type="number"
+        className="form-control text-xs py-0.5 w-16"
+        min={0}
+        max={100}
+        value={Math.round(toa[key] * 1000) / 10}
+        onChange={(e) => set({ [key]: Math.min(100, Math.max(0, Number(e.target.value) || 0)) / 100 })}
+      />
+      %
+    </label>
+  );
+  return (
+    <div className="text-xs bg-body-100 dark:bg-dark-400 border border-body-400 dark:border-dark-200 rounded p-3 flex flex-col gap-2" data-testid="time-settings">
+      <div className="font-bold text-sm">Assumptions (time model)</div>
+      <div>
+        Time = Σ damage ÷ (party size × your DPS) per phase — every member is assumed to deal your DPS — with the kit&apos;s
+        best loadout + style per phase (switching is free); DPS time only (no paths, puzzles, invulnerable phases or
+        healing). HP: upstream&apos;s ToA scaling (raid level, path level, party size; verified in-game). Kephri: 3 shields,
+        the overlord scarabs, then her hp; Akkha: his hp + 4 shadows + 20% final stand in melee; Wardens: obelisk, P2
+        downs (shield, then the core for 21/29/37 ticks, ×5 damage), P3 95% + 25% enraged.
+      </div>
+      <div className="flex flex-wrap gap-x-4 gap-y-2 items-center">
+        <label htmlFor="rt-toa-p2Warden" className="flex items-center gap-1" title="The warden fought in P2 (prays Melee + Ranged: Elidinis', Melee + Magic: Tumeken's); the other one is P3 (same stats)">
+          P2 warden
+          <select
+            id="rt-toa-p2Warden"
+            className="form-control text-xs py-0.5"
+            value={toa.p2Warden}
+            onChange={(e) => set({ p2Warden: e.target.value as ToaTimeSettings['p2Warden'] })}
+          >
+            <option value="elidinis">Elidinis&apos; (magic only)</option>
+            <option value="tumeken">Tumeken&apos;s (ranged only)</option>
+          </select>
+        </label>
+        <label htmlFor="rt-toa-akkha" className="flex items-center gap-1" title="Akkha prays against the style he attacks with: split his hp over his three prayers (the kit's best unblocked style each third). Off: always an unprotected style">
+          <input id="rt-toa-akkha" type="checkbox" checked={toa.akkhaPrayerRotation} onChange={(e) => set({ akkhaPrayerRotation: e.target.checked })} />
+          Akkha prayer rotation
+        </label>
+        <label htmlFor="rt-toa-overlords" className="flex items-center gap-1" title="Kill Kephri's overlord scarabs (Spitting, Soldier, Arcane)">
+          <input id="rt-toa-overlords" type="checkbox" checked={toa.kephriOverlords} onChange={(e) => set({ kephriOverlords: e.target.checked })} />
+          Kephri scarabs
+        </label>
+        {pctInput('kephriSwarmLeak', 'Kephri swarm leak', 'Extra Kephri shield per intermission from leaked swarms, as % of one shield (Strategies: ~10% per swarm, capped ~15% over max)')}
+        {pctInput('p3SiphonFraction', 'P3 siphons', 'Share of the P3 Warden hp taken off by reversed energy siphons (unpublished; 0 = not counted)')}
+        <button type="button" className="underline" onClick={() => onChange(reset)}>Reset</button>
+      </div>
+    </div>
+  );
+};
+
 const PhaseRows: React.FC<{ e: EncounterTime }> = ({ e }) => (
   <>
     {e.phases.map((p) => (
@@ -141,8 +191,11 @@ const PhaseRows: React.FC<{ e: EncounterTime }> = ({ e }) => (
   </>
 );
 
-const RoutesView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStateId }> = ({ assumptions, drain }) => {
-  const [settings, setSettings] = useState<RaidTimeSettings>(RAID_TIME_DEFAULTS);
+const RoutesView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStateId, raid: RaidConfig }> = ({ assumptions, drain, raid }) => {
+  const PRESETS = raid.presets;
+  const ROUTE_SLOTS = raid.time.routeSlots;
+  const singleRoute = ROUTE_SLOTS.every((s) => s.options.length === 1);
+  const [settings, setSettings] = useState<RaidTimeSettings>(raid.defaultTimeSettings);
   const [searchGroups, setSearchGroups] = useState<StyleGroup[]>(GROUPS);
   const [presets, setPresets] = useState<string[]>([]);
   const [useCalc, setUseCalc] = useState(false);
@@ -151,7 +204,7 @@ const RoutesView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStat
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState<RouteComparisonProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState<Set<number>>(new Set());
+  const [expanded, setExpanded] = useState<Set<number>>(new Set(singleRoute ? [0] : []));
   const job = useRef<RoutesJob | null>(null);
 
   // the main calculator's saved loadouts (the calculator keeps its session in localforage)
@@ -229,7 +282,9 @@ const RoutesView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStat
 
   return (
     <div className="flex flex-col gap-3" data-testid="routes-view">
-      <TimeSettingsBox value={settings} onChange={setSettings} />
+      {raid.id === 'toa'
+        ? <ToaTimeSettingsBox value={settings} onChange={setSettings} reset={raid.defaultTimeSettings} />
+        : <TimeSettingsBox value={settings} onChange={setSettings} />}
 
       <div className="text-xs flex flex-col gap-2" data-testid="kit">
         <div className="flex flex-wrap gap-x-3 gap-y-1 items-center">
@@ -291,7 +346,7 @@ const RoutesView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStat
               <thead>
                 <tr className="bg-btns-400 dark:bg-dark-500 text-white">
                   <th className="px-2" aria-label="expand" />
-                  <th className="px-2 text-left">Route</th>
+                  <th className="px-2 text-left">{singleRoute ? 'Encounters' : 'Route'}</th>
                   <th className="px-2 text-right">Total</th>
                   {ROUTE_SLOTS.map((s) => <th key={s.order} className="px-2 text-right">{`${s.order}.`}</th>)}
                 </tr>
@@ -319,7 +374,7 @@ const RoutesView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStat
                         {r.encounters.map((e) => (
                           <td key={e.id} className="px-2 py-1 text-right whitespace-nowrap" data-testid={`enc-${e.id}`} data-seconds={secs(e.seconds)}>
                             <div className="flex items-center justify-end gap-1 text-xs">
-                              <ItemIcon name={e.label} src={targetImageUrl(findTarget(ENCOUNTER_TARGET[e.id]))} size={18} />
+                              <ItemIcon name={e.label} src={targetImageUrl(findTarget(raid.encounterTarget[e.id]))} size={18} />
                               <span className="font-normal">{e.label}</span>
                             </div>
                             <div className="font-mono text-xs">{fmtS(e.seconds)}</div>

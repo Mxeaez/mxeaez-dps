@@ -24,6 +24,7 @@ import { Spellement } from '@/types/Spell';
 import { isImmuneToSpell, isOutOfMeleeReach } from '@/lib/fracturedArchive/immunities';
 import { getFracturedArchiveDemonbaneVulnerability } from '@/lib/fracturedArchive/demonbane';
 import { isBlockedByOcellusPrayer } from '@/lib/fracturedArchive/ocellus';
+import { isBlockedByToaPrayer } from '@/lib/raids/toa/prayers';
 
 export interface CalcOpts {
   loadoutName?: string,
@@ -835,6 +836,9 @@ export default class BaseCalc {
     }
     if (isBlockedByOcellusPrayer(this.monster, this.player.style.type, this.isUsingMeleeStyle())) {
       this.addIssue(UserIssueType.WEAPON_WRONG_MONSTER, 'Ocellus is praying against this combat style.');
+    }
+    if (isBlockedByToaPrayer(this.monster, this.player.style.type, this.isUsingMeleeStyle())) {
+      this.addIssue(UserIssueType.WEAPON_WRONG_MONSTER, 'This boss is praying against this combat style.');
     }
     if (isOutOfMeleeReach(this.monster) && this.isUsingMeleeStyle()) {
       this.addIssue(UserIssueType.WEAPON_WRONG_MONSTER, 'Melee can\'t reach this monster: use ranged or magic.');

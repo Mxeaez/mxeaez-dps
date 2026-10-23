@@ -15,6 +15,7 @@ import { WORKER_JSON_REPLACER, WORKER_JSON_REVIVER } from '@/utils';
 import { runGearSearch } from '@/lib/fracturedArchive/search';
 import { computeRouteComparison } from '@/lib/fracturedArchive/raidTime';
 import { plan } from '@/lib/fracturedArchive/planner';
+import { raidOf } from '@/lib/raids';
 
 /**
  * Dedicated worker for the Fractured Archive gear search (WorkerRequestType.BEST_SETUP_SEARCH, phase 9). It is
@@ -23,6 +24,8 @@ import { plan } from '@/lib/fracturedArchive/planner';
  * synchronous loop, so a "cancel" message could not be read until it finished). Client: searchWorkerClient.ts.
  * Phase 16: also WorkerRequestType.RAID_ROUTES (the Routes tab: per-phase searches + route times), same protocol.
  * Phase 17: WorkerRequestType.RAID_PLAN (the Plan tab: searches, DPS matrix, kit optimiser), same protocol.
+ * Phase 18: every request is for the raid of its `assumptions.raid` (the search picks its presets / pool from it; the
+ * routes and the planner get that raid's time model here, since models aren't serialisable).
  */
 self.onmessage = (evt: MessageEvent<string>) => {
   const parsed = JSON.parse(evt.data, WORKER_JSON_REVIVER) as BestSetupSearchRequest | RaidRoutesRequest | RaidPlanRequest;
@@ -30,7 +33,7 @@ self.onmessage = (evt: MessageEvent<string>) => {
     const sequenceId = parsed.sequenceId || 0;
     const res = { type: WorkerRequestType.RAID_PLAN, sequenceId } as RaidPlanResponse;
     try {
-      res.payload = plan(parsed.data, {}, {
+      res.payload = plan(parsed.data, { model: raidOf(parsed.data.assumptions).time }, {
         onProgress: (progress) => {
           const msg: RaidPlanProgressMessage = { type: WorkerRequestType.RAID_PLAN, sequenceId, progress };
           self.postMessage(JSON.stringify(msg, WORKER_JSON_REPLACER));
@@ -50,7 +53,7 @@ self.onmessage = (evt: MessageEvent<string>) => {
       res.payload = computeRouteComparison(parsed.data, (progress) => {
         const msg: RaidRoutesProgressMessage = { type: WorkerRequestType.RAID_ROUTES, sequenceId, progress };
         self.postMessage(JSON.stringify(msg, WORKER_JSON_REPLACER));
-      });
+      }, raidOf(parsed.data.assumptions).time);
     } catch (e: unknown) {
       console.error(e);
       res.error = e instanceof Error ? e.message : `Unknown error type: ${e}`;

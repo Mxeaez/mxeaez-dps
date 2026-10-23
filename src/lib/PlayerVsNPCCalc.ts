@@ -94,6 +94,7 @@ import { burningClawDoT, burningClawSpec, dClawDist } from '@/lib/dists/claws';
 import { isImmuneToSpell, isOutOfMeleeReach } from '@/lib/fracturedArchive/immunities';
 import { getMagicResistance, hasGuaranteedMeleeAccuracy } from '@/lib/fracturedArchive/bork';
 import { getOcellusDamageDivisor, isBlockedByOcellusPrayer } from '@/lib/fracturedArchive/ocellus';
+import { isBlockedByToaPrayer } from '@/lib/raids/toa/prayers';
 import {
   DIAMOND_ASCENSION_BOLTS_E,
   getElementalFragmentBonus,
@@ -2151,6 +2152,9 @@ export default class PlayerVsNPCCalc extends BaseCalc {
       return true;
     }
     if (isBlockedByOcellusPrayer(this.monster, styleType, this.isUsingMeleeStyle())) {
+      return true;
+    }
+    if (isBlockedByToaPrayer(this.monster, styleType, this.isUsingMeleeStyle())) {
       return true;
     }
     // Eclipse moon clone is immune to non-melee attacks

@@ -26,11 +26,13 @@ import {
   summaryQueries,
 } from '@/lib/fracturedArchive/bestSetup';
 import {
-  BestSetupAssumptions, ItemRef, PRESETS, PresetDef, StyleGroup,
+  BestSetupAssumptions, ItemRef, PresetDef, StyleGroup,
 } from '@/lib/fracturedArchive/presets';
 import {
-  CandidateItem, SEARCH_POOL, SEARCH_SLOTS, SearchSlot, StylePool, WeaponCandidate, refName,
+  CandidateItem, SEARCH_SLOTS, SearchSlot, StylePool, WeaponCandidate, refName,
 } from '@/lib/fracturedArchive/searchCandidates';
+import { raidPresets, raidSearchPool } from '@/lib/raids/data';
+import { BestSetupTarget } from '@/lib/raids/types';
 
 /**
  * Full gear search (phase 9, "Search" tab of /best-setup). Pure and React-free: runs in its own web worker
@@ -125,9 +127,9 @@ export interface GearSearchOptions {
   maxPasses?: number;
   /** Only search these weapons (by name) — a reduced pool for tests. */
   weapons?: string[];
-  /** Replace the candidate pool (tests). */
+  /** Replace the candidate pool (tests; default: the raid's pool, src/lib/raids/data.ts). */
   pool?: Partial<Record<StyleGroup, StylePool>>;
-  /** Presets used as seeds and for the "vs best preset" comparison (default PRESETS). */
+  /** Presets used as seeds and for the "vs best preset" comparison (default: the raid's presets, src/lib/raids/data.ts). */
   presets?: PresetDef[];
   /** Seed with the presets' armour (default true). */
   presetSeeds?: boolean;
@@ -413,7 +415,7 @@ export const runGearSearch = (
   const target = findTarget(query.targetKey);
   const styles = query.styles || 'all';
   const groups = groupsFor(styles);
-  const presets = options.presets || PRESETS;
+  const presets = options.presets || raidPresets(assumptions.raid);
   const topN = options.topN ?? 10;
   const maxPasses = options.maxPasses ?? 3;
   const progressEvery = options.progressEvery ?? 25;
@@ -427,7 +429,7 @@ export const runGearSearch = (
   const bestPreset = presetRows[0] ?? null;
 
   const variants = groups.flatMap((g) => {
-    const poolDef = options.pool ? options.pool[g] : SEARCH_POOL[g];
+    const poolDef = options.pool ? options.pool[g] : raidSearchPool(assumptions.raid)[g];
     return poolDef ? buildVariants(poolDef, monster, resolve, presets, options) : [];
   });
 
@@ -593,7 +595,7 @@ export const runGearSearch = (
  * The searches behind the Summary tab: every Summary boss / phase row (`summaryQueries`) × drain state (None, Solo,
  * Team), all styles, in table order (row by row). Run one after the other in the search worker.
  */
-export const summarySearchQueries = (): GearSearchQuery[] => summaryQueries().flatMap((q) => DRAIN_STATES
+export const summarySearchQueries = (targets?: BestSetupTarget[]): GearSearchQuery[] => summaryQueries(targets).flatMap((q) => DRAIN_STATES
   .map((d): GearSearchQuery => ({
     targetKey: q.targetKey, phase: q.phase, drain: d.id, styles: 'all',
   })));

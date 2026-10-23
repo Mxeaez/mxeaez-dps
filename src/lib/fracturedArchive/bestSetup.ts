@@ -17,6 +17,8 @@ import {
   BORK_PHASES, BORK_STUNNED_PHASE, DAGONHAI_PHASES, DAGONHAI_SHIELDED_PHASE, OCELLUS_P1_PHASES, OCELLUS_P3_PHASES,
 } from '@/lib/fracturedArchive/constants';
 import { isOutOfMeleeReach } from '@/lib/fracturedArchive/immunities';
+import { BestSetupTarget, DEFAULT_TOA_INPUTS } from '@/lib/raids/types';
+import { TOA_TARGETS } from '@/lib/raids/toa/targets';
 import {
   BestSetupAssumptions, PRESETS, PresetDef, StyleGroup,
 } from '@/lib/fracturedArchive/presets';
@@ -43,19 +45,8 @@ export {
 
 // --- targets -------------------------------------------------------------------------------------------------------
 
-export interface BestSetupTarget {
-  key: string;
-  label: string;
-  name: string;
-  version: string;
-  /** Phase dropdown options (MONSTER_PHASES_BY_ID); the first one is the default. */
-  phases?: string[];
-  /** Phase options that get their own row in the Summary table. */
-  summaryPhases?: string[];
-  /** Expected TTK isn't meaningful (Ocellus P2: the Blade phase is timed, damage transfers 50% to P3). */
-  ttkNotApplicable?: boolean;
-  note?: string;
-}
+// Phase 18: the target type lives in src/lib/raids/types.ts (shared by every raid's target list).
+export type { BestSetupTarget };
 
 export const BEST_SETUP_TARGETS: BestSetupTarget[] = [
   {
@@ -130,8 +121,11 @@ export const BEST_SETUP_TARGETS: BestSetupTarget[] = [
   },
 ];
 
+/** Every raid's targets (phase 18: + Tombs of Amascut, keys "toa-…"); keys are unique across raids. */
+export const ALL_TARGETS: BestSetupTarget[] = [...BEST_SETUP_TARGETS, ...TOA_TARGETS];
+
 export const findTarget = (key: string): BestSetupTarget => {
-  const t = BEST_SETUP_TARGETS.find((x) => x.key === key);
+  const t = ALL_TARGETS.find((x) => x.key === key);
   if (!t) {
     throw new Error(`Best setup: unknown target '${key}'`);
   }
@@ -252,6 +246,23 @@ export const drainStateFor = (m: Monster, id: DrainStateId, assumptions: BestSet
 };
 
 /**
+ * Phase 18: per-raid monster inputs. Tombs of Amascut: party size 1-8 (solo allowed), raid level and the target's path
+ * level, exactly the calculator's ToA inputs (upstream scales hp and the defence roll from them).
+ */
+export const raidMonsterInputs = (
+  target: BestSetupTarget,
+  assumptions: BestSetupAssumptions,
+): Partial<Monster['inputs']> => {
+  if (target.raid !== 'toa') return {};
+  const toa = assumptions.toa || DEFAULT_TOA_INPUTS;
+  return {
+    partySize: Math.min(8, Math.max(1, Math.trunc(assumptions.partySize))),
+    toaInvocationLevel: Math.max(0, Math.trunc(toa.invocationLevel)),
+    toaPathLevel: target.toaPath ? Math.min(6, Math.max(0, Math.trunc(toa.pathLevels[target.toaPath] ?? 0))) : 0,
+  };
+};
+
+/**
  * The monster as the main calculator holds it after selecting the boss, phase and party size and pressing the drain
  * buttons: raw stats + inputs (current HP = scaled HP, like MonsterContainer sets it). The calc scales it itself.
  */
@@ -269,6 +280,7 @@ export const buildTargetMonster = (
       defenceReductions: { ...INITIAL_MONSTER_INPUTS.defenceReductions },
       partySize: Math.min(8, Math.max(2, assumptions.partySize)),
       phase: phase && phases.includes(phase) ? phase : phases[0],
+      ...raidMonsterInputs(target, assumptions),
     },
   };
   m = withInputs(m, { monsterCurrentHp: scaleMonster(m).skills.hp });
@@ -499,8 +511,7 @@ export const computeBestSetup = (
   return { targetKey, phase: buildTargetMonster(target, phase, 'none', assumptions).monster.inputs.phase, drains };
 });
 
-/** Summary queries: every target × its summary phases (or the default phase). */
-export const summaryQueries = (): BestSetupQuery[] => BEST_SETUP_TARGETS.flatMap((t) => {
-  const phases = t.summaryPhases || [targetPhases(t)[0]];
-  return phases.map((phase) => ({ targetKey: t.key, phase }));
-});
+/** Summary queries: every target × its summary phases (or the default phase). Phase 18: per raid (default FA). */
+export const summaryQueries = (targets: BestSetupTarget[] = BEST_SETUP_TARGETS): BestSetupQuery[] => targets
+  .filter((t) => !t.noSummary)
+  .flatMap((t) => (t.summaryPhases || [targetPhases(t)[0]]).map((phase) => ({ targetKey: t.key, phase })));

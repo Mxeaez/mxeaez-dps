@@ -13,8 +13,10 @@ import {
   styleLabel,
 } from '@/lib/fracturedArchive/bestSetup';
 import {
-  BestSetupAssumptions, DEFAULT_ASSUMPTIONS, PRESETS, PresetDef, StyleGroup,
+  BestSetupAssumptions, DEFAULT_ASSUMPTIONS, PresetDef, StyleGroup,
 } from '@/lib/fracturedArchive/presets';
+import { raidPresets } from '@/lib/raids/data';
+import { ToaInputs, ToaTimeSettings } from '@/lib/raids/types';
 import {
   GearSearchProgress, runGearSearch, SearchRow, searchRowToPlayer, StyleOption,
 } from '@/lib/fracturedArchive/search';
@@ -68,6 +70,8 @@ export interface RaidTimeSettings {
   ocellusP2CarryOver: number;
   /** Fraction of P3's remaining hp dealt in the last quadrant (at the worse Deflect option for the kit); 0–1. */
   ocellusLastQuadrantFraction: number;
+  /** Phase 18: Tombs of Amascut time-model settings (src/lib/raids/toa/time.ts); unused by the Fractured Archive. */
+  toa?: ToaTimeSettings;
 }
 
 export const RAID_TIME_DEFAULTS: RaidTimeSettings = {
@@ -96,9 +100,12 @@ export const RAID_TIME_DEFAULTS: RaidTimeSettings = {
 
 // --- routes --------------------------------------------------------------------------------------------------------
 
-export type EncounterId = 'archive-guardian' | 'ezekiel' | 'bork-smorks' | 'moia' | 'dreadnoth' | 'dagonhai' | 'xarth' | 'ocellus';
+export type FaEncounterId = 'archive-guardian' | 'ezekiel' | 'bork-smorks' | 'moia' | 'dreadnoth' | 'dagonhai' | 'xarth' | 'ocellus';
 
-export const ENCOUNTER_LABELS: Record<EncounterId, string> = {
+/** Phase 18: any raid's encounter id (the Fractured Archive's are `FaEncounterId`; ToA's start with "toa-"). */
+export type EncounterId = string;
+
+export const ENCOUNTER_LABELS: Record<FaEncounterId, string> = {
   'archive-guardian': 'Archive Guardian',
   ezekiel: 'Ezekiel',
   'bork-smorks': 'Bork + Smorks',
@@ -113,7 +120,12 @@ export const ENCOUNTER_LABELS: Record<EncounterId, string> = {
  * The raid's layout (Strategies → *Layout*, docs/DATA_SOURCES.md *Route structure*): the 1st and 5th bosses are
  * fixed; for each of the 2nd–4th the team picks one of two (west / east side). 2 × 2 × 2 = 8 routes.
  */
-export const ROUTE_SLOTS: { order: number, options: EncounterId[] }[] = [
+export interface RouteSlot {
+  order: number;
+  options: EncounterId[];
+}
+
+export const ROUTE_SLOTS: RouteSlot[] = [
   { order: 1, options: ['archive-guardian'] },
   { order: 2, options: ['ezekiel', 'bork-smorks'] },
   { order: 3, options: ['moia', 'dreadnoth'] },
@@ -129,11 +141,14 @@ export interface Route {
 }
 
 /** Every route: the cartesian product of ROUTE_SLOTS, in slot order (option A before B). */
-export const enumerateRoutes = (slots = ROUTE_SLOTS): Route[] => slots
+export const enumerateRoutes = (
+  slots: RouteSlot[] = ROUTE_SLOTS,
+  labels: Record<string, string> = ENCOUNTER_LABELS,
+): Route[] => slots
   .reduce<EncounterId[][]>((acc, slot) => acc.flatMap((r) => slot.options.map((o) => [...r, o])), [[]])
   .map((encounters) => ({
     id: encounters.join('>'),
-    label: encounters.map((e) => ENCOUNTER_LABELS[e]).join(' → '),
+    label: encounters.map((e) => labels[e] ?? e).join(' → '),
     encounters,
   }));
 
@@ -185,12 +200,20 @@ export const partyHpFactor = (partySize: number): number => {
 
 const hpCache = new Map<string, number>();
 
-/** The party-scaled hp of a best-setup target / phase, as the calculator scales it. */
-export const targetHp = (targetKey: string, phase: string | undefined, partySize: number): number => {
-  const key = `${phaseKey(targetKey, phase)}|${clampParty(partySize)}|${partyHpFactor(partySize)}`;
+/**
+ * The party-scaled hp of a best-setup target / phase, as the calculator scales it. Phase 18: `raidInputs` carries the
+ * raid's own scaling inputs (ToA raid / path levels; ToA party size 1-8 is applied by buildTargetMonster).
+ */
+export const targetHp = (
+  targetKey: string,
+  phase: string | undefined,
+  partySize: number,
+  raidInputs: Pick<BestSetupAssumptions, 'raid' | 'toa'> = {},
+): number => {
+  const key = `${phaseKey(targetKey, phase)}|${clampParty(partySize)}|${partyHpFactor(partySize)}|${partySize}|${JSON.stringify(raidInputs)}`;
   let hp = hpCache.get(key);
   if (hp === undefined) {
-    const { monster } = buildTargetMonster(findTarget(targetKey), phase, 'none', { ...DEFAULT_ASSUMPTIONS, partySize });
+    const { monster } = buildTargetMonster(findTarget(targetKey), phase, 'none', { ...DEFAULT_ASSUMPTIONS, ...raidInputs, partySize });
     hp = monster.inputs.monsterCurrentHp;
     hpCache.set(key, hp);
   }
@@ -200,7 +223,7 @@ export const targetHp = (targetKey: string, phase: string | undefined, partySize
 // --- encounters ----------------------------------------------------------------------------------------------------
 
 /** One row of an encounter's plan: deal `damage` to `targetKey`/`phase`. */
-interface PlannedPhase {
+export interface PlannedPhase {
   key: string;
   label: string;
   targetKey: string;
@@ -213,7 +236,7 @@ const pctText = (f: number): string => `${Math.round(f * 1000) / 10}%`;
 const BORK_QUARTERS = BORK_FLAT_ARMOUR_BY_PHASE.filter(([p]) => p !== BORK_STUNNED_PHASE);
 
 /** The fixed-damage phases of an encounter (Ocellus P2 / P3 depend on DPS and are built in `evalEncounter`). */
-export const encounterPlan = (id: EncounterId, settings: RaidTimeSettings, partySize: number): PlannedPhase[] => {
+export const encounterPlan = (id: FaEncounterId, settings: RaidTimeSettings, partySize: number): PlannedPhase[] => {
   const hp = (t: string, p?: string) => targetHp(t, p, partySize);
   switch (id) {
     case 'archive-guardian': {
@@ -320,28 +343,68 @@ export interface RaidTimeAssumptions {
    * loadout. The planner's inner loop uses it; its reported times never do.
    */
   fixedFightSeconds?: number | Partial<Record<EncounterId, number>>;
+  /** Phase 18: the raid's time model (undefined = the Fractured Archive's, `FA_TIME_MODEL`). */
+  model?: RaidTimeModel;
+  /** Phase 18: ToA raid / path levels for the hp of ToA targets. */
+  toa?: ToaInputs;
+}
+
+/**
+ * Phase 18: a raid's time model. The Fractured Archive's is `FA_TIME_MODEL` below (8 routes); Tombs of Amascut's is
+ * src/lib/raids/toa/time.ts (one fixed route). The rest of this file (drain passes, routes, kits) is raid-independent.
+ */
+export interface RaidTimeModel {
+  id: string;
+  routeSlots: RouteSlot[];
+  labels: Record<string, string>;
+  /** One pass over an encounter at a drain state / fight length; phases with no damage are left out. */
+  encounterPass: (
+    id: EncounterId,
+    kit: RaidKit,
+    a: RaidTimeAssumptions,
+    drain: DrainStateId,
+    fightSeconds: number,
+  ) => PhaseTime[];
+  /** The target / phase options the model may query (for precomputing per-phase search results). */
+  requiredPhaseTargets: (a: RaidTimeAssumptions) => { targetKey: string, phase?: string }[];
 }
 
 export const raidTimeAssumptionsFrom = (
   best: BestSetupAssumptions,
   drain: DrainStateId,
   settings: RaidTimeSettings = RAID_TIME_DEFAULTS,
+  model?: RaidTimeModel,
 ): RaidTimeAssumptions => ({
-  partySize: best.partySize, drain, settings, fallbackFightSeconds: best.fightSeconds,
+  partySize: best.partySize,
+  drain,
+  settings,
+  fallbackFightSeconds: best.fightSeconds,
+  ...(model ? { model } : {}),
+  ...(best.toa ? { toa: best.toa } : {}),
 });
 
-const timeOf = (damage: number, dps: number): number => {
+export const timeOf = (damage: number, dps: number): number => {
   if (damage <= 0) return 0;
   return dps > 0 ? damage / dps : Infinity;
 };
 
-const phaseTime = (p: PlannedPhase, kit: RaidKit, drain: DrainStateId, fightSeconds: number): PhaseTime => {
+/**
+ * Time of one planned phase with the kit's best choice. `dpsFactor` (phase 18): the damage dealt per second of the
+ * user's DPS (ToA: the party size — every member is assumed to deal the user's DPS; the Fractured Archive: 1).
+ */
+export const phaseTime = (
+  p: PlannedPhase,
+  kit: RaidKit,
+  drain: DrainStateId,
+  fightSeconds: number,
+  dpsFactor = 1,
+): PhaseTime => {
   const choice = kit.best({
     targetKey: p.targetKey, phase: p.phase, drain, fightSeconds,
   });
   const dps = choice?.dps ?? 0;
   return {
-    ...p, choice, dps, seconds: timeOf(p.damage, dps),
+    ...p, choice, dps, seconds: timeOf(p.damage, dps * dpsFactor),
   };
 };
 
@@ -354,7 +417,7 @@ const evalEncounterPass = (
   fightSeconds: number,
 ): PhaseTime[] => {
   const { settings } = a;
-  const rows = encounterPlan(id, settings, a.partySize)
+  const rows = encounterPlan(id as FaEncounterId, settings, a.partySize)
     .filter((p) => p.damage > 0)
     .map((p) => phaseTime(p, kit, drain, fightSeconds));
   if (id !== 'ocellus') return rows;
@@ -398,6 +461,37 @@ const evalEncounterPass = (
 
 const sumSeconds = (rows: PhaseTime[]) => rows.reduce((t, r) => t + r.seconds, 0);
 
+/** The target / phase options the model may query for these settings (for precomputing per-phase search results). */
+export const requiredPhaseTargets = (settings: RaidTimeSettings, partySize = 6): { targetKey: string, phase?: string }[] => {
+  const ids = Array.from(new Set(ROUTE_SLOTS.flatMap((s) => s.options))) as FaEncounterId[];
+  const out = ids.flatMap((id) => encounterPlan(id, settings, partySize).filter((p) => p.damage > 0)
+    .map((p) => ({ targetKey: p.targetKey, phase: p.phase })));
+  if (settings.ocellusP2Seconds > 0) out.push({ targetKey: 'ocellus-p2', phase: undefined });
+  if (settings.ocellusLastQuadrantFraction < 1) out.push({ targetKey: 'ocellus-p3', phase: OCELLUS_P3_PHASES[0] });
+  if (settings.ocellusLastQuadrantFraction > 0) {
+    out.push({ targetKey: 'ocellus-p3', phase: OCELLUS_P3_DEFLECT_MELEE_PHASE });
+    out.push({ targetKey: 'ocellus-p3', phase: OCELLUS_P3_DEFLECT_RANGED_PHASE });
+  }
+  const seen = new Set<string>();
+  return out.filter((t) => {
+    const k = phaseKey(t.targetKey, t.phase);
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+};
+
+/** The Fractured Archive's time model (phase 16): 8 routes, the encounters above. */
+export const FA_TIME_MODEL: RaidTimeModel = {
+  id: 'fractured-archive',
+  routeSlots: ROUTE_SLOTS,
+  labels: ENCOUNTER_LABELS,
+  encounterPass: evalEncounterPass,
+  requiredPhaseTargets: (a) => requiredPhaseTargets(a.settings, a.partySize),
+};
+
+const modelOf = (a: RaidTimeAssumptions): RaidTimeModel => a.model ?? FA_TIME_MODEL;
+
 /**
  * Time of one encounter. Drains (Solo / Team) are planned with the encounter's own length: a first pass without drains
  * gives that length, then the encounter is evaluated once more with the drain state planned for it (one fixed-point
@@ -405,24 +499,26 @@ const sumSeconds = (rows: PhaseTime[]) => rows.reduce((t, r) => t + r.seconds, 0
  * generous).
  */
 export const encounterTime = (id: EncounterId, kit: RaidKit, a: RaidTimeAssumptions): EncounterTime => {
+  const model = modelOf(a);
+  const label = model.labels[id] ?? id;
   const fixed = typeof a.fixedFightSeconds === 'number' ? a.fixedFightSeconds : a.fixedFightSeconds?.[id];
   if (a.drain !== 'none' && fixed !== undefined) {
-    const phases = evalEncounterPass(id, kit, a, a.drain, fixed);
+    const phases = model.encounterPass(id, kit, a, a.drain, fixed);
     return {
-      id, label: ENCOUNTER_LABELS[id], phases, seconds: sumSeconds(phases), drainFightSeconds: fixed,
+      id, label, phases, seconds: sumSeconds(phases), drainFightSeconds: fixed,
     };
   }
-  const first = evalEncounterPass(id, kit, a, 'none', a.fallbackFightSeconds);
+  const first = model.encounterPass(id, kit, a, 'none', a.fallbackFightSeconds);
   const firstSeconds = sumSeconds(first);
   if (a.drain === 'none') {
     return {
-      id, label: ENCOUNTER_LABELS[id], phases: first, seconds: firstSeconds,
+      id, label, phases: first, seconds: firstSeconds,
     };
   }
   const fight = Number.isFinite(firstSeconds) && firstSeconds > 0 ? Math.round(firstSeconds) : a.fallbackFightSeconds;
-  const phases = evalEncounterPass(id, kit, a, a.drain, fight);
+  const phases = model.encounterPass(id, kit, a, a.drain, fight);
   return {
-    id, label: ENCOUNTER_LABELS[id], phases, seconds: sumSeconds(phases), drainFightSeconds: fight,
+    id, label, phases, seconds: sumSeconds(phases), drainFightSeconds: fight,
   };
 };
 
@@ -457,8 +553,14 @@ export interface RouteComparison {
   fastest: number;
 }
 
+/** The routes of the assumptions' raid (the Fractured Archive's 8 by default). */
+export const routesFor = (a: Pick<RaidTimeAssumptions, 'model'>): Route[] => {
+  const m = a.model ?? FA_TIME_MODEL;
+  return enumerateRoutes(m.routeSlots, m.labels);
+};
+
 /** All routes (each encounter evaluated once). */
-export const compareRoutes = (kit: RaidKit, assumptions: RaidTimeAssumptions, routes = enumerateRoutes()): RouteComparison => {
+export const compareRoutes = (kit: RaidKit, assumptions: RaidTimeAssumptions, routes = routesFor(assumptions)): RouteComparison => {
   const cache = new Map<EncounterId, EncounterTime>();
   const times = routes.map((r) => raidTime(r, kit, assumptions, cache));
   let fastest = -1;
@@ -466,26 +568,6 @@ export const compareRoutes = (kit: RaidKit, assumptions: RaidTimeAssumptions, ro
     if (Number.isFinite(t.seconds) && (fastest < 0 || t.seconds < times[fastest].seconds)) fastest = i;
   });
   return { routes: times, fastest };
-};
-
-/** The target / phase options the model may query for these settings (for precomputing per-phase search results). */
-export const requiredPhaseTargets = (settings: RaidTimeSettings, partySize = 6): { targetKey: string, phase?: string }[] => {
-  const ids = Array.from(new Set(ROUTE_SLOTS.flatMap((s) => s.options)));
-  const out = ids.flatMap((id) => encounterPlan(id, settings, partySize).filter((p) => p.damage > 0)
-    .map((p) => ({ targetKey: p.targetKey, phase: p.phase })));
-  if (settings.ocellusP2Seconds > 0) out.push({ targetKey: 'ocellus-p2', phase: undefined });
-  if (settings.ocellusLastQuadrantFraction < 1) out.push({ targetKey: 'ocellus-p3', phase: OCELLUS_P3_PHASES[0] });
-  if (settings.ocellusLastQuadrantFraction > 0) {
-    out.push({ targetKey: 'ocellus-p3', phase: OCELLUS_P3_DEFLECT_MELEE_PHASE });
-    out.push({ targetKey: 'ocellus-p3', phase: OCELLUS_P3_DEFLECT_RANGED_PHASE });
-  }
-  const seen = new Set<string>();
-  return out.filter((t) => {
-    const k = phaseKey(t.targetKey, t.phase);
-    if (seen.has(k)) return false;
-    seen.add(k);
-    return true;
-  });
 };
 
 // --- the real kit --------------------------------------------------------------------------------------------------
@@ -651,16 +733,19 @@ const SEARCH_TOP_N = 64;
 
 /**
  * The Routes tab: runs the gear searches the kit needs (one all-style search per phase target that the model queries,
- * unless cached), builds the kit and compares the 8 routes.
+ * unless cached), builds the kit and compares the 8 routes. Phase 18: `model` = the raid's time model (the worker
+ * passes the one of `req.assumptions.raid`; ToA has one fixed route, shown as "Encounters").
  */
 export const computeRouteComparison = (
   req: RouteComparisonRequest,
   onProgress?: (p: RouteComparisonProgress) => void,
+  model: RaidTimeModel = FA_TIME_MODEL,
 ): RouteComparisonResult => {
   const start = Date.now();
   const { assumptions, drain, settings } = req;
   const searchBest: PhaseSearchBest = { ...req.searchBest };
-  const targets = req.kit.searchGroups.length ? requiredPhaseTargets(settings, assumptions.partySize) : [];
+  const timeA = raidTimeAssumptionsFrom(assumptions, drain, settings, model);
+  const targets = req.kit.searchGroups.length ? model.requiredPhaseTargets(timeA) : [];
   const missing = targets.filter((t) => !searchBest[phaseKey(t.targetKey, t.phase)]);
   missing.forEach((t, i) => {
     const label = `${findTarget(t.targetKey).label}${t.phase ? ` (${t.phase})` : ''}`;
@@ -689,14 +774,15 @@ export const computeRouteComparison = (
       if (row) loadouts.push(searchRowKitLoadout(req.basePlayer, row, t.targetKey, t.phase, assumptions));
     }
   }
+  const presets = raidPresets(assumptions.raid);
   for (const name of req.kit.presets) {
-    const preset = PRESETS.find((p) => p.name === name);
+    const preset = presets.find((p) => p.name === name);
     if (preset) loadouts.push(presetKitLoadout(req.basePlayer, preset, assumptions));
   }
   req.kit.players.forEach((p, i) => loadouts.push(playerKitLoadout(p, i)));
 
   const kit = createKitEvaluator(loadouts, assumptions);
-  const cmp = compareRoutes(kit, raidTimeAssumptionsFrom(assumptions, drain, settings));
+  const cmp = compareRoutes(kit, timeA);
   return {
     ...cmp, searchBest, evaluations: kit.evaluations(), searches: missing.length, elapsedMs: Date.now() - start,
   };

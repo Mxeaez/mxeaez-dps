@@ -10,12 +10,13 @@ import EquipmentSelect from '@/app/components/player/equipment/EquipmentSelect';
 import { buildTargetMonster, DrainStateId, findTarget } from '@/lib/fracturedArchive/bestSetup';
 import { BestSetupAssumptions, StyleGroup } from '@/lib/fracturedArchive/presets';
 import {
-  EncounterId, enumerateRoutes, formatDuration, PhaseTime, RAID_TIME_DEFAULTS,
+  enumerateRoutes, formatDuration, PhaseTime,
 } from '@/lib/fracturedArchive/raidTime';
 import {
   DEFAULT_NON_ITEM_SLOTS,
   DEFAULT_PINNED_NAMES,
   DEFAULT_SUPPLIES,
+  TOA_DEFAULT_SUPPLIES,
   equipmentById,
   INVENTORY_SLOTS,
   InventoryCell,
@@ -32,6 +33,7 @@ import {
 } from '@/lib/fracturedArchive/planner';
 import { SearchRow } from '@/lib/fracturedArchive/search';
 import { PlanJob, startRaidPlan } from '@/worker/searchWorkerClient';
+import { RaidConfig } from '@/lib/raids';
 import {
   equipmentImageUrl, LOADOUT_SLOT_ORDER, searchItemIcon, targetImageUrl,
 } from '@/lib/fracturedArchive/loadoutIcons';
@@ -88,17 +90,6 @@ const SLOT_PLACEHOLDERS: Record<keyof PlayerEquipment, string> = {
 
 const GROUP_COLOURS: Record<StyleGroup, string> = {
   melee: 'border-red-500', ranged: 'border-green-600', magic: 'border-blue-500',
-};
-
-const ENCOUNTER_TARGET: Record<EncounterId, string> = {
-  'archive-guardian': 'ag-flying',
-  ezekiel: 'ezekiel',
-  'bork-smorks': 'bork',
-  moia: 'moia',
-  dreadnoth: 'dreadnoth',
-  dagonhai: 'dagonhai',
-  xarth: 'xarth',
-  ocellus: 'ocellus-p1',
 };
 
 /** Seconds as sent by the worker (Infinity is serialised as null). */
@@ -224,11 +215,12 @@ const PhaseRows: React.FC<{ phases: PhaseTime[] }> = ({ phases }) => (
   </>
 );
 
-const PlanView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStateId }> = ({ assumptions, drain }) => {
-  const routes = useMemo(() => enumerateRoutes(), []);
+const PlanView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStateId, raid: RaidConfig }> = ({ assumptions, drain, raid }) => {
+  const routes = useMemo(() => enumerateRoutes(raid.time.routeSlots, raid.time.labels), [raid]);
   const defaultPinned = useMemo(() => DEFAULT_PINNED_NAMES.map((n) => planItemByName(n).id), []);
+  const defaultSupplies = raid.id === 'toa' ? TOA_DEFAULT_SUPPLIES : DEFAULT_SUPPLIES;
   const [route, setRoute] = useState('all');
-  const [supplies, setSupplies] = useState<SupplyCounts>(DEFAULT_SUPPLIES);
+  const [supplies, setSupplies] = useState<SupplyCounts>(defaultSupplies);
   const [nonItem, setNonItem] = useState(DEFAULT_NON_ITEM_SLOTS);
   const [pinned, setPinned] = useState<number[]>(defaultPinned);
   const [result, setResult] = useState<PlanResult | null>(null);
@@ -259,7 +251,7 @@ const PlanView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStateI
         basePlayer: generateEmptyPlayer(),
         assumptions,
         drain,
-        settings: RAID_TIME_DEFAULTS,
+        settings: raid.defaultTimeSettings,
         route,
         pinned,
         nonItemSlots: nonItem,
@@ -285,7 +277,7 @@ const PlanView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStateI
       clearTimeout(timer);
       cancel();
     };
-  }, [assumptions, drain, route, supplies, nonItem, pinned, runId, cancel]);
+  }, [assumptions, drain, route, supplies, nonItem, pinned, runId, cancel, raid]);
 
   const planned = result && result.comparison && result.planned >= 0 ? result.comparison.routes[result.planned] : null;
   const firstPhase = planned?.encounters[0]?.phases[0];
@@ -333,6 +325,7 @@ const PlanView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStateI
           {` ${INVENTORY_SLOTS} `}
           inventory slots. Party size, drains and spec weapons (&quot;My specs&quot;) come from the boxes above; spec weapons
           and the items below take a slot unless a loadout wears them.
+          {raid.id === 'toa' && ' ToA: salts, nectar and tears come from the supply chest — enter their slots under "Other"; every style keeps the Smelling salts boost.'}
         </div>
         <div className="flex flex-wrap gap-x-4 gap-y-2 items-center">
           <label htmlFor="plan-route" className="flex items-center gap-1">
@@ -521,7 +514,7 @@ const PlanView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStateI
                     <tr className="border-t border-body-300 dark:border-dark-400" data-testid="plan-encounter-row" data-encounter={e.id}>
                       <td className="px-2 py-1">
                         <span className="flex items-center gap-1">
-                          <ItemIcon name={e.label} src={targetImageUrl(findTarget(ENCOUNTER_TARGET[e.id]))} size={20} />
+                          <ItemIcon name={e.label} src={targetImageUrl(findTarget(raid.encounterTarget[e.id]))} size={20} />
                           {e.label}
                         </span>
                       </td>

@@ -1,5 +1,6 @@
 import { PlayerEquipment } from '@/types/Player';
 import Potion from '@/enums/Potion';
+import { RaidId, ToaInputs } from '@/lib/raids/types';
 
 /**
  * Named setups for the "Best setup" view (phase 8, /best-setup). Plain data — edit freely.
@@ -44,7 +45,7 @@ export interface PresetDef {
 }
 
 // Shared slot fillers (best in slot per style)
-const MELEE_FILL = {
+export const MELEE_FILL = {
   cape: 'Infernal cape',
   neck: 'Amulet of rancour',
   hands: 'Ferocious gloves',
@@ -53,19 +54,19 @@ const MELEE_FILL = {
   ammo: "Rada's blessing 4",
 };
 
-const INQUISITOR = {
+export const INQUISITOR = {
   head: "Inquisitor's great helm",
   body: "Inquisitor's hauberk",
   legs: "Inquisitor's plateskirt",
 };
 
-const TORVA = {
+export const TORVA = {
   head: 'Torva full helm',
   body: 'Torva platebody',
   legs: 'Torva platelegs',
 };
 
-const MASORI_F = {
+export const MASORI_F = {
   head: 'Masori mask (f)',
   body: 'Masori body (f)',
   legs: 'Masori chaps (f)',
@@ -76,7 +77,7 @@ const MASORI_F = {
   ring: 'Venator ring',
 };
 
-const ANCESTRAL = {
+export const ANCESTRAL = {
   head: 'Ancestral hat',
   body: 'Ancestral robe top',
   legs: 'Ancestral robe bottom',
@@ -211,6 +212,13 @@ export interface BestSetupAssumptions {
    * Not used by the spec / drain model. Undefined everywhere else.
    */
   withoutPotion?: StyleGroup[];
+  /**
+   * Phase 18: the raid these assumptions are for (undefined = the Fractured Archive). Selects the presets, search pool
+   * and time model (src/lib/raids); part of every cache key since it is in the assumptions.
+   */
+  raid?: RaidId;
+  /** Phase 18: Tombs of Amascut raid / path levels (ToA targets only; party size is `partySize`). */
+  toa?: ToaInputs;
 }
 
 /** Drain weapons the user carries (phase 14). */

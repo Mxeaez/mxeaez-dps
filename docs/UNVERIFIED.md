@@ -10,6 +10,7 @@ The rows are grouped by how much a wrong assumption would matter:
 - **(B)** it changes the numbers but probably not the ranking
 - **(C)** it only changes cosmetic values or the TTK
 - **(D)** it changes the phase 16 route times (Routes tab), not any DPS
+- **(E)** Tombs of Amascut time-model readings (phase 18)
 
 Some checks need the NPC's current stats. The tips assume a RuneLite plugin that shows an NPC's current Defence or
 Magic (search the Plugin Hub for "defence"), or you can count hits. "Max hit" checks need many hits (50 or more) and
@@ -87,6 +88,20 @@ applies to every figure.
 | D10 | Plan tab: switching | Switching between kit loadouts is free and instant (no lost ticks, no inventory clicks), as in the Routes tab; the plan only limits *what fits* in 28 slots | Kits with many switch items look better than they play | Count ticks lost per switch in a real run |
 | D11 | Plan tab: slots and potions | Every item is one slot (no stacking besides what the item data implies); supplies are slot counts entered by the user and never drunk down; a style whose potion has 0 slots is evaluated without its boost (the drain model keeps the potions); Solo drains in the optimiser are planned with each encounter's undrained time with the best single loadout, and the top 5 kits are re-timed exactly (the earlier fixed-90 s approximation is resolved); a two-handed / one-handed + shield change needs the free slot the largest swap requires (counted as "swap space"); spec weapons from "My specs" and the pinned items are always carried | Free-slot count off by a slot or two | — (model choice; check against the in-game inventory) |
 | D12 | Plan tab: candidates | Only the per-phase search results (3 weapons × 2 loadouts per style per phase), the presets, and partial switches between the best 2 loadouts per style are considered (caps in `PLAN_DEFAULTS`, docs/BEST_SETUP.md *Plan tab*). Greedy + local search, not exhaustive | A kit outside the pool (e.g. a weapon only the 4th-best on every phase) is never found | Raise the caps in `PLAN_DEFAULTS` and compare |
+
+## (E) Tombs of Amascut (phase 18, Encounters tab / planner)
+
+Monster stats and hp scaling are upstream's (verified in-game); these are the time-model readings on top.
+
+| # | What | Assumed | Impact if wrong | In-game check |
+|---|---|---|---|---|
+| E1 | P2 shield per down | The Warden's Active-version hp (140 base, scaled) must be dealt to eject the core each down | P2 shield time off proportionally | Note the damage dealt between two core ejections at a known raid level / party size |
+| E2 | P2 warden prayers | The initial prayers (Elidinis': Melee + Ranged; Tumeken's: Melee + Magic) for the whole of P2 ("initially") | A kit with only one of magic / ranged may be blocked part of P2 | Note the warden's overheads after each down |
+| E3 | Kephri shields | 3 full shields; leaked swarms add 0 by default (setting) | Kephri time too low by ~10% per leaked swarm | Opponent Information at the start of each shield |
+| E4 | Akkha prayer split | One third of his hp under each prayer (setting) | Melee-only or single-style kits are judged harshly or kindly | Count Akkha's style changes per phase |
+| E5 | P3 siphons | 0% of the hp (setting); the % per reversed siphon is unpublished | P3 time too high | P3 hp before / after a reversed siphon set |
+| E6 | Team DPS | Every party member deals the user's DPS (time = damage ÷ (party × DPS)) | Absolute times only; rankings unchanged | — (model choice) |
+| E7 | Downtime | No invulnerable phases (memory blast, rolling stones, Zebak specials, siphons), paths, puzzles, healing | Absolute times too low | Compare a real run's per-boss times |
 
 ## HP scaling: how to fill the gap
 

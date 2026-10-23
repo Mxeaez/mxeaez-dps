@@ -13,7 +13,7 @@ import {
   styleLabel,
 } from '@/lib/fracturedArchive/bestSetup';
 import {
-  BestSetupAssumptions, ItemRef, PRESETS, PresetDef, StyleGroup,
+  BestSetupAssumptions, ItemRef, PresetDef, StyleGroup,
 } from '@/lib/fracturedArchive/presets';
 import {
   GearSearchOptions, GearSearchProgress, GearSearchResult, runGearSearch, SearchItem, SearchRow, StyleOption,
@@ -23,7 +23,6 @@ import {
   createKitEvaluator,
   EncounterId,
   encounterTime,
-  enumerateRoutes,
   KitChoice,
   KitLoadout,
   PhaseQuery,
@@ -31,10 +30,13 @@ import {
   RaidKit,
   RaidTimeAssumptions,
   raidTimeAssumptionsFrom,
+  RaidTimeModel,
   RaidTimeSettings,
   Route,
   RouteComparison,
+  routesFor,
 } from '@/lib/fracturedArchive/raidTime';
+import { raidPresets } from '@/lib/raids/data';
 import { SPEC_WEAPONS, SpecWeapon } from '@/lib/fracturedArchive/specs';
 
 /**
@@ -89,6 +91,15 @@ export const DEFAULT_SUPPLIES: SupplyCounts = {
 };
 
 /**
+ * Phase 18: Tombs of Amascut supplies. Salts, nectars, tears and ambrosia come from the raid's supply chest; they still
+ * take slots, entered as "Other" (default 8: e.g. 3 nectar, 2 tears, 3 salts). The boost is always Smelling salts
+ * (`planAssumptions` doesn't drop it), so the potion supply types default to 0.
+ */
+export const TOA_DEFAULT_SUPPLIES: SupplyCounts = {
+  brew: 0, restore: 0, ranging: 0, superCombat: 0, magic: 0, food: 0, other: 8,
+};
+
+/**
  * The supply that carries each style's boost. A style whose supply count is 0 is evaluated without its potion (the
  * Assumptions box's potion is the one used "if brought"). The drain / spec model keeps the potions.
  */
@@ -98,6 +109,7 @@ export const SUPPLY_POTION_GROUP: Partial<Record<SupplyType, StyleGroup>> = {
 
 /** The best-setup assumptions as the plan uses them: styles whose potion isn't in the supplies lose the boost. */
 export const planAssumptions = (a: BestSetupAssumptions, supplies: SupplyCounts): BestSetupAssumptions => {
+  if (a.raid === 'toa') return a; // salts from the raid's supply chest (TOA_DEFAULT_SUPPLIES)
   const without = (Object.entries(SUPPLY_POTION_GROUP) as [SupplyType, StyleGroup][])
     .filter(([t]) => !(supplies[t] > 0)).map(([, g]) => g);
   return without.length ? { ...a, withoutPotion: without } : a;
@@ -522,7 +534,7 @@ export interface PlanInputs {
   assumptions: BestSetupAssumptions;
   drain: DrainStateId;
   settings: RaidTimeSettings;
-  /** A route id (enumerateRoutes) or 'all' (plan for the fastest route). */
+  /** A route id (enumerateRoutes / routesFor) or 'all' (plan for the fastest route). */
   route: string;
   /** Items always brought (equipment ids). */
   pinned: number[];
@@ -549,11 +561,13 @@ export interface PlanTuning {
   seeds?: number;
   /** Search hooks (reduced pools in tests). */
   search?: Pick<GearSearchOptions, 'weapons' | 'pool' | 'maxPasses'>;
-  /** Presets offered as candidates (default PRESETS). */
+  /** Presets offered as candidates (default: the raid's presets, src/lib/raids/data.ts). */
   presets?: PresetDef[];
+  /** Phase 18: the raid's time model (default: the Fractured Archive's; the worker passes the one of `assumptions.raid`). */
+  model?: RaidTimeModel;
 }
 
-export const PLAN_DEFAULTS: Required<Omit<PlanTuning, 'search' | 'presets'>> = {
+export const PLAN_DEFAULTS: Required<Omit<PlanTuning, 'search' | 'presets' | 'model'>> = {
   perGroupWeapons: 3,
   perWeapon: 2,
   bases: 2,
@@ -694,10 +708,10 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
   const total = inputs.totalSlots ?? INVENTORY_SLOTS;
   const cancelled = () => hooks.shouldCancel?.() === true;
   const progress = (p: PlanProgress) => hooks.onProgress?.(p);
-  const allRoutes = enumerateRoutes();
+  const exactA = raidTimeAssumptionsFrom(assumptions, drain, settings, tuning.model);
+  const allRoutes = routesFor(exactA);
   const routes = inputs.route === 'all' ? allRoutes : allRoutes.filter((r) => r.id === inputs.route);
   if (!routes.length) throw new Error(`Planner: unknown route '${inputs.route}'`);
-  const exactA = raidTimeAssumptionsFrom(assumptions, drain, settings);
   // Team / None: drains don't depend on the fight length, any fixed length is exact. Solo: set per encounter below.
   const fastA: RaidTimeAssumptions = { ...exactA, fixedFightSeconds: drain === 'none' ? undefined : assumptions.fightSeconds };
 
@@ -793,7 +807,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
   };
   let nPreset = 0;
   let nSearch = 0;
-  for (const preset of tuning.presets || PRESETS) {
+  for (const preset of tuning.presets || raidPresets(assumptions.raid)) {
     let equipment: PlanEquipment;
     try {
       equipment = presetEquipment(preset);

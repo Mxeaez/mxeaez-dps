@@ -3,6 +3,50 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 18 — Raid tabs + Tombs of Amascut (2026-10-23)
+
+- **RaidConfig** (`src/lib/raids/`): `types.ts` (RaidId, BestSetupTarget moved here, ToA inputs / time settings,
+  scaling-input defs), `index.ts` (`RaidConfig`: targets, scaling inputs, party range, default assumptions, presets,
+  search pool, time model + default settings, routes label, encounter icons; `RAIDS`, `raidConfig`, input get/set),
+  `fracturedArchive.ts` (points at the phase 8-17 objects, unchanged), `tombsOfAmascut.ts`, `data.ts` (per-raid
+  presets / pool / targets for the pure modules). The raid is `assumptions.raid` (undefined = FA), so caches, worker
+  requests and modules follow it. Moved behind the config: `findTarget` (all raids), `buildTargetMonster` (ToA inputs,
+  party 1-8), `summaryQueries(targets)`, search presets / pool, `raidTime` (`RaidTimeModel`: route slots, labels,
+  `encounterPass`, `requiredPhaseTargets`; `FA_TIME_MODEL`; `routesFor`; exported `phaseTime` with a team-DPS factor;
+  `targetHp` takes raid inputs), planner (`tuning.model`, raid presets; ToA supplies keep salts). FA behaviour and
+  tests unchanged (1061 → 1061 pass before the new tests).
+- **ToA** (`src/lib/raids/toa/`): 15 targets (Kephri Shielded / Unshielded, 3 overlord scarabs, Zebak, Akkha with prayer
+  phases, Akkha's Shadow, Ba-Ba, Obelisk, Elidinis' / Tumeken's P2, core, P3, P3 enraged); presets = FA list + fang /
+  Keris partisan of breaching / Ghrazi rapier (Torva); pool + Keris partisans of breaching / amascut, Blade of Saeldor
+  (c), Eye of Ayak; defaults raid level 500, path 0, party 6, Smelling salts. Upstream already models hp / defence-roll
+  scaling, floors, weaknesses, shadow ×4, fang, kerises, P2 damage and always-max core; new: Akkha / P2 Warden
+  prayers (`prayers.ts`; phase options registered in `constants.ts` +4, hooks `PlayerVsNPCCalc` +4, `BaseCalc` +4;
+  defaults block nothing, so the calculator and upstream's tests are unchanged) and the encounter model (`time.ts`:
+  Kephri 3 shields + scarabs + hp; Akkha thirds over his prayers + 4 shadows + 20% final stand in melee; Wardens
+  obelisk, P2 downs (shield, then 21/29/37-tick core windows at ×5), P3 95% + 25% enraged; time = damage ÷ (party ×
+  DPS)). Mechanic table with wiki quotes: DATA_SOURCES.md *Tombs of Amascut*; UNVERIFIED.md group E.
+- **UI**: raid tabs (Fractured Archive / Tombs of Amascut) in the header; each raid keeps its own assumptions; ToA
+  "Raid scaling" row (party, raid level, four path levels), Zeal / fragments hidden; boss hp shown next to the boss
+  select; routes tab = "Encounters" (one route, breakdown open, ToA time settings box: P2 warden, Akkha prayer rotation,
+  Kephri scarabs / swarm leak, P3 siphons); Summary cache per raid; Plan with ToA supplies. Worker passes the raid's
+  time model.
+- Tests: new `src/tests/lib/raids/RaidConfig.test.ts` (19: targets resolve to monsters with cdn images, unique keys,
+  phases, input defaults / clamping, routes 8 / 1, required phase targets belong to the raid, presets / pool items,
+  FA config = phase 8-17 objects, ToA defaults and inputs) and `ToA.test.ts` (30: hp at 500 / 6 / 0 for all 15
+  targets = upstream scaleMonster, Akkha 400 → 5520 hand derivation, raid level 300 / path 2 / solo, defence-roll
+  effect, floors, weaknesses, prayers incl. the warning, encounter sequences, P2 down maths, team-DPS time, ∞ without
+  melee on Akkha, Zebak / Kephri searches, reduced-pool planner). `yarn test` 1110 pass / 4 skipped; `yarn lint`,
+  `tsc --noEmit` clean.
+- Playwright: new `scripts/verifyPhase18.mjs` all OK (raid tabs; FA Xarth None 12.839 before and after; ToA inputs
+  500 / 0 / 6, salts, 15 targets; Zebak 8000 hp → search Ascension crossbows + diamond (e) 10.633, TTK 753.5 s; raid
+  level 300 → 5870 hp, TTK 491.2 s; Encounters one route 14:02.9 in 13.9 s; Plan 14:22.4 in 19.1 s, 28 cells; Summary
+  12 rows / 36 cells in 38 s). Screenshots `docs/screenshots/phase18-*.png`.
+- Headline (raid level 500, 6-man, path 0, Team drains): top search per boss — Kephri Keris partisan of breaching
+  9.520; Zebak Ascension crossbows + diamond (e) 10.633; Akkha Tumeken's shadow 13.020 (final stand Osmumten's fang
+  9.035); Akkha's Shadow Ascension crossbows + onyx (e) 15.262; Ba-Ba Ascension crossbows + diamond (e) 9.441; Obelisk
+  Shadow 13.002; P2 Shadow 14.167; core Scythe 31.333; P3 Shadow 12.493. Plan: worn Keris partisan of breaching
+  (Torva) + switches Shadow (Ancestral), fang, Scythe, Obligator; 1 free slot; 14:22.4 (docs/BEST_SETUP.md).
+
 ## Phase 17 fixes — review follow-ups (2026-10-23)
 
 - Solo drains: the matrix plans each encounter's drains with that encounter's undrained time with the best single

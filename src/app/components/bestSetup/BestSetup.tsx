@@ -4,7 +4,6 @@ import React, { useMemo, useState } from 'react';
 import { PotionMap } from '@/utils';
 import Potion from '@/enums/Potion';
 import {
-  BEST_SETUP_TARGETS,
   buildTargetMonster,
   DRAIN_STATES,
   DrainStateId,
@@ -12,8 +11,12 @@ import {
   targetPhases,
 } from '@/lib/fracturedArchive/bestSetup';
 import {
-  BestSetupAssumptions, DEFAULT_ASSUMPTIONS, MySpecs, StyleGroup, TeamSpecAssumptions,
+  BestSetupAssumptions, MySpecs, StyleGroup, TeamSpecAssumptions,
 } from '@/lib/fracturedArchive/presets';
+import { scaleMonster } from '@/lib/MonsterScaling';
+import {
+  RaidConfig, RaidId, RAIDS, raidConfig, scalingInputValue, withScalingInput,
+} from '@/lib/raids';
 import { ayakExpectedDrain, drainModel, specProfile } from '@/lib/fracturedArchive/specs';
 import SpecPlanPanel from '@/app/components/bestSetup/SpecPlanPanel';
 import SearchView from '@/app/components/bestSetup/SearchView';
@@ -27,6 +30,8 @@ import { ItemIcon } from '@/app/components/bestSetup/ItemIcons';
 // Phase 13: the "Per boss" preset table was removed (the presets still seed the search and give the "vs best preset"
 // column); Summary is search-based (SummaryView.tsx). Phase 16: "Routes" tab (RoutesView.tsx, raid time model).
 // Phase 17: "Plan" tab (PlanView.tsx, kit planner), second tab: Search, Plan, Routes, Summary.
+// Phase 18: raid tabs (Fractured Archive, Tombs of Amascut; src/lib/raids) at the top; each raid keeps its own
+// assumptions, and the four tabs below work from that raid's config (ToA's routes tab is "Encounters").
 // Docs: docs/BEST_SETUP.md.
 
 const POTION_OPTIONS = (Object.keys(PotionMap) as unknown as string[])
@@ -40,18 +45,57 @@ const MY_SPEC_WEAPONS: [MyWeapon, string][] = [['elderMaul', 'Elder maul'], ['dw
 type TeamWeapon = keyof TeamSpecAssumptions['carriers'];
 const TEAM_WEAPONS: [TeamWeapon, string][] = [['elderMaul', 'maul'], ['dwh', 'DWH'], ['bgs', 'BGS'], ['tonalztics', 'Tonalztics'], ['ayak', 'Ayak']];
 
+const ScalingInputs: React.FC<{
+  raid: RaidConfig,
+  value: BestSetupAssumptions,
+  onChange: (a: BestSetupAssumptions) => void,
+}> = ({ raid, value, onChange }) => (
+  <div className="flex flex-wrap gap-x-4 gap-y-2 items-center" data-testid="scaling-inputs">
+    <span className="font-semibold">Raid scaling:</span>
+    {raid.scalingInputs.map((d) => {
+      const id = d.key === 'partySize' ? 'bs-party' : `bs-scale-${d.key.replace('.', '-')}`;
+      return (
+        <label key={d.key} htmlFor={id} className="flex items-center gap-1" title={d.title}>
+          {d.label}
+          <input
+            id={id}
+            type="number"
+            className="form-control text-xs py-0.5 w-16"
+            min={d.min}
+            max={d.max}
+            step={d.step ?? 1}
+            value={scalingInputValue(value, d.key)}
+            data-testid={`scaling-${d.key}`}
+            onChange={(e) => onChange(withScalingInput(value, d, Number(e.target.value)))}
+          />
+        </label>
+      );
+    })}
+  </div>
+);
+
 const AssumptionsBox: React.FC<{
+  raid: RaidConfig,
   value: BestSetupAssumptions,
   onChange: (a: BestSetupAssumptions) => void,
   /** e.g. "≈ 40 magic def drained on Bork" for the selected boss (phase 14). */
   ayakHint?: string,
-}> = ({ value, onChange, ayakHint }) => {
+}> = ({
+  raid, value, onChange, ayakHint,
+}) => {
   const set = (patch: Partial<BestSetupAssumptions>) => onChange({ ...value, ...patch });
   const carrierTotal = Object.values(value.team.carriers).reduce((t, n) => t + n, 0);
+  // the Fractured Archive keeps party size in the Team row (phase 14 layout); raids with more inputs get their own row
+  const scalingRow = raid.scalingInputs.some((d) => d.key !== 'partySize');
   return (
     <div className="text-xs bg-body-100 dark:bg-dark-400 border border-body-400 dark:border-dark-200 rounded p-3 flex flex-col gap-2" data-testid="assumptions">
       <div className="font-bold text-sm">Assumptions</div>
-      <div>All skills 99. Prayers: Piety (or Zeal) / Rigour / Augury by style. Items per preset: src/lib/fracturedArchive/presets.ts.</div>
+      <div>
+        {raid.raidOnlyAssumptions
+          ? 'All skills 99. Prayers: Piety (or Zeal) / Rigour / Augury by style. Items per preset: src/lib/fracturedArchive/presets.ts.'
+          : 'All skills 99. Prayers: Piety / Rigour / Augury by style. Presets: the Fractured Archive list + src/lib/raids/toa/presets.ts.'}
+      </div>
+      {scalingRow && <ScalingInputs raid={raid} value={value} onChange={onChange} />}
       <div className="flex flex-wrap gap-x-4 gap-y-2 items-center">
         {(['melee', 'ranged', 'magic'] as StyleGroup[]).map((g) => (
           <label key={g} htmlFor={`bs-potion-${g}`} className="flex items-center gap-1">
@@ -68,19 +112,23 @@ const AssumptionsBox: React.FC<{
         ))}
       </div>
       <div className="flex flex-wrap gap-x-4 gap-y-2 items-center">
-        <label htmlFor="bs-zeal" className="flex items-center gap-1">
-          <input id="bs-zeal" type="checkbox" checked={value.useZeal} onChange={(e) => set({ useZeal: e.target.checked })} />
-          Zeal instead of Piety (melee)
-        </label>
-        <label htmlFor="bs-fragments" className="flex items-center gap-1" title="+2 base max hit for elemental spells; only affects spell presets">
-          <input
-            id="bs-fragments"
-            type="checkbox"
-            checked={value.elementalFragments}
-            onChange={(e) => set({ elementalFragments: e.target.checked })}
-          />
-          Elemental fragments (magic)
-        </label>
+        {raid.raidOnlyAssumptions && (
+          <>
+            <label htmlFor="bs-zeal" className="flex items-center gap-1">
+              <input id="bs-zeal" type="checkbox" checked={value.useZeal} onChange={(e) => set({ useZeal: e.target.checked })} />
+              Zeal instead of Piety (melee)
+            </label>
+            <label htmlFor="bs-fragments" className="flex items-center gap-1" title="+2 base max hit for elemental spells; only affects spell presets">
+              <input
+                id="bs-fragments"
+                type="checkbox"
+                checked={value.elementalFragments}
+                onChange={(e) => set({ elementalFragments: e.target.checked })}
+              />
+              Elemental fragments (magic)
+            </label>
+          </>
+        )}
         <label htmlFor="bs-fight" className="flex items-center gap-1" title="Fight length for the spec-energy budget: 100% + 10% per 30 s (15 s with Lightbearer). Rough default until the phase 16 time model.">
           Fight length
           <input
@@ -106,7 +154,7 @@ const AssumptionsBox: React.FC<{
           />
           %
         </label>
-        <button type="button" className="underline" onClick={() => onChange(DEFAULT_ASSUMPTIONS)}>Reset</button>
+        <button type="button" className="underline" onClick={() => onChange(raid.defaultAssumptions)}>Reset</button>
       </div>
       <div className="flex flex-wrap gap-x-3 gap-y-2 items-center" data-testid="my-specs">
         <span className="font-semibold" title="Solo drain state: only these weapons, within your own spec energy">My specs:</span>
@@ -158,18 +206,20 @@ const AssumptionsBox: React.FC<{
       </div>
       <div className="flex flex-wrap gap-x-3 gap-y-2 items-center" data-testid="team-specs">
         <span className="font-semibold" title="Team drain state: the carriers' first round of specs">Team:</span>
-        <label htmlFor="bs-party" className="flex items-center gap-1" title="Team spec planner party size; also the HP scaling party size (identity table, unverified)">
-          party size
-          <input
-            id="bs-party"
-            type="number"
-            className="form-control text-xs py-0.5 w-14"
-            min={2}
-            max={8}
-            value={value.partySize}
-            onChange={(e) => set({ partySize: Math.min(8, Math.max(2, Number(e.target.value) || 2)) })}
-          />
-        </label>
+        {!scalingRow && (
+          <label htmlFor="bs-party" className="flex items-center gap-1" title="Team spec planner party size; also the HP scaling party size (identity table, unverified)">
+            party size
+            <input
+              id="bs-party"
+              type="number"
+              className="form-control text-xs py-0.5 w-14"
+              min={2}
+              max={8}
+              value={value.partySize}
+              onChange={(e) => set({ partySize: Math.min(8, Math.max(2, Number(e.target.value) || 2)) })}
+            />
+          </label>
+        )}
         <span>carriers:</span>
         {TEAM_WEAPONS.map(([k, label]) => (
           <span key={k} className="flex items-center gap-1">
@@ -211,13 +261,26 @@ const AssumptionsBox: React.FC<{
   );
 };
 
-/** The searches run in their own worker (src/worker/searchWorker.ts), so the main calculator isn't affected. */
-const BestSetup: React.FC = () => {
+const tabClass = (active: boolean) => `px-3 py-1 rounded text-sm border ${active
+  ? 'bg-orange-400 dark:bg-orange-700 text-white border-orange-500'
+  : 'bg-btns-400 dark:bg-dark-500 text-white border-transparent hover:bg-btns-300 dark:hover:bg-dark-200'}`;
+
+/**
+ * One raid's view (remounted on a raid change; the raid's assumptions live in the page). The searches run in their own
+ * worker (src/worker/searchWorker.ts), so the main calculator isn't affected.
+ */
+const RaidBestSetup: React.FC<{
+  raid: RaidConfig,
+  assumptions: BestSetupAssumptions,
+  setAssumptions: (a: BestSetupAssumptions) => void,
+  raidTabs: React.ReactNode,
+}> = ({
+  raid, assumptions, setAssumptions, raidTabs,
+}) => {
   const [mode, setMode] = useState<'summary' | 'search' | 'routes' | 'plan'>('search');
-  const [targetKey, setTargetKey] = useState(BEST_SETUP_TARGETS[0].key);
+  const [targetKey, setTargetKey] = useState(raid.targets[0].key);
   const [phase, setPhase] = useState<string | undefined>(undefined);
   const [drain, setDrain] = useState<DrainStateId>('team');
-  const [assumptions, setAssumptions] = useState<BestSetupAssumptions>(DEFAULT_ASSUMPTIONS);
 
   const target = useMemo(() => findTarget(targetKey), [targetKey]);
   const phases = useMemo(() => targetPhases(target), [target]);
@@ -230,10 +293,11 @@ const BestSetup: React.FC = () => {
     const drained = ayakExpectedDrain(profile, assumptions.mySpecs.ayak, model.magicDef);
     return `≈ ${drained.toFixed(0)} magic def drained on ${target.label} (of ${model.magicDef}; ${(profile.hitChance * 100).toFixed(0)}% × ${profile.expectedDamageOnHit.toFixed(1)} per spec)`;
   }, [mode, target, phase, phases, assumptions]);
-
-  const tabClass = (active: boolean) => `px-3 py-1 rounded text-sm border ${active
-    ? 'bg-orange-400 dark:bg-orange-700 text-white border-orange-500'
-    : 'bg-btns-400 dark:bg-dark-500 text-white border-transparent hover:bg-btns-300 dark:hover:bg-dark-200'}`;
+  // the boss's hp as the calculator scales it (party size, ToA raid / path levels)
+  const targetHp = useMemo(() => {
+    if (mode !== 'search') return undefined;
+    return scaleMonster(buildTargetMonster(target, phase ?? phases[0], 'none', assumptions).monster).skills.hp;
+  }, [mode, target, phase, phases, assumptions]);
 
   const drainButtons = (
     <div className="flex gap-1 items-center text-sm" title={DRAIN_STATES.find((s) => s.id === drain)?.description}>
@@ -257,16 +321,17 @@ const BestSetup: React.FC = () => {
     <div className="max-w-[1420px] mx-auto mt-4 mb-8 px-2">
       <div className="sm:rounded shadow-lg bg-tile dark:bg-dark-300">
         <div className="px-4 py-3.5 border-b-body-400 bg-body-100 dark:bg-dark-400 dark:border-b-dark-200 border-b sm:rounded-t flex flex-wrap gap-2 justify-between items-center">
-          <h2 className="font-serif text-lg tracking-tight font-bold dark:text-white">Best setup · The Fractured Archive</h2>
+          <h2 className="font-serif text-lg tracking-tight font-bold dark:text-white">{`Best setup · ${raid.name}`}</h2>
+          {raidTabs}
           <div className="flex gap-1">
             <button type="button" className={tabClass(mode === 'search')} onClick={() => setMode('search')} data-testid="search-tab">Search</button>
             <button type="button" className={tabClass(mode === 'plan')} onClick={() => setMode('plan')} data-testid="plan-tab">Plan</button>
-            <button type="button" className={tabClass(mode === 'routes')} onClick={() => setMode('routes')} data-testid="routes-tab">Routes</button>
+            <button type="button" className={tabClass(mode === 'routes')} onClick={() => setMode('routes')} data-testid="routes-tab">{raid.routesLabel}</button>
             <button type="button" className={tabClass(mode === 'summary')} onClick={() => setMode('summary')} data-testid="summary-tab">Summary</button>
           </div>
         </div>
         <div className="p-4 flex flex-col gap-3 dark:text-body-200">
-          <AssumptionsBox value={assumptions} onChange={setAssumptions} ayakHint={ayakHint} />
+          <AssumptionsBox raid={raid} value={assumptions} onChange={setAssumptions} ayakHint={ayakHint} />
 
           {mode === 'search' && (
             <div className="flex flex-wrap gap-3 items-center">
@@ -283,9 +348,14 @@ const BestSetup: React.FC = () => {
                     setPhase(undefined);
                   }}
                 >
-                  {BEST_SETUP_TARGETS.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
+                  {raid.targets.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
                 </select>
               </label>
+              {targetHp !== undefined && (
+                <span className="text-xs text-gray-500 dark:text-gray-400" data-testid="target-hp" title="Hitpoints as the calculator scales them for these assumptions">
+                  {`${targetHp} hp`}
+                </span>
+              )}
               {phases.length > 0 && (
                 <label htmlFor="bs-phase" className="flex items-center gap-1 text-sm">
                   Phase
@@ -321,18 +391,51 @@ const BestSetup: React.FC = () => {
               assumptions={assumptions}
             />
           )}
-          {mode === 'summary' && <SummaryView assumptions={assumptions} />}
+          {mode === 'summary' && <SummaryView assumptions={assumptions} targets={raid.targets} />}
           {mode === 'plan' && drainButtons}
-          {mode === 'plan' && <PlanView assumptions={assumptions} drain={drain} />}
+          {mode === 'plan' && <PlanView assumptions={assumptions} drain={drain} raid={raid} />}
           {mode === 'routes' && drainButtons}
-          {mode === 'routes' && <RoutesView assumptions={assumptions} drain={drain} />}
+          {mode === 'routes' && <RoutesView assumptions={assumptions} drain={drain} raid={raid} />}
 
           <div className="text-[11px] text-gray-500 dark:text-gray-400">
-            {`Same calculation as the main calculator. Expected TTK uses the infobox HP (party-size scaling unverified) — compare setups, don't trust the absolute seconds. Prayers: ${Object.values(GROUP_PRAYER).join(' / ')}. See docs/BEST_SETUP.md for caveats.`}
+            {`Same calculation as the main calculator. ${raid.hpNote} Prayers: ${Object.values(GROUP_PRAYER).join(' / ')}. See docs/BEST_SETUP.md for caveats.`}
           </div>
         </div>
       </div>
     </div>
+  );
+};
+
+/** /best-setup: raid tabs, each raid with its own assumptions (kept while switching tabs). */
+const BestSetup: React.FC = () => {
+  const [raidId, setRaidId] = useState<RaidId>(RAIDS[0].id);
+  const [assumptionsBy, setAssumptionsBy] = useState<Record<string, BestSetupAssumptions>>(
+    () => Object.fromEntries(RAIDS.map((r) => [r.id, r.defaultAssumptions])),
+  );
+  const raid = raidConfig(raidId);
+  const raidTabs = (
+    <div className="flex gap-1" data-testid="raid-tabs">
+      {RAIDS.map((r) => (
+        <button
+          key={r.id}
+          type="button"
+          className={tabClass(r.id === raidId)}
+          onClick={() => setRaidId(r.id)}
+          data-testid={`raid-tab-${r.id}`}
+        >
+          {r.shortName}
+        </button>
+      ))}
+    </div>
+  );
+  return (
+    <RaidBestSetup
+      key={raid.id}
+      raid={raid}
+      assumptions={assumptionsBy[raid.id]}
+      setAssumptions={(a) => setAssumptionsBy((m) => ({ ...m, [raid.id]: a }))}
+      raidTabs={raidTabs}
+    />
   );
 };
 
