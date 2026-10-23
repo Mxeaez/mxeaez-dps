@@ -3,6 +3,16 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 2 fixes — review follow-ups (2026-10-22)
+
+- NPC ids checked against RuneLite gameval `NpcID.java` (now the id reference, cited in DATA_SOURCES.md):
+  `OCELLUS_P2_IDS` = 100090, 16675 (P2), 16676 (The Blade hitbox); dropped 16683 (vault-entry NPC). Added AG 16660
+  (unshielded) and Dagon'hai unshielded 16644/16646/16648; commented 16673 (intro/met form) vs 16674 (P1).
+  16674 = Ocellus P1 (wiki right, Gearscape wrong).
+- Tests: arclight/emberlight, tonalztic and accursed (+DWH) on Archive Guardian hold the 156 floor; P2 id list.
+- Party size input limited to 2–8 for Fractured Archive bosses (min/max props only).
+- `yarn test` 372 pass / 4 skipped; `yarn lint`, `tsc --noEmit` clean; party-size Playwright check re-run OK.
+
 ## Phase 2 — Raid mechanics (2026-10-22)
 
 - IDs: new `src/lib/fracturedArchive/constants.ts` (per-boss lists incl. Ocellus P1 16673/16674, P2 100090/16683,
@@ -24,8 +34,8 @@ verified, what's unverified / left for later.
 - UI: `node scripts/verifyFracturedArchivePartySize.mjs` — party size input + hint shown for AG, HP 550 at party 2
   and 8 (as implemented); `docs/screenshots/phase2-ag-party2.png`, `-party8.png`.
 
-Unverified / open: the HP scaling curve and which size the infobox HP is; Ocellus P2 floor (0 vs 150); 16674 is
-P1 (wiki) or The Blade (Gearscape); Jelly floor (assumed 0).
+Unverified / open: the HP scaling curve and which size the infobox HP is; Ocellus P2 floor (0 vs 150); Jelly floor
+(assumed 0).
 
 ## Phase 1 fixes — review follow-ups (2026-10-22)
 

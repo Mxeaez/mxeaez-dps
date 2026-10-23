@@ -24,7 +24,7 @@ Out of scope: Ezekiel, Moia, Dagon'hai Elder/Monks (add later if wanted; they co
   when data appears. Which party size the infobox HP represents is also unknown.
 - Ocellus Phase 2 has no hitpoints / NPC id on the wiki.
 - 21 Oct hotfix: defence drain cap of 60% of base on Archive Guardian, Ezekiel, Moia, Xarth, Ocellus (+ Bork per the news quote on the wiki boss pages). Smorks / Dreadnoth / Ocellus P2 (The Blade) drain to 0 per the Strategies table (P2 conflicts with the Ocellus page's 150; Gearscape also uses 0). Implemented in phase 2. See `docs/DATA_SOURCES.md`.
-- NPC id 16674: wiki says Ocellus P1, Gearscape says The Blade (P2). Kept as P1 (wiki); re-check in phase 6.
+- NPC ids: resolved with RuneLite gameval NpcID — 16674 is Ocellus P1 (Gearscape wrong), P2 is 16675 / The Blade hitbox 16676 (16683 is a vault-entry NPC). See `docs/DATA_SOURCES.md`.
 
 ## Phases
 

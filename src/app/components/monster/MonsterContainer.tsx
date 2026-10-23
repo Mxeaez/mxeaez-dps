@@ -26,6 +26,7 @@ import { getCdnImage } from '@/utils';
 import PresetAttributeButton from '@/app/components/monster/PresetAttributeButton';
 import NumberInput from '@/app/components/generic/NumberInput';
 import {
+  FRACTURED_ARCHIVE_BOSS_IDS,
   GUARDIAN_IDS,
   INFINITE_HEALTH_MONSTERS,
   MONSTER_PHASES_BY_ID,
@@ -236,8 +237,8 @@ const MonsterContainer: React.FC = observer(() => {
           <div className="mt-2">
             <NumberInput
               value={monster.inputs.partySize}
-              min={1}
-              max={100}
+              min={FRACTURED_ARCHIVE_BOSS_IDS.includes(monster.id) ? 2 : 1}
+              max={FRACTURED_ARCHIVE_BOSS_IDS.includes(monster.id) ? 8 : 100}
               step={1}
               onChange={(v) => store.updateMonster({ inputs: { partySize: v } })}
               required

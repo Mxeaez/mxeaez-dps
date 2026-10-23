@@ -20,6 +20,7 @@ import {
   FRACTURED_ARCHIVE_BOSS_IDS,
   FRACTURED_ARCHIVE_MONSTER_IDS,
   MONSTER_PHASES_BY_ID,
+  OCELLUS_P2_IDS,
   PARTY_SIZE_REQUIRED_MONSTER_IDS,
   TD_IDS,
 } from '@/lib/constants';
@@ -50,6 +51,13 @@ describe('Fractured Archive constants', () => {
         expect(FRACTURED_ARCHIVE_MONSTER_IDS).toContain(id);
         expect(getTestMonsterById(id).id).toBe(id);
       });
+  });
+
+  test('Ocellus P2 ids are the P2 NPC and The Blade hitbox, not the vault-entry NPC', () => {
+    expect(OCELLUS_P2_IDS).toEqual([100090, 16675, 16676]);
+    expect(FRACTURED_ARCHIVE_MONSTER_IDS).not.toContain(16683);
+    expect(getFracturedArchiveDefenceFloor({ ...getTestMonsterById(AG), id: 16676 })).toBe(0);
+    expect(getFracturedArchiveDefenceFloor({ ...getTestMonsterById(AG), id: 16660 })).toBe(156);
   });
 
   test('party size input is shown for bosses only', () => {
@@ -95,6 +103,26 @@ describe('Fractured Archive defence floors', () => {
     expect(withDrains(AG, { dwh: 2 }).skills.def).toBe(156);
     expect(withDrains(AG, { dwh: 4 }).skills.def).toBe(156);
     expect(withDrains(AG, { dwh: 4 }, 8).skills.def).toBe(156);
+  });
+
+  test('arclight / emberlight on Archive Guardian stop at 156', () => {
+    // not a demon: each hit drains trunc(260 / 20) + 1 = 14
+    expect(withDrains(AG, { arclight: 3 }).skills.def).toBe(218);
+    expect(withDrains(AG, { arclight: 10 }).skills.def).toBe(156);
+    expect(withDrains(AG, { emberlight: 10 }).skills.def).toBe(156);
+  });
+
+  test('tonalztic specs on Archive Guardian stop at 156', () => {
+    // each spec drains trunc(magic 250 / 8) = 31: 260 -> 229 -> 198 -> 167 -> 136 (floored to 156)
+    expect(withDrains(AG, { tonalztic: 3 }).skills.def).toBe(167);
+    expect(withDrains(AG, { tonalztic: 4 }).skills.def).toBe(156);
+    expect(withDrains(AG, { tonalztic: 8 }).skills.def).toBe(156);
+  });
+
+  test('accursed sceptre on Archive Guardian respects the 156 floor', () => {
+    // 260 * 17/20 = 221, then a DWH spec would take it to 155
+    expect(withDrains(AG, { accursed: true }).skills.def).toBe(221);
+    expect(withDrains(AG, { accursed: true, dwh: 1 }).skills.def).toBe(156);
   });
 
   test('The Smorks drain to 0', () => {

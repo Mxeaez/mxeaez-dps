@@ -7,6 +7,13 @@ All values below were fetched on **2026-10-22** from the OSRS Wiki (page wikitex
 elemental weakness + percent, size, attack speed, attributes, id). The UI was then checked with
 `node scripts/verifyFracturedArchiveMonsters.mjs` (screenshots in `docs/screenshots/phase1-*.png`).
 
+**NPC id reference (from phase 2 fixes on):** RuneLite's cache-derived gameval list,
+https://github.com/runelite/runelite/blob/master/runelite-api/src/main/java/net/runelite/api/gameval/NpcID.java
+(fetched 2026-10-22). Raid ids: Bork 16640, Smorks 16641, Dagon'hai leader 16643 / unshielded 16644, minion 1 16645 /
+16646, minion 2 16647 / 16648, Ezekiel 16652, Guardian 16659 / unshielded 16660, Dreadnoth 16665, Jelly 16666, Moia
+16667, Ocellus intro (met) 16673, P1 16674, P2 16675, P2 sword hitbox ("The Blade") 16676, P3 16677, Blade vault-entry
+NPC 16683 (cutscene/entry, not a combat target), Xarth 16684.
+
 Fields marked **unverified** are not taken from the wiki or are guesses. Anything not listed as unverified matches
 the wiki infobox exactly.
 
@@ -34,7 +41,7 @@ Common sources:
 - **Conflict — Ocellus P2 floor:** the Ocellus page body says "150 in phases 2 and 3 (`250 × 0.6`)"; the Strategies
   table says The Blade (Phase 2) can be drained to **0** (2 Elder Maul + 4 Tonalztics of Ralos).
   **Recommendation for phase 2: use 0 for P2** (uncapped), marked **unverified**. Reasons: the P2 target is a separate
-  NPC (The Blade, id 16683 — see Ocellus section), the hotfix/news list names "Ocellus" and not The Blade, the table
+  NPC (The Blade, `TFA_OCELLUS_P2_SWORD_HITBOX` id 16676 — see Ocellus section), the hotfix/news list names "Ocellus" and not The Blade, the table
   is NPC-specific and lists a concrete drain sequence (looks empirical), while the page-body sentence reads as
   arithmetic applied to the infobox defence of both 250-defence versions. Keep the floor a per-monster constant so
   it is a one-line change if 150 turns out to be right.
@@ -67,9 +74,9 @@ What was checked:
 - Gearscape's `defence_floor` values (api.gearscape.net `/api/monster/id/<id>`) match our agreed floors exactly:
   AG 156, Bork 180, Xarth 102, Ocellus P1 129, P3 150, Ezekiel 78, Moia 117, Smorks 0, Dreadnoth 0, Jelly 0,
   **The Blade (P2) 0** — independent support for P2 = 0.
-- Gearscape lists **16674 as "ocellus (phase 2) (the blade)"**, while the wiki Ocellus infobox gives 16673/16674 as
-  phase 1 ids and The Blade page gives 16683 for The Blade (Repaired). Wiki wins: 16674 stays in `OCELLUS_P1_IDS`
-  (no effect today — monsters.json only contains 16673 for P1). Phase 6 should re-check (**unverified**).
+- Gearscape lists **16674 as "ocellus (phase 2) (the blade)"** — wrong: RuneLite gameval has 16674 =
+  `TFA_OCELLUS_P1` (the wiki is right). Gearscape's 16642 "bork (stunned)" is `TFA_BORK_SMORK_HP_UI_HANDLER`, not a
+  Bork form, so the stunned state stays a phase-4 modelling question.
 - Web search (2026-10-22) for per-player HP numbers: only launch guides repeating "2–8 players, solo = 2-scale".
 
 ## Archive Guardian
@@ -188,18 +195,17 @@ Mechanics (page body + Strategies → *Xarth*):
 |---|---|
 | Source | https://oldschool.runescape.wiki/w/Ocellus |
 | Fetched | 2026-10-22 |
-| NPC id(s) | Phase 1: **16673, 16674** (generator stores only the first, 16673); Phase 2: none on wiki → manual id **100090**; Phase 3: 16677. Hooded Figure (pre-fight NPC) 16672. |
+| NPC id(s) | Phase 1: **16673** (`TFA_OCELLUS_INTRO_MET`, pre-fight form; the id the wiki infobox and monsters.json use) and **16674** (`TFA_OCELLUS_P1`); Phase 2: **16675** (`TFA_OCELLUS_P2`) and **16676** (`TFA_OCELLUS_P2_SWORD_HITBOX`, The Blade), not on the wiki infobox → manual id **100090**; Phase 3: 16677. Hooded Figure (pre-fight NPC) 16672. Ids per RuneLite gameval NpcID. |
 | Verification | P1 and P3 match infobox; P2 matches the infobox values that exist; UI matches (`phase1-ocellus-p1/p2/p3.png`) |
 
 Ocellus Phase 2 — decision: **attackable, added as a manual entry** in `scripts/manual_monster.json`.
 
-The thing being hit is most likely the NPC **The Blade (Repaired)**, id **16683**
-(https://oldschool.runescape.wiki/w/The_Blade, *Repaired* tab — Infobox NPC, no combat stats); the Strategies drain
-table also calls the P2 row "The Blade (Phase 2)". The manual entry nevertheless keeps the synthetic id **100090**:
-the stat block comes from Ocellus's infobox version 2, not from The Blade's page, so tying it to 16683 is an
-inference; and if the wiki later adds an `infobox_monster` row for The Blade, the generator would emit a real 16683
-entry next to ours and the duplicate id would make id lookups ambiguous. Phase 6 should include **16683** (and
-100090) in the Ocellus id list.
+The thing being hit is the sword hitbox NPC **16676** (`TFA_OCELLUS_P2_SWORD_HITBOX`, "The Blade"); the phase-2 Ocellus
+NPC is 16675 (`TFA_OCELLUS_P2`) (RuneLite gameval NpcID). The Strategies drain table calls the P2 row "The Blade
+(Phase 2)". *Correction (phase 2 fixes):* phase 1 named The Blade (Repaired), id 16683, as the target — 16683 is
+`TFA_BLADE_NPC_VAULT_ENTRY`, an entry/cutscene NPC, and is not used. The manual entry keeps the synthetic id
+**100090** (its stat block comes from Ocellus's infobox version 2, and a later wiki row for 16675/16676 would otherwise
+duplicate an id); `OCELLUS_P2_IDS` lists 100090, 16675 and 16676.
 
 P2 is limited by time (three quadrant cycles, Strategies → *Phase 2*), not by HP, so HP-dependent effects (ruby bolt
 procs scaling with current HP, TTK, overkill, any "% of HP" effect) are unreliable for this entry.
