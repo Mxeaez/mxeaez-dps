@@ -19,7 +19,7 @@ const EXPECTED = [
     name: 'Ocellus', version: 'Phase 2', file: 'blade', def: 0, inputs: [2, 0, 4, 100], before: '2.290', after: '4.279',
   },
   {
-    name: 'Archive Guardian', version: 'Flying', file: 'ag', def: 156, inputs: [2, 0, 0, 130], before: '4.636', after: '7.424',
+    name: 'Archive Guardian', version: 'Flying', file: 'ag', def: 156, inputs: [0, 0, 4, 130], before: '4.636', after: '7.424',
   },
 ];
 

@@ -4,7 +4,8 @@
  * Usage (dev server running): node scripts/verifyBestSetupUx.mjs [baseUrl]
  * Opens /best-setup and checks: Search is the default tab and runs without clicking Run; changing the boss re-runs it;
  * weapon / loadout / boss icons load (naturalWidth > 0); "Load into calculator" from the Search table and from the
- * Per boss table gives the same DPS / max hit in the calculator. Screenshots docs/screenshots/phase12-*.png.
+ * Per boss table gives the same DPS / max hit in the calculator (the Per boss part was removed in phase 13 with the tab).
+ * Screenshots docs/screenshots/phase12-*.png.
  */
 import { chromium } from '@playwright/test';
 import fs from 'node:fs';
@@ -97,22 +98,6 @@ const main = async () => {
   await page.screenshot({ path: 'docs/screenshots/phase12-search-xarth.png', fullPage: true });
   await loadAndCompare(page, '[data-testid="search-row"]', 'Search top row (Xarth None)');
   await page.screenshot({ path: 'docs/screenshots/phase12-search-loaded.png', fullPage: true });
-  await ctx.close();
-
-  // 3. Per boss tab: icons + load
-  ctx = await browser.newContext({ viewport: { width: 1500, height: 1400 } });
-  page = await ctx.newPage();
-  await page.goto(`${BASE}best-setup`, { waitUntil: 'load', timeout: 120000 });
-  await page.locator('[data-testid="boss-tab"]').click();
-  await page.locator('[data-testid="boss-select"]').selectOption('jelly');
-  await page.locator('[data-testid="ranking-row"]').first().waitFor({ timeout: 120000 });
-  await page.waitForTimeout(500);
-  const pIcons = await loadedIcons(page, '[data-testid="ranking"]');
-  check(pIcons.filter((i) => i.w > 0).length >= 5, `per-boss icons loaded: ${pIcons.filter((i) => i.w > 0).length}/${pIcons.length}`);
-  await page.evaluate(() => window.scrollTo(0, 0));
-  await page.mouse.move(0, 0);
-  await page.screenshot({ path: 'docs/screenshots/phase12-per-boss.png', fullPage: true });
-  await loadAndCompare(page, '[data-testid="ranking-row"]', 'Per boss top row (Jelly Team)');
   await ctx.close();
 
   await browser.close();

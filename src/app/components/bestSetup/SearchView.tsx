@@ -20,6 +20,7 @@ import { SearchJob, startGearSearch } from '@/worker/searchWorkerClient';
 import openInCalculator from '@/app/components/bestSetup/loadIntoCalculator';
 import { searchRowIcons, searchRowWeaponParts } from '@/lib/fracturedArchive/loadoutIcons';
 import { LoadoutIconRow, WeaponLine } from '@/app/components/bestSetup/ItemIcons';
+import DPS_TEXT_CLASS from '@/app/components/bestSetup/styles';
 
 // "Search" tab of /best-setup (phase 9): full gear search over the pool in src/lib/fracturedArchive/searchCandidates.ts,
 // run in its own worker (src/worker/searchWorker.ts). Docs: docs/BEST_SETUP.md.
@@ -222,7 +223,7 @@ const SearchView: React.FC<{
                 {rows.map((r, i) => (
                   <tr key={`${r.weaponLabel}|${loadoutSummary(r)}|${r.styleLabel}`} data-testid="search-row">
                     <td className="px-2 py-1">{i + 1}</td>
-                    <td className="px-2 py-1 text-right font-mono font-bold" data-testid="dps">{fmt(r.dps)}</td>
+                    <td className={`px-2 py-1 text-right font-mono ${DPS_TEXT_CLASS}`} data-testid="dps">{fmt(r.dps)}</td>
                     <td className="px-2 py-1 text-right font-mono text-xs" data-testid="gain">{fmtGain(r.dps, baseDps)}</td>
                     <td className="px-2 py-1 text-right font-mono">{i === 0 ? fmtTtk(r.ttk) : ''}</td>
                     <td className="px-2 py-1 text-right font-mono" data-testid="maxhit">{r.maxHit}</td>

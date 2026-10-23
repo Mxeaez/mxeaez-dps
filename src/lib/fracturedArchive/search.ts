@@ -11,6 +11,7 @@ import {
   applyLoadoutToPlayer,
   buildTargetMonster,
   cantHitReason,
+  DRAIN_STATES,
   DrainState,
   DrainStateId,
   evaluateLoadout,
@@ -22,6 +23,7 @@ import {
   resolveItem,
   safeEvaluatePreset,
   styleLabel,
+  summaryQueries,
 } from '@/lib/fracturedArchive/bestSetup';
 import {
   BestSetupAssumptions, ItemRef, PRESETS, PresetDef, StyleGroup,
@@ -584,3 +586,19 @@ export const runGearSearch = (
     cancelled,
   };
 };
+
+// --- Summary tab (phase 13) ----------------------------------------------------------------------------------------
+
+/**
+ * The searches behind the Summary tab: every Summary boss / phase row (`summaryQueries`) × drain state (None, Solo,
+ * Team), all styles, in table order (row by row). Run one after the other in the search worker.
+ */
+export const summarySearchQueries = (): GearSearchQuery[] => summaryQueries().flatMap((q) => DRAIN_STATES
+  .map((d): GearSearchQuery => ({
+    targetKey: q.targetKey, phase: q.phase, drain: d.id, styles: 'all',
+  })));
+
+/** Session cache key of one search: the query and every assumption (a changed assumption = a different key). */
+export const searchCacheKey = (q: GearSearchQuery, assumptions: BestSetupAssumptions): string => JSON.stringify([
+  q.targetKey, q.phase ?? '', q.drain, q.styles ?? 'all', assumptions,
+]);

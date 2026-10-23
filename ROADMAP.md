@@ -79,3 +79,25 @@ Extra candidates from phase 7b (raid rewards):
 - Archive Guardian shield (TTK of the flying phases) once its HP and scaling are known.
 - Rondache's Shield Slam spec and its defensive bonuses.
 - Ezekiel, Moia and the Dagon'hai trio (stats come from the data refresh; their mechanics aren't modelled).
+
+## Round 2
+
+Requested after the site went live (2026-10-23). Same workflow per phase as above.
+
+| # | Phase | Done when | Status |
+|---|---|---|---|
+| 13 | Round-2 fixes | Drain plans only use weapons that can hit the target in that phase; DPS column highlighted; realistic Team-drain spec counts; tests | in progress |
+| 14 | Raid time model | Pure `raidTime(route, kits)` with per-boss/phase HP weights and documented assumptions; tests | planned |
+| 15 | Raid plan tab | Route, team size, carried specs, supply counts → optimised kit; 4×7 inventory grid + worn gear with icons; load into calculator | planned |
+| 16 | Multi-raid structure | Raid tabs; per-raid config (bosses, phases, scaling inputs); Search/Per-boss/Plan work for any raid | planned |
+| 17 | ToA | Invocation level, party size, path levels; Akkha, Ba-Ba, Kephri, Zebak, Wardens; presets | planned |
+| 18 | CoX | Party size, CM; Tekton, Vasa, Vanguards, Vespula, Muttadiles, Mystics, Shamans, Guardians, Ice demon, Olm | planned |
+| 19 | ToB | Party size, HM; Maiden, Bloat, Nylocas, Sotetseg, Xarpus, Verzik P1–P3 | planned |
+| 20 | Final review (round 2) | Fresh pass; UNVERIFIED.md updated for new raids and planner | planned |
+
+### Decisions (round 2)
+
+- Raids are added in the order ToA → CoX → ToB.
+- Planner objective = total raid time: Σ HP ÷ DPS over the route's bosses / phases.
+- The user picks which spec weapons they carry; drains assume the team reaches the floor.
+- Supplies are entered as slot counts by type.

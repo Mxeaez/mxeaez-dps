@@ -30,12 +30,14 @@ export const ItemIcon: React.FC<{
 };
 
 /** "Ascension crossbows · Diamond ascension bolts (e)" with an icon before each item that has one. */
-export const WeaponLine: React.FC<{ parts: WeaponPart[], className?: string }> = ({ parts, className }) => (
+export const WeaponLine: React.FC<{ parts: WeaponPart[], className?: string, iconSize?: number }> = ({
+  parts, className, iconSize = 22,
+}) => (
   <div className={`flex flex-wrap items-center gap-x-1 ${className ?? ''}`} data-testid="weapon-line">
     {parts.map((p, i) => (
       <React.Fragment key={p.name}>
         {i > 0 && <span className="text-gray-400">·</span>}
-        <ItemIcon name={p.name} src={p.imageUrl} size={22} />
+        <ItemIcon name={p.name} src={p.imageUrl} size={iconSize} />
         <span>{p.name}</span>
       </React.Fragment>
     ))}
@@ -43,10 +45,10 @@ export const WeaponLine: React.FC<{ parts: WeaponPart[], className?: string }> =
 );
 
 /** The full loadout as a row of small icons (calculator slot order), item names as tooltips. */
-export const LoadoutIconRow: React.FC<{ icons: LoadoutIcon[] }> = ({ icons }) => (
+export const LoadoutIconRow: React.FC<{ icons: LoadoutIcon[], size?: number }> = ({ icons, size = 20 }) => (
   <div className="flex flex-wrap items-center gap-0.5 my-0.5" data-testid="loadout-icons">
     {icons.map((ic) => (
-      <ItemIcon key={ic.slot} name={ic.name} title={`${ic.name} (${ic.slot})`} src={ic.imageUrl} size={20} />
+      <ItemIcon key={ic.slot} name={ic.name} title={`${ic.name} (${ic.slot})`} src={ic.imageUrl} size={size} />
     ))}
   </div>
 );

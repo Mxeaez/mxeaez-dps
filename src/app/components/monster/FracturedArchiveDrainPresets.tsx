@@ -3,7 +3,9 @@ import { observer } from 'mobx-react-lite';
 import { toJS } from 'mobx';
 import { useStore } from '@/state';
 import { FRACTURED_ARCHIVE_MONSTER_IDS } from '@/lib/fracturedArchive/constants';
-import { DRAIN_PRESETS, DrainPreset, drainPresetReductions } from '@/lib/fracturedArchive/drains';
+import {
+  DRAIN_PRESETS, DrainPreset, drainPresetReductions, maxDrainReductions,
+} from '@/lib/fracturedArchive/drains';
 
 const WEAPON_PRESETS = DRAIN_PRESETS.filter((p) => p.options);
 const RESET_PRESET = DRAIN_PRESETS.find((p) => !p.options)!;
@@ -20,25 +22,39 @@ const FracturedArchiveDrainPresets: React.FC = observer(() => {
     return null;
   }
 
+  const m = toJS(monster);
   const apply = (p: DrainPreset) => store.updateMonster({
-    inputs: { defenceReductions: drainPresetReductions(toJS(monster), p.id) },
+    inputs: { defenceReductions: drainPresetReductions(m, p.id) },
   });
 
-  const button = (p: DrainPreset, text: string) => (
-    <button
-      key={p.id}
-      type="button"
-      className="btn text-xs px-1.5 py-0.5"
-      aria-label={p.label}
-      data-tooltip-id="tooltip"
-      data-tooltip-content={p.options
-        ? `${p.label}: fewest specs to reach the defence floor${p.options.ayak ? ', plus Eye of Ayak damage to bring magic defence to 0' : ''}. Other reductions are cleared.`
-        : 'Clear all defensive reductions'}
-      onClick={() => apply(p)}
-    >
-      {text}
-    </button>
-  );
+  // Phase 13: the plan only uses weapons that can hit in the selected version / phase (e.g. no melee while AG flies).
+  const plans = new Map(WEAPON_PRESETS.map((p) => [p.id, maxDrainReductions(m, p.options!)]));
+  const fallback = WEAPON_PRESETS.map((p) => plans.get(p.id)!).find((plan) => !plan.weaponCanHit);
+
+  const button = (p: DrainPreset, text: string) => {
+    const plan = plans.get(p.id);
+    const blocked = plan && !plan.weaponCanHit;
+    let tooltip = 'Clear all defensive reductions';
+    if (p.options && plan) {
+      tooltip = blocked
+        ? `${text} can't hit ${monster.name} here (${monster.inputs.phase || monster.version || 'this phase'}); applies the cheapest plan that can: ${plan.summary}${p.options.ayak ? ', Eye of Ayak to 0 magic defence' : ''}. Other reductions are cleared.`
+        : `${p.label}: ${plan.summary}${p.options.ayak ? ', plus Eye of Ayak damage to bring magic defence to 0' : ''}. Other reductions are cleared.`;
+    }
+    return (
+      <button
+        key={p.id}
+        type="button"
+        className={`btn text-xs px-1.5 py-0.5${blocked ? ' opacity-50 line-through' : ''}`}
+        aria-label={p.label}
+        data-blocked={blocked ? 'true' : undefined}
+        data-tooltip-id="tooltip"
+        data-tooltip-content={tooltip}
+        onClick={() => apply(p)}
+      >
+        {text}
+      </button>
+    );
+  };
 
   return (
     <div className="mb-2 text-xs">
@@ -53,6 +69,11 @@ const FracturedArchiveDrainPresets: React.FC = observer(() => {
             .map((p) => button(p, p.label.replace(/^Floor \((.*)\).*$/, '$1')))}
         </div>
       ))}
+      {fallback && (
+        <div className="text-[11px] text-gray-400" data-testid="drain-fallback">
+          {`Melee can't hit here — buttons apply: ${fallback.summary}`}
+        </div>
+      )}
     </div>
   );
 });

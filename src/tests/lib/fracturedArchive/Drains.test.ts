@@ -14,11 +14,20 @@ import {
   DRAIN_PRESETS,
   DrainWeapon,
   drainPresetReductions,
+  drainWeaponCanHit,
   MAX_HAMMER_SPECS,
   maxDrainReductions,
 } from '@/lib/fracturedArchive/drains';
 import { INITIAL_MONSTER_INPUTS } from '@/lib/Monsters';
-import { BORK_STUNNED_PHASE, OCELLUS_P3_DEFLECT_MELEE_PHASE } from '@/lib/constants';
+import {
+  BORK_STUNNED_PHASE,
+  OCELLUS_P1_WALKING_PHASE,
+  OCELLUS_P3_DEFLECT_MELEE_PHASE,
+  OCELLUS_P3_DEFLECT_MELEE_VOID_PHASE,
+  OCELLUS_P3_DEFLECT_RANGED_PHASE,
+  OCELLUS_P3_DEFLECT_RANGED_VOID_PHASE,
+} from '@/lib/constants';
+import { canDrainToolHit, canStyleHit, canWeaponHit } from '@/lib/fracturedArchive/hittable';
 import { Monster } from '@/types/Monster';
 
 // Phase 7: "max drain" presets (src/lib/fracturedArchive/drains.ts). Floors: src/lib/scaling/FracturedArchive.ts.
@@ -36,10 +45,11 @@ const drained = (m: Monster, r: Reductions) => scaleMonster(withReductions(m, r)
 
 const NONE = INITIAL_MONSTER_INPUTS.defenceReductions;
 
-// [name, version, floor, magic def bonus, elder maul plan, dwh plan, bgs damage]
-type Plan = { elderMaul?: number, dwh?: number, tonalztic?: number };
-const BOSSES: [string, string, number, number, Plan, Plan, number][] = [
-  ['Archive Guardian', 'Flying', 156, 130, { elderMaul: 2 }, { dwh: 2 }, 104],
+// [name, version, floor, magic def bonus, elder maul plan, dwh plan, bgs damage (or plan when melee can't hit)]
+type Plan = { elderMaul?: number, dwh?: number, tonalztic?: number, bgs?: number };
+const BOSSES: [string, string, number, number, Plan, Plan, number | Plan][] = [
+  // phase 13: melee can't hit while flying -> every preset falls back to the wiki table's "4 Tonalztics of Ralos"
+  ['Archive Guardian', 'Flying', 156, 130, { tonalztic: 4 }, { tonalztic: 4 }, { tonalztic: 4 }],
   ['Archive Guardian', 'Grounded', 156, 130, { elderMaul: 2 }, { dwh: 2 }, 104],
   ['Bork', '', 180, 300, { elderMaul: 2 }, { dwh: 2 }, 120],
   ['The Smorks', '', 0, 400, { elderMaul: 1, tonalztic: 7 }, { dwh: 1, tonalztic: 7 }, 220],
@@ -57,7 +67,7 @@ describe('maxDrainReductions per boss', () => {
     const plans: [DrainWeapon, Plan & { bgs?: number }][] = [
       ['elderMaul', maulPlan],
       ['dwh', dwhPlan],
-      ['bgs', { bgs }],
+      ['bgs', typeof bgs === 'number' ? { bgs } : bgs],
     ];
 
     test.each(plans)('%s: lands exactly on the floor, magic def 0 with Ayak', (weapon, expected) => {
@@ -83,6 +93,11 @@ describe('maxDrainReductions per boss', () => {
         expect(drained(m, { ...reductions, [k]: reductions[k] - 1 }).skills.def).toBeGreaterThan(floor);
       }
       expect(drained(m, { ...reductions, ayak: reductions.ayak - 1 }).defensive.magic).toBe(1);
+    });
+
+    test('the summary names the plan and the resulting Defence', () => {
+      const plan = maxDrainReductions(m, { weapon: 'elderMaul', ayak: true });
+      expect(plan.summary).toBe(`${plan.specs} → Def ${floor}`);
     });
 
     test('without Ayak the magic defence bonus is untouched', () => {
@@ -218,5 +233,106 @@ describe('UI parity (scripts/verifyDrainPresets.mjs)', () => {
     expect(dpsBefore).toBeCloseTo(before, 3);
     expect(dpsAfter).toBeCloseTo(after, 3);
     expect(dpsAfter).toBeGreaterThan(dpsBefore);
+  });
+});
+
+// Phase 13: a drain plan only uses weapons that can hit the target in the selected version / phase.
+describe('drain plans respect what can hit the target', () => {
+  const ALL_WEAPONS: DrainWeapon[] = ['elderMaul', 'dwh', 'bgs'];
+  const noMelee = (r: Reductions) => {
+    expect(r.elderMaul).toBe(0);
+    expect(r.dwh).toBe(0);
+    expect(r.bgs).toBe(0);
+    expect(r.arclight).toBe(0);
+    expect(r.emberlight).toBe(0);
+  };
+
+  test('canStyleHit follows upstream: flying blocks melee, Ocellus prayers block their style', () => {
+    const agF = getTestMonster('Archive Guardian', 'Flying');
+    expect([canStyleHit(agF, 'melee'), canStyleHit(agF, 'ranged'), canStyleHit(agF, 'magic')]).toEqual([false, true, true]);
+    const agG = getTestMonster('Archive Guardian', 'Grounded');
+    expect([canStyleHit(agG, 'melee'), canStyleHit(agG, 'ranged'), canStyleHit(agG, 'magic')]).toEqual([true, true, true]);
+    const walking = getTestMonster('Ocellus', 'Phase 1', { inputs: { phase: OCELLUS_P1_WALKING_PHASE } });
+    expect(canStyleHit(walking, 'melee')).toBe(false);
+    expect(canStyleHit(walking, 'ranged')).toBe(true);
+    const deflectRanged = getTestMonster('Ocellus', 'Phase 3', { inputs: { phase: OCELLUS_P3_DEFLECT_RANGED_PHASE } });
+    expect(canStyleHit(deflectRanged, 'ranged')).toBe(false);
+    expect(canDrainToolHit(deflectRanged, 'tonalztic')).toBe(false);
+    expect(canDrainToolHit(deflectRanged, 'elderMaul')).toBe(true);
+    // a halberd can hit a flying monster (upstream rule), a plain melee weapon can't
+    expect(canWeaponHit(agF, 'Crystal halberd', 'melee')).toBe(true);
+    expect(drainWeaponCanHit(agF, 'elderMaul')).toBe(false);
+  });
+
+  test('AG Flying: no melee in any plan; 4 Tonalztics hits reach 156, 3 do not', () => {
+    const m = getTestMonster('Archive Guardian', 'Flying');
+    for (const weapon of ALL_WEAPONS) {
+      for (const ayak of [false, true]) {
+        const plan = maxDrainReductions(m, { weapon, ayak });
+        noMelee(plan.reductions);
+        expect(plan.weaponCanHit).toBe(false);
+        expect(plan.reductions.tonalztic).toBe(4);
+        expect(plan.reductions.accursed).toBe(false);
+        expect(plan.defAfter).toBe(156);
+        expect(plan.summary).toBe('4× Tonalztics hits (2 specs) → Def 156');
+      }
+    }
+    expect(drained(m, { ...NONE, tonalztic: 4 }).skills.def).toBe(156);
+    expect(drained(m, { ...NONE, tonalztic: 3 }).skills.def).toBeGreaterThan(156);
+  });
+
+  test('AG Grounded: melee plans allowed', () => {
+    const m = getTestMonster('Archive Guardian', 'Grounded');
+    const plan = maxDrainReductions(m, { weapon: 'elderMaul', ayak: false });
+    expect(plan.weaponCanHit).toBe(true);
+    expect(plan.reductions).toEqual({ ...NONE, elderMaul: 2 });
+    expect(plan.summary).toBe('2× Elder maul → Def 156');
+  });
+
+  test('Ocellus P1 walking (Protect from Melee): no melee, Tonalztics instead', () => {
+    const m = getTestMonster('Ocellus', 'Phase 1', { inputs: { phase: OCELLUS_P1_WALKING_PHASE } });
+    for (const weapon of ALL_WEAPONS) {
+      const plan = maxDrainReductions(m, { weapon, ayak: true });
+      noMelee(plan.reductions);
+      expect(plan.reductions.tonalztic).toBeGreaterThan(0);
+      expect(plan.reachesFloor).toBe(true);
+    }
+    // at a corner melee is fine again
+    expect(maxDrainReductions(getTestMonster('Ocellus', 'Phase 1'), { weapon: 'elderMaul', ayak: false }).reductions.elderMaul).toBe(2);
+  });
+
+  test('Ocellus P3 last quadrant: Deflect Melee -> no melee drains; Deflect Ranged -> no Tonalztics', () => {
+    for (const phase of [OCELLUS_P3_DEFLECT_MELEE_PHASE, OCELLUS_P3_DEFLECT_MELEE_VOID_PHASE]) {
+      const m = getTestMonster('Ocellus', 'Phase 3', { inputs: { phase } });
+      for (const weapon of ALL_WEAPONS) {
+        const plan = maxDrainReductions(m, { weapon, ayak: true });
+        noMelee(plan.reductions);
+        expect(plan.defAfter).toBe(150);
+      }
+    }
+    for (const phase of [OCELLUS_P3_DEFLECT_RANGED_PHASE, OCELLUS_P3_DEFLECT_RANGED_VOID_PHASE]) {
+      const m = getTestMonster('Ocellus', 'Phase 3', { inputs: { phase } });
+      for (const weapon of ALL_WEAPONS) {
+        const plan = maxDrainReductions(m, { weapon, ayak: true });
+        expect(plan.reductions.tonalztic).toBe(0);
+        expect(plan.weaponCanHit).toBe(true);
+        expect(plan.defAfter).toBe(150);
+      }
+    }
+  });
+
+  test('uncapped boss where Tonalztics are blocked: hammer finishes without them (lowest Defence found)', () => {
+    const m = getTestMonster('Ocellus', 'Phase 2', { inputs: { phase: OCELLUS_P3_DEFLECT_RANGED_PHASE } });
+    // The Blade has no phases, so the phase string is ignored and Tonalztics are still used
+    expect(maxDrainReductions(m, { weapon: 'elderMaul', ayak: false }).reductions).toMatchObject({ elderMaul: 2, tonalztic: 4 });
+  });
+
+  test('non-raid monsters are unaffected', () => {
+    const m = getTestMonster('Abyssal demon');
+    const plan = maxDrainReductions(m, { weapon: 'elderMaul', ayak: false });
+    expect(plan.weaponCanHit).toBe(true);
+    expect(plan.reductions.tonalztic).toBe(0);
+    expect(plan.reductions.elderMaul).toBeGreaterThan(0);
+    expect(maxDrainReductions(m, { weapon: 'bgs', ayak: false }).reductions.bgs).toBe(m.skills.def);
   });
 });

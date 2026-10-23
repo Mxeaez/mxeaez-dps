@@ -410,16 +410,16 @@ Sources:
 Rules: Elder maul / DWH → fewest specs of that weapon that reach the floor (cap 6). A % drain can't reach 0, so for
 uncapped bosses the preset adds Tonalztics hits as a finisher (as the wiki table does), choosing the least spec energy
 (hammer spec 50%; Tonalztics counted in whole charged specs = 2 hits, 50% each), then the fewest hammer specs, then
-the fewest actions (Tonalztic cap 8 hits). Plans always start with at least 1 spec of the named weapon, so
-all-Tonalztics plans (e.g. the table's "4 Tonalztics of Ralos" for Archive Guardian) are not offered by the
-weapon-named buttons. The wiki table's Tonalztics counts are **hits**, not specs (The Blade: 250 → 163 → 106, then
+the fewest actions (Tonalztic cap 8 hits). When the named weapon can hit, plans start with at least 1 spec of it;
+when it can't (phase 13, below), the cheapest plan with weapons that can is used instead. The wiki table's Tonalztics counts are **hits**, not specs (The Blade: 250 → 163 → 106, then
 4 × 27 = 108 → 0). BGS → damage
 = Defence − floor (drains Defence first, so it stops exactly at the floor; on 300-def Bork that is 120 damage, i.e.
 several specs — "max" with only a BGS). All counts are *successful* specs; misses aren't modelled.
 
 | Boss | Def → floor | Elder maul | DWH | BGS dmg | Magic def bonus = Ayak dmg to 0 | Ayak specs at 40 dmg (illustrative) |
 |---|---|---|---|---|---|---|
-| Archive Guardian (both) | 260 → 156 | 2 | 2 | 104 | 130 | 4 |
+| Archive Guardian (Grounded) | 260 → 156 | 2 | 2 | 104 | 130 | 4 |
+| Archive Guardian (Flying), melee can't hit | 260 → 156 | 4 Tonalztic hits (= wiki) | 4 hits | 4 hits | 130 | 4 |
 | Bork | 300 → 180 | 2 | 2 | 120 | 300 | 8 |
 | The Smorks | 220 → 0 | 1 + 7 Tonalztic hits | 1 + 7 | 220 | 400 | 10 |
 | Dreadnoth | 125 → 0 | 1 + 4 Tonalztic hits | 1 + 4 | 125 | 20 | 1 |
@@ -437,6 +437,35 @@ The Elder maul page says its drain rounds down (75 → 49 example), so Tonalztic
 explanation — unverified, 1 Defence difference, kept as upstream computes it. Smorks ties at 250% energy between
 1 + 7, 2 + 5, 3 + 3 and 4 + 2; the fewest-hammer-specs tie-break picks 1 + 7 (phase 7 review). The Ayak
 "specs" column is only damage / 40 — the real count depends on the player's spec damage (use `ayakSpecsToZero`).
+
+### Drain plans per version / phase (phase 13, 2026-10-23)
+
+A plan only uses a drain weapon whose style can hit the monster in the selected version / phase:
+`src/lib/fracturedArchive/hittable.ts` (`canStyleHit`, `canDrainToolHit`) runs upstream's own
+`PlayerVsNPCCalc.isImmune` for a 99s player holding the actual weapon (Elder maul / Dragon warhammer / Bandos godsword
+= melee, Tonalztics of Ralos = ranged, Accursed sceptre = magic), so the `flying` attribute (melee only with
+halberds / salamanders), Ocellus's prayers (`ocellus.ts`) and upstream's immunity lists all apply without a copy of the
+rules. If the named weapon can't hit, the plan is the cheapest among the tools that can: Tonalztics hits, optionally
+after one Accursed sceptre spec (50% energy). The accursed spec's **Defence part counts** (phase 3 reading: AG's
+absorption covers Magic-level effects only), so on AG it is a valid tool; it is just never cheaper than Tonalztics
+here (accursed + 3 hits = 150% vs 4 hits = 100%). Arclight / Emberlight are melee and not used by presets. Ranking as
+above (lowest Defence, then energy, then fewest hammer specs, then fewest actions). The Tonalztics finisher is only
+added when ranged can hit. The calculator's "Max drain" buttons grey out (strikethrough) a weapon that can't hit, with
+a tooltip and a line naming the plan actually applied.
+
+| Boss / phase | Can hit (melee / ranged / magic) | Every preset (Elder maul, DWH, BGS) | Def |
+|---|---|---|---|
+| Archive Guardian (Flying) | no / yes / yes | 4× Tonalztics hits (2 specs), as the wiki table's "4 Tonalztics of Ralos" | 156 |
+| Archive Guardian (Grounded) | yes / yes / yes | unchanged (2 Elder maul / 2 DWH / BGS 104) | 156 |
+| Ocellus P1, walking (Protect from Melee) | no / yes / yes | 2× Tonalztics hits (1 spec) | 129 |
+| Ocellus P1, at a corner | yes / yes / yes | unchanged | 129 |
+| Ocellus P3 last quadrant: Deflect Melee (with or without void) | no / yes / yes | 3× Tonalztics hits (2 specs) | 150 |
+| Ocellus P3 last quadrant: Deflect Ranged (with or without void) | yes / no / yes | unchanged (floor 150, no Tonalztics needed) | 150 |
+| Ocellus P3 quadrants 1-3 / Soul Split, every other boss | yes / yes / yes | unchanged | - |
+
+Model note: each phase is planned on its own, as if all drains were done in that phase. In the fight Defence drained
+earlier in Phase 3 carries into the last quadrant, so the "Deflect Melee" plan is only needed if nothing was drained
+before; **unverified** whether Ocellus's Defence resets between quadrants.
 
 ## Equipment (phase 7b, 2026-10-22)
 

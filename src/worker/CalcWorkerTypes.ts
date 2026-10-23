@@ -5,7 +5,6 @@ import { CalcOpts } from '@/lib/BaseCalc';
 import {
   CompareResult, CompareXAxis, CompareYAxis,
 } from '@/lib/Comparator';
-import { BestSetupQuery, BestSetupResult } from '@/lib/fracturedArchive/bestSetup';
 import { BestSetupAssumptions } from '@/lib/fracturedArchive/presets';
 import { GearSearchProgress, GearSearchQuery, GearSearchResult } from '@/lib/fracturedArchive/search';
 
@@ -19,7 +18,6 @@ export enum WorkerRequestType {
   COMPUTE_TTK_PARALLEL,
   COMPUTE_TTK,
   COMPARE,
-  BEST_SETUP, // Fractured Archive "Best setup" view (src/lib/fracturedArchive/bestSetup.ts)
   BEST_SETUP_SEARCH, // Fractured Archive gear search; own worker (src/worker/searchWorker.ts), sends progress messages
 }
 
@@ -73,15 +71,6 @@ export interface TtkRequestParallel extends WorkerRequest<WorkerRequestType.COMP
   data: TtkRequest['data']
 }
 
-export interface BestSetupRequest extends WorkerRequest<WorkerRequestType.BEST_SETUP> {
-  data: {
-    basePlayer: Player,
-    queries: BestSetupQuery[],
-    assumptions: BestSetupAssumptions,
-    ttk: 'all' | 'top',
-  },
-}
-
 export interface BestSetupSearchRequest extends WorkerRequest<WorkerRequestType.BEST_SETUP_SEARCH> {
   data: {
     basePlayer: Player,
@@ -91,7 +80,6 @@ export interface BestSetupSearchRequest extends WorkerRequest<WorkerRequestType.
 }
 
 export type CalcRequestsUnion =
-  BestSetupRequest |
   BestSetupSearchRequest |
   ComputeBasicRequest |
   ComputeReverseRequest |
@@ -130,10 +118,6 @@ export interface TtkResponseParallel extends WorkerResponse<WorkerRequestType.CO
   payload: TtkResponse['payload'],
 }
 
-export interface BestSetupResponse extends WorkerResponse<WorkerRequestType.BEST_SETUP> {
-  payload: BestSetupResult[],
-}
-
 export interface BestSetupSearchResponse extends WorkerResponse<WorkerRequestType.BEST_SETUP_SEARCH> {
   payload: GearSearchResult,
 }
@@ -146,7 +130,6 @@ export interface BestSetupSearchProgressMessage {
 }
 
 export type CalcResponsesUnion =
-  BestSetupResponse |
   BestSetupSearchResponse |
   ComputeBasicResponse |
   ComputeReverseResponse |

@@ -1,60 +1,32 @@
 'use client';
 
-import React, {
-  useCallback, useEffect, useMemo, useState,
-} from 'react';
-import { CalcProvider, useCalc } from '@/worker/CalcWorker';
-import { BestSetupRequest, WorkerRequestType } from '@/worker/CalcWorkerTypes';
-import { generateEmptyPlayer } from '@/state';
+import React, { useMemo, useState } from 'react';
 import { PotionMap } from '@/utils';
 import Potion from '@/enums/Potion';
-import Spinner from '@/app/components/Spinner';
 import {
-  applyPresetToPlayer,
   BEST_SETUP_TARGETS,
-  BestSetupResult,
-  buildTargetMonster,
   DRAIN_STATES,
   DrainStateId,
   findTarget,
-  PresetResult,
-  summaryQueries,
   targetPhases,
 } from '@/lib/fracturedArchive/bestSetup';
 import {
-  BestSetupAssumptions, DEFAULT_ASSUMPTIONS, PRESETS, StyleGroup,
+  BestSetupAssumptions, DEFAULT_ASSUMPTIONS, StyleGroup,
 } from '@/lib/fracturedArchive/presets';
-import openInCalculator from '@/app/components/bestSetup/loadIntoCalculator';
 import SearchView from '@/app/components/bestSetup/SearchView';
-import { presetIcons, presetWeaponParts, targetImageUrl } from '@/lib/fracturedArchive/loadoutIcons';
-import { ItemIcon, LoadoutIconRow, WeaponLine } from '@/app/components/bestSetup/ItemIcons';
+import SummaryView from '@/app/components/bestSetup/SummaryView';
+import { targetImageUrl } from '@/lib/fracturedArchive/loadoutIcons';
+import { ItemIcon } from '@/app/components/bestSetup/ItemIcons';
 
-// Fractured Archive "Best setup" view (phase 8; "Search" tab phase 9). Computation: src/lib/fracturedArchive/bestSetup.ts, run in the calc
-// web worker (WorkerRequestType.BEST_SETUP). Docs: docs/BEST_SETUP.md. Phase 12: Search is the default tab; item icons.
-
-const fmt = (n: number, digits = 3) => (Number.isFinite(n) ? n.toFixed(digits) : '-');
-const fmtTtk = (r: PresetResult) => (r.ttk === null || !Number.isFinite(r.ttk) ? 'n/a' : `${r.ttk.toFixed(1)}s`);
-const fmtAcc = (n: number) => `${(n * 100).toFixed(1)}%`;
+// Fractured Archive "Best setup" view (phase 8; "Search" tab phase 9). Phase 12: Search is the default tab; item icons.
+// Phase 13: the "Per boss" preset table was removed (the presets still seed the search and give the "vs best preset"
+// column); Summary is search-based (SummaryView.tsx). Docs: docs/BEST_SETUP.md.
 
 const POTION_OPTIONS = (Object.keys(PotionMap) as unknown as string[])
   .map((k) => Number(k) as Potion)
   .sort((a, b) => PotionMap[a].order - PotionMap[b].order);
 
 const GROUP_PRAYER: Record<StyleGroup, string> = { melee: 'Piety', ranged: 'Rigour', magic: 'Augury' };
-
-/** Adds the preset with the boss + drains to the main calculator's saved session and opens the calculator. */
-const loadIntoCalculator = async (
-  row: PresetResult,
-  targetKey: string,
-  phase: string | undefined,
-  drain: DrainStateId,
-  assumptions: BestSetupAssumptions,
-) => {
-  const preset = PRESETS.find((p) => p.name === row.preset)!;
-  const { monster } = buildTargetMonster(findTarget(targetKey), phase, drain, assumptions);
-  const player = applyPresetToPlayer(generateEmptyPlayer(row.preset), preset, row.style, row.spell, monster, assumptions);
-  await openInCalculator(player, monster);
-};
 
 const AssumptionsBox: React.FC<{
   value: BestSetupAssumptions,
@@ -123,184 +95,16 @@ const AssumptionsBox: React.FC<{
   );
 };
 
-/** Weapon line + loadout icons of a preset row (phase 12). */
-const PresetItems: React.FC<{ row: PresetResult }> = ({ row }) => {
-  const preset = PRESETS.find((p) => p.name === row.preset);
-  if (!preset) return null;
-  return (
-    <>
-      <WeaponLine parts={presetWeaponParts(preset, row.spell)} className="text-sm" />
-      <LoadoutIconRow icons={presetIcons(preset)} />
-    </>
-  );
-};
-
-const BossView: React.FC<{
-  result: BestSetupResult,
-  drain: DrainStateId,
-  onLoad: (row: PresetResult) => void,
-}> = ({ result, drain, onLoad }) => {
-  const current = result.drains.find((d) => d.drain.id === drain)!;
-  const others = result.drains.filter((d) => d.drain.id !== drain);
-  const target = findTarget(result.targetKey);
-
-  return (
-    <div>
-      <div className="text-xs mb-2" data-testid="drain-specs">
-        {`Drains: ${current.drain.specs} → Defence ${current.drain.defAfter}, Magic def bonus ${current.drain.magicDefAfter}`}
-        {target.note && <div className="text-orange-700 dark:text-orange-300">{target.note}</div>}
-      </div>
-      <div className="overflow-x-auto max-w-[100vw]">
-        <table className="w-full" data-testid="ranking">
-          <thead>
-            <tr className="bg-btns-400 dark:bg-dark-500 text-white">
-              <th>#</th>
-              <th>Preset</th>
-              <th>Best style</th>
-              <th className="text-right">DPS</th>
-              <th className="text-right">Exp. TTK</th>
-              <th className="text-right">Max hit</th>
-              <th className="text-right">Accuracy</th>
-              {others.map((o) => (
-                <th key={o.drain.id} className="text-right">{`DPS (${DRAIN_STATES.find((s) => s.id === o.drain.id)!.label})`}</th>
-              ))}
-              <th aria-label="actions" />
-            </tr>
-          </thead>
-          <tbody>
-            {current.rows.map((r, i) => (
-              <tr
-                key={r.preset}
-                className={r.cantHit ? 'opacity-50' : ''}
-                title={r.cantHit}
-                data-testid="ranking-row"
-              >
-                <td className="px-2 py-1">{r.cantHit ? '-' : i + 1}</td>
-                <td className="px-2 py-1">
-                  <div className="font-bold">{r.preset}</div>
-                  {!r.error && <PresetItems row={r} />}
-                  <div className="text-[11px] text-gray-500 dark:text-gray-400">
-                    {r.cantHit ? `${r.error ? '' : "Can't hit: "}${r.cantHit}` : `${r.group}${r.note ? ` · ${r.note}` : ''}`}
-                  </div>
-                </td>
-                <td className="px-2 py-1 text-xs">{r.styleLabel}</td>
-                <td className="px-2 py-1 text-right font-mono font-bold" data-testid="dps">{fmt(r.dps)}</td>
-                <td className="px-2 py-1 text-right font-mono">{fmtTtk(r)}</td>
-                <td className="px-2 py-1 text-right font-mono" data-testid="maxhit">{r.maxHit}</td>
-                <td className="px-2 py-1 text-right font-mono">{fmtAcc(r.accuracy)}</td>
-                {others.map((o) => (
-                  <td key={o.drain.id} className="px-2 py-1 text-right font-mono text-xs text-gray-500 dark:text-gray-400">
-                    {fmt(o.rows.find((x) => x.preset === r.preset)?.dps ?? NaN)}
-                  </td>
-                ))}
-                <td className="px-2 py-1">
-                  <button type="button" className="btn text-xs whitespace-nowrap" onClick={() => onLoad(r)}>
-                    Load into calculator
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-};
-
-const SummaryView: React.FC<{ results: BestSetupResult[] }> = ({ results }) => (
-  <div className="overflow-x-auto max-w-[100vw]">
-    <table className="w-full" data-testid="summary">
-      <thead>
-        <tr className="bg-btns-400 dark:bg-dark-500 text-white">
-          <th>Boss / phase</th>
-          {DRAIN_STATES.map((s) => <th key={s.id}>{`Best (${s.label})`}</th>)}
-        </tr>
-      </thead>
-      <tbody>
-        {results.map((r) => {
-          const target = findTarget(r.targetKey);
-          return (
-            <tr key={`${r.targetKey}|${r.phase}`}>
-              <td className="px-2 py-1">
-                <div className="font-bold">{target.label}</div>
-                {r.phase && <div className="text-[11px] text-gray-500 dark:text-gray-400">{r.phase}</div>}
-              </td>
-              {r.drains.map((d) => {
-                const top = d.rows[0];
-                return (
-                  <td key={d.drain.id} className="px-2 py-1 align-top">
-                    {top && top.dps > 0 ? (
-                      <>
-                        <div>{top.preset}</div>
-                        <div className="font-mono text-xs">
-                          {`${fmt(top.dps)} DPS · ${fmtTtk(top)}`}
-                        </div>
-                        <div className="text-[11px] text-gray-500 dark:text-gray-400">{d.drain.specs}</div>
-                      </>
-                    ) : <span className="text-gray-500">no preset can hit</span>}
-                  </td>
-                );
-              })}
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
-  </div>
-);
-
-const BestSetupInner: React.FC = () => {
-  const calc = useCalc();
-  const [mode, setMode] = useState<'boss' | 'summary' | 'search'>('search');
+/** The searches run in their own worker (src/worker/searchWorker.ts), so the main calculator isn't affected. */
+const BestSetup: React.FC = () => {
+  const [mode, setMode] = useState<'summary' | 'search'>('search');
   const [targetKey, setTargetKey] = useState(BEST_SETUP_TARGETS[0].key);
   const [phase, setPhase] = useState<string | undefined>(undefined);
   const [drain, setDrain] = useState<DrainStateId>('team');
   const [assumptions, setAssumptions] = useState<BestSetupAssumptions>(DEFAULT_ASSUMPTIONS);
-  const [results, setResults] = useState<BestSetupResult[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   const target = useMemo(() => findTarget(targetKey), [targetKey]);
   const phases = useMemo(() => targetPhases(target), [target]);
-
-  useEffect(() => {
-    let cancelled = false;
-    setResults(null);
-    setError(null);
-    if (mode === 'search') {
-      return undefined; // the Search tab runs its own worker on demand
-    }
-    const req: BestSetupRequest = {
-      type: WorkerRequestType.BEST_SETUP,
-      data: {
-        basePlayer: generateEmptyPlayer(),
-        queries: mode === 'summary' ? summaryQueries() : [{ targetKey, phase }],
-        assumptions,
-        ttk: mode === 'summary' ? 'top' : 'all',
-      },
-    };
-    // the worker may not be initialised on the very first render; retry shortly
-    const send = (attempt: number) => {
-      if (!calc.isReady() && attempt < 20) {
-        setTimeout(() => send(attempt + 1), 100);
-        return;
-      }
-      calc.do(req)
-        .then((resp) => {
-          if (!cancelled) setResults(resp.payload as BestSetupResult[]);
-        })
-        .catch((e: Error) => {
-          if (!cancelled) setError(e.message);
-        });
-    };
-    send(0);
-    return () => {
-      cancelled = true;
-    };
-  }, [calc, mode, targetKey, phase, assumptions]);
-
-  const onLoad = useCallback((row: PresetResult) => {
-    loadIntoCalculator(row, targetKey, results?.[0]?.phase, drain, assumptions).catch(console.error);
-  }, [targetKey, results, drain, assumptions]);
 
   const tabClass = (active: boolean) => `px-3 py-1 rounded text-sm border ${active
     ? 'bg-orange-400 dark:bg-orange-700 text-white border-orange-500'
@@ -313,14 +117,13 @@ const BestSetupInner: React.FC = () => {
           <h2 className="font-serif text-lg tracking-tight font-bold dark:text-white">Best setup · The Fractured Archive</h2>
           <div className="flex gap-1">
             <button type="button" className={tabClass(mode === 'search')} onClick={() => setMode('search')} data-testid="search-tab">Search</button>
-            <button type="button" className={tabClass(mode === 'boss')} onClick={() => setMode('boss')} data-testid="boss-tab">Per boss</button>
             <button type="button" className={tabClass(mode === 'summary')} onClick={() => setMode('summary')} data-testid="summary-tab">Summary</button>
           </div>
         </div>
         <div className="p-4 flex flex-col gap-3 dark:text-body-200">
           <AssumptionsBox value={assumptions} onChange={setAssumptions} />
 
-          {(mode === 'boss' || mode === 'search') && (
+          {mode === 'search' && (
             <div className="flex flex-wrap gap-3 items-center">
               <label htmlFor="bs-boss" className="flex items-center gap-1 text-sm">
                 Boss
@@ -378,17 +181,7 @@ const BestSetupInner: React.FC = () => {
               assumptions={assumptions}
             />
           )}
-          {error && <div className="text-red-600">{`Error: ${error}`}</div>}
-          {mode !== 'search' && !results && !error && (
-            <div className="flex items-center gap-2 text-sm" data-testid="loading">
-              <Spinner className="w-4" />
-              Computing…
-            </div>
-          )}
-          {results && mode === 'boss' && results[0] && (
-            <BossView result={results[0]} drain={drain} onLoad={onLoad} />
-          )}
-          {results && mode === 'summary' && <SummaryView results={results} />}
+          {mode === 'summary' && <SummaryView assumptions={assumptions} />}
 
           <div className="text-[11px] text-gray-500 dark:text-gray-400">
             {`Same calculation as the main calculator. Expected TTK uses the infobox HP (party-size scaling unverified) — compare setups, don't trust the absolute seconds. Prayers: ${Object.values(GROUP_PRAYER).join(' / ')}. See docs/BEST_SETUP.md for caveats.`}
@@ -398,12 +191,5 @@ const BestSetupInner: React.FC = () => {
     </div>
   );
 };
-
-/** Own calc worker, like LoadoutComparison, so the main calculator's requests aren't affected. */
-const BestSetup: React.FC = () => (
-  <CalcProvider>
-    <BestSetupInner />
-  </CalcProvider>
-);
 
 export default BestSetup;

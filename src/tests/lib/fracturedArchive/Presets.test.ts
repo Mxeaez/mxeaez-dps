@@ -160,7 +160,8 @@ describe('targets and drain states', () => {
   // phase 7 table (docs/DATA_SOURCES.md, "Drain presets"): Elder maul specs (+ Tonalztics hits) and Ayak damage to 0
   test.each<[string, number, number, number, number]>([
     // key, elder maul, tonalztic hits, solo ayak, team ayak (= magic def bonus)
-    ['ag-flying', 2, 0, 80, 130],
+    // phase 13: melee can't hit the flying Guardian -> wiki table's "4 Tonalztics of Ralos"
+    ['ag-flying', 0, 4, 80, 130],
     ['ag-grounded', 2, 0, 80, 130],
     ['bork', 2, 0, 80, 300],
     ['smorks', 1, 7, 80, 400],
@@ -188,17 +189,25 @@ describe('targets and drain states', () => {
     expect(team.drain.reductions.ayak).toBe(teamAyak);
     expect(team.drain.magicDefAfter).toBe(0);
     expect(solo.drain.magicDefAfter).toBe(teamAyak - soloAyak);
-    expect(solo.drain.specs).toContain(`${maul}× Elder maul`);
+    if (maul) expect(solo.drain.specs).toContain(`${maul}× Elder maul`);
+    else expect(solo.drain.specs).not.toContain('Elder maul');
     expect(solo.drain.specs).toContain(`${Math.ceil(soloAyak / 40)}× Ayak (${soloAyak} dmg)`);
-    expect(team.drain.specs).toContain(`${Math.ceil(teamAyak / 40)}× Ayak (${teamAyak} dmg)`);
+    const n = Math.ceil(teamAyak / 40);
+    expect(team.drain.specs).toContain(`Ayak to 0 ≈ ${n} spec${n === 1 ? '' : 's'} (${teamAyak} dmg at 40/spec)`);
     // the drained monster carries the reductions, so the calc applies them
     expect(team.monster.inputs.defenceReductions).toEqual(team.drain.reductions);
   });
 
-  test('AG: Solo = "2× Elder maul, 2× Ayak (80 dmg)", Team = 4× Ayak (130)', () => {
+  test('AG: Solo = "2× Elder maul, 2× Ayak (80 dmg)" (Grounded) / Tonalztics (Flying), Team = Ayak to 0 ≈ 4 specs', () => {
     const t = findTarget('ag-flying');
-    expect(buildTargetMonster(t, undefined, 'solo', A).drain.specs).toBe('2× Elder maul, 2× Ayak (80 dmg)');
-    expect(buildTargetMonster(t, undefined, 'team', A).drain.specs).toBe('2× Elder maul, 4× Ayak (130 dmg)');
+    const g = findTarget('ag-grounded');
+    expect(buildTargetMonster(g, undefined, 'solo', A).drain.specs).toBe('2× Elder maul, 2× Ayak (80 dmg)');
+    expect(buildTargetMonster(g, undefined, 'team', A).drain.specs)
+      .toBe('2× Elder maul, Ayak to 0 ≈ 4 specs (130 dmg at 40/spec)');
+    // melee can't hit it while flying (phase 13)
+    expect(buildTargetMonster(t, undefined, 'solo', A).drain.specs).toBe('4× Tonalztics hits (2 specs), 2× Ayak (80 dmg)');
+    expect(buildTargetMonster(t, undefined, 'team', A).drain.specs)
+      .toBe('4× Tonalztics hits (2 specs), Ayak to 0 ≈ 4 specs (130 dmg at 40/spec)');
     const custom: BestSetupAssumptions = { ...A, soloAyakDamage: 500 };
     expect(drainStateFor(buildTargetMonster(t, undefined, 'none', A).monster, 'solo', custom).reductions.ayak).toBe(130);
   });

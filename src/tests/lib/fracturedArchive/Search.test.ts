@@ -10,13 +10,15 @@ import {
   evaluateLoadout,
   findTarget,
   resolveItem,
+  summaryQueries,
 } from '@/lib/fracturedArchive/bestSetup';
 import { DEFAULT_ASSUMPTIONS, ItemRef, StyleGroup } from '@/lib/fracturedArchive/presets';
 import {
   CandidateItem, refName, SEARCH_POOL, StylePool,
 } from '@/lib/fracturedArchive/searchCandidates';
 import {
-  GearSearchOptions, prunePool, runGearSearch, searchRowToPlayer, spellsForMonster, styleOptionsFor,
+  GearSearchOptions, prunePool, runGearSearch, searchCacheKey, searchRowToPlayer, spellsForMonster, styleOptionsFor,
+  summarySearchQueries,
 } from '@/lib/fracturedArchive/search';
 
 // Phase 9: full gear search ("Search" tab of /best-setup). Pool: src/lib/fracturedArchive/searchCandidates.ts;
@@ -325,5 +327,30 @@ describe('search', () => {
     expect(r.rows[0].dps).toBeCloseTo(best.dps, 12);
     expect(`${r.rows[0].equipment.neck!.name}|${r.rows[0].equipment.ring!.name}|${r.rows[0].style.name}`).toBe(best.label);
     expect(r.evaluations).toBeLessThan(4 * styles.length + 1); // memoised: never more than brute force
+  });
+});
+
+// Phase 13: the Summary tab runs one search per Summary row x drain state and caches them per assumptions.
+describe('summary searches', () => {
+  test('every Summary boss / phase row x None / Solo / Team, row by row, all styles', () => {
+    const qs = summarySearchQueries();
+    const rows = summaryQueries();
+    expect(qs).toHaveLength(rows.length * 3);
+    expect(qs.length).toBeGreaterThanOrEqual(45);
+    rows.forEach((r, i) => {
+      expect(qs.slice(i * 3, i * 3 + 3)).toEqual(['none', 'solo', 'team'].map((drain) => ({
+        targetKey: r.targetKey, phase: r.phase, drain, styles: 'all',
+      })));
+    });
+  });
+
+  test('cache key changes with the query and with every assumption', () => {
+    const [q] = summarySearchQueries();
+    const k = searchCacheKey(q, DEFAULT_ASSUMPTIONS);
+    expect(searchCacheKey({ ...q }, { ...DEFAULT_ASSUMPTIONS })).toBe(k);
+    expect(searchCacheKey({ ...q, drain: 'team' }, DEFAULT_ASSUMPTIONS)).not.toBe(k);
+    expect(searchCacheKey(q, { ...DEFAULT_ASSUMPTIONS, partySize: 5 })).not.toBe(k);
+    expect(searchCacheKey(q, { ...DEFAULT_ASSUMPTIONS, soloAyakDamage: 1 })).not.toBe(k);
+    expect(searchCacheKey(q, { ...DEFAULT_ASSUMPTIONS, useZeal: !DEFAULT_ASSUMPTIONS.useZeal })).not.toBe(k);
   });
 });

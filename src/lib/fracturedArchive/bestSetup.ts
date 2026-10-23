@@ -13,7 +13,7 @@ import { scaleMonster } from '@/lib/MonsterScaling';
 import PlayerVsNPCCalc from '@/lib/PlayerVsNPCCalc';
 import { MONSTER_PHASES_BY_ID } from '@/lib/constants';
 import { getCombatStylesForCategory, PotionMap } from '@/utils';
-import { DefenceReductions, maxDrainReductions } from '@/lib/fracturedArchive/drains';
+import { DefenceReductions, describeDefenceDrains, maxDrainReductions } from '@/lib/fracturedArchive/drains';
 import {
   BORK_PHASES, BORK_STUNNED_PHASE, OCELLUS_P1_PHASES, OCELLUS_P3_PHASES,
 } from '@/lib/fracturedArchive/constants';
@@ -23,7 +23,7 @@ import {
 
 /**
  * "Best setup" view (phase 8): evaluates the named presets (presets.ts) against every Fractured Archive boss/phase
- * under three drain states. Pure and React-free: runs in the web worker (WorkerRequestType.BEST_SETUP) and in Jest,
+ * under three drain states. Pure and React-free: used by the gear search worker (seeds, "vs best preset") and in Jest,
  * and the gear finder (phase 9) can reuse `evaluateLoadout` / `buildTargetMonster` / `applyPresetToPlayer`.
  *
  * The numbers come from the same functions as the main calculator: the player is assembled like the store does it
@@ -156,14 +156,15 @@ export const DRAIN_STATES: { id: DrainStateId, label: string, description: strin
   {
     id: 'solo',
     label: 'Solo',
-    description: 'Defence to the floor with Elder maul (+ Tonalztics hits on uncapped bosses), Eye of Ayak damage '
-      + 'as set in the assumptions (default 80 ≈ 2 specs), capped at the magic defence bonus',
+    description: 'Defence to the floor with Elder maul (+ Tonalztics hits on uncapped bosses; Tonalztics / Accursed '
+      + 'sceptre only where melee cannot hit, e.g. flying Archive Guardian), Eye of Ayak damage as set in the '
+      + 'assumptions (default 80 ≈ 2 specs), capped at the magic defence bonus',
   },
   {
     id: 'team',
     label: 'Team',
-    description: 'Defence to the floor with Elder maul (+ Tonalztics hits on uncapped bosses), Eye of Ayak to 0 '
-      + 'magic defence',
+    description: 'Defence as in Solo, Eye of Ayak to 0 magic defence however many specs that takes (the drain line '
+      + 'shows the count at 40 damage per spec, e.g. 8 on Bork); assumes the team has the specs to spare',
   },
 ];
 
@@ -184,11 +185,20 @@ const withInputs = (m: Monster, inputs: Partial<Monster['inputs']>): Monster => 
   inputs: { ...m.inputs, ...inputs },
 });
 
-const describeSpecs = (r: DefenceReductions): string => {
+/**
+ * e.g. "2× Elder maul, 2× Ayak (80 dmg)" (Solo) or "4× Tonalztics hits (2 specs), Ayak to 0 ≈ 4 specs (130 dmg at
+ * 40/spec)" (Team: the Ayak spec count is shown so a big one, 8 on Bork / 10 on The Smorks, is visible).
+ */
+const describeSpecs = (r: DefenceReductions, ayakToZero: boolean): string => {
   const parts: string[] = [];
-  if (r.elderMaul) parts.push(`${r.elderMaul}× Elder maul`);
-  if (r.tonalztic) parts.push(`${r.tonalztic} Tonalztics hit${r.tonalztic === 1 ? '' : 's'}`);
-  if (r.ayak) parts.push(`${Math.ceil(r.ayak / AYAK_DAMAGE_PER_SPEC)}× Ayak (${r.ayak} dmg)`);
+  const hasDefenceDrains = r.accursed || r.elderMaul || r.dwh || r.tonalztic || r.bgs;
+  if (hasDefenceDrains) parts.push(describeDefenceDrains(r));
+  if (r.ayak) {
+    const n = Math.ceil(r.ayak / AYAK_DAMAGE_PER_SPEC);
+    parts.push(ayakToZero
+      ? `Ayak to 0 ≈ ${n} spec${n === 1 ? '' : 's'} (${r.ayak} dmg at ${AYAK_DAMAGE_PER_SPEC}/spec)`
+      : `${n}× Ayak (${r.ayak} dmg)`);
+  }
   return parts.length ? parts.join(', ') : 'no specs';
 };
 
@@ -205,7 +215,7 @@ export const drainStateFor = (m: Monster, id: DrainStateId, assumptions: BestSet
   return {
     id,
     reductions,
-    specs: describeSpecs(reductions),
+    specs: describeSpecs(reductions, id === 'team'),
     defAfter: scaled.skills.def,
     magicDefAfter: scaled.defensive.magic,
   };

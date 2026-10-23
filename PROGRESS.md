@@ -3,6 +3,42 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 13 — Round-2 fixes: drains that can hit, Team Ayak count, DPS column (2026-10-23)
+
+- ROADMAP.md: Round 2 table (phases 13-20) and round-2 decisions.
+- New `src/lib/fracturedArchive/hittable.ts`: `canStyleHit(monster, style)`, `canDrainToolHit`, `canWeaponHit`. No
+  rules of its own: it runs upstream's `PlayerVsNPCCalc.isImmune` for a minimal 99s player holding the real weapon, so
+  `flying`, Ocellus's prayers and the immunity lists apply.
+- `drains.ts`: a plan only uses weapons that can hit in the selected version / phase. Tonalztics finisher only where
+  ranged hits; when the named weapon can't hit, the cheapest plan among Tonalztics (+ optional Accursed sceptre,
+  Defence part counts) is used. New `DrainPlan.weaponCanHit / specs / summary`, `describeDefenceDrains`,
+  `drainWeaponCanHit`. AG Flying: 4× Tonalztics hits (2 specs) → Def 156 (= wiki table); Ocellus P1 walking: 2 hits →
+  129; P3 Deflect Melee: 3 hits → 150; P3 Deflect Ranged: 2 Elder maul, no Tonalztics. Everything else unchanged.
+- Calculator "Max drain" buttons: weapons that can't hit are greyed out / struck through, tooltip + a line naming the
+  plan applied ("Melee can't hit here — buttons apply: 4× Tonalztics hits (2 specs) → Def 156").
+- Best setup: Solo / Team drain lines use the real plan; Team shows "Ayak to 0 ≈ N specs (X dmg at 40/spec)" (no
+  behaviour change; 8 on Bork, 10 on The Smorks). DPS cells in Search / Summary use the accent orange
+  (`text-orange-400 dark:text-orange-300`) + semi-bold (`bestSetup/styles.ts`).
+- Tests: Drains.test.ts (AG Flying no melee in any plan, 4 hits reach 156 and 3 don't; AG Grounded melee; Ocellus P1
+  walking / P3 Deflect Melee no melee; Deflect Ranged no Tonalztics; non-raid unaffected; summaries), Presets.test.ts
+  and CrossCutting.test.ts updated; Search.test.ts: summary queries + cache key. `yarn test` 959 pass / 4 skipped;
+  `yarn lint`, `tsc --noEmit` clean.
+- Playwright: new `scripts/verifyPhase13.mjs` all OK (AG Flying Solo drain line = Tonalztics, no "Elder maul"; AG
+  Grounded Solo = Elder maul; Team Ayak count; Search DPS cells orange; no Per boss tab; calculator buttons greyed with
+  fallback line). `verifyDrainPresets.mjs` updated (AG Flying inputs 0/0/4/130, DPS unchanged 7.424) and passes.
+  Screenshots `docs/screenshots/phase13-*.png`.
+- **Per boss tab removed** (user decision): BossView / preset-row UI, the calc-worker `BEST_SETUP` request + handler
+  (worker.ts back to upstream) deleted. Presets kept as search seeds and the "vs best preset" reference;
+  `computeBestSetup` stays as tested library code.
+- **Summary is search-based** (`SummaryView.tsx`): top search result for 17 boss/phase rows × None/Solo/Team = 51
+  searches, run sequentially in the search worker on opening the tab, progress bar, Cancel / Continue, in-memory session
+  cache keyed by assumptions (`summarySearchQueries`, `searchCacheKey` in `search.ts`, tested). Compact cells: weapon line
+  + 16 px loadout icon strip, orange DPS + style, best-preset DPS, load link, drain plan; boss icon per row.
+  `ItemIcons` got optional icon sizes.
+- Scripts: `verifyBestSetup.mjs` rewritten for the Summary, all OK (17 rows, 51 cells in 51 s, Cancel/Continue, cache kept on tab switch, 467/588 icons loaded in dev — the rest are raid-4 images missing from upstream's dev CDN, AG Flying cells use Tonalztics, Xarth Team cell loaded = 13.917 in the calculator); `verifyBestSetupUx.mjs` and
+  `verifyPhase13.mjs` no longer click Per boss.
+- Unverified: whether Ocellus's Defence resets between P3 quadrants (plans are per phase).
+
 ## Phase 12 — Best-setup UX: Search as default + item icons (2026-10-22)
 
 - `/best-setup` opens on **Search** (tab order Search / Per boss / Summary; last tab not remembered). The search runs

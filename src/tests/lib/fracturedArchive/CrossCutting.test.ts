@@ -62,15 +62,18 @@ describe('Fractured Archive cross-cutting', () => {
     expect(expectedHit(p3(OCELLUS_P3_DEFLECT_RANGED_PHASE))).toBeCloseTo(full, 10);
   });
 
-  test('drain plans are the same in every phase option (no phase changes Defence)', () => {
+  test('drain plans are the same in every phase option where melee can hit (no phase changes Defence)', () => {
     const plan = (name: string, version: string, phase: string) => maxDrainReductions(
       getTestMonster(name, version, { inputs: { phase } }),
       { weapon: 'elderMaul', ayak: true },
     );
     const borkPlans = BORK_PHASES.map((p) => plan('Bork', '', p));
     borkPlans.forEach((p) => expect(p).toEqual(borkPlans[0]));
+    // phase 13: Deflect Melee blocks the Elder maul, so those phases get a Tonalztics plan to the same Defence
     const p3Plans = OCELLUS_P3_PHASES.map((p) => plan('Ocellus', 'Phase 3', p));
-    p3Plans.forEach((p) => expect(p).toEqual(p3Plans[0]));
+    p3Plans.forEach((p) => expect(p.defAfter).toBe(p3Plans[0].defAfter));
+    p3Plans.filter((p) => p.weaponCanHit).forEach((p) => expect(p).toEqual(p3Plans[0]));
+    expect(p3Plans.filter((p) => !p.weaponCanHit)).toHaveLength(2);
   });
 
   test('every Fractured Archive monster in monsters.json has a defence floor; every table id is a raid id', () => {

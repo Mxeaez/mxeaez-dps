@@ -1,14 +1,32 @@
-# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12)
+# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13)
 
 `/best-setup` (dev: http://localhost:3001/osrs-dps/best-setup; "Best setup" button in the top bar, "Calculator" leads
 back). Tabs, in order: **Search** (the default, phase 9/12, see the end of this file) searches a pool of end-game items
-per slot for setups no preset has and runs automatically; "Per boss" ranks every named preset by DPS against one
-Fractured Archive boss/phase; "Summary" shows the best preset for every boss/phase; all under three drain states. The
-page always opens on Search (the last-used tab is deliberately not remembered).
+per slot for setups no preset has and runs automatically; **Summary** (phase 13) shows the top search result for
+every boss/phase; both under three drain states. The page always opens on Search (the last-used tab is deliberately
+not remembered).
+
+**Phase 13: "Per boss" removed.** The phase 8 preset ranking tab is gone (UI code, the calc-worker `BEST_SETUP`
+request and its handler deleted). The presets stay: they seed the search and give the "vs best preset" column / the
+Summary's "best preset" reference; `computeBestSetup` / `evaluatePreset` stay as tested library code
+(`Presets.test.ts`).
+
+## Summary tab (phase 13)
+
+One gear search (all styles, `runGearSearch`, same as the Search tab) per Summary row × drain state
+(`summarySearchQueries()` in `search.ts`: 17 rows × None / Solo / Team = 51 searches; the rows are `summaryQueries()`:
+each boss/version at its default phase, plus Bork stunned, Ocellus P1 walking and the Ocellus P3 last-quadrant
+options). They run one after the other in the search worker when the tab is opened, with a progress bar (searches
+done / 51 + progress inside the current one) and **Cancel**; **Continue** resumes with the missing ones. Results are
+cached in memory for the session (module scope in `SummaryView.tsx`, so switching tabs doesn't re-run), keyed by
+`searchCacheKey(query, assumptions)`; changing any assumption clears the cache and re-runs. Each row starts with the
+boss icon; each cell shows the top result's weapon line (18 px icons), a 16 px loadout icon strip (names in
+tooltips), DPS (orange) + style, the best preset's DPS for reference, a "load" link (Load into calculator) and the
+drain plan. Expect roughly 1–3 minutes for all 51 in a browser.
 
 ## Item icons (phase 12)
 
-Search and Per-boss rows show the weapon line with icons — weapon, then its ammo (ranged, not a blessing) or blowpipe
+Search rows (and, smaller, Summary cells) show the weapon line with icons — weapon, then its ammo (ranged, not a blessing) or blowpipe
 dart, then the autocast spell as text, e.g. "Ascension crossbows · Diamond ascension bolts (e)", "Kodai wand · Fire
 Surge" — and the whole loadout as a row of 20 px icons in the calculator's equipment-grid order (head, cape, neck, ammo,
 weapon, body, shield, legs, hands, feet, ring) with "name (slot)" tooltips; the boss selector shows the monster's icon.
@@ -28,10 +46,10 @@ skipped by the deploy).
 |---|---|
 | `src/lib/fracturedArchive/presets.ts` | The presets (plain data) and the default assumptions. **Edit this to change setups.** |
 | `src/lib/fracturedArchive/bestSetup.ts` | Pure computation (no React): item lookup, targets, drain states, `applyPresetToPlayer`, `evaluateLoadout`, `evaluatePreset`, `computeBestSetup`. Phase 9 should reuse `evaluateLoadout` / `buildTargetMonster`. |
-| `src/app/best-setup/page.tsx`, `src/app/components/bestSetup/BestSetup.tsx` | The page. |
-| `src/worker/*` | `WorkerRequestType.BEST_SETUP` runs `computeBestSetup` in the calc web worker (the page has its own worker, like the loadout comparison graph). |
+| `src/app/best-setup/page.tsx`, `src/app/components/bestSetup/BestSetup.tsx` | The page (tabs, assumptions, boss / phase / drain selectors). |
+| `src/app/components/bestSetup/SummaryView.tsx` | Summary tab (phase 13): sequential searches, session cache, Cancel / Continue. |
 | `src/tests/lib/fracturedArchive/Presets.test.ts` | Item names resolve, players are valid, the view's numbers equal a direct `PlayerVsNPCCalc`, ranking order, drain spec counts. |
-| `scripts/verifyBestSetup.mjs` | Playwright check (screenshots `docs/screenshots/phase8-*.png`; loads two rows into the main calculator and compares). |
+| `scripts/verifyBestSetup.mjs` | Playwright check of the Summary tab since phase 13 (51 cells, Cancel / Continue, cache on tab switch, icons, load a cell; `docs/screenshots/phase13-summary.png`). |
 
 ## Editing presets
 
@@ -60,12 +78,27 @@ The assumptions are kept in page state only (reset on reload). Change the defaul
 | State | Defence | Magic defence bonus |
 |---|---|---|
 | None | undrained | undrained |
-| Solo | floor via Elder maul, `maxDrainReductions(m, { weapon: 'elderMaul' })` — + Tonalztics hits for uncapped bosses (Smorks, Dreadnoth, Jelly, The Blade) | Eye of Ayak damage = "Solo Ayak damage" (80 ≈ 2 specs), capped at the boss's magic defence bonus |
-| Team | same as Solo | Eye of Ayak to 0 |
+| Solo | floor via Elder maul, `maxDrainReductions(m, { weapon: 'elderMaul' })` — + Tonalztics hits for uncapped bosses (Smorks, Dreadnoth, Jelly, The Blade); where melee can't hit, the cheapest plan with weapons that can (phase 13, below) | Eye of Ayak damage = "Solo Ayak damage" (80 ≈ 2 specs), capped at the boss's magic defence bonus |
+| Team | same as Solo | Eye of Ayak to 0, however many specs that takes |
 
 The specs used are shown above the table, e.g. "2× Elder maul, 2× Ayak (80 dmg) → Defence 156, Magic def bonus 50".
-Ayak spec counts assume 40 damage per successful spec (as in `docs/DATA_SOURCES.md`, *Drain presets*); misses aren't
-modelled. Solo and Team only differ for magic.
+Ayak spec counts assume 40 damage per successful spec (as in `docs/DATA_SOURCES.md`, *Drain presets*; the Solo
+default of 80 damage = 2 such specs); misses aren't modelled. Solo and Team only differ for magic.
+
+**Phase 13: weapons that can't hit.** Drain plans only use a weapon whose style can hit the boss in the selected
+version / phase (`src/lib/fracturedArchive/hittable.ts`, which asks upstream's `isImmune`). Archive Guardian (Flying)
+can't be meleed, so Solo / Team use the wiki table's 4 Tonalztics hits (2 specs) → Defence 156; Ocellus P1 "Walking"
+and P3 "Deflect Melee" phases use Tonalztics hits; P3 "Deflect Ranged" never adds Tonalztics. The drain line shows the
+actual plan, e.g. "4× Tonalztics hits (2 specs), 2× Ayak (80 dmg) → Defence 156". Per-boss table:
+`docs/DATA_SOURCES.md`, *Drain presets*.
+
+**Team Ayak spec count.** Team still assumes Ayak to 0 regardless of cost (no behaviour change), but the drain line now
+states the count, e.g. "Ayak to 0 ≈ 4 specs (130 dmg at 40/spec)" on Archive Guardian; it is 8 on Bork (+300) and 10 on
+The Smorks (+400), so treat Team there as "the whole team specs Ayak".
+
+**DPS column.** DPS values in the Search and Summary tables (and in the Per boss table until it was removed) use the site's accent orange
+(`text-orange-400 dark:text-orange-300`, the `orange` tokens in `tailwind.config.js`, as on the active loadout tab)
+and semi-bold (`src/app/components/bestSetup/styles.ts`).
 
 ## How the numbers are computed
 
@@ -77,8 +110,7 @@ current HP = scaled HP). `evaluateLoadout` then calls `PlayerVsNPCCalc` like the
 row's setup as a new loadout (or replaces the selected one if all 6 are used) with the same boss, phase and drains, and
 opens the calculator — the numbers there are identical (checked by `scripts/verifyBestSetup.mjs`).
 
-TTK is the expensive part (O(HP × max hit)), so it is computed only for each preset's winning style, and in the
-Summary only for the top preset.
+TTK is the expensive part (O(HP × max hit)), so it is computed only for each preset's winning style.
 
 A preset that fails to evaluate (e.g. a misspelt item) shows as a 0-DPS "Error: ..." row instead of breaking the
 view (`safeEvaluatePreset`).
@@ -130,7 +162,7 @@ the ones that could change a winner.
 
 "Search" (the default tab on `/best-setup` since phase 12) searches over end-game items per slot for the selected
 boss/phase and drain state and lists the top loadouts by DPS, so a combination no preset has can still win. Boss, phase
-and drains are shared with "Per boss"; the Assumptions box applies too. Styles: All / Melee / Ranged / Magic.
+and drains are chosen above the table; the Assumptions box applies too. Styles: All / Melee / Ranged / Magic.
 
 **Auto-run (phase 12):** the search starts by itself when the tab opens (i.e. when the page loads) and whenever the
 boss, phase option, drain state, style filter or an assumption changes. Each change clears the old table, cancels the
@@ -141,8 +173,8 @@ both. **Run again** re-runs by hand (e.g. after a cancel). "Best per weapon"
 switches the table from the top 10 loadouts overall to the best loadout of each weapon (top 10).
 
 Table: rank, DPS, gain vs the best Phase 8 preset of the searched styles (same boss/drains; the preset is named above
-the table), expected TTK (winner only, like the Summary), max hit, accuracy, style, the full loadout, the seed the
-ascent started from, and **Load into calculator** (same as in "Per boss": adds the exact items incl. the blowpipe dart,
+the table), expected TTK (winner only), max hit, accuracy, style, the full loadout, the seed the
+ascent started from, and **Load into calculator** (adds the exact items incl. the blowpipe dart,
 with the boss, phase and drains). Weapons that can't deal damage at all (melee vs Flying, a style Ocellus prays
 against) are listed under the stats line instead of in the table.
 
