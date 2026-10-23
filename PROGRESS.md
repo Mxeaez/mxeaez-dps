@@ -3,6 +3,32 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 5 — Dreadnoth the Jellied, Jelly, Xarth (2026-10-22)
+
+- Re-read the three pages, Corpse (Xarth), the Strategies sections, the demonbane item pages and `Demon (attribute)`;
+  mechanic → model table in `docs/DATA_SOURCES.md` (*Phase 5*).
+- Demonbane effectiveness from https://oldschool.runescape.wiki/w/Demon_(attribute): **Dreadnoth 25%, Xarth 80%**
+  (Jelly 100%). New `src/lib/fracturedArchive/demonbane.ts` (table), read by upstream's
+  `BaseCalc.demonbaneVulnerability()` (+2/−1), so every upstream demonbane effect scales (Arclight/Emberlight +17% /
+  +56%, scorching bow +7% / +24%, purging staff + Mark of Darkness, claws, holy water). Xarth is *not* full-factor
+  (the brief assumed it was; the wiki wins). Phase 2's Xarth test now compares against a custom demon at 80%.
+- Xarth: no TD shield logic (regression tests); no P2 option — the wiki shows no stat change (**unverified**). Jelly:
+  selectable, no special code. No immunities or caps that affect the calc.
+- Tests: `src/tests/lib/fracturedArchive/DreadnothAndXarth.test.ts` (22): hand-derived max hit / attack roll / DPS for
+  Arclight, Emberlight, scorching bow, purging staff + Dark Demonbane + MoD on both bosses, Jelly full factor, fire 85% /
+  water 85% / Jelly fire 60%, Xarth whip without TD reduction, floors 0 / 102 via DWH/BGS with DPS, Max Melee +
+  Emberlight + Piety + super combat sanity/UI parity (Dreadnoth 44 / 7.785, Xarth 59 / 8.541, Jelly 64 / 12.410).
+  With the module disabled 12 of them fail.
+- Phase 4 leftovers: the Bork scythe and ranged-armour tests now assert hand-derived values (they fail if
+  `applyBorkFlatArmour` is a no-op); `scripts/verifySmorksAndBork.mjs` uses Piety + super combat + Chop (aggressive):
+  Bork 2.460 / 2.119 / 1.832 / 1.590 / 14.712, Smorks 4.254 (= Jest); `phase4-bork-*.png`, `phase4-smorks.png` re-shot.
+- UI: `node scripts/verifyDreadnothAndXarth.mjs` — on-screen max hit, DPS and "Demonbane factor" (70 × 25/100 = 17,
+  × 80/100 = 56, × 100/100 = 70) equal Jest; `docs/screenshots/phase5-dreadnoth.png`, `-xarth.png`, `-jelly.png`.
+- `yarn test` 439 pass / 4 skipped; `yarn lint`, `tsc --noEmit` clean.
+
+Unverified / open: the 25% / 80% values (wiki edit "per orion", uncited); truncation of the scaled percent (17.5 → 17);
+Xarth P2 stats; healing (jelly absorb, slam, corpses) not modelled. Ocellus 80% demonbane noted for phase 6.
+
 ## Phase 4 — The Smorks + Bork (2026-10-22)
 
 - Encounter (Strategies): both attackable, separate HP; kill Bork first (recommended) → Bork's armour is usually 8;

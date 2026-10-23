@@ -13,6 +13,7 @@ import {
   getMagicResistance, hasGuaranteedMeleeAccuracy,
 } from '@/lib/fracturedArchive/bork';
 import { Prayer } from '@/enums/Prayer';
+import Potion from '@/enums/Potion';
 import { Monster } from '@/types/Monster';
 import { Player } from '@/types/Player';
 import { PartialDeep } from 'type-fest';
@@ -145,23 +146,31 @@ describe('Bork flat armour vs melee', () => {
   });
 
   test('scythe: armour is subtracted from each of the three hitsplats separately', () => {
-    [ARMOUR_8, ARMOUR_14, BORK_STUNNED_PHASE].forEach((phase) => {
+    // Scythe of Vitur (charged), Chop (aggressive slash), 99s, no other gear: slash +125, str +75.
+    // Max: effective str 99 + 3 + 8 = 110 -> trunc((110 * 139 + 320) / 640) = 24; hits 24 / 12 / 6 (Bork is size 4).
+    // Attack roll (99 + 8) * (125 + 64) = 20223 vs slash defence roll 59946 -> accuracy 20223 / (2 * 59947).
+    // Each hitsplat rolls accuracy and loses the armour on its own (accurate 0 -> 1 first, min 0 after armour):
+    //   armour 8:  24 -> sum(1..16) = 136 over 25 rolls, 12 -> sum(1..4) = 10 over 13, 6 -> 0
+    //   armour 14: 24 -> sum(1..10) = 55 over 25, 12 and 6 -> 0
+    //   stunned:   accuracy 1, no armour: (1 + sum(1..24)) / 25 + (1 + sum(1..12)) / 13 + (1 + sum(1..6)) / 7
+    // 5-tick weapon -> 3.0 s per attack. Armour taken once from the summed hit would give acc * (12 + 6 + 3 + ... - 8).
+    const acc = 20223 / (2 * 59947);
+    const cases: [string, number][] = [
+      [ARMOUR_8, acc * (136 / 25 + 10 / 13)],
+      [ARMOUR_14, (acc * 55) / 25],
+      [BORK_STUNNED_PHASE, 301 / 25 + 79 / 13 + 22 / 7],
+    ];
+    cases.forEach(([phase, expectedDamage]) => {
       const m = bork(phase);
       const c = calc(m, scythePlayer(m));
-      const [, max] = c.getMinAndMax();
-      const acc = c.getHitChance();
-      const armour = m.defensive.flat_armour;
-      // Bork is size 4 -> 3 hits at max, max/2, max/4; each hit rolls accuracy on its own
-      const splatMaxes = [max, Math.trunc(max / 2), Math.trunc(max / 4)];
-      const expected = splatMaxes.reduce((s, splatMax) => s + expectedHit(acc, splatMax, armour), 0);
+      expect(c.getMinAndMax()).toEqual([0, 24]);
       expect(c.getDistribution().dists).toHaveLength(3);
-      expect(c.getExpectedDamage()).toBeCloseTo(expected, 10);
-      // and not the armour subtracted once from the summed hit
-      if (armour > 0) {
-        expect(c.getExpectedDamage()).toBeLessThan(splatMaxes
-          .reduce((s, splatMax) => s + expectedHit(acc, splatMax, 0), 0) - acc * armour);
-      }
+      expect(c.getExpectedDamage()).toBeCloseTo(expectedDamage, 10);
+      expect(c.getDps()).toBeCloseTo(expectedDamage / 3, 10);
     });
+    // max hit on screen = sum of the three splats after armour: 16 + 4 + 0 (armour 8), 10 + 0 + 0 (armour 14)
+    expect(calculatePlayerVsNpc(bork(ARMOUR_8), scythePlayer(bork(ARMOUR_8))).maxHit).toBe(20);
+    expect(calculatePlayerVsNpc(bork(ARMOUR_14), scythePlayer(bork(ARMOUR_14))).maxHit).toBe(10);
   });
 
   test('stun only guarantees melee accuracy: ranged and magic accuracy unchanged', () => {
@@ -180,12 +189,27 @@ describe('Bork flat armour vs melee', () => {
 
 describe('Bork flat armour vs ranged and magic', () => {
   test('ranged is reduced by the full flat armour, and by 0 when stunned', () => {
-    [ARMOUR_8, ARMOUR_12, BORK_STUNNED_PHASE].forEach((phase) => {
+    // Rune crossbow + runite bolts, Accurate, 99 Ranged: effective 99 + 3 + 8 = 110.
+    // Max trunc((110 * (115 + 64) + 320) / 640) = 31; attack roll 110 * (90 + 64) = 16940.
+    // Bork heavy defence roll (300 + 9) * (5 + 64) = 21321 -> accuracy 16940 / (2 * 21322) in every option.
+    //   armour 8:  sum(d - 8, d = 9..31) = sum(1..23) = 276 over 32 rolls, max 23
+    //   armour 12: sum(1..19) = 190 over 32, max 19
+    //   stunned:   (1 + sum(1..31)) = 497 over 32, max 31
+    // 6-tick crossbow on Accurate -> 3.6 s per attack.
+    const acc = 16940 / (2 * 21322);
+    const cases: [string, number, number][] = [
+      [ARMOUR_8, 23, 276],
+      [ARMOUR_12, 19, 190],
+      [BORK_STUNNED_PHASE, 31, 497],
+    ];
+    cases.forEach(([phase, max, damageSum]) => {
       const m = bork(phase);
       const c = calc(m, rcbPlayer(m));
-      const [, max] = c.getMinAndMax();
-      expect(c.getDistribution().getMax()).toBe(max - m.defensive.flat_armour);
-      expect(c.getExpectedDamage()).toBeCloseTo(expectedHit(c.getHitChance(), max, m.defensive.flat_armour), 10);
+      expect(c.getMinAndMax()).toEqual([0, 31]);
+      expect(c.getHitChance()).toBeCloseTo(acc, 10);
+      expect(c.getDistribution().getMax()).toBe(max);
+      expect(c.getExpectedDamage()).toBeCloseTo((acc * damageSum) / 32, 10);
+      expect(c.getDps()).toBeCloseTo((acc * damageSum) / 32 / 3.6, 10);
     });
   });
 
@@ -284,15 +308,19 @@ describe('real loadout sanity check', () => {
 });
 
 describe('Bork / Smorks UI parity (scripts/verifySmorksAndBork.mjs)', () => {
-  // Same inputs as the Playwright check: default player (99s, no prayers/boosts), "Max Melee" equipment preset
+  // Same inputs as the Playwright check: "Max Melee" equipment preset
   // (src/app/components/player/equipment/EquipmentPresets.tsx) + Scythe of Vitur (charged, replaces the defender),
-  // first style Reap (accurate slash).
-  // Strength bonus 145, effective str 99 + 8 = 107 -> max trunc((107 * 209 + 320) / 640) = 35; hits 35 / 17 / 8.
-  // Slash bonus 175, attack roll (99 + 3 + 8) * 239 = 26290; Bork defence roll 59946 -> acc 26290 / (2 * 59947).
-  // "Max hit" on screen is the sum of the three hitsplats after armour, e.g. armour 8: 27 + 9 + 0 = 36.
-  // Armour 8 DPS: acc * (sum(1..27) / 36 + sum(1..9) / 18 + 0) / 3 = acc * 13 / 3 = 0.9502.
-  // Stunned: acc 1, (1 + sum(1..35)) / 36 + (1 + sum(1..17)) / 18 + (1 + sum(1..8)) / 9 = 30.194 / 3 = 10.065.
-  // Smorks: flat armour 2, slash defence roll (220 + 9) * (170 + 64) = 53586.
+  // 99s + Super combat (118 Attack/Strength), Piety, Chop (aggressive slash).
+  // Strength bonus 145: effective str trunc(118 * 1.23) = 145 + 3 + 8 = 156 -> max trunc((156 * 209 + 320) / 640) = 51;
+  // hits 51 / 25 / 12. Slash bonus 175: effective atk trunc(118 * 1.2) = 141 + 8 = 149 -> roll 149 * 239 = 35611.
+  // Bork slash defence roll 59946 -> acc 35611 / (2 * 59947); the Smorks (220 + 9) * (170 + 64) = 53586.
+  // Per accurate roll each splat is worth sum(d - armour for d > armour) / (max + 1); 5-tick weapon -> 3.0 s:
+  //   armour 8:  acc * (sum(1..43) / 52 + sum(1..17) / 26 + sum(1..4) / 13) / 3 = acc * (946/52 + 153/26 + 10/13) / 3
+  //   armour 10: acc * (861/52 + 120/26 + 3/13) / 3;  armour 12: acc * (780/52 + 91/26) / 3
+  //   armour 14: acc * (703/52 + 66/26) / 3
+  //   stunned:   accuracy 1, no armour, accurate 0 -> 1: (1327/52 + 326/26 + 79/13) / 3
+  //   Smorks (armour 2): accS * (sum(1..49) / 52 + sum(1..23) / 26 + sum(1..10) / 13) / 3
+  // "Max hit" on screen is the sum of the three hitsplats after armour, e.g. armour 8: 43 + 17 + 4 = 64.
   const maxMeleeScythe = (m: Monster) => getTestPlayer(m, {
     equipment: {
       head: findEquipmentById(26382), // Torva full helm
@@ -306,28 +334,29 @@ describe('Bork / Smorks UI parity (scripts/verifySmorksAndBork.mjs)', () => {
       ring: findEquipmentById(28307), // Ultor ring
       weapon: findEquipment('Scythe of Vitur', 'Charged'),
     },
+    style: { name: 'Chop', type: 'slash', stance: 'Aggressive' },
+    skills: { atk: 99, str: 99 },
+    boosts: { atk: 19, str: 19 },
+    prayers: [Prayer.PIETY],
+    buffs: { potions: [Potion.SUPER_COMBAT] },
   });
 
-  const cases: [string, string | undefined, number, number][] = [
-    ['Bork', ARMOUR_8, 36, 0.950],
-    ['Bork', ARMOUR_10, 32, 0.774],
-    ['Bork', ARMOUR_12, 28, 0.621],
-    ['Bork', ARMOUR_14, 24, 0.493],
-    ['Bork', BORK_STUNNED_PHASE, 60, 10.065],
-    ['The Smorks', undefined, 54, 2.010],
+  const acc = 35611 / (2 * 59947);
+  const accS = 35611 / (2 * 53587);
+  const cases: [string, string | undefined, number, number, number][] = [
+    ['Bork', ARMOUR_8, 64, acc * (946 / 52 + 153 / 26 + 10 / 13) / 3, 2.460],
+    ['Bork', ARMOUR_10, 58, acc * (861 / 52 + 120 / 26 + 3 / 13) / 3, 2.119],
+    ['Bork', ARMOUR_12, 52, acc * (780 / 52 + 91 / 26) / 3, 1.832],
+    ['Bork', ARMOUR_14, 48, acc * (703 / 52 + 66 / 26) / 3, 1.590],
+    ['Bork', BORK_STUNNED_PHASE, 88, (1327 / 52 + 326 / 26 + 79 / 13) / 3, 14.712],
+    ['The Smorks', undefined, 82, accS * (1225 / 52 + 276 / 26 + 55 / 13) / 3, 4.254],
   ];
-  test.each(cases)('%s %s: max hit %d, DPS %d (values read on screen)', (name, phase, maxHit, dps) => {
+  test.each(cases)('%s %s: max hit %d', (name, phase, maxHit, dps, shownDps) => {
     const m = name === 'Bork' ? bork(phase) : smorks();
     const r = calculatePlayerVsNpc(m, maxMeleeScythe(m));
+    expect(r.maxAttackRoll).toBe(35611);
     expect(r.maxHit).toBe(maxHit);
-    expect(r.dps).toBeCloseTo(dps, 3);
-  });
-
-  test('armour 8 and stunned DPS match the hand derivation', () => {
-    const acc = 26290 / (2 * 59947);
-    expect(calculatePlayerVsNpc(bork(ARMOUR_8), maxMeleeScythe(bork(ARMOUR_8))).dps)
-      .toBeCloseTo((acc * 13) / 3, 10);
-    expect(calculatePlayerVsNpc(bork(BORK_STUNNED_PHASE), maxMeleeScythe(bork(BORK_STUNNED_PHASE))).dps)
-      .toBeCloseTo((631 / 36 + 154 / 18 + 37 / 9) / 3, 10);
+    expect(r.dps).toBeCloseTo(dps, 10);
+    expect(r.dps).toBeCloseTo(shownDps, 3); // value read on screen
   });
 });

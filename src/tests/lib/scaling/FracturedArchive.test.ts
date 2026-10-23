@@ -200,8 +200,11 @@ describe('Xarth is not a Tormented Demon', () => {
     expect(findResult(result.details, DetailKey.PLAYER_ACCURACY_TD)).toBeUndefined();
     expect(result.accuracy).toBeLessThan(1);
 
-    // identical to a generic demon with the same stats
-    const genericDemon: Monster = { ...xarth, id: 99999, name: 'Generic demon' };
+    // identical to a custom demon with the same stats and Xarth's 80% demonbane effectiveness (phase 5,
+    // src/lib/fracturedArchive/demonbane.ts)
+    const genericDemon: Monster = {
+      ...xarth, id: -1, name: 'Generic demon', inputs: { ...xarth.inputs, demonbaneVulnerability: 80 },
+    };
     const generic = calculatePlayerVsNpc(genericDemon, player);
     expect(result.dps).toBe(generic.dps);
     expect(result.maxHit).toBe(generic.maxHit);

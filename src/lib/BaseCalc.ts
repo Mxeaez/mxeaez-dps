@@ -22,6 +22,7 @@ import { getRangedDamageType } from '@/types/PlayerCombatStyle';
 import { AttackDistribution, HitDistribution } from '@/lib/HitDist';
 import { Spellement } from '@/types/Spell';
 import { isImmuneToSpell } from '@/lib/fracturedArchive/immunities';
+import { getFracturedArchiveDemonbaneVulnerability } from '@/lib/fracturedArchive/demonbane';
 
 export interface CalcOpts {
   loadoutName?: string,
@@ -736,7 +737,7 @@ export default class BaseCalc {
       return 115;
     }
 
-    return 100;
+    return getFracturedArchiveDemonbaneVulnerability(this.monster) ?? 100;
   }
 
   private sanitizeInputs() {

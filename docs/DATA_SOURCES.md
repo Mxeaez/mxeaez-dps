@@ -195,8 +195,9 @@ same pattern as the phase reset); the calc already clamped to 2.
 Mechanics (Strategies → *Dreadnoth the Jellied*):
 
 - Not in the hotfix cap list; Strategies "Maximum defence reduction" table: 125 → **0** (fully drainable).
-- Demon, but "has low demonbane values" — exact demonbane vulnerability % is not on the wiki (**unverified**; upstream
-  has a `demonbaneVulnerability` monster input that phase 5 can set).
+- Demon, but "has low demonbane values" (Strategies). The number is on
+  https://oldschool.runescape.wiki/w/Demon_(attribute) → *List of monsters*: **25% effectiveness** (phase 5; see
+  below).
 - Freeze resistance 40%; scorching bow spec can root him (demon).
 - At 85/65/45% HP: slam + spawns jellies. At 25% HP: jump-slams that heal ~30–40 if not avoided; absorbs live jellies
   to heal. On death spawns ~10 jellies that must be killed to end the encounter.
@@ -230,6 +231,33 @@ Mechanics (page body + Strategies → *Xarth*):
   *Phase 1*), so upstream's TD shield logic (`TD_IDS` in `src/lib/constants.ts`) must **not** be applied to 16684.
 - Phase 2 at 50% HP: summons Corpses (`Corpse (Xarth)` ids 16687 Normal / 16688 Doused, 20 hp, now in monsters.json)
   that heal him for their remaining HP if they reach him; fire spells make him summon more corpses. That his stats don't change in phase 2 is the builder's inference (the wiki has a single infobox and says nothing either way) — **unverified**.
+
+## Phase 5 — Dreadnoth, Jelly and Xarth: how each mechanic is modelled (re-read 2026-10-22)
+
+Sources (all `?action=raw`, 2026-10-22): `Dreadnoth_the_Jellied`, `Jelly_(Dreadnoth)`, `Xarth`, `Corpse_(Xarth)`,
+Strategies → *Dreadnoth the Jellied* / *Xarth* (+ the Equipment section and the "Maximum defence reduction" table),
+`Demon_(attribute)`, `Demonbane_weapons`, `Arclight`, `Emberlight`, `Scorching_bow`, `Purging_staff`, `Burning_claws`,
+`Duke_Sucellus`; Gearscape `api.gearscape.net/api/monster/id/<id>` for 16665/16666/16684 (no demonbane field).
+
+**Demonbane effectiveness.** https://oldschool.runescape.wiki/w/Demon_(attribute), *List of monsters*: "Unless stated
+below, all demons have 100% demonbane effectiveness … Dreadnoth the Jellied: 25% effectiveness … Ocellus: 80%
+effectiveness … Xarth: 80% effectiveness". Added on 2026-10-20 (edit summary "per orion", no in-game citation), so
+the values are wiki-sourced but **unverified**. None of the boss pages, the item pages or Gearscape give a number;
+the Arclight/Emberlight pages only give the Duke example (70% → 49%). Note: the phase 5 brief expected Xarth to take
+the full demon factor; the wiki says 80%, and the wiki wins.
+
+| Mechanic (wiki wording) | Calculator |
+|---|---|
+| Dreadnoth "is considered a demon, however he has low demonbane values" → 25% effectiveness | New `src/lib/fracturedArchive/demonbane.ts` (`DEMONBANE_EFFECTIVENESS`), read by upstream's `BaseCalc.demonbaneVulnerability()` (the same switch that gives Duke Sucellus 70, Yama 120, Ice demon 115) — 2-line edit. Every demonbane effect upstream models scales: percent = `trunc(weapon% × 25 / 100)` → Arclight/Emberlight +17% (not +70), Silverlight/Darklight +15%, scorching bow +7%, burning/bone claws +1%, demonbane spells 20/40/80% → 5/10/20%, holy water 60 → 15, Mark of Darkness damage (25%, 50% with the purging staff) → `trunc(trunc(hit × 50/100) × 25/100)`. Truncating the scaled percent (17.5 → 17) is upstream's rounding (**unverified** in-game). |
+| Xarth "susceptible to demonbane" → 80% effectiveness | Same table: Arclight/Emberlight +56%, scorching bow +24%, purging staff + MoD accuracy +64%, damage `trunc(trunc(hit/2) × 0.8)`. |
+| Jelly (Dreadnoth): demon, not listed | 100% (default). |
+| Dreadnoth fire 85%, Jelly fire 60%, Xarth water 85% | Infobox weakness through upstream's spell-element code (tests: Fire Surge 44 on Dreadnoth, Water Surge 44 on Xarth, Fire Surge 38 on a Jelly). |
+| Dreadnoth defence 125 → 0, Xarth 170 → 102 (drain table, Xarth page) | Phase 2 floors; tests with DWH/BGS incl. DPS at the floor. Jelly 0 (assumed). |
+| Immunities: Dreadnoth/Xarth `poisonresistance = 100`, `immunecannon = Yes`, `immuneburn = No`; Jelly cannon-immune; freeze resistance 40 / 20 / blank | Nothing to model: the calculator has no poison/venom or cannon damage, burn (burning claws / scorching bow specs) is allowed by default, freeze resistance doesn't change damage. Neither page has damage caps, prayers, weakness changes or flying/size quirks. |
+| Dreadnoth heals ~30–40 from an un-dodged slam below 25%, absorbs live jellies; "On death, the boss will spawn around ten jellies. Once these jellies are killed, the encounter ends." | Not modelled (healing/adds are encounter time, not per-attack DPS). Jellies (61 hp, negative light/heavy ranged defence) are selectable; the wiki recommends Ice/Blood Barrage or the Venator bow (AoE) for them, which the calculator rates per target only. |
+| Xarth P1 magic only, "does not have a shield" (unlike other Tormented Demons), attacks faster | Upstream's TD rules are keyed on `name === 'Tormented Demon'` / `TD_IDS`; Xarth matches neither (regression tests: no 20% shield reduction on a whip, no TD accuracy override, a stale "Unshielded" phase input changes nothing). |
+| Xarth P2 (below 50%): ranged + melee, static in the centre; corpses heal him for their remaining HP (200 healed → AoE); fire spells summon more corpses | No phase option: one infobox and no stat change described, so P2 uses the same stats (**unverified**). Corpse healing not modelled; corpses (16687/16688) are selectable. Fire spells on Xarth do normal damage but cost corpses in P2. |
+| Strategies advice: Dreadnoth "it is recommended to range or mage him from afar" (his melee hits everyone around him); Xarth "particularly vulnerable to crush" (crush def 20) | Advice only; relevant to phases 8/9. |
 
 ## Ocellus
 
@@ -294,6 +322,9 @@ Mechanics (page body + Strategies → *Ocellus*):
 - Adds: Void Rift (16678), Void Augmenter (16680), Void Siphon (16679), Void Vine (16681) — 44 hp each, now in
   monsters.json (Void Siphon/Void Vine images failed to download from the wiki).
 - Prose says combat level 1,603 in P3; infobox says 1601 (cosmetic, not used).
+- Demonbane: https://oldschool.runescape.wiki/w/Demon_(attribute) lists **Ocellus: 80% effectiveness** (found in
+  phase 5, not implemented) — phase 6 should add Ocellus to `src/lib/fracturedArchive/demonbane.ts` for the demon
+  versions (P1/P3; P2's attributes are blank).
 
 ## Other raid monsters (came with the refresh, not checked field-by-field)
 
