@@ -1,0 +1,19 @@
+mxeaez-dps
+==========
+
+This is a modified version of osrs-dps-calc (https://github.com/weirdgloop/osrs-dps-calc), the OSRS Wiki DPS
+calculator by Weird Gloop and contributors, licensed under the GNU General Public License v3.0 (see LICENSE).
+This fork is distributed under the same license; its source is at https://github.com/Mxeaez/mxeaez-dps.
+
+Modifications (2026), summarised; ROADMAP.md and PROGRESS.md list them phase by phase:
+
+- Refreshed monster data, including The Fractured Archive (raid 4) bosses.
+- Fractured Archive mechanics: party size setting, defence floors, phase-specific rules for Archive Guardian,
+  The Smorks and Bork, Dreadnoth, Xarth and Ocellus, plus the raid's reward items.
+- A "Best setup" page (/best-setup) that ranks presets per boss and searches gear combinations.
+- Deployment changes for a static site at https://dps.mxeaez.com: images served from this repository's cdn/
+  directory, share links disabled, fork branding and credits.
+
+Monster, item and spell data and images come from the Old School RuneScape Wiki
+(https://oldschool.runescape.wiki). Old School RuneScape is a trademark of Jagex Ltd; this project is not
+affiliated with Jagex or Weird Gloop.

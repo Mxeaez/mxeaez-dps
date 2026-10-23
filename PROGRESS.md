@@ -3,6 +3,29 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 10 — Deploy preparation for Cloudflare Pages (2026-10-22)
+
+- `.env.production` targets https://dps.mxeaez.com at the root (empty base path), `NEXT_PUBLIC_CDN_URL=/cdn`,
+  `NEXT_PUBLIC_DISABLE_SHORTLINKS=true` (new flag: the shortlink API is the wiki's; the Share modal shows a notice),
+  `NEXT_PUBLIC_LOCAL_STORE_SHORTLINKS=true`. `.env.development` unchanged (dev still at localhost:3001/osrs-dps).
+- `getCdnImage` reads `NEXT_PUBLIC_CDN_URL` (default: upstream bucket). `yarn build` now runs
+  `next build && node scripts/copyCdn.mjs` (Yarn 4 skips post-hooks), copying `cdn/` (202 MB, 7,507 files) to
+  `out/cdn/`; out/ is ~210 MB / 7,827 files, largest file < 1 MiB (Pages: 20k files, 25 MiB each).
+- Empty base path fixes: canonical URL and the post-shortlink `replaceState` fall back to `''`/`/`. The
+  `redirects` warning with `output: export` is pre-existing and harmless (left).
+- Node pinned to 22.23.4 (`.node-version`, `.nvmrc`); `corepack enable && yarn install --immutable && yarn build`
+  verified on Node 22.23.4 with no lockfile change.
+- Branding: title "mxeaez DPS - …", new description; footer line "Fork of the OSRS Wiki DPS calculator · source on
+  GitHub" (upstream credit kept), commit hash links to Mxeaez/mxeaez-dps. README rewritten for the fork, `NOTICE`
+  added (GPL-3.0, modifications), `docs/DEPLOY.md` (Pages settings, custom domain with/without Cloudflare DNS).
+- Verified with `npx wrangler pages dev out` + `node scripts/verifyRootDeploy.mjs`: Archive Guardian image from
+  `/cdn` HTTP 200, equipment images 200, DPS renders (Tbow + dragon arrows 1.725), Share notice, `/best-setup` clean
+  URL 200 (`/best-setup.html` 308 → `/best-setup`), Xarth search completes (top 12.839, matches phase 9), no failed
+  requests. Screenshots `docs/screenshots/phase10-root-*.png`. Dev server restarted and serving.
+- `yarn test` 924 pass / 4 skipped; `yarn lint` clean; `tsc --noEmit` clean.
+
+Left for the user: create the Pages project and custom domain in the dashboard (docs/DEPLOY.md).
+
 ## Phase 9 — Full gear search (2026-10-22)
 
 - "Search" tab on `/best-setup` (shares boss/phase/drains and assumptions with "Per boss"): style filter, Run, progress

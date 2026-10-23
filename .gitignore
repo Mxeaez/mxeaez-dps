@@ -38,3 +38,6 @@ yarn-error.log*
 .yarn/install-state.gz
 
 /scripts/.venv/
+
+# wrangler pages dev (local deploy check)
+/.wrangler/

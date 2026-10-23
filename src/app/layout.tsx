@@ -8,11 +8,11 @@ import ClientProviders from '@/app/components/ClientProviders';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || ''),
-  title: 'DPS Calculator - OSRS Wiki',
-  description: "See how your gear stacks up against Old School RuneScape's monsters using the OSRS Wiki's damage-per-second calculator.",
+  title: 'mxeaez DPS - OSRS DPS Calculator (fork of the OSRS Wiki calculator)',
+  description: "A fork of the OSRS Wiki's damage-per-second calculator with The Fractured Archive bosses and a best-setup finder.",
   authors: [{ name: 'OSRS Wiki', url: 'https://oldschool.runescape.wiki' }],
   keywords: ['osrs', 'old school runescape', 'runescape', 'dps calculator', 'osrs dps', 'osrs wiki', 'osrs wiki dps'],
-  alternates: { canonical: `${process.env.NEXT_PUBLIC_BASE_URL}${process.env.NEXT_PUBLIC_BASE_PATH}` },
+  alternates: { canonical: `${process.env.NEXT_PUBLIC_BASE_URL}${process.env.NEXT_PUBLIC_BASE_PATH || ''}` },
   twitter: {
     card: 'summary',
   },

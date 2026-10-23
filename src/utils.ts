@@ -60,6 +60,8 @@ export enum FeatureStatus {
 export const classNames = (...classes: string[]) => classes.filter(Boolean).join(' ');
 
 const SHORTLINK_API = 'https://tools.runescape.wiki/osrs-dps/shortlink';
+// mxeaez fork: the shortlink backend belongs to the OSRS Wiki, so deployments of this fork can switch sharing off.
+export const SHORTLINKS_DISABLED = process.env.NEXT_PUBLIC_DISABLE_SHORTLINKS === 'true';
 const API_PROXY = 'https://oldschool.runescape.wiki/cors';
 
 export const WORKER_JSON_REPLACER = (k: string, v: Map<unknown, unknown> | Set<unknown> | never) => {
@@ -155,7 +157,9 @@ export const calculateCombatLevel = (s: PlayerSkills) => {
 
 export const getWikiImage = (filename: string) => `https://oldschool.runescape.wiki/images/${filename.replaceAll(' ', '_')}?11111`;
 
-export const getCdnImage = (filename: string) => `https://tools.runescape.wiki/osrs-dps/cdn/${filename}`;
+// mxeaez fork: NEXT_PUBLIC_CDN_URL lets production serve images from our own copy of cdn/ (see docs/DEPLOY.md).
+const CDN_URL = process.env.NEXT_PUBLIC_CDN_URL || 'https://tools.runescape.wiki/osrs-dps/cdn';
+export const getCdnImage = (filename: string) => `${CDN_URL}/${filename}`;
 
 export const isDevServer = () => process.env.NODE_ENV === 'development';
 

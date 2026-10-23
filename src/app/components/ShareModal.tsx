@@ -2,7 +2,7 @@ import React, { createRef, useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { useStore } from '@/state';
 import Modal from '@/app/components/generic/Modal';
-import { generateShortlink } from '@/utils';
+import { generateShortlink, SHORTLINKS_DISABLED } from '@/utils';
 import { toast } from 'react-toastify';
 import { IconClipboardCopy, IconExternalLink } from '@tabler/icons-react';
 
@@ -26,11 +26,26 @@ const ShareModal: React.FC = observer(() => {
       }
     }
 
-    if (ui.showShareModal) {
+    if (ui.showShareModal && !SHORTLINKS_DISABLED) {
       generate();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ui.showShareModal]);
+
+  if (SHORTLINKS_DISABLED) {
+    // mxeaez fork: no shortlink backend of our own, so explain instead of calling the OSRS Wiki's.
+    return (
+      <Modal
+        isOpen={ui.showShareModal}
+        setIsOpen={(b) => store.updateUIState({ showShareModal: b })}
+        title="Share"
+      >
+        <div className="text-sm">
+          <p>Share links are not available on this site yet. Your loadouts are saved in this browser automatically.</p>
+        </div>
+      </Modal>
+    );
+  }
 
   return (
     <Modal

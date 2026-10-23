@@ -5,7 +5,7 @@
   "author": "Jayden Bailey (https://weirdgloop.org)",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && node scripts/copyCdn.mjs",
     "build-staging": "env-cmd -f .env.staging next build",
     "build-docker": "docker build -t weirdgloop/osrs-dps-calc .",
     "build-docker-scraper": "docker build -t weirdgloop/osrs-dps-calc:scraper --target=scraper-dev .",

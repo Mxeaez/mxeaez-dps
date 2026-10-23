@@ -32,10 +32,20 @@ const Footer: React.FC = observer(() => {
             <IconBrandGithub size={15} />
           </a>
           {process.env.GIT_SHA && (
-            <a href={`https://github.com/weirdgloop/osrs-dps-calc/tree/${process.env.GIT_SHA}`} target="_blank">
+            <a href={`https://github.com/Mxeaez/mxeaez-dps/tree/${process.env.GIT_SHA}`} target="_blank">
               {`${process.env.GIT_SHA_SHORT}${process.env.GIT_DIRTY === 'true' ? '*' : ''}`}
             </a>
           )}
+          {/* mxeaez fork credit (GPL-3.0; see NOTICE) */}
+          <div data-testid="fork-credit">
+            Fork of the
+            {' '}
+            <a href="https://github.com/weirdgloop/osrs-dps-calc" target="_blank">OSRS Wiki DPS calculator</a>
+            {' '}
+            &#183;
+            {' '}
+            <a href="https://github.com/Mxeaez/mxeaez-dps" target="_blank">source on GitHub</a>
+          </div>
         </div>
         <div>
           <button
