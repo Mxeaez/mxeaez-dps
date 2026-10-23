@@ -104,6 +104,20 @@ Mechanics for later phases:
 - Below 30% HP it flies permanently with no shield (Strategies) → use the Flying version for the last 30%.
 - Strategy box lists "Weak to Heavy Ranged, 80% fire weakness, 20 Crush Defence".
 
+### Phase 3 — how each mechanic is modelled (re-read 2026-10-22: page `?action=raw` + Strategies → *Archive Guardian*)
+
+| Mechanic (wiki wording) | Calculator |
+|---|---|
+| Two infobox versions. Flying: `flying`, fire 80%, slash 110 / light 75 / standard 120. Grounded: no attributes, fire 40%, slash 90 / light 50 / standard 115. Other stats shared. | Two monster versions from the wiki, unchanged. Weakness % goes through upstream's spell-element code (max hit `+ trunc(base × %)`, accuracy `+ trunc(roll × %)`); only fire spells benefit, powered staves (no element) don't. |
+| "ranged, magic and halberds can damage it in this state" (flying) | Upstream `MonsterAttribute.FLYING` rule in `isImmune`: melee deals 0 unless the weapon is a polearm (halberds) or a salamander. Salamanders aren't named by the wiki but are upstream's generic flying rule — kept. Spears/hastas, scythes etc. deal 0 while flying. |
+| "It is immune to Ancient Magicks." | New `src/lib/fracturedArchive/immunities.ts` (`SPELLBOOK_IMMUNITIES`): any `ancient` spellbook spell → `isImmune` returns true (0 damage, same as upstream's Fareed spell immunity) and a spell warning ("The selected monster is immune to this spell.") shows next to the spell in the UI. Applies to both versions (one NPC). |
+| "Magic level reducing effects [Accursed sceptre], etc.) seem to be absorbed." | Same module, `MAGIC_DRAIN_IMMUNE_IDS`: in `DefenceReduction.ts` the Magic level can't go below its undrained value for AG, so accursed (magic part), seercull and BGS overflow don't lower Magic. The **Defence part of the accursed spec still applies** (wording only covers magic level effects; floor 156 still applies). "seem to be" = community observation (**unverified** whether truly all magic drains). |
+| Shield bar while flying ("1490 health shield in 6-scale", charging inert guardians ≈ 596) | **Not modelled.** Both versions keep the infobox 550 HP, so TTK on Flying = time to remove 550 HP (the final flying phase), not the shield. Reasons: shield HP is a single community note at one party size with no scaling curve (**unverified**), and the HP-bar phases are what TTK should measure. If shield TTK is wanted later, add it as a phase-8 helper, not as monster HP. |
+| "After reaching 30% health, the Guardian immediately begins flying … no longer possess a shield" | No new version: the wiki gives no separate stats, so use the **Flying** version for the last 30% (flying rule + 80% fire weakness) — **unverified** that stats equal the shielded flying form. RuneLite id 16660 `TFA_GUARDIAN_UNSHIELDED` is probably this form (already in `ARCHIVE_GUARDIAN_IDS`). |
+| "During the downed phase the fire weakness goes from 80% down to 40%" | = Grounded version. |
+| Defence floor 156 | Phase 2 (`FracturedArchive.ts`). |
+| Mushrooms/weary (slower attack speed), tendrils, laser, vengeance | Player-side or positional; not modelled (no effect on the calc's per-attack DPS; weary would reduce attack speed but no amount is published). |
+
 ## The Smorks
 
 | Field | Value |

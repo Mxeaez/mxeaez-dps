@@ -19,6 +19,7 @@ import { keys } from '@/utils';
 import { MonsterAttribute } from '@/enums/MonsterAttribute';
 import { Factor } from '@/lib/Math';
 import { getFracturedArchiveDefenceFloor } from '@/lib/scaling/FracturedArchive';
+import { isImmuneToMagicLevelDrains } from '@/lib/fracturedArchive/immunities';
 
 export const getDefenceFloor = (m: Monster): number => {
   if (VERZIK_IDS.includes(m.id) || VARDORVIS_IDS.includes(m.id)) {
@@ -72,11 +73,13 @@ export const getDefenceFloor = (m: Monster): number => {
 const applyDefenceReductions = (m: Monster): Monster => {
   const baseSkills = m.skills;
   const defenceFloor = getDefenceFloor(m);
+  // Fractured Archive: some bosses absorb magic level drains (accursed, seercull, ...)
+  const floors: Partial<Monster['skills']> = { def: defenceFloor, magic: isImmuneToMagicLevelDrains(m) ? m.skills.magic : 0 };
 
   const reductions = m.inputs.defenceReductions;
   const newSkills = (current: Monster, skills: Partial<Monster['skills']>): Monster => {
     keys(skills).forEach((k) => {
-      const floor = k === 'def' ? defenceFloor : 0;
+      const floor = floors[k] ?? 0;
       skills[k] = Math.max(floor, skills[k]!);
     });
     return ({

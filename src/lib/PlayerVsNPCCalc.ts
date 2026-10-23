@@ -91,6 +91,7 @@ import {
   rubyBolts,
 } from '@/lib/dists/bolts';
 import { burningClawDoT, burningClawSpec, dClawDist } from '@/lib/dists/claws';
+import { isImmuneToSpell } from '@/lib/fracturedArchive/immunities';
 
 const PARTIALLY_IMPLEMENTED_SPECS: string[] = [
   'Ancient godsword',
@@ -2096,6 +2097,9 @@ export default class PlayerVsNPCCalc extends BaseCalc {
         || (styleType === 'ranged' && !this.player.equipment.ammo?.name?.includes('arrow'))) {
         return true;
       }
+    }
+    if (styleType === 'magic' && isImmuneToSpell(this.monster, this.player.spell)) {
+      return true;
     }
     // Eclipse moon clone is immune to non-melee attacks
     if (ECLIPSE_MOON_IDS.includes(this.monster.id) && this.monster.version === 'Clone' && !this.isUsingMeleeStyle()) {

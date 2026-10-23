@@ -21,6 +21,7 @@ import { EquipmentCategory } from '@/enums/EquipmentCategory';
 import { getRangedDamageType } from '@/types/PlayerCombatStyle';
 import { AttackDistribution, HitDistribution } from '@/lib/HitDist';
 import { Spellement } from '@/types/Spell';
+import { isImmuneToSpell } from '@/lib/fracturedArchive/immunities';
 
 export interface CalcOpts {
   loadoutName?: string,
@@ -825,6 +826,10 @@ export default class BaseCalc {
         spell: null,
       };
       this.addIssue(UserIssueType.SPELL_WRONG_MONSTER, 'This spell cannot be cast on the selected monster.');
+    }
+
+    if (isImmuneToSpell(this.monster, this.player.spell)) {
+      this.addIssue(UserIssueType.SPELL_WRONG_MONSTER, 'The selected monster is immune to this spell.');
     }
 
     // some weapons are only available to use against certain monsters

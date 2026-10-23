@@ -3,6 +3,25 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 3 — Archive Guardian (2026-10-22)
+
+- Re-read the wiki page and Strategies section; mechanic → model table in `docs/DATA_SOURCES.md` (AG, *Phase 3*).
+- Versions: Flying/Grounded unchanged from the wiki; confirmed upstream flying rule (only halberds/salamanders hit
+  with melee) and fire weakness 80%/40% via the spell-element code. HP stays 550 in both; the flying shield
+  (1490 at 6-scale, **unverified**) is not modelled. Below 30% HP → use Flying (no separate stats, **unverified**).
+- Ancient Magicks immunity + magic-drain absorption: new `src/lib/fracturedArchive/immunities.ts`; hooks in
+  `PlayerVsNPCCalc.isImmune` (+4 lines), `BaseCalc` spell issue (+5), `DefenceReduction` magic floor (+4/-1).
+  Accursed still lowers Defence (to the 156 floor), not Magic.
+- Tests: `src/tests/lib/fracturedArchive/ArchiveGuardian.test.ts` (16): fire surge 48/38 max hit, flying melee,
+  ancients 0 DPS + issue, accursed/seercull/magic def roll, hand-computed Shadow and Fire Surge DPS, UI parity.
+  `yarn test` 388 pass / 4 skipped; `yarn lint`, `tsc --noEmit` clean.
+- UI: `node scripts/verifyArchiveGuardian.mjs` — Max Mage preset + Kodai + Fire Surge: Flying 53 / 4.636 DPS,
+  Grounded 43 / 3.014 (same as the Jest parity test), Ice Barrage 0 DPS with spell warning;
+  `docs/screenshots/phase3-ag-flying.png`, `-grounded.png`, `-ancients.png`.
+
+Unverified / open: shield HP and its scaling; last-30% stats = Flying; whether every magic drain is absorbed.
+Noticed: the party size input shows 1 (red) by default for AG; the calc clamps to 2 (phase 2 behaviour, left as is).
+
 ## Phase 2 fixes — review follow-ups (2026-10-22)
 
 - NPC ids checked against RuneLite gameval `NpcID.java` (now the id reference, cited in DATA_SOURCES.md):
