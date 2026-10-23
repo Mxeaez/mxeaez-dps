@@ -428,7 +428,7 @@ No module: nothing on the wiki changes the damage a player deals beyond the info
 | Mechanic (wiki wording) | Calculator |
 |---|---|
 | Stats: 785 hp, Defence 195, crush 15 / stab 20 / slash 110, magic def 30 (Magic 350), ranged 60 / 120 / 140, air 80% | Infobox, unchanged. Air 80% through upstream's spell-element code (Wind Surge 24 → 43, roll ×1.8). |
-| "Moia begins the fight outside of her arena ... A ranged or magic weapon is required as she is too far to reach with melee or halberds." | **Modelled**: `isOutOfMeleeReach` in `src/lib/fracturedArchive/immunities.ts` (list `OUT_OF_MELEE_REACH_IDS`), hooked into `PlayerVsNPCCalc.isImmune` → every melee style (halberds included) deals 0; `BaseCalc` adds the weapon-slot warning "Melee can't reach this monster: use ranged or magic."; `cantHitReason` "Out of melee reach: ranged or magic only". `hittable.ts` picks it up, so drain plans skip the melee hammers: **2 Tonalztics hits** (195 → 152 → 109, capped 117) = the wiki table's "2 Tonalztics of Ralos". The whole fight is treated as unreachable (**unverified**: the wiki never says she comes into melee range, enrage included). |
+| "Moia begins the fight outside of her arena ... A ranged or magic weapon is required as she is too far to reach with melee or halberds." | **Modelled**: `isOutOfMeleeReach` in `src/lib/fracturedArchive/immunities.ts` (list `OUT_OF_MELEE_REACH_IDS`), hooked into `PlayerVsNPCCalc.isImmune` → every melee style (halberds included) deals 0; `BaseCalc` adds the weapon-slot warning "Melee can't reach this monster: use ranged or magic."; `cantHitReason` "Out of melee reach: ranged or magic only". `hittable.ts` picks it up, so the melee hammers can't drain her. The calculator's **Max-drain buttons** fall back to **2 Tonalztics hits** (195 → 152 → 109, capped 117) = the wiki table's "2 Tonalztics of Ralos". The best-setup **Solo** plan uses only the weapons ticked under "My specs": with the default (Elder maul only) it can't drain Moia at all (P(floor) 0%, ranked at Def 195); the **Team** plan uses the default Tonalztics carrier (1 carrier → 99% to 117). The whole fight is treated as unreachable (**unverified**: the wiki never says she comes into melee range, enrage included). |
 | Defence floor 117 (`195 × 0.6`) | Phase 2 floor. |
 | Undead binders (adds, id 16670, 95 hp, Defence 225, magic def −20) shuffle around; enrage at 33%: binders in a diamond, all must die before her charge completes or the team takes massive damage; "A venator bow is highly recommended" | Not modelled (adds / encounter time). Undead binder is selectable from the generated data. |
 | Magic attack, cough (poison-like DoT), ranged auto | Defensive only. |
@@ -444,6 +444,21 @@ No module: nothing on the wiki changes the damage a player deals beyond the info
 | Defence floor: Strategies table "-"; news hotfix "no cap on their Defence Reduction ... the Dagon'Hai Trio" | 0 (phase 2). Drain plan 1 Elder maul + 2 Tonalztics hits (100 → 65 → 29 → 0). |
 | Elemental Channel: "cast the corresponding elemental spell on them ... Players can splash if their magic accuracy is not high enough"; Tome Empowerment (block projectiles); imps from portals ("Players will always land successful and maximum hits on imps. Killing an imp buffs your next attack, although it is not clear how") | Not modelled (utility casts / adds; the imp buff is unknown). Imps have no infobox. |
 | Elder attacks with ranged + surge spells; full ritual = wipe | Defensive only. |
+
+### Phase 16 inputs: HP per encounter (infobox, party-size scaling unverified, C1)
+
+| Encounter | HP to deal | Not modelled |
+|---|---|---|
+| Archive Guardian | 550 | flying shield ("1490 in 6-scale", UNVERIFIED C4) |
+| Bork + the Smorks | 1500 + 600 | incendiary cannonball damage to Bork |
+| Ezekiel | 3000 | heals when a sword misses him; sword damage when one hits |
+| Dreadnoth | 2100 | slam heals, jelly absorption; the ~10 death jellies (61 hp each) |
+| Moia | 785 | undead binders (95 hp) that must die in enrage |
+| Xarth | 2600 | corpse healing |
+| Dagon'hai trio | 3207 = `dagonhaiEncounterDamage(640)` (5 shared gauges + 7) | each gauge restore spawns 6 imps (2 portals × 3) |
+| Ocellus | P1 2500; P2 timed (damage to the Blade carries 50% to P3); P3 5250 | Soul Split healing, tick-perfect speed-ups |
+
+The wiki states no ordering rules beyond the 8-route layout above (1st and 5th fixed, one of two for each of the 2nd–4th) and the Quartermaster after the 3rd boss. Ezekiel's perfect dodges give +3% spec energy each (not in the spec budget).
 
 Best setup: targets `ezekiel`, `moia` (note "Out of melee reach"), `dagonhai` (phases Shielded / Unshielded; Summary
 row = Shielded only, as Unshielded has the same DPS). Summary: 20 rows × None / Solo / Team = 60 searches. Search spell

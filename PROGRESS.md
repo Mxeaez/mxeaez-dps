@@ -3,6 +3,13 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 15 fixes — review follow-ups (2026-10-23)
+
+- Docs only: Moia drain wording made precise (Max-drain buttons = 2 Tonalztics hits; Solo with the default Elder maul
+  can't drain her; Team = 1 Tonalztics carrier, 99%); UNVERIFIED B15 (Dagon'hai drains shared / persist across
+  gauge restores); DATA_SOURCES "Phase 16 inputs" HP-per-encounter table and ordering notes.
+- `yarn test`, `yarn lint`, `tsc --noEmit` green.
+
 ## Phase 15 — Ezekiel, Moia, Dagon'hai Elder + Monks (2026-10-23)
 
 - Wiki re-read (`?action=raw` + rendered, revision history): Ezekiel, Moia, Dagon'hai Elder / Monk, Undead binder,
@@ -12,7 +19,9 @@ verified, what's unverified / left for later.
   not re-run.
 - **Moia**: "too far to reach with melee or halberds" → `isOutOfMeleeReach` (`immunities.ts`), hooked into
   `PlayerVsNPCCalc.isImmune` (+3) with a weapon-slot warning in `BaseCalc` (+3) and a `cantHitReason`. Drain plans
-  follow automatically via `hittable.ts`: 2 Tonalztics hits → 117 (= wiki table). Air 80% via upstream.
+  follow via `hittable.ts`: the Max-drain buttons fall back to 2 Tonalztics hits → 117 (= wiki table); the best-setup
+  Solo plan with the default specs (Elder maul only) can't drain her (P(floor) 0%, Def 195), Team uses 1 Tonalztics
+  carrier (99%). Air 80% via upstream.
 - **Dagon'hai**: shared stats and health pool; shield gauge depleted 5×, then 7 hp. New `dagonhai.ts`: Phase dropdown
   on all six ids (`DAGONHAI_PHASES`: *Shielded (shield gauge)* default / *Unshielded (after the cauldron explodes,
   7 hp)*; hp only, no stat change on the wiki), chained last in `applyFracturedArchiveScaling`;
