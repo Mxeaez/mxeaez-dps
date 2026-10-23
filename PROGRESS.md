@@ -3,6 +3,16 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 7 fixes — review follow-ups (2026-10-22)
+
+- `drains.ts`: Tonalztics energy now counted in whole charged specs (ceil(hits / 2) × 50%), tie-break fewest hammer
+  specs, then fewest actions. Changed plans: Smorks 1 maul + 7 Tonalztics hits (was 3 + 3; 1+7 / 2+5 / 3+3 / 4+2 all
+  cost 250%), DWH 1 + 7; Dreadnoth 1 + 4 (both weapons); Jelly 1 + 6; Blade DWH 1 + 7 (Elder maul still 2 + 4 = wiki).
+- Documented (drains.ts + DATA_SOURCES.md): presets always use ≥1 hammer spec (no all-Tonalztics plans such as AG's
+  "4 Tonalztics"); the wiki table's Tonalztics counts are hits; Smorks/Dreadnoth wiki sequences reach 0 only if the
+  Tonalztics drain rounds up (unverified, 1 Defence).
+- Tests updated + energy/tie-break test; Playwright `verifyDrainPresets.mjs` re-run (Blade / AG unchanged).
+
 ## Phase 7 — Debuff toggles / max drain (2026-10-22)
 
 - New `src/lib/fracturedArchive/drains.ts` (pure, no React, for the phase 8/9 gear finder): `maxDrainReductions(m,

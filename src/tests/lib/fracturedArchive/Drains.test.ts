@@ -42,12 +42,12 @@ const BOSSES: [string, string, number, number, Plan, Plan, number][] = [
   ['Archive Guardian', 'Flying', 156, 130, { elderMaul: 2 }, { dwh: 2 }, 104],
   ['Archive Guardian', 'Grounded', 156, 130, { elderMaul: 2 }, { dwh: 2 }, 104],
   ['Bork', '', 180, 300, { elderMaul: 2 }, { dwh: 2 }, 120],
-  ['The Smorks', '', 0, 400, { elderMaul: 3, tonalztic: 3 }, { dwh: 2, tonalztic: 5 }, 220],
-  ['Dreadnoth the Jellied', '', 0, 20, { elderMaul: 2, tonalztic: 2 }, { dwh: 1, tonalztic: 4 }, 125],
-  ['Jelly (Dreadnoth)', '', 0, 15, { elderMaul: 2, tonalztic: 4 }, { dwh: 1, tonalztic: 6 }, 100],
+  ['The Smorks', '', 0, 400, { elderMaul: 1, tonalztic: 7 }, { dwh: 1, tonalztic: 7 }, 220],
+  ['Dreadnoth the Jellied', '', 0, 20, { elderMaul: 1, tonalztic: 4 }, { dwh: 1, tonalztic: 4 }, 125],
+  ['Jelly (Dreadnoth)', '', 0, 15, { elderMaul: 1, tonalztic: 6 }, { dwh: 1, tonalztic: 6 }, 100],
   ['Xarth', '', 102, 205, { elderMaul: 2 }, { dwh: 2 }, 68],
   ['Ocellus', 'Phase 1', 129, 100, { elderMaul: 2 }, { dwh: 2 }, 86],
-  ['Ocellus', 'Phase 2', 0, 100, { elderMaul: 2, tonalztic: 4 }, { dwh: 2, tonalztic: 5 }, 250],
+  ['Ocellus', 'Phase 2', 0, 100, { elderMaul: 2, tonalztic: 4 }, { dwh: 1, tonalztic: 7 }, 250],
   ['Ocellus', 'Phase 3', 150, 200, { elderMaul: 2 }, { dwh: 2 }, 100],
 ];
 
@@ -100,10 +100,20 @@ describe('maxDrainReductions per boss', () => {
     expect(maxDrainReductions(getTestMonster('Ocellus', 'Phase 3'), { weapon: 'elderMaul', ayak: false }).reductions.elderMaul).toBe(2);
     expect(maxDrainReductions(getTestMonster('Bork'), { weapon: 'elderMaul', ayak: false }).reductions.elderMaul).toBe(2);
     // The table's Smorks "2 Elder Maul + 4 Tonalztics" and Dreadnoth "1 Elder Maul + 3 Tonalztics" leave 1 Defence
-    // with upstream's truncation (220 -> 143 -> 93 -> 4 x 23 = 92; 125 -> 82 -> 3 x 27 = 81), so the presets use one
-    // more action there (see docs/DATA_SOURCES.md, unverified which is right in game).
+    // with upstream's truncation (220 -> 143 -> 93 -> 4 x 23 = 92; 125 -> 82 -> 3 x 27 = 81); they reach 0 only if the
+    // Tonalztics drain rounds up (24 / 28 per hit). Unverified, see docs/DATA_SOURCES.md.
     expect(drained(getTestMonster('The Smorks'), { ...NONE, elderMaul: 2, tonalztic: 4 }).skills.def).toBe(1);
     expect(drained(getTestMonster('Dreadnoth the Jellied'), { ...NONE, elderMaul: 1, tonalztic: 3 }).skills.def).toBe(1);
+  });
+
+  test('Tonalztics energy is counted in whole specs (2 hits each); ties prefer fewer hammer specs', () => {
+    // Smorks: 1 maul + 7 hits (50 + 4 x 50), 2 + 5 (100 + 3 x 50), 3 + 3 and 4 + 2 all cost 250 -> fewest hammer specs
+    const smorks = getTestMonster('The Smorks');
+    for (const [k, t] of [[1, 7], [2, 5], [3, 3], [4, 2]]) {
+      expect(drained(smorks, { ...NONE, elderMaul: k, tonalztic: t }).skills.def).toBe(0);
+    }
+    expect(maxDrainReductions(smorks, { weapon: 'elderMaul', ayak: false }).reductions)
+      .toMatchObject({ elderMaul: 1, tonalztic: 7 });
   });
 });
 

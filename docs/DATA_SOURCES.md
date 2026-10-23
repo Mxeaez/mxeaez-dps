@@ -408,7 +408,11 @@ Sources:
 
 Rules: Elder maul / DWH → fewest specs of that weapon that reach the floor (cap 6). A % drain can't reach 0, so for
 uncapped bosses the preset adds Tonalztics hits as a finisher (as the wiki table does), choosing the least spec energy
-(hammer 50%, Tonalztic hit 25%), then fewest actions, then fewest hammer specs (Tonalztic cap 8 hits). BGS → damage
+(hammer spec 50%; Tonalztics counted in whole charged specs = 2 hits, 50% each), then the fewest hammer specs, then
+the fewest actions (Tonalztic cap 8 hits). Plans always start with at least 1 spec of the named weapon, so
+all-Tonalztics plans (e.g. the table's "4 Tonalztics of Ralos" for Archive Guardian) are not offered by the
+weapon-named buttons. The wiki table's Tonalztics counts are **hits**, not specs (The Blade: 250 → 163 → 106, then
+4 × 27 = 108 → 0). BGS → damage
 = Defence − floor (drains Defence first, so it stops exactly at the floor; on 300-def Bork that is 120 damage, i.e.
 several specs — "max" with only a BGS). All counts are *successful* specs; misses aren't modelled.
 
@@ -416,18 +420,19 @@ several specs — "max" with only a BGS). All counts are *successful* specs; mis
 |---|---|---|---|---|---|---|
 | Archive Guardian (both) | 260 → 156 | 2 | 2 | 104 | 130 | 4 |
 | Bork | 300 → 180 | 2 | 2 | 120 | 300 | 8 |
-| The Smorks | 220 → 0 | 3 + 3 Tonalztic hits | 2 + 5 | 220 | 400 | 10 |
-| Dreadnoth | 125 → 0 | 2 + 2 Tonalztic hits | 1 + 4 | 125 | 20 | 1 |
-| Jelly (Dreadnoth) | 100 → 0 | 2 + 4 | 1 + 6 | 100 | 15 | 1 |
+| The Smorks | 220 → 0 | 1 + 7 Tonalztic hits | 1 + 7 | 220 | 400 | 10 |
+| Dreadnoth | 125 → 0 | 1 + 4 Tonalztic hits | 1 + 4 | 125 | 20 | 1 |
+| Jelly (Dreadnoth) | 100 → 0 | 1 + 6 | 1 + 6 | 100 | 15 | 1 |
 | Xarth | 170 → 102 | 2 | 2 | 68 | 205 | 6 |
 | Ocellus P1 | 215 → 129 | 2 | 2 | 86 | 100 | 3 |
-| Ocellus P2 (The Blade) | 250 → 0 | 2 + 4 Tonalztic hits (= wiki) | 2 + 5 | 250 | 100 | 3 |
+| Ocellus P2 (The Blade) | 250 → 0 | 2 + 4 Tonalztic hits (= wiki) | 1 + 7 | 250 | 100 | 3 |
 | Ocellus P3 | 250 → 150 | 2 | 2 | 100 | 200 | 5 |
 | Ezekiel / Moia (not modelled further) | 130 → 78 / 195 → 117 | 2 / 2 | 2 / 2 | 52 / 78 | 200 / 30 | 5 / 1 |
 
 **Unverified / differences from the wiki table:** the table's Smorks "2 Elder Maul + 4 Tonalztics" and Dreadnoth
 "1 Elder Maul + 3 Tonalztics" leave **1** Defence with upstream's truncation (220 → 143 → 93, 4 × trunc(185/8) = 92;
-125 → 82, 3 × trunc(220/8) = 81), so the presets use one more action there (3 + 3 and 2 + 2). Either the game rounds
-differently from upstream or the table is approximate; the remaining 1 Defence changes DPS negligibly. Whether the
-table's "4 Tonalztics" means hits or specs is not stated; the arithmetic for The Blade matches 4 hits. The Ayak
+125 → 82, 3 × trunc(220/8) = 81). They reach exactly 0 only if the Tonalztics drain **rounds up** (24 / 28 per hit).
+The Elder maul page says its drain rounds down (75 → 49 example), so Tonalztics rounding up is the plausible
+explanation — unverified, 1 Defence difference, kept as upstream computes it. Smorks ties at 250% energy between
+1 + 7, 2 + 5, 3 + 3 and 4 + 2; the fewest-hammer-specs tie-break picks 1 + 7 (phase 7 review). The Ayak
 "specs" column is only damage / 40 — the real count depends on the player's spec damage (use `ayakSpecsToZero`).

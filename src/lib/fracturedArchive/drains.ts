@@ -17,9 +17,15 @@ import applyDefenceReductions, { getDefenceFloor } from '@/lib/scaling/DefenceRe
  * - Elder maul / DWH: the fewest specs of that weapon that reach `getDefenceFloor(m)`, up to {@link MAX_HAMMER_SPECS}.
  *   A % drain can't reach 0 on its own (it stalls at a few levels), so for uncapped bosses (floor 0) the preset
  *   finishes with Tonalztics of Ralos hits, as in the wiki Strategies "Maximum defence reduction" table
- *   (e.g. The Blade: "2 Elder Maul + 4 Tonalztics of Ralos"). Among combinations that reach the floor it picks the
- *   least special attack energy (hammer spec 50%, one Tonalztic hit 25% = half of a charged 2-hit spec), then the
- *   fewest actions, then the fewest hammer specs.
+ *   (e.g. The Blade: "2 Elder Maul + 4 Tonalztics of Ralos"; the table's Tonalztics counts are hits, not specs).
+ *   Among combinations that reach the floor it picks the least special attack energy (hammer spec 50%; Tonalztics
+ *   counted in whole charged specs of 2 hits, 50% each), then the fewest hammer specs, then the fewest actions.
+ *   Plans always start with at least 1 spec of the named weapon, so all-Tonalztics plans (e.g. the table's
+ *   "4 Tonalztics of Ralos" for Archive Guardian) are not offered by these presets.
+ *   The table's Smorks "2 Elder Maul + 4 Tonalztics" and Dreadnoth "1 Elder Maul + 3 Tonalztics" reach exactly 0
+ *   only if the Tonalztics drain rounds up (24 / 28 per hit); upstream truncates (23 / 27), leaving 1 Defence. The
+ *   Elder maul page says its drain rounds down (75 -> 49), so Tonalztics rounding up is the plausible explanation;
+ *   **unverified**, kept as upstream computes it.
  * - BGS: Bandos godsword damage equal to (defence − floor); the BGS drains Defence first, so this lands exactly on
  *   the floor (needs several specs on 300-def Bork — that's what "max" means with only a BGS).
  * - Ayak: Eye of Ayak's Soul Rend lowers the target's Magic Defence *bonus* by the damage dealt, floored at 0
@@ -58,7 +64,8 @@ export const MAX_HAMMER_SPECS = 6;
 export const MAX_TONALZTIC_HITS = 8;
 
 const SPEC_ENERGY_HAMMER = 50;
-const SPEC_ENERGY_TONALZTIC_HIT = 25;
+/** One charged Tonalztics of Ralos spec (50%) hits twice; an odd hit count still costs a whole spec. */
+const SPEC_ENERGY_TONALZTIC_SPEC = 50;
 
 const withReductions = (m: Monster, reductions: DefenceReductions): Monster => ({
   ...m,
@@ -94,14 +101,14 @@ const hammerPlan = (base: Monster, weapon: 'elderMaul' | 'dwh', floor: number): 
     for (let tonalztic = 1; tonalztic <= MAX_TONALZTIC_HITS; tonalztic++) {
       const r = { ...emptyReductions(), [weapon]: hammer, tonalztic };
       const def = Math.max(floor, drain(base, r).skills.def);
-      const energy = hammer * SPEC_ENERGY_HAMMER + tonalztic * SPEC_ENERGY_TONALZTIC_HIT;
+      const energy = hammer * SPEC_ENERGY_HAMMER + Math.ceil(tonalztic / 2) * SPEC_ENERGY_TONALZTIC_SPEC;
       const actions = hammer + tonalztic;
       const better = !best
         || def < best.def
         || (def === best.def && (
           energy < best.energy
-          || (energy === best.energy && actions < best.actions)
-          || (energy === best.energy && actions === best.actions && hammer < best.hammer)));
+          || (energy === best.energy && hammer < best.hammer)
+          || (energy === best.energy && hammer === best.hammer && actions < best.actions)));
       if (better) {
         best = {
           r, def, energy, actions, hammer,
