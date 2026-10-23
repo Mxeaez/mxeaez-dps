@@ -20,7 +20,7 @@ Out of scope: Ezekiel, Moia, Dagon'hai Elder/Monks (add later if wanted; they co
 
 - Party-size HP scaling formula: wiki only says "all bosses' hitpoints scale to the amount of players, minimum 2".
 - Ocellus Phase 2 has no hitpoints / NPC id on the wiki.
-- 21 Oct hotfix: defence drain cap of 60% of base on Archive Guardian, Ezekiel, Moia, Xarth, Ocellus. Smorks / Bork / Dreadnoth caps unknown.
+- 21 Oct hotfix: defence drain cap of 60% of base on Archive Guardian, Ezekiel, Moia, Xarth, Ocellus (+ Bork per the news quote on the wiki boss pages). Smorks / Dreadnoth caps unknown. See `docs/DATA_SOURCES.md`.
 
 ## Phases
 

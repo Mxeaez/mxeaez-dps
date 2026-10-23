@@ -102,5 +102,48 @@
       "element": "water",
       "severity": 50
     }
+  },
+  {
+    "id": 100090,
+    "name": "Ocellus",
+    "version": "Phase 2",
+    "image": "Ocellus_(phase_2).png",
+    "level": 0,
+    "speed": 0,
+    "style": null,
+    "size": 3,
+    "max_hit": 0,
+    "skills": {
+      "atk": 1,
+      "def": 250,
+      "hp": 5250,
+      "magic": 220,
+      "ranged": 1,
+      "str": 1
+    },
+    "offensive": {
+      "atk": 0,
+      "magic": 0,
+      "magic_str": 0,
+      "ranged": 0,
+      "ranged_str": 0,
+      "str": 0
+    },
+    "defensive": {
+      "flat_armour": 0,
+      "crush": 10,
+      "magic": 100,
+      "heavy": 80,
+      "standard": 110,
+      "light": 100,
+      "slash": 120,
+      "stab": 150
+    },
+    "attributes": [],
+    "immunities": {
+      "burn": null
+    },
+    "is_slayer_monster": false,
+    "weakness": null
   }
 ]

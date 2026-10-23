@@ -284,7 +284,7 @@ def main():
         if monster['image'] != '':
             required_imgs.append(monster['image'])
 
-    with open('manual_monster.json', 'r') as f:
+    with open('manual_monster.json', 'r', encoding='utf-8') as f:
         manual_monsters = json.load(f)
         for m in manual_monsters:
             img = m.get('image')
@@ -295,7 +295,7 @@ def main():
     print('Total monsters: ' + str(len(data)))
 
     # Save the JSON
-    with open(FILE_NAME, 'w') as f:
+    with open(FILE_NAME, 'w', encoding='utf-8') as f:
         print('Saving to JSON at file: ' + FILE_NAME)
         json.dump(data, f, ensure_ascii=False, indent=2)
 
