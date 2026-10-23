@@ -45,6 +45,7 @@ import DefensiveReductions from '@/app/components/monster/DefensiveReductions';
 import WeaknessBadge from '@/app/components/monster/WeaknessBadge';
 import Select from '@/app/components/generic/Select';
 import MonsterSelect from './MonsterSelect';
+import FracturedArchiveScalingHint from './FracturedArchiveScalingHint';
 import HelpLink from '../HelpLink';
 import AttributeInput from '../generic/AttributeInput';
 
@@ -230,6 +231,7 @@ const MonsterContainer: React.FC = observer(() => {
             <img src={raidsIcon.src} alt="" className="inline-block" />
             {' '}
             Party size
+            <FracturedArchiveScalingHint monsterId={monster.id} />
           </h4>
           <div className="mt-2">
             <NumberInput

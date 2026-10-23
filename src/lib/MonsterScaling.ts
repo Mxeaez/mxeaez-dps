@@ -3,6 +3,7 @@ import applyCoxScaling from '@/lib/scaling/ChambersOfXeric';
 import applyTobScaling from '@/lib/scaling/TheatreOfBlood';
 import applyToaScaling from '@/lib/scaling/TombsOfAmascut';
 import applyVardScaling from '@/lib/scaling/Vardorvis';
+import applyFracturedArchiveScaling from '@/lib/scaling/FracturedArchive';
 import applyDefenceReductions from '@/lib/scaling/DefenceReduction';
 import applyMonsterPhases from '@/lib/scaling/Phases';
 
@@ -11,6 +12,7 @@ const ORDER_OF_OPERATIONS: MonsterTransformer[] = [
   applyCoxScaling,
   applyTobScaling,
   applyToaScaling,
+  applyFracturedArchiveScaling,
   applyVardScaling,
   applyMonsterPhases,
   applyDefenceReductions,

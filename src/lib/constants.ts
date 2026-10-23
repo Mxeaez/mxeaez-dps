@@ -1,4 +1,7 @@
 import { CombatStyleStance } from '@/types/PlayerCombatStyle';
+import { FRACTURED_ARCHIVE_BOSS_IDS } from '@/lib/fracturedArchive/constants';
+
+export * from '@/lib/fracturedArchive/constants';
 
 export const BLOWPIPE_IDS: number[] = [
   12926, // regular
@@ -388,6 +391,7 @@ export const PARTY_SIZE_REQUIRED_MONSTER_IDS = [
   ...TOMBS_OF_AMASCUT_MONSTER_IDS,
   ...TOB_MONSTER_IDS,
   ...TOB_EM_MONSTER_IDS,
+  ...FRACTURED_ARCHIVE_BOSS_IDS,
 ];
 
 export const BA_ATTACKER_MONSTERS = [

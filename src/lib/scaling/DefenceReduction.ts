@@ -18,6 +18,7 @@ import {
 import { keys } from '@/utils';
 import { MonsterAttribute } from '@/enums/MonsterAttribute';
 import { Factor } from '@/lib/Math';
+import { getFracturedArchiveDefenceFloor } from '@/lib/scaling/FracturedArchive';
 
 export const getDefenceFloor = (m: Monster): number => {
   if (VERZIK_IDS.includes(m.id) || VARDORVIS_IDS.includes(m.id)) {
@@ -58,6 +59,10 @@ export const getDefenceFloor = (m: Monster): number => {
   }
   if (YAMA_IDS.includes(m.id)) {
     return 145;
+  }
+  const fracturedArchiveFloor = getFracturedArchiveDefenceFloor(m);
+  if (fracturedArchiveFloor !== undefined) {
+    return fracturedArchiveFloor;
   }
 
   // no limit

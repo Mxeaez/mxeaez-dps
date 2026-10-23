@@ -3,6 +3,30 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 2 — Raid mechanics (2026-10-22)
+
+- IDs: new `src/lib/fracturedArchive/constants.ts` (per-boss lists incl. Ocellus P1 16673/16674, P2 100090/16683,
+  Ezekiel, Moia, Dagon'hai; `FRACTURED_ARCHIVE_BOSS_IDS`, `FRACTURED_ARCHIVE_MONSTER_IDS`), re-exported from
+  `src/lib/constants.ts`; bosses added to `PARTY_SIZE_REQUIRED_MONSTER_IDS` so the party size input shows.
+- Defence floors: data-driven table in new `src/lib/scaling/FracturedArchive.ts`, `getDefenceFloor` delegates to it
+  (AG 156, Bork 180, Xarth 102, Ocellus P1 129 / P3 150, Ezekiel 78, Moia 117; Smorks, Dreadnoth, Jelly, Ocellus P2,
+  Dagon'hai 0). Gearscape's `defence_floor` values match all of them (incl. P2 = 0).
+- Party-size HP scaling: researched wiki pages, Gearscape (Playwright + its API/bundle) and the web — no formula or
+  per-size numbers exist; Gearscape has no FA party scaling at all. `applyFracturedArchiveScaling` (registered after
+  ToA in `ORDER_OF_OPERATIONS`, before phases/defence reductions) clamps party size to 2–8 and applies
+  `FRACTURED_ARCHIVE_HP_SCALING`, currently 1/1 for every size (**unverified**, infobox HP everywhere). UI shows an
+  "unverified" tooltip marker next to Party size (new `FracturedArchiveScalingHint.tsx`). `scaleMonsterHpOnly` unchanged
+  (it handles current-HP effects only; FA scaling doesn't depend on current HP).
+- Tests: `src/tests/lib/scaling/FracturedArchive.test.ts` (floors per boss via BGS/DWH/elder maul, 4 DWH on AG = 156,
+  Smorks to 0, HP at sizes 1/2/5/8 for AG/Ocellus P3/Xarth, table factor applied via clamped size, Xarth not a TD:
+  not in `TD_IDS`, no TD phases, arclight demonbane identical to a generic demon). `yarn test` 368 pass / 4 skipped;
+  `yarn lint` clean; `tsc --noEmit` clean.
+- UI: `node scripts/verifyFracturedArchivePartySize.mjs` — party size input + hint shown for AG, HP 550 at party 2
+  and 8 (as implemented); `docs/screenshots/phase2-ag-party2.png`, `-party8.png`.
+
+Unverified / open: the HP scaling curve and which size the infobox HP is; Ocellus P2 floor (0 vs 150); 16674 is
+P1 (wiki) or The Blade (Gearscape); Jelly floor (assumed 0).
+
 ## Phase 1 fixes — review follow-ups (2026-10-22)
 
 - DATA_SOURCES.md: added the Strategies "Maximum defence reduction" table (Smorks 0, Dreadnoth 0, The Blade/P2 0);

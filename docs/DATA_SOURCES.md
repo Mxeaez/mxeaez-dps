@@ -19,10 +19,9 @@ Common sources:
 ## Raid-wide notes (for phase 2)
 
 - HP scaling: "All bosses' hitpoints scale to the amount of players present in the raid, with the minimum scaling
-  being set to two players if the player enters alone." (raid page, *Mechanics/overview*). Formula **not on the
-  wiki** — still a data gap. `monsters.json` HP values are the wiki infobox values; the wiki does not state which
-  party size they correspond to (**unverified** — the Archive Guardian strategy note mentions a "1490 health shield in
-  6-scale", which suggests infobox HP is not the 6-player value).
+  being set to two players if the player enters alone." (raid page, *Mechanics/overview*). See
+  *Party-size HP scaling (phase 2 research)* below — no formula or per-size numbers exist anywhere we could find,
+  so the calculator uses the infobox HP for every party size (**unverified**).
 - Defence drain cap of 60% of base defence (21 Oct 2026 hotfix). **Sources disagree on the list:** the raid page
   *Changes* section lists Archive Guardian, Ezekiel, Moia, Xarth, Ocellus; the news quote on every boss page lists
   Archive Guardian, **Bork**, Ezekiel, Moia, Xarth, Ocellus. Bork's own page states his floor (180), so we treat Bork
@@ -45,6 +44,33 @@ Common sources:
 - Monster images in `cdn/monsters/` are committed, but the app loads images from the upstream CDN
   (`getCdnImage` in `src/utils.ts` → `tools.runescape.wiki/osrs-dps/cdn/`), where the raid images don't exist yet, so
   raid monster images show as broken locally. Fix at deploy time (phase 10) if wanted.
+
+## Party-size HP scaling (phase 2 research, 2026-10-22)
+
+Result: **no published data**. The calculator keeps the wiki infobox HP for every party size 2–8 (solo counts as 2)
+through an identity table `FRACTURED_ARCHIVE_HP_SCALING` in `src/lib/scaling/FracturedArchive.ts`, flagged
+**unverified** in code and with an "unverified" marker next to the party size input. When real numbers appear,
+only that table changes (factor per size; the infobox HP must stay the value at the size it was recorded for).
+
+What was checked:
+
+- **Wiki** (`?action=raw` of The Fractured Archive, The Fractured Archive/Strategies, Archive Guardian, The Smorks,
+  Bork, Dreadnoth the Jellied, Xarth, Ocellus, Ezekiel, Moia): only the one sentence quoted above. No HP-by-team-size
+  table, no formula. The infoboxes have a single `hitpoints` value with no note on which team size it represents
+  (**unverified**). The only scale-specific number is the Archive Guardian *shield* "1490 health shield in 6-scale"
+  (Strategies → *Archive Guardian*), which is not the HP bar (infobox 550) and doesn't pin a size or a curve.
+- **Gearscape** (https://gearscape.net/calculators/dps, driven with Playwright 2026-10-22): Fractured Archive
+  monsters have a `fractured` attribute and a `defence_floor` field but **no party/team size control and no HP
+  scaling** — the monster settings panel has no inputs, and the client bundle only has `partySize` inputs for CoX,
+  ToB and ToA. HP shown is the infobox HP (AG 550, Bork 1500, Smorks 600, Dreadnoth 2100, Xarth 2600, Ocellus
+  P1 2500 / P3 5250, Ezekiel 3000, Moia 785; The Blade 0). So there is no Gearscape HP-by-size table to record.
+- Gearscape's `defence_floor` values (api.gearscape.net `/api/monster/id/<id>`) match our agreed floors exactly:
+  AG 156, Bork 180, Xarth 102, Ocellus P1 129, P3 150, Ezekiel 78, Moia 117, Smorks 0, Dreadnoth 0, Jelly 0,
+  **The Blade (P2) 0** — independent support for P2 = 0.
+- Gearscape lists **16674 as "ocellus (phase 2) (the blade)"**, while the wiki Ocellus infobox gives 16673/16674 as
+  phase 1 ids and The Blade page gives 16683 for The Blade (Repaired). Wiki wins: 16674 stays in `OCELLUS_P1_IDS`
+  (no effect today — monsters.json only contains 16673 for P1). Phase 6 should re-check (**unverified**).
+- Web search (2026-10-22) for per-player HP numbers: only launch guides repeating "2–8 players, solo = 2-scale".
 
 ## Archive Guardian
 
