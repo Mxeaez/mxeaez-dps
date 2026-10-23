@@ -360,6 +360,8 @@ export interface PresetResult {
   accuracy: number;
   /** Set when the preset deals no damage. */
   cantHit?: string;
+  /** Set when evaluating the preset threw (bad item name, calc error, ...); the row then has 0 DPS. */
+  error?: string;
 }
 
 const styleLabel = (style: PlayerCombatStyle, spell: string | null): string => `${style.name} (${style.stance})${spell ? `, ${spell}` : ''}`;
@@ -416,6 +418,33 @@ export const evaluatePreset = (
   return best;
 };
 
+/**
+ * {@link evaluatePreset}, but a preset that throws becomes a 0-DPS error row instead of failing the whole request
+ * (one broken preset must not blank the view).
+ */
+export const safeEvaluatePreset = (...args: Parameters<typeof evaluatePreset>): PresetResult => {
+  try {
+    return evaluatePreset(...args);
+  } catch (e) {
+    const preset = args[1];
+    const message = e instanceof Error ? e.message : String(e);
+    return {
+      preset: preset.name,
+      group: preset.group,
+      note: preset.note,
+      style: { name: '-', type: null, stance: null },
+      spell: null,
+      styleLabel: '-',
+      dps: 0,
+      ttk: null,
+      maxHit: 0,
+      accuracy: 0,
+      cantHit: `Error: ${message}`,
+      error: message,
+    };
+  }
+};
+
 /** Highest DPS first; ties keep the presets.ts order. */
 export const rankResults = (rows: PresetResult[]): PresetResult[] => rows
   .map((r, i) => [r, i] as const)
@@ -450,7 +479,7 @@ export const computeBestSetup = (
   const target = findTarget(targetKey);
   const drains = DRAIN_STATES.map(({ id }) => {
     const { monster, drain } = buildTargetMonster(target, phase, id, assumptions);
-    const rows = rankResults(presets.map((p) => evaluatePreset(
+    const rows = rankResults(presets.map((p) => safeEvaluatePreset(
       basePlayer,
       p,
       monster,
@@ -458,9 +487,9 @@ export const computeBestSetup = (
       target.ttkNotApplicable,
       ttk === 'all',
     )));
-    if (ttk === 'top' && rows.length) {
+    if (ttk === 'top' && rows.length && !rows[0].error) {
       const preset = presets.find((p) => p.name === rows[0].preset)!;
-      rows[0] = evaluatePreset(basePlayer, preset, monster, assumptions, target.ttkNotApplicable, true);
+      rows[0] = safeEvaluatePreset(basePlayer, preset, monster, assumptions, target.ttkNotApplicable, true);
     }
     return { drain, rows };
   });

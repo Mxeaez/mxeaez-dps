@@ -190,7 +190,7 @@ const BossView: React.FC<{
                 <td className="px-2 py-1">
                   <div className="font-bold">{r.preset}</div>
                   <div className="text-[11px] text-gray-500 dark:text-gray-400">
-                    {r.cantHit ? `Can't hit: ${r.cantHit}` : `${r.group}${r.note ? ` · ${r.note}` : ''}`}
+                    {r.cantHit ? `${r.error ? '' : "Can't hit: "}${r.cantHit}` : `${r.group}${r.note ? ` · ${r.note}` : ''}`}
                   </div>
                 </td>
                 <td className="px-2 py-1 text-xs">{r.styleLabel}</td>

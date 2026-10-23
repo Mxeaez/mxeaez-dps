@@ -231,8 +231,8 @@ describe('computation equals the main calculator', () => {
     expect(row.ttk).toBe(direct.ttk);
     expect(row.maxHit).toBe(direct.maxHit);
     expect(row.accuracy).toBe(direct.accuracy);
-    expect(row.maxHit).toBe(69);
-    expect(row.dps).toBeCloseTo(10.427, 3);
+    expect(row.maxHit).toBe(70);
+    expect(row.dps).toBeCloseTo(10.595, 3);
   });
 
   test('computeBestSetup rows equal evaluateLoadout of the rebuilt player (Bork armour 8, Solo)', () => {
@@ -269,6 +269,21 @@ describe('computation equals the main calculator', () => {
       expect(row.dps).toBeGreaterThanOrEqual(evaluateLoadout(p, monster, false).dps);
     }
     expect(['Reap', 'Chop']).toContain(row.style.name);
+  });
+
+  test('a preset that fails to evaluate becomes an error row; the other presets are still ranked', () => {
+    const broken = { ...PRESETS[0], name: 'Broken', equipment: { ...PRESETS[0].equipment, weapon: 'Not an item' } };
+    const [res] = computeBestSetup(generateEmptyPlayer(), [{ targetKey: 'xarth' }], A, [broken, PRESETS[1]], 'top');
+    for (const d of res.drains) {
+      expect(d.rows.map((r) => r.preset)).toEqual([PRESETS[1].name, 'Broken']);
+      expect(d.rows[0].dps).toBeGreaterThan(0);
+      expect(d.rows[0].error).toBeUndefined();
+      const err = d.rows[1];
+      expect(err.dps).toBe(0);
+      expect(err.ttk).toBeNull();
+      expect(err.error).toMatch(/Not an item/);
+      expect(err.cantHit).toMatch(/^Error: /);
+    }
   });
 
   test('rankResults keeps the preset order on ties', () => {

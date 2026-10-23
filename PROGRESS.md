@@ -3,6 +3,20 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 8 fixes — review follow-ups (2026-10-22)
+
+- Boots: every preset now uses "Avernic treads (max)" (BiS for all styles; Primordial/Pegasian/Eternal documented as
+  alternatives in presets.ts). Numbers moved slightly; one winner changed: Bork (armour 8) Team is now Tumeken's shadow
+  10.626 (Inquisitor's + Obligator 10.524); P3 last-quadrant Deflect Melee Solo is now Shadow 7.978. Shadow vs AG Flying
+  Team: 10.595 / 70 (was 10.427 / 69). Full table: docs/BEST_SETUP.md "Results snapshot".
+- docs/BEST_SETUP.md: Obligator caveat corrected (the per-roll-accuracy reading raises the Obligator rows, so the
+  ranking is robust; the development-history reading is noted as unverified).
+- `safeEvaluatePreset`: a preset that throws becomes a 0-DPS error row instead of failing the worker request; test.
+- CLAUDE.md: stop `yarn dev` before `yarn build` (a build corrupts the dev server's `.next`), restart it after.
+- `yarn test` 755 (751 pass / 4 skipped), `yarn lint`, `tsc --noEmit`, `yarn build` clean; `node scripts/verifyBestSetup.mjs`
+  OK (Shadow AG Flying Team 10.595 / 70 = Jest; loaded into the calculator: Bork Team Shadow 10.626 / 68, AG Flying Solo
+  Twisted bow 10.089 / 81 — identical); screenshots re-shot.
+
 ## Phase 8 — Best setup view (2026-10-22)
 
 - New route `/best-setup` (static export → `out/best-setup.html`), "Best setup" button in the top bar (TopBar +12).

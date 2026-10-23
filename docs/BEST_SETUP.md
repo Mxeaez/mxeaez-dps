@@ -62,8 +62,30 @@ opens the calculator — the numbers there are identical (checked by `scripts/ve
 TTK is the expensive part (O(HP × max hit)), so it is computed only for each preset's winning style, and in the
 Summary only for the top preset.
 
+A preset that fails to evaluate (e.g. a misspelt item) shows as a 0-DPS "Error: ..." row instead of breaking the
+view (`safeEvaluatePreset`).
+
 Rows that deal no damage are greyed with the reason (e.g. melee on Archive Guardian (Flying): "Flying: melee can't
 reach it"; Ocellus P1 walking / P3 deflect: "Ocellus is praying against this combat style.").
+
+## Results snapshot (default assumptions, 2026-10-22)
+
+Best preset per boss/phase (default option), DPS under None / Solo / Team:
+
+| Boss / phase | None | Solo | Team |
+|---|---|---|---|
+| Archive Guardian (Flying) | Ascension diamond (e) 8.981 | Ascension diamond (e) 10.905 | Ascension diamond (e) 10.905 |
+| Archive Guardian (Grounded) | Inquisitor's + Obligator 11.413 | 13.061 | 13.061 |
+| The Smorks | Ascension diamond (e) 7.616 | Inquisitor's + Obligator 14.645 | Inquisitor's + Obligator 14.645 |
+| Bork (armour 8) | Inquisitor's + Obligator 8.945 | Inquisitor's + Obligator 10.524 | Tumeken's shadow 10.626 |
+| Bork (Stunned) | Inquisitor's + Obligator 15.677 | 15.677 | 15.677 |
+| Dreadnoth | Inquisitor's + Obligator 13.932 | 15.559 | 15.559 |
+| Jelly | Ascension onyx (e) 13.792 | 14.053 | 14.053 |
+| Xarth | Inquisitor's + Obligator 12.839 | 13.917 | 13.917 |
+| Ocellus P1 (at a corner) | Inquisitor's + Obligator 10.435 | 12.447 | 12.447 |
+| Ocellus P1 (walking) | Ascension diamond (e) 9.813 | 11.404 | 11.404 |
+| Ocellus P2 (The Blade) | Inquisitor's + Obligator 12.060 | 15.551 | 15.551 |
+| Ocellus P3 (quadrants 1-3) | Inquisitor's + Obligator 11.083 | 12.856 | 12.856 |
 
 ## Known caveats
 
@@ -72,9 +94,12 @@ reach it"; Ocellus P1 walking / P3 deflect: "Ocellus is praying against this com
 - **Ocellus P2 (The Blade)**: DPS is damage to the Blade (50% transfers to P3); TTK shown as n/a.
 - **Ocellus P3 last-quadrant options are low-confidence**: deflect strength (full block assumed), whether magic is
   deflected, void-explosion rounding and the attack speed-up after tick-perfect dodges are unverified.
-- **Obligator** (top preset on most melee-able bosses) relies on the phase 7b model: best of 2–4 damage rolls with one
-  accuracy roll, +20/40% vs 2x2/3x3 — the "one accuracy roll" reading is **unverified**; if it turns out to be one
-  accuracy roll per damage roll, the Obligator rows drop.
+- **Obligator** (top preset on most melee-able bosses) uses the phase 7b model: best of 2–4 damage rolls behind a
+  single accuracy roll, +20/40% vs 2x2/3x3. That is the *conservative* reading: if each damage roll has its own
+  accuracy roll (best of N rolls, misses count as 0), the Obligator rows **rise** (review check, Bork armour 8 with the
+  earlier Primordial boots: 8.900 → 11.235 undrained, 10.496 → 12.066 at the floor), so its first places are robust.
+  A third reading from the wiki's development history — each *extra* roll is an accuracy roll against the target's
+  stab/slash defence (the reason stab/slash > crush adds rolls) — is also **unverified** and not modelled.
 - **Zorya's tome**: base max hit 18 flat; the spec and its three empowered follow-up attacks are not modelled, so the
   tome is undervalued.
 - Ascension (e) bolts use the normal diamond/onyx proc numbers (unverified).

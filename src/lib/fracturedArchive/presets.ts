@@ -24,7 +24,8 @@ import Potion from '@/enums/Potion';
  *   "Dizana's quiver" (Charged) not Blessed, "Elidinis' ward (f)" (the BiS shield for the Kodai preset; "(or)" is
  *   cosmetic). Masori uses the "(f)" pieces (fortified, BiS) as asked.
  * - Shadow / Zorya's tome / Twisted bow / Scythe / Obligator / Ascension crossbows are two-handed → no shield.
- * - Boots: Primordial / Pegasian / Eternal (Avernic treads variants exist in the data but aren't used here).
+ * - Boots: "Avernic treads (max)" in every preset (best in slot for all three styles). Alternatives if you don't have
+ *   them: 'Primordial boots' (melee), 'Pegasian boots' (ranged), 'Eternal boots' (magic).
  * - Added "Ancestral + Kodai (best Surge)" so the elemental weaknesses and fragment toggles have a spell to act on.
  */
 
@@ -47,7 +48,7 @@ const MELEE_FILL = {
   cape: 'Infernal cape',
   neck: 'Amulet of rancour',
   hands: 'Ferocious gloves',
-  feet: 'Primordial boots',
+  feet: 'Avernic treads (max)',
   ring: 'Ultor ring',
   ammo: "Rada's blessing 4",
 };
@@ -71,7 +72,7 @@ const MASORI_F = {
   cape: "Dizana's quiver",
   neck: 'Necklace of anguish',
   hands: 'Zaryte vambraces',
-  feet: 'Pegasian boots',
+  feet: 'Avernic treads (max)',
   ring: 'Venator ring',
 };
 
@@ -82,7 +83,7 @@ const ANCESTRAL = {
   cape: 'Imbued Guthix cape',
   neck: 'Occult necklace',
   hands: 'Confliction gauntlets',
-  feet: 'Eternal boots',
+  feet: 'Avernic treads (max)',
   ring: 'Magus ring',
   ammo: "Rada's blessing 4",
 };

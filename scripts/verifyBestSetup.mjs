@@ -3,7 +3,7 @@
  *
  * Usage (dev server running): node scripts/verifyBestSetup.mjs [baseUrl]
  * Opens the "Best setup" view, checks the Shadow row vs Archive Guardian (Flying), Team drain against Jest
- * (src/tests/lib/fracturedArchive/Presets.test.ts: 69 / 10.427), selects Bork and Ocellus P2 and the Summary tab
+ * (src/tests/lib/fracturedArchive/Presets.test.ts: 70 / 10.595), selects Bork and Ocellus P2 and the Summary tab
  * (screenshots docs/screenshots/phase8-bork.png, phase8-ocellus-p2.png, phase8-summary.png), then loads two rows
  * into the main calculator ("Load into calculator") and checks the calculator's DPS / max hit equal the view's.
  */
@@ -81,7 +81,7 @@ const main = async () => {
   await selectBoss(page, 'ag-flying');
   const ag = await readRows(page);
   const shadow = ag.find((r) => r.preset === "Tumeken's shadow (Ancestral)");
-  check(shadow.dps === '10.427' && shadow.maxHit === '69', `AG Flying Team: Shadow ${shadow.dps} / ${shadow.maxHit} (Jest 10.427 / 69)`);
+  check(shadow.dps === '10.595' && shadow.maxHit === '70', `AG Flying Team: Shadow ${shadow.dps} / ${shadow.maxHit} (Jest 10.595 / 70)`);
   const greyed = await page.locator('[data-testid="ranking-row"].opacity-50').count();
   check(greyed === 7, `AG Flying: ${greyed} melee rows greyed (can't hit)`);
 
