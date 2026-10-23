@@ -5,12 +5,26 @@ live at **https://dps.mxeaez.com**.
 
 What this fork adds on top of upstream:
 
-* **The Fractured Archive (raid 4) bosses**: Archive Guardian, The Smorks + Bork, Dreadnoth the Jellied, Xarth and
-  Ocellus (all phases), with party size, defence floors and boss-specific rules, plus the raid's reward items.
-* **Best setup** (`/best-setup`): ranks gear presets per boss and runs a full gear **search** in a web worker.
+* **The Fractured Archive (raid 4) bosses**: Archive Guardian, The Smorks + Bork, Ezekiel, Dreadnoth the Jellied,
+  Moia, Xarth, the Dagon'hai Elder + Monks and Ocellus (all phases), with party size, defence floors and boss-specific
+  rules, plus the raid's reward items (Obligator, Zorya's tome, Ascension crossbows, Zeal, elemental fragments).
+* **Best setup** (`/best-setup`) with four raid tabs — **Fractured Archive, Tombs of Amascut, Chambers of Xeric,
+  Theatre of Blood** — each with the same four tabs, run in a web worker:
+  * **Search**: a gear search per boss / phase over a pool of end-game items (the presets seed it);
+  * **Plan**: the worn set + switch items that minimise the raid's DPS time within 28 inventory slots (per-raid
+    supplies and items always brought);
+  * **Routes** (Fractured Archive; "Encounters" in the other raids): DPS-only clear time per encounter / route for a kit;
+  * **Summary**: the top search result for every boss / phase.
+* **Drain states** None / Solo / Team: Solo = your own spec weapons within your spec energy, Team = the carriers' first
+  round of specs; both rank at the Defence floor when P(floor) ≥ 95%, else at the expected Defence.
+* **Times assume N players at your DPS** (the "Team DPS ×" input; the page says "times assume N players at your DPS"):
+  N defaults to the party size in ToA / CoX / ToB, where upstream scales boss hp with it, and to 1 in the Fractured
+  Archive, whose hp scaling is unknown.
 * Images served from this repo's `cdn/` folder, so new monsters have images.
 
-Unverified values and how to check them in-game: [docs/UNVERIFIED.md](docs/UNVERIFIED.md). Data sources:
+**Known limitations** — no fight simulation (no healing, adds, downtime or switch ticks), unverified Fractured Archive
+hp / Defence scaling, and the per-raid readings: [docs/UNVERIFIED.md](docs/UNVERIFIED.md) (checklist with in-game
+checks, *Known limitations* at the end) and [docs/BEST_SETUP.md](docs/BEST_SETUP.md) (how each tab works). Data sources:
 [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md). Merging upstream: [docs/UPSTREAM_MERGE.md](docs/UPSTREAM_MERGE.md).
 The work is logged in
 [ROADMAP.md](ROADMAP.md) and [PROGRESS.md](PROGRESS.md). See [NOTICE](NOTICE) for license and modification notes,

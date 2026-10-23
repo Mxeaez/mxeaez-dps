@@ -57,9 +57,11 @@ export const COX_DEFAULT_ASSUMPTIONS: BestSetupAssumptions = {
   useZeal: false,
   elementalFragments: false,
   partySize: COX_DEFAULT_PARTY,
+  // copies, so no object is shared with another raid's defaults (phase 22)
+  mySpecs: { ...DEFAULT_ASSUMPTIONS.mySpecs },
   team: {
-    ...DEFAULT_ASSUMPTIONS.team,
     carriers: { ...DEFAULT_ASSUMPTIONS.team.carriers, bgs: 1 },
+    lightbearer: { ...DEFAULT_ASSUMPTIONS.team.lightbearer },
   },
   raid: 'cox',
   cox: { ...DEFAULT_COX_INPUTS },

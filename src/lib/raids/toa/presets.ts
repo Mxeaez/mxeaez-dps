@@ -45,6 +45,12 @@ export const TOA_PRESETS: PresetDef[] = [...PRESETS, ...TOA_EXTRA_PRESETS];
  */
 export const TOA_DEFAULT_ASSUMPTIONS: BestSetupAssumptions = {
   ...DEFAULT_ASSUMPTIONS,
+  // copies, so no object is shared with another raid's defaults (phase 22)
+  mySpecs: { ...DEFAULT_ASSUMPTIONS.mySpecs },
+  team: {
+    carriers: { ...DEFAULT_ASSUMPTIONS.team.carriers },
+    lightbearer: { ...DEFAULT_ASSUMPTIONS.team.lightbearer },
+  },
   potions: { melee: Potion.SMELLING_SALTS, ranged: Potion.SMELLING_SALTS, magic: Potion.SMELLING_SALTS },
   useZeal: false,
   elementalFragments: false,

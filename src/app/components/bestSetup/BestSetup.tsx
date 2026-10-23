@@ -159,7 +159,7 @@ const AssumptionsBox: React.FC<{
             </label>
           </>
         )}
-        <label htmlFor="bs-team-mult" className="flex items-center gap-1" title="Players assumed to deal your DPS in every time shown (Search TTK, Routes / Encounters, Plan). Default: the party size where boss hp scales with it (ToA, CoX), else 1 (Fractured Archive: identity hp table)">
+        <label htmlFor="bs-team-mult" className="flex items-center gap-1" title="Players assumed to deal your DPS in every time shown (Search TTK, Routes / Encounters, Plan). Default: the party size where boss hp scales with it (ToA, CoX, ToB), else 1 (Fractured Archive: identity hp table)">
           Team DPS ×
           <input
             id="bs-team-mult"
@@ -177,7 +177,7 @@ const AssumptionsBox: React.FC<{
           )}
           <span className="text-gray-500 dark:text-gray-400" data-testid="team-time-label">{`(${teamTimeLabel(teamDpsMultiplier(value))})`}</span>
         </label>
-        <label htmlFor="bs-fight" className="flex items-center gap-1" title="Fight length for the spec-energy budget: 100% + 10% per 30 s (15 s with Lightbearer). Rough default until the phase 16 time model.">
+        <label htmlFor="bs-fight" className="flex items-center gap-1" title="Fight length for the Search / Summary spec-energy budget: 100% + 10% per 30 s (15 s with Lightbearer). Routes / Plan use each encounter's own time.">
           Fight length
           <input
             id="bs-fight"

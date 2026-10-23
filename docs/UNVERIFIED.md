@@ -1,8 +1,10 @@
 # Unverified values: a checklist to confirm in-game
 
-Every value or reading in the Fractured Archive model that doesn't come from the wiki's own numbers or isn't confirmed
-by an official source. Sources and reasoning are in [DATA_SOURCES.md](DATA_SOURCES.md); the best-setup consequences are in
-[BEST_SETUP.md](BEST_SETUP.md). Collected in phase 11 (2026-10-22).
+Every value or reading in the raid models (The Fractured Archive, Tombs of Amascut, Chambers of Xeric, Theatre of
+Blood) and the planner that doesn't come from the wiki's own numbers or isn't confirmed by an official source. Sources
+and reasoning are in [DATA_SOURCES.md](DATA_SOURCES.md); the best-setup consequences are in
+[BEST_SETUP.md](BEST_SETUP.md). Collected in phase 11 (2026-10-22); round 2 (phases 13-21) reviewed in phase 22
+(2026-10-23). When you check a row in-game, note it as described in *How to record results* at the end.
 
 The rows are grouped by how much a wrong assumption would matter:
 
@@ -37,6 +39,7 @@ Dagon'hai 0) match the wiki's Strategies table, the boss pages, the news post an
 | A8 | Demonbane effectiveness: Xarth 80%, Ocellus P1/P3 80%, Dreadnoth 25% | Values from the wiki "Demon (attribute)" list (added 20 Oct "per orion", no in-game source) | Emberlight / Arclight / Scorching bow / Purging staff / Dark Demonbane vs Obligator | At 100% the demonbane weapons gain about 25% on Xarth and Ocellus and could win | Emberlight (or Arclight) on Xarth: compare your highest hit with the calculator's max hit. A hit above it means the effectiveness is higher than 80% |
 | A9 | Zorya's tome base max hit | Flat 18 at every Magic level; the spec's empowered follow-up attacks are not modelled | Zorya's tome preset / search rows | If it scales with Magic, a boosted Magic level adds max hit. The spec is undervalued either way | Read the tome's max hit with and without a Magic boost (e.g. a Saturated heart). If it changes, the base scales with Magic |
 | A10 | Moia: melee can't reach her (phase 15) | The whole fight: every melee style (halberds included) deals 0, from the Strategies line "A ranged or magic weapon is required as she is too far to reach with melee or halberds" | Moia: Search / Summary rank only ranged and magic; drain plans use Tonalztics (2 hits) | If she comes into melee range at some point (e.g. enrage), melee setups could win that part | Stand next to her during each part of the fight (incl. enrage) and try to attack with a melee weapon and a halberd |
+| A11 | Fractured Archive **Defence doesn't scale with party size** (round 2 decision) | Only hp scales (the wiki mentions hp only; the hp table is the identity, C1); Defence, the floors (AG 156, Bork 180, ...) and every other stat are the infobox values at every party size | Every FA boss: drain plans (specs to the floor), hit chances and so every ranking. ToA / CoX use upstream's verified Defence scaling; ToB doesn't scale Defence | If Defence rises with the team (as in CoX), accuracy drops more for low-accuracy setups and drains need more specs; the winner can change where two setups are close (e.g. Obligator vs Scythe vs Shadow) | With a Defence plugin (or Monster Examine), read a boss's Defence at the start of the fight at 2 different team sizes (e.g. duo and 6-man). Same number = no scaling. Also note whether the floor (e.g. AG 156 after drains) changes |
 
 ## (B) Changes the numbers, probably not the ranking
 
@@ -51,7 +54,7 @@ Dagon'hai 0) match the wiki's Strategies table, the boss pages, the news post an
 | B7 | Archive Guardian last 30% | Same stats as the Flying version (no shield) | AG (Flying) TTK | Small | Read stats or max hits below 30% |
 | B8 | Xarth below 50% | Same stats as above 50% (one infobox) | Xarth | Small | Compare max hits above and below 50% |
 | B9 | Ocellus P2 (The Blade) attributes | None (infobox blank), so no demonbane | Emberlight / Arclight on the Blade | If it's a demon, demonbane weapons gain on P2 | Emberlight on the Blade: highest hit vs the calculator's max |
-| B10 | Spec energy at each boss (phase 14) | Full 100% at the start of every boss; +10% per 30 s (15 s with Lightbearer); fight length 90 s for every boss | Solo / Team drain plans (spec budget, labels) | Solo plans with more / less energy (e.g. 3 specs instead of 2 changes P(floor) a lot) | Note the spec bar when entering each boss room after using specs on the previous one |
+| B10 | Spec energy at each boss (phase 14) | Full 100% at the start of every boss **in every raid** (FA, ToA, CoX, ToB; also every Olm target and every Sotetseg third, F7 / G7); +10% per 30 s (15 s with Lightbearer); fight length 90 s in Search / Summary, each encounter's own undrained time in Routes / Plan | Solo / Team drain plans (spec budget, labels) | Solo plans with more / less energy (e.g. 3 specs instead of 2 changes P(floor) a lot) | Note the spec bar when entering each boss room after using specs on the previous one |
 | B11 | Elder maul drain on an accurate hit that deals 0 (phase 14) | Counts (wiki says only "successful hit"); matters only under flat armour (Bork 8) | Elder maul hit chance on Bork (76.8%; lower if damage is needed) | Bork maul plans need more specs | Elder maul spec Bork; when the hitsplat is 0 (blue), read his Defence |
 | B12 | Dagon'hai shield gauge (phase 15) | The infobox 640 hp is one gauge shared by the Elder and both Monks, depleted 5 times, then the survivors have 7 hp (`dagonhaiEncounterDamage` = 5 × 640 + 7 = 3207); the gauge scales with party size like the other bosses; "Unshielded" changes no stat | Dagon'hai Phase dropdown (hp only), phase 16 route time (Dagon'hai vs Xarth) | DPS is unaffected; the route time of the Dagon'hai option could be far off (e.g. if each NPC had its own 640, or the gauge isn't 640) | Note the gauge's full HP (Opponent Information) at the start and after each restore, and count the restores; hit an unshielded Dagon'hai and compare max hits |
 | B13 | Ezekiel's stun and enrage (phase 15) | No stat change when a sword stuns him or when he "imbue[s] himself with magic" at 33.3% (the wiki describes none) | Ezekiel (one stat set for the whole fight) | A Defence change in either state would move every Ezekiel number | Compare your max hit / hit rate on Ezekiel while stunned and in enrage with the calculator |
@@ -62,7 +65,7 @@ Dagon'hai 0) match the wiki's Strategies table, the boss pages, the news post an
 
 | # | What | What we assumed | If wrong |
 |---|---|---|---|
-| C1 | **Party-size HP scaling** (see below) | Infobox HP at every party size 2–8 | Expected TTK is wrong in absolute terms; DPS and rankings are unaffected |
+| C1 | **Fractured Archive party-size HP scaling** (see *HP scaling* below; ToA / CoX / ToB use upstream's verified tables) | Infobox HP at every party size 2–8 (`FRACTURED_ARCHIVE_HP_SCALING` = identity) | Expected TTK and every FA route / plan time are wrong in absolute terms (so the FA team-DPS multiplier defaults to 1); DPS and rankings are unaffected; the fastest route only changes if bosses scale differently |
 | C2 | Which party size the infobox HP is for | Unknown | Same as C1 |
 | C3 | Ocellus P2 HP 5250 (= P3 pool) | The phase is timed and 50% of damage goes to P3, so TTK is shown as n/a | None for DPS |
 | C4 | Archive Guardian shield ("1490 in 6-scale") | Calculator / Search: not modelled (Flying TTK counts the 550 HP bar). Routes tab (phase 16): a setting, see D1 | Shield time not shown in the calculator |
@@ -92,6 +95,9 @@ applies to every figure.
 | D12 | Plan tab: candidates | Only the per-phase search results (3 weapons × 2 loadouts per style per phase), the presets, and partial switches between the best 2 loadouts per style are considered (phase 21: + single-piece swaps within a base's weapon, + a raid weapon such as the Dawnbringer on every full candidate) (caps in `PLAN_DEFAULTS`, docs/BEST_SETUP.md *Plan tab*). Greedy + local search, not exhaustive | A kit outside the pool (e.g. a weapon only the 4th-best on every phase) is never found | Raise the caps in `PLAN_DEFAULTS` and compare |
 | D13 | Plan tab: dedupe rule (phase 21) | A kit loadout must save ≥ max(1 s, 1 s per extra slot) of route time (`SWITCH_MIN_SAVING_SECONDS`, `SWITCH_MIN_SECONDS_PER_SLOT`), else it's dropped (skipped when the kit can't clear the route). The plan never swaps a loadout for a cheaper one; that "lighter kit" is offered as an alternative ("−N slots for +X.X s"; ToB −3 slots for +1.9 s). 1 s per slot is a judgment call (a slot ≈ a brew; switching ticks aren't modelled) | A switch more or less in the kit; ToA drops a 0.2 s / 1-slot set | Compare a real run with and without the switch; change the constants in planner.ts |
 | D14 | Plan tab: per-raid defaults (phase 21) | Pinned items and supplies per raid from the Strategies example inventories (docs/BEST_SETUP.md *Per-raid defaults*): ToA 6 restore + 2 salts, Lightbearer + Zaryte crossbow; CoX 2 / 2 / 1 Overload, Dragon pickaxe + Elder maul; ToB 4 / 3 / 1 / 1 / 1, Elder maul. In CoX / ToA the brew / restore counts stand for the raid's own potions | Free slots ± a few; a different kit when slots are tight | — (edit the inputs to your own inventory) |
+| D15 | Plan tab: no resupply | One inventory for the whole raid: supplies are never drunk down and never topped up. Not modelled: the ToB chests after Bloat and Sotetseg (brews / restores; the ToB default 4 / 3 stands for "top up at the chests"), the ToA Helpful Spirit (salts / nectar / tears after two paths), CoX potions made in the raid and dropped by bosses, items banked or dropped mid-raid | Free-slot count off by a few in ToB / ToA / CoX; a kit that only fits after a resupply isn't found | — (model choice; enter the supplies you hold at the tightest point) |
+| D16 | Team-DPS multiplier (all raids, phase 18) | Times assume N players dealing **your** DPS (time = damage ÷ (N × your DPS)); N defaults to the party size where boss hp scales with it (ToA, CoX, ToB), 1 in the Fractured Archive (identity hp table); the planner optimises your kit for your DPS, the team only matters for drains | Absolute times scale with the team's real DPS; rankings and the plan don't change | Compare a real run's per-boss times with the Encounters / Routes tab at your team size |
+| D17 | Spec carriers per raid (phases 14, 18-20) | Team drains use the raid's default carriers: FA / ToA 2 Elder maul + 2 Tonalztics + 1 Ayak (ToA inherits the FA list), CoX the same + 1 BGS, ToB 2 Elder maul + 2 BGS; "My specs" (Solo) default Elder maul + 2 Ayak in every raid | Drained DPS where your team specs differently | — (edit the carriers / My specs to your team) |
 
 ## (E) Tombs of Amascut (phase 18, Encounters tab / planner)
 
@@ -166,9 +172,11 @@ To record it:
 
 ## Known limitations (modelling choices, not data gaps)
 
-- **Specs aren't simulated.** Drains are counted as successful specs (misses aren't modelled), spec weapons (Burning
-  claws, Voidwaker, Elder maul, Dual macuahuitl, ...) are ranked on their normal attacks only, and Zorya's tome's
-  empowered follow-up attacks are not modelled.
+- **Specs aren't simulated as a fight.** The best-setup drain states (Solo / Team, phase 14) use exact spec hit
+  chances and outcome distributions but no timing (every spec at the start of each boss) and no boss healing; the
+  calculator's Max-drain buttons still count every spec as landing. Spec weapons (Burning claws, Voidwaker, Elder maul,
+  Dual macuahuitl, ...) are ranked on their normal attacks only, and Zorya's tome's empowered follow-up attacks are not
+  modelled.
 - **Soulreaper axe** is evaluated at 0 stacks, which undervalues it (~9.0 vs ~11.0 DPS at 5 stacks on Xarth).
 - **Eclipse atlatl** gets the ranged assumptions (Rigour + Ranging potion, no Strength boost), and the Blue Moon /
   Eclipse Moon set effects aren't modelled upstream. Both are undervalued.
@@ -179,9 +187,31 @@ To record it:
   sword misses him (and the sword damage / stun when it hits), Moia's undead binders and the Dagon'hai imps ("killing
   an imp buffs your next attack", effect unknown) and elemental-channel interrupts are not modelled.
 - **Drain presets** always start with at least one spec of the named weapon, so all-Tonalztics plans (the wiki's
-  "4 Tonalztics of Ralos" for AG) aren't offered. Eye of Ayak specs are counted at 40 damage each.
+  "4 Tonalztics of Ralos" for AG) aren't offered (the best-setup Solo / Team plans do use Tonalztics alone where the
+  maul can't hit). Eye of Ayak is a spec **count**: drain = count × the spec's expected damage from the calc (phase
+  14), not a fixed 40 per spec.
 - **Gear search** only tries items in `searchCandidates.ts`. Multi-piece set effects are found only if the set is
   seeded.
 - Adds (Corpses, Void adds, Undead binder) aren't in the raid id lists, so they get no drain-preset buttons and no
   party-size input. Void Siphon / Void Vine images failed to download from the wiki.
-- In `yarn dev`, raid monster images are broken (dev loads images from the upstream CDN); production serves `/cdn`.
+- In `yarn dev`, images come from the deployed copy of `cdn/` (`.env.development`), so a newly added image only shows
+  in dev after a deploy.
+- **Planner** (Plan tab, all raids): free and instant switching, one slot per item, only the candidate pool (search
+  rows, presets, partial and single-piece switches) is searched, no resupply (D10-D15).
+
+## How to record results
+
+Whenever you check a row in a raid:
+
+1. **Note** the row id (e.g. A11, E1, G9), the date, the raid and mode (normal / CM / Hard / Entry, ToA raid level),
+   the **team size**, your gear, and what you saw: the number read off the Defence / HP plugin, the highest hit over
+   how many hits, the count of 0s, the tick count. A screenshot of the plugin or the hitsplats is the best record.
+2. **Put it** in [DATA_SOURCES.md](DATA_SOURCES.md) under the boss's section as a line "In-game check (date, team
+   size): ...", and update the row here: replace *What we assumed* with the observed value and add "**verified
+   <date>**", or move it to *Already verified* at the top. If the observation contradicts the model, keep the row and
+   write what you saw in *If wrong*, so the code can be changed.
+3. **Code to change** (most rows name it): FA hp → `FRACTURED_ARCHIVE_HP_SCALING` (*HP scaling* above); FA Defence
+   scaling (A11) → `src/lib/scaling/FracturedArchive.ts`; time-model shares and counts → the raid's time settings
+   (`src/lib/raids/*/time.ts`, also editable in the Routes / Encounters assumptions box); planner rules → `planner.ts`
+   / `src/lib/raids/planDefaults.ts`. Each change needs a Jest test (CLAUDE.md), and the headline numbers in
+   docs/BEST_SETUP.md move with it.

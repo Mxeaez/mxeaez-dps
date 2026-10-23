@@ -47,8 +47,10 @@ export const TOB_DEFAULT_ASSUMPTIONS: BestSetupAssumptions = {
   useZeal: false,
   elementalFragments: false,
   partySize: TOB_DEFAULT_PARTY,
+  // copies, so no object is shared with another raid's defaults (phase 22)
+  mySpecs: { ...DEFAULT_ASSUMPTIONS.mySpecs },
   team: {
-    ...DEFAULT_ASSUMPTIONS.team,
+    lightbearer: { ...DEFAULT_ASSUMPTIONS.team.lightbearer },
     carriers: {
       elderMaul: 2, dwh: 0, bgs: 2, tonalztics: 0, ayak: 0,
     },

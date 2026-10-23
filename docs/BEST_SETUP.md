@@ -15,8 +15,8 @@ Summary's "best preset" reference; `computeBestSetup` / `evaluatePreset` stay as
 
 ## Raid tabs and Tombs of Amascut (phase 18)
 
-**Raid tabs** at the top of `/best-setup`: *Fractured Archive* (default) and *Tombs of Amascut* (CoX and ToB come in
-phases 19-20). Each raid keeps its own assumptions while you switch; the four tabs (Search, Plan, Routes / Encounters,
+**Raid tabs** at the top of `/best-setup`: *Fractured Archive* (default), *Tombs of Amascut*, *Chambers of Xeric*
+(phase 19) and *Theatre of Blood* (phase 20). Each raid keeps its own assumptions while you switch; the four tabs (Search, Plan, Routes / Encounters,
 Summary) are the same code driven by a **`RaidConfig`** (`src/lib/raids/index.ts`). Shared code has no raid branches:
 the pure modules read the per-raid rules from **`RaidBase`** (`src/lib/raids/base.ts`: targets, party-size range,
 monster inputs, scaling inputs with their own get / set, default assumptions, presets, pool, `hpScalesWithParty`,
@@ -78,8 +78,8 @@ scaled by accuracy (and the double Twisted bow scaling there); melee always max 
     Core-ejected entry's 4500-based hp) is gone; P3 95% of hp + 25% enraged (5% left + 20% heal, Defence 180, floor
     120); *P3 siphons* share (default 0). *P2 warden* setting: Elidinis' (default; magic only) or Tumeken's (ranged
     only); P3 uses Tumeken's entries (identical stats).
-- **Plan tab**: the same planner; ToA supplies default to 8 "Other" slots (salts / nectar / tears from the supply
-  chest) and every style keeps the salts boost.
+- **Plan tab**: the same planner; every style keeps the salts boost (phase 21 supplies: 6 restore + 2 Other, see
+  *Per-raid defaults* below; phase 18 had 8 "Other" slots).
 - Not modelled: invulnerable time (Akkha's memory blast, Ba-Ba's rolling stones, Zebak's specials, siphon phases),
   paths and puzzles, the phantoms in P3, Kephri's healing (soldier scarab swarms), boulders / swarms / eggs (max hits),
   the warden switching prayers between downs, specs during the core (dragon dagger + liquid adrenaline).
@@ -194,7 +194,9 @@ Super restore 4, Ranging potion 2, Super combat 1, Magic boost (Saturated heart)
 non-items** (default 1);
 **Items I always bring** (default Lightbearer, Elder maul, Zaryte crossbow, Kodai wand, Ancestral robe top, Elidinis'
 ward (f); editable with the calculator's item search; each takes a slot unless a kit loadout wears it, and any loadout
-may use them for free). Time-model settings are the Routes tab defaults (`RAID_TIME_DEFAULTS`).
+may use them for free). Time-model settings are the raid's Routes / Encounters tab defaults (`raid.defaultTimeSettings`;
+FA: `RAID_TIME_DEFAULTS`). Phase 22: `plan()` and `computeRouteComparison()` throw if the time model passed isn't the
+assumptions' raid's (`assertTimeModelForRaid`), since both default to the Fractured Archive's.
 
 **Supplies → DPS** (review fix): Super combat carries the melee boost, Ranging potion the ranged one, the Magic boost
 slot the magic one (`SUPPLY_POTION_GROUP`). A style whose supply count is 0 is evaluated **without a potion**

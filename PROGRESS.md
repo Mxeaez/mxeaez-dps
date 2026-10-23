@@ -3,6 +3,29 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 22 — Final review, round 2 (2026-10-23)
+
+- Cross-cutting pass over `src/lib/raids/**`, the planner / time model and the round-2 upstream hooks (ToA prayers,
+  CoX Olm melee, ToB nylocas / Dawnbringer, Moia reach): the hooks only fire for their own id lists; shared code has no
+  raid branches. Fixes:
+  - `plan()` / `computeRouteComparison()` defaulted to the FA time model, so a caller that forgot the model would time
+    ToA / CoX / ToB with FA encounters: new `assertTimeModelForRaid` (raidTime.ts) throws on a mismatch.
+  - ToA / CoX / ToB default assumptions shared the FA `mySpecs` / `team` objects by reference: now copies.
+  - Stale UI tooltips (Team DPS default lists ToB; fight length = Search / Summary budget) and docs (ToA Plan supplies,
+    Plan time settings per raid, raid tabs, FA Defence-not-scaling note, dev images, Ayak spec count, spec misses).
+- New `src/tests/lib/raids/CrossRaid.test.ts` (22 tests): per-raid defaults and no leaks (FA → ToA → FA round trip),
+  monster inputs stay in their raid, model guard; every target of every raid in every phase builds, evaluates a preset
+  per style and has a drain model; every raid's plan on a reduced pool; per-encounter times of a fixed preset kit
+  pinned per raid (fast); the four headline totals (FA 23:18.8, ToA 14:20.2, CoX 6:41.9, ToB 7:32.2) all reproduced in
+  Jest, gated by `RUN_SLOW_TESTS=1` (~2 min).
+- Docs: UNVERIFIED.md covers all four raids + the planner (new A11 FA Defence vs party size, D15 no resupply, D16
+  team-DPS multiplier, D17 carriers per raid; B10 / C1 widened; *How to record results*); UPSTREAM_MERGE.md round-2
+  totals (20 upstream src files, +320 / −26; worker.ts back to upstream), fix claims re-checked, two upstream spell /
+  staff typos recorded (not fixed); README features (4 raids, Search / Plan / Routes / Summary, drain states, time
+  convention, limitations); ROADMAP 13-22 done + *Future work (round 3)*.
+- Verify scripts 13-21 all OK against the dev server (21 re-run after a hot reload mid-run); tracked screenshots
+  restored. `yarn test` 1212 pass / 8 skipped; lint, tsc clean.
+
 ## Phase 21 fixes — review follow-ups (2026-10-23)
 
 - The plan no longer swaps a loadout for a cheaper one (it raised ToB 7:32.2 → 7:34.1 to free 3 unused slots):

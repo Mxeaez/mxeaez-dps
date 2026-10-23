@@ -19,10 +19,12 @@ import {
   GearSearchOptions, GearSearchProgress, GearSearchResult, runGearSearch, SearchItem, SearchRow, StyleOption,
 } from '@/lib/fracturedArchive/search';
 import {
+  assertTimeModelForRaid,
   compareRoutes,
   createKitEvaluator,
   EncounterId,
   encounterTime,
+  FA_TIME_MODEL,
   KitChoice,
   KitLoadout,
   PhaseQuery,
@@ -810,6 +812,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
   const total = inputs.totalSlots ?? INVENTORY_SLOTS;
   const cancelled = () => hooks.shouldCancel?.() === true;
   const progress = (p: PlanProgress) => hooks.onProgress?.(p);
+  assertTimeModelForRaid(tuning.model ?? FA_TIME_MODEL, assumptions);
   const exactA = raidTimeAssumptionsFrom(assumptions, drain, settings, tuning.model);
   const allRoutes = routesFor(exactA);
   const routes = inputs.route === 'all' ? allRoutes : allRoutes.filter((r) => r.id === inputs.route);

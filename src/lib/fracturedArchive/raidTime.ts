@@ -17,7 +17,7 @@ import {
 } from '@/lib/fracturedArchive/presets';
 import { raidBase, teamDpsMultiplier } from '@/lib/raids/base';
 import {
-  CoxInputs, TimeSettings, ToaInputs, TobInputs,
+  CoxInputs, DEFAULT_RAID, RaidId, TimeSettings, ToaInputs, TobInputs,
 } from '@/lib/raids/types';
 import {
   GearSearchProgress, runGearSearch, SearchRow, searchRowToPlayer, StyleOption,
@@ -508,6 +508,18 @@ export const FA_TIME_MODEL: RaidTimeModel = {
 const modelOf = (a: RaidTimeAssumptions): RaidTimeModel => a.model ?? FA_TIME_MODEL;
 
 /**
+ * Phase 22: the time model must be the assumptions' raid's (model ids = raid ids). Both entry points
+ * (`computeRouteComparison`, the planner) default to the Fractured Archive's model, so a caller that forgets to pass the
+ * raid's model would otherwise time ToA / CoX / ToB targets with the FA encounters; this makes that an error.
+ */
+export const assertTimeModelForRaid = (model: RaidTimeModel, a: { raid?: RaidId }): void => {
+  const raid = a.raid ?? DEFAULT_RAID;
+  if (model.id !== raid) {
+    throw new Error(`Raid time model '${model.id}' doesn't match the assumptions' raid '${raid}': pass that raid's time model (raidConfig(raid).time)`);
+  }
+};
+
+/**
  * Time of one encounter. Drains (Solo / Team) are planned with the encounter's own length: a first pass without drains
  * gives that length, then the encounter is evaluated once more with the drain state planned for it (one fixed-point
  * iteration; the drained pass is shorter, which would only give a Solo plan less energy, so the plan is a little
@@ -758,6 +770,7 @@ export const computeRouteComparison = (
 ): RouteComparisonResult => {
   const start = Date.now();
   const { assumptions, drain, settings } = req;
+  assertTimeModelForRaid(model, assumptions);
   const searchBest: PhaseSearchBest = { ...req.searchBest };
   const timeA = raidTimeAssumptionsFrom(assumptions, drain, settings, model);
   const targets = req.kit.searchGroups.length ? model.requiredPhaseTargets(timeA) : [];

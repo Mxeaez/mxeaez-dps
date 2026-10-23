@@ -1,9 +1,18 @@
 # Merging upstream (weirdgloop/osrs-dps-calc)
 
 This fork branched from upstream `89c3e25`. Most raid code is in new files (`src/lib/fracturedArchive/*`,
-`src/lib/scaling/FracturedArchive.ts`, `src/app/components/bestSetup/*`, `src/app/components/monster/FracturedArchive*`,
-`src/worker/searchWorker*.ts`, `docs/`, `scripts/verify*.mjs`, `scripts/copyCdn.mjs`), which never conflict. Upstream
-files only get small hooks that call into those modules.
+`src/lib/raids/**` (round 2: ToA, CoX, ToB), `src/lib/scaling/FracturedArchive.ts`, `src/app/components/bestSetup/*`,
+`src/app/best-setup/*`, `src/app/components/monster/FracturedArchive*`, `src/worker/searchWorker*.ts`, `docs/`,
+`scripts/verify*.mjs`, `scripts/copyCdn.mjs`), which never conflict. Upstream files only get small hooks that call into
+those modules.
+
+**Totals (phase 22, `git diff --diff-filter=M 89c3e25 HEAD -- src`)**: 20 upstream source files modified, **+320 / −26**
+lines (end of round 1: 21 files, +260 / −26). Round 2 (phases 13-21) added +60 net lines to upstream files:
+`PlayerVsNPCCalc.ts` +18 (ToA prayer, CoX Olm, ToB nylocas / Dawnbringer, Moia hooks), `BaseCalc.ts` +11 (three
+calculator warnings), `constants.ts` +14 (4 ToB ids, phase registrations), `CalcWorkerTypes.ts` +23 net (`RAID_ROUTES`,
+`RAID_PLAN`; `BEST_SETUP` removed), and `worker.ts` is back to upstream's version (phase 13 removed the `BEST_SETUP`
+handler). `git diff --stat 89c3e25 HEAD -- src/lib/PlayerVsNPCCalc.ts src/lib/BaseCalc.ts src/lib/Equipment.ts
+src/lib/constants.ts src/enums/Prayer.ts src/lib/scaling src/worker src/app` (new files included): 31 files, +2990 / −24.
 
 ## How to merge
 
@@ -21,7 +30,10 @@ npx tsc --noEmit
 
 Then, with `yarn dev` running, check the raid bosses in the UI (`node scripts/verifyFracturedArchiveMonsters.mjs`,
 `verifyBestSetup.mjs`) and
-compare the best-setup numbers with the snapshot in `docs/BEST_SETUP.md`.
+compare the best-setup numbers with the snapshot in `docs/BEST_SETUP.md`. Round 2: `src/tests/lib/raids/*` pin the
+ToA / CoX / ToB hp and Defence scaling (upstream's), so an upstream scaling change fails there; `CrossRaid.test.ts` pins
+per-encounter times, and `$env:RUN_SLOW_TESTS=1; node .yarn/releases/yarn-4.9.2.cjs test CrossRaid` the four headline
+plan totals (`scripts/verifyPhase21.mjs` checks them in the browser).
 
 ## Generated data: regenerate, don't hand-merge
 
@@ -42,7 +54,7 @@ values (Bork's flat armour comes from the phase input, so the generated 0 is exp
 
 | File | +/− | What | Conflict risk |
 |---|---|---|---|
-| `src/lib/PlayerVsNPCCalc.ts` | 67 / 6 | imports; Zorya's tome accuracy, max hit and spec; fragment max-hit bonus; stunned-Bork accuracy; Obligator thrust distribution (+ Maggot King exclusion); ascension (e) bolts added to the diamond/onyx `wearing` lists; Bork magic resistance and Ocellus void-explosion transforms; `isImmune` checks (incl. Moia out of melee reach, phase 15; ToA prayers, phase 18: +4); CoX Olm melee divisor (phase 19: +5); ToB nylocas style / Dawnbringer `isImmune` check (phase 20: +5); 3 capitalisation fixes in `UNIMPLEMENTED_SPECS` | **Medium–high**: about 9 separate places in upstream's busiest file. Each hunk is 2–6 lines next to an upstream anchor (Eye of Ayak spec, elemental amulet, Eclipse Moon clone, scythe dist, flat armour, `isImmune`), so conflicts are local and easy to redo by hand |
+| `src/lib/PlayerVsNPCCalc.ts` | 77 / 6 | imports; Zorya's tome accuracy, max hit and spec; fragment max-hit bonus; stunned-Bork accuracy; Obligator thrust distribution (+ Maggot King exclusion); ascension (e) bolts added to the diamond/onyx `wearing` lists; Bork magic resistance and Ocellus void-explosion transforms; `isImmune` checks (incl. Moia out of melee reach, phase 15; ToA prayers, phase 18: +4); CoX Olm melee divisor (phase 19: +5); ToB nylocas style / Dawnbringer `isImmune` check (phase 20: +5); 3 capitalisation fixes in `UNIMPLEMENTED_SPECS` | **Medium–high**: about 9 separate places in upstream's busiest file. Each hunk is 2–6 lines next to an upstream anchor (Eye of Ayak spec, elemental amulet, Eclipse Moon clone, scythe dist, flat armour, `isImmune`), so conflicts are local and easy to redo by hand |
 | `src/lib/BaseCalc.ts` | 28 / 7 | imports; demonbane hook (`?? 100`); spell-immunity, Ocellus-prayer, ToA-prayer (phase 18), ToB nylocas-style (phase 20) and melee-reach (Moia) issues; Blood/Blue/Eclipse Moon and Staff of the Dead name fixes | Medium: the name fixes will conflict if upstream fixes them too. Take upstream's version of those lines |
 | `src/lib/constants.ts` | 27 / 0 | re-export of the raid constants; party-size list; phase dropdowns for Bork / Ocellus / Dagon'hai; Akkha and P2 Warden prayer phases (phase 18, phase names from `src/lib/raids/toa/constants.ts`, upstream's `AKKHA_IDS` / `P2_WARDEN_IDS`); phase 20: 4 missing ToB ids in `TOB_MONSTER_IDS` / `TOB_EM_MONSTER_IDS` (Vasilias 8354 / 10807 / 10786, Prinkipas 10803 — the ids monsters.json uses) and the Vasilias form / Verzik P1 phases (names from `src/lib/raids/tob/constants.ts`) | Low (additions next to the Mad Angel phases and the party-size list) |
 | `src/lib/Equipment.ts` | 11 / 0 | ascension ammo; Obligator Smash speed; Zorya spec cost | Low |
@@ -52,11 +64,11 @@ values (Bork's flat armour comes from the phase input, so the generated 0 is exp
 | `src/enums/Prayer.ts` | 16 / 1 | **Zeal = 21** | **High if upstream adds a prayer**: it will likely take id 21 too. Renumber Zeal to the next free id. Saved loadouts that stored 21 then need a one-time fix (only Zeal users) |
 | `src/enums/EquipmentCategory.ts`, `src/utils.ts` | 1 + 18 / 1 | Extending Chain Mace category + styles; CDN URL and shortlink env flags | Medium if upstream adds the Obligator itself. Then drop ours and keep `getObligatorAttackSpeed` / thrust logic only if upstream lacks it |
 | `src/types/Player.ts` | 6 / 1 | `buffs.elementalFragments` | Low |
-| `src/worker/CalcWorkerTypes.ts`, `worker.ts` | 80 + 6 | `BEST_SETUP`, `BEST_SETUP_SEARCH`, `RAID_ROUTES` (phase 16), `RAID_PLAN` (phase 17) request types | Low–medium (enum additions at the end) |
+| `src/worker/CalcWorkerTypes.ts` | 64 / 0 | `BEST_SETUP_SEARCH`, `RAID_ROUTES` (phase 16), `RAID_PLAN` (phase 17) request types (they run in our own `searchWorker.ts`); phase 13 removed `BEST_SETUP` and its handler, so `worker.ts` is unchanged from upstream | Low–medium (enum additions at the end) |
 | `src/app/components/monster/MonsterContainer.tsx` | 12 / 2 | party size 2–8 + hint for raid bosses | Low |
 | `DefensiveReductions.tsx`, `player/Combat.tsx`, `TopBar.tsx` | 2, 2, 12 | drain-preset buttons, fragment toggle, "Best setup" button | Low |
 | `Footer.tsx`, `ShareModal.tsx`, `InitialLoad.tsx`, `layout.tsx` | 11, 17, 1, 3 | fork branding, shortlinks off | Low–medium (branding text; keep ours) |
-| `package.json`, `yarn.lock` | 2 / 1, 32 | build runs `copyCdn.mjs`; `@playwright/test` | Medium for `yarn.lock`: resolve by taking upstream's and re-running `yarn install` |
+| `package.json`, `yarn.lock` | 4 / 2, 935 / 3 | build runs `copyCdn.mjs`; `@playwright/test`, `wrangler` (deploy) | Medium for `yarn.lock`: resolve by taking upstream's and re-running `yarn install` |
 | `scripts/generate*.py` | 2 / 2 each | UTF-8 file encoding (Windows); alias names | Low |
 | `README.md`, `.env.production`, `.nvmrc`, `.gitignore` | — | fork-specific | Keep ours |
 
@@ -65,8 +77,9 @@ code, and moving them would not make the merge easier.
 
 ## Fixes worth sending upstream
 
-Bugs in upstream's own code or data handling that we fixed locally (phase 21 list); each is small and independent of
-the raid-4 work, so it could go upstream as its own PR.
+Bugs in upstream's own code or data handling that we fixed locally (phase 21 list, each claim re-checked in phase 22
+against `89c3e25` and the current data); each is small and independent of the raid-4 work, so it could go upstream as
+its own PR.
 
 - **`TOB_MONSTER_IDS` misses 8354 / 10807 / 10786 / 10803** (`src/lib/constants.ts`): monsters.json uses these ids for
   the Nylocas Vasilias (normal / Hard / Entry) and the melee Prinkipas, so upstream doesn't scale them: Vasilias 2500 hp
@@ -79,12 +92,19 @@ the raid-4 work, so it could go upstream as its own PR.
   chestplate / tassets" → "Blood Moon …" (Blue / Eclipse Moon and "Blue Moon spear" too) and "Staff of the dead" / "Toxic
   staff of the dead" → "Staff of the Dead" / "Toxic Staff of the Dead" (upstream's two spell checks already disagree on
   the casing). After an equipment refresh upstream's `wearing` checks silently stop matching: the Moon set effects and
-  the Flames of Zamorak / Magic Dart staff checks break (phase 7b, 44 renamed entries;
-  `src/tests/lib/fracturedArchive/Equipment.test.ts`, rename regression).
+  the Magic Dart staff check break (phase 7b, 44 renamed entries; `src/tests/lib/fracturedArchive/Equipment.test.ts`,
+  rename regression). The Flames of Zamorak staff check never fired anyway (spell-name typo, below).
 - **Generators on Windows: UTF-8** (`scripts/generateMonsters.py`, `generateEquipment.py`): `open()` without an
   encoding uses the platform's (cp1252 on Windows), so reading `manual_*.json` / writing `monsters.json` /
   `equipment.json` fails on non-ASCII text; `encoding='utf-8'` on the four `open` calls fixes it (2 lines per script;
   phase 1 / 7b re-runs on Windows).
+
+Found in phase 22, **not fixed locally** (upstream code outside the raid work; worth reporting upstream):
+
+- **`BaseCalc.ts` spell / staff checks**: `spellName === 'Flames of Zamarok'` (typo; the spell is "Flames of Zamorak"
+  in spells.json), so casting it without a Zamorak staff is never flagged; and Claws of Guthix lists `'Staff of
+  balance'`, but the item is "Staff of Balance", so Claws of Guthix with the Staff of Balance is wrongly flagged
+  "needs a specific weapon" and the spell is dropped (0 DPS).
 
 ## Things upstream might add that overlap with ours
 

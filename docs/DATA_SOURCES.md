@@ -55,8 +55,8 @@ Common sources:
   the news list, assumed uncapped, **unverified**).
 - Practice mode lets the boss be started at a chosen phase (raid page) — irrelevant to stats.
 - Monster images in `cdn/monsters/` are committed. Production serves them from our own `/cdn` (phase 10,
-  `NEXT_PUBLIC_CDN_URL`); `yarn dev` still loads images from the upstream CDN, where the raid images don't exist, so
-  they show as broken locally only.
+  `NEXT_PUBLIC_CDN_URL`); `yarn dev` loads them from the deployed copy (`.env.development`), so a new image only shows
+  in dev after a deploy.
 
 ## Party-size HP scaling (phase 2 research, 2026-10-22)
 
@@ -64,6 +64,9 @@ Result: **no published data**. The calculator keeps the wiki infobox HP for ever
 through an identity table `FRACTURED_ARCHIVE_HP_SCALING` in `src/lib/scaling/FracturedArchive.ts`, flagged
 **unverified** in code and with an "unverified" marker next to the party size input. When real numbers appear,
 only that table changes (factor per size; the infobox HP must stay the value at the size it was recorded for).
+**Defence** (and every other stat) is assumed **not** to scale with party size: the wiki mentions hp only (round 2
+decision, **unverified**, docs/UNVERIFIED.md A11; CoX scales Defence, ToA scales the NPC defence roll by raid level,
+ToB scales hp only).
 
 What was checked:
 
