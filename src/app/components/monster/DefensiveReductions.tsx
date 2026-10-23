@@ -16,6 +16,7 @@ import { observer } from 'mobx-react-lite';
 import { useStore } from '@/state';
 import { getDefenceFloor } from '@/lib/scaling/DefenceReduction';
 import { toJS } from 'mobx';
+import FracturedArchiveDrainPresets from '@/app/components/monster/FracturedArchiveDrainPresets';
 
 const DefensiveReductions: React.FC = observer(() => {
   const store = useStore();
@@ -51,6 +52,7 @@ const DefensiveReductions: React.FC = observer(() => {
               {defenceFloor}
             </p>
           )}
+          <FracturedArchiveDrainPresets />
           <div className="w-full">
             <NumberInput
               className="form-control w-1/6"

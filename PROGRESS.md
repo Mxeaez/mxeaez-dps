@@ -3,6 +3,29 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 7 — Debuff toggles / max drain (2026-10-22)
+
+- New `src/lib/fracturedArchive/drains.ts` (pure, no React, for the phase 8/9 gear finder): `maxDrainReductions(m,
+  { weapon: 'elderMaul' | 'dwh' | 'bgs', ayak })` returns complete `defenceReductions` inputs + before/after def and
+  magic def; `DRAIN_PRESETS` (`none`, `floor-elderMaul|dwh|bgs`, each `+ayak`), `drainPresetReductions`,
+  `ayakDamageToZero`, `ayakSpecsToZero`. Starts from the undrained monster (`scaleMonster` with no reductions, so
+  phases/raid scaling count) and checks candidates with upstream's `applyDefenceReductions`. Hammer presets use the
+  fewest specs of that weapon; uncapped bosses get a Tonalztics finisher (wiki Strategies drain table pattern). Ayak
+  input = damage = magic defence bonus. Per-boss counts and rules: `docs/DATA_SOURCES.md` (*Drain presets*).
+- UI: new `FracturedArchiveDrainPresets.tsx` — "Max drain" buttons (Floor: Elder maul / DWH / BGS, + Ayak: same, Reset)
+  at the top of the Defensive Reductions panel for Fractured Archive monsters; writes counts into the normal inputs.
+  Upstream edit: `DefensiveReductions.tsx` +2.
+- Tests: `src/tests/lib/fracturedArchive/Drains.test.ts` (81): every boss/version × weapon lands exactly on the floor
+  with magic def 0, one fewer spec / 1 less damage does not; wiki sequences (Blade 2 maul + 4 Tonalztic); Ayak never
+  below 0; purity/determinism; presets reset other reductions; phase inputs; caps; UI parity.
+  `yarn test` 551 pass / 4 skipped; `yarn lint`, `tsc --noEmit` clean.
+- UI: `node scripts/verifyDrainPresets.mjs` — Max Mage + Kodai + Fire Surge, "Floor (Elder maul) + Ayak": The Blade
+  def 0 / magic def 0, inputs 2 maul + 4 Tonalztic + 100 Ayak, DPS 2.290 → 4.279; AG def 156 / magic def 0, DPS
+  4.636 → 7.424 (= Jest); Reset restores both. `docs/screenshots/phase7-blade-maxdrain.png`, `phase7-ag-maxdrain.png`.
+
+Unverified / open: wiki table's Smorks (2 maul + 4 Tonalztic) and Dreadnoth (1 + 3) leave 1 def with upstream
+rounding (presets use 3 + 3 / 2 + 2); Ayak spec counts depend on spec damage (only damage is modelled); misses not modelled.
+
 ## Phase 6 fixes — review follow-ups (2026-10-22)
 
 - P2 (The Blade) floor 0 now **verified** by the news post's hotfix list ("no cap on their Defence Reduction ...
