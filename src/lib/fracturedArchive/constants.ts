@@ -41,6 +41,25 @@ export const OCELLUS_P2_IDS = [
 ];
 export const OCELLUS_P3_IDS = [16677];
 export const OCELLUS_IDS = [...OCELLUS_P1_IDS, ...OCELLUS_P2_IDS, ...OCELLUS_P3_IDS];
+
+// Ocellus's prayers / damage reduction by phase input; how they're applied: src/lib/fracturedArchive/ocellus.ts.
+// The first option of each list is the default (the UI selects phases[0]). Sources: docs/DATA_SOURCES.md.
+export const OCELLUS_P1_WALKING_PHASE = 'Walking to a corner (Protect from Melee)';
+export const OCELLUS_P1_PHASES = ['At a corner', OCELLUS_P1_WALKING_PHASE];
+
+export const OCELLUS_P3_DEFLECT_MELEE_PHASE = 'Last quadrant: Deflect Melee';
+export const OCELLUS_P3_DEFLECT_MELEE_VOID_PHASE = 'Last quadrant: Deflect Melee + void explosions';
+export const OCELLUS_P3_SOUL_SPLIT_PHASE = 'Last quadrant: Soul Split';
+export const OCELLUS_P3_DEFLECT_RANGED_PHASE = 'Last quadrant: Deflect Ranged';
+export const OCELLUS_P3_DEFLECT_RANGED_VOID_PHASE = 'Last quadrant: Deflect Ranged + void explosions';
+export const OCELLUS_P3_PHASES = [
+  'Quadrants 1-3',
+  OCELLUS_P3_DEFLECT_MELEE_PHASE,
+  OCELLUS_P3_DEFLECT_MELEE_VOID_PHASE,
+  OCELLUS_P3_SOUL_SPLIT_PHASE,
+  OCELLUS_P3_DEFLECT_RANGED_PHASE,
+  OCELLUS_P3_DEFLECT_RANGED_VOID_PHASE,
+];
 export const EZEKIEL_IDS = [16652];
 export const MOIA_IDS = [16667];
 export const DAGONHAI_IDS = [

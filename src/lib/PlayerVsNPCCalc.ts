@@ -93,6 +93,7 @@ import {
 import { burningClawDoT, burningClawSpec, dClawDist } from '@/lib/dists/claws';
 import { isImmuneToSpell } from '@/lib/fracturedArchive/immunities';
 import { getMagicResistance, hasGuaranteedMeleeAccuracy } from '@/lib/fracturedArchive/bork';
+import { getOcellusDamageDivisor, isBlockedByOcellusPrayer } from '@/lib/fracturedArchive/ocellus';
 
 const PARTIALLY_IMPLEMENTED_SPECS: string[] = [
   'Ancient godsword',
@@ -2043,6 +2044,11 @@ export default class PlayerVsNPCCalc extends BaseCalc {
     if (magicResistance && styleType === 'magic') {
       relevantEffects.push([flatAddTransformer(-magicResistance), { transformInaccurate: false }]);
     }
+    // Fractured Archive: Ocellus's void explosions (50% less damage)
+    const ocellusDivisor = getOcellusDamageDivisor(this.monster);
+    if (ocellusDivisor !== 1) {
+      relevantEffects.push([divisionTransformer(ocellusDivisor)]);
+    }
 
     const transformer: HitTransformer = (hitsplat) => {
       let dist = HitDistribution.single(1.0, [hitsplat]);
@@ -2110,6 +2116,9 @@ export default class PlayerVsNPCCalc extends BaseCalc {
       }
     }
     if (styleType === 'magic' && isImmuneToSpell(this.monster, this.player.spell)) {
+      return true;
+    }
+    if (isBlockedByOcellusPrayer(this.monster, styleType, this.isUsingMeleeStyle())) {
       return true;
     }
     // Eclipse moon clone is immune to non-melee attacks

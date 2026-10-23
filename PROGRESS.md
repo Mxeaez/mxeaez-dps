@@ -3,6 +3,33 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 6 — Ocellus P1/P2/P3 (2026-10-22)
+
+- Wiki re-read (Ocellus page, Strategies *Ocellus* incl. "Phase 4", The Blade, Demon (attribute), Dampen Melee,
+  Soul Split, censers); mechanic → model table per phase in `docs/DATA_SOURCES.md`.
+- Demonbane 80% for P1 (16673, 16674) and P3 (16677) in `src/lib/fracturedArchive/demonbane.ts`; P2 (The Blade) has
+  no demon attribute → no bonus.
+- New `src/lib/fracturedArchive/ocellus.ts` + Phase dropdowns (`OCELLUS_P1_PHASES`, `OCELLUS_P3_PHASES`):
+  P1 *At a corner* (default) / *Walking to a corner (Protect from Melee)* → melee 0; P3 *Quadrants 1-3* (default),
+  *Last quadrant: Deflect Melee*, *… + void explosions*, *Soul Split*, *Deflect Ranged*, *… + void explosions*.
+  Deflect = that style deals 0 (**unverified** strength), void explosions = each hit halved (rounded down).
+  Hooks: one line each in `PlayerVsNPCCalc` `isImmune` and the NPC damage transformer.
+- P2 HP decision: hp stays 5250; DPS = damage dealt to the Blade (ranks gear correctly), effective P3 damage = DPS / 2.
+  "TTK n/a" tooltip next to Party size on P2 (in `FracturedArchiveScalingHint.tsx`).
+- Not modelled (documented): P3 Protect from Melee hotfix (when unclear), Untether, censer max hits, faster attacks
+  after tick-perfect dodges, Soul Split healing.
+- Tests `src/tests/lib/fracturedArchive/Ocellus.test.ts` (31): ids/phase lists, Arclight/Emberlight 80% on P1/P3 and
+  none on P2 (hand-derived), floors 129 / 0 / 150 through DWH/BGS, every phase option, Max Melee + Emberlight and
+  Max Mage + Tumeken's shadow per phase.
+- UI: `node scripts/verifyOcellus.mjs` — two loadouts (Emberlight + Super combat + Piety; shadow + Saturated heart +
+  Augury), all three phases and four phase options match Jest; demonbane factor and P2 hint checked.
+  Screenshots `docs/screenshots/phase6-ocellus-p1.png`, `-p2.png`, `-p3.png`, `-p3-void.png`.
+- Phase 5 nit: shortened the long header comment line in `scripts/verifySmorksAndBork.mjs`.
+- `yarn test` 470 pass / 4 skipped; `yarn lint`, `tsc --noEmit` clean.
+
+Unverified / open: Deflect block strength (full block assumed) and whether magic is also deflected (page body vs
+Strategies); void explosion rounding; P2 floor 0 vs 150, hp and attributes; when the P3 Protect from Melee shows.
+
 ## Phase 5 — Dreadnoth the Jellied, Jelly, Xarth (2026-10-22)
 
 - Re-read the three pages, Corpse (Xarth), the Strategies sections, the demonbane item pages and `Demon (attribute)`;

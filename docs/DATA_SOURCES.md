@@ -303,14 +303,14 @@ Mechanics (page body + Strategies → *Ocellus*):
   the manual 100090 (upstream pattern: e.g. `VARDORVIS_IDS`, `TD_IDS` list every NPC id and test `includes(monster.id)`).
 - P1: the Strategies page calls the P1 bar "shield durability" (presumably the infobox P1 hitpoints, 2500 — **unverified**); Protect from Melee while walking between corners (Strategies →
   *Phase 1*). Demon (scorching bow can root).
-- P2: only 50% of damage carries over to P3 HP (see above) — DPS vs P2 should be halved for TTK purposes.
+- P2: only 50% of damage carries over to P3 HP (see above) — DPS vs P2 should be halved for TTK purposes. *Phase 6:* hp kept at 5250, UI hint instead (table below).
 - P3: "Ocellus's Protect from Melee overhead icon will now properly appear in phase 3" (page *Changes*, 21 Oct
   hotfix) refers to **Ocellus's own prayer**, i.e. he prays against melee in P3, which would make melee loadouts
   deal 0 (or reduced) damage against him. The wiki is unclear: the same phase is described as a melee-tank phase with
   melee attacks being "flicked" (Strategies → *Phase 3*, "The correct timing for flicking melee attacks"), which may
   mean the player flicks Protect from Melee against his attacks, or that he only prays melee at times. Phase 6 should
   treat "Ocellus praying melee in P3" as a toggle/unknown and not assume melee is always blocked or never blocked
-  (**unverified**).
+  (**unverified**). *Phase 6:* not modelled (no option), see the phase 6 table below.
 - P3 "Untether...": after a number of special attacks Ocellus floats in the air and "is unable to be reached by melee
   attacks" until he slams down (Strategies → *Phase 3*) — melee uptime in P3 is below 100%.
 - P3 other: Censers: Bandosian = next melee hit is a max
@@ -322,9 +322,50 @@ Mechanics (page body + Strategies → *Ocellus*):
 - Adds: Void Rift (16678), Void Augmenter (16680), Void Siphon (16679), Void Vine (16681) — 44 hp each, now in
   monsters.json (Void Siphon/Void Vine images failed to download from the wiki).
 - Prose says combat level 1,603 in P3; infobox says 1601 (cosmetic, not used).
-- Demonbane: https://oldschool.runescape.wiki/w/Demon_(attribute) lists **Ocellus: 80% effectiveness** (found in
-  phase 5, not implemented) — phase 6 should add Ocellus to `src/lib/fracturedArchive/demonbane.ts` for the demon
-  versions (P1/P3; P2's attributes are blank).
+- Demonbane: https://oldschool.runescape.wiki/w/Demon_(attribute) lists **Ocellus: 80% effectiveness** — implemented
+  in phase 6 for the demon versions (P1 ids 16673/16674, P3 16677); P2's attributes are blank, so it gets no demonbane
+  bonus at all (same 2026-10-20 "per orion" edit as Xarth/Dreadnoth, **unverified**).
+
+### Ocellus — phase 6 model (2026-10-22)
+
+Re-read on 2026-10-22: `Ocellus?action=raw` (infobox, *Mechanics*, *Changes*), `The_Fractured_Archive/Strategies`
+(*Ocellus* → Phase 1–4), `The_Blade` (lore + NPC 16683 only, no combat data), `Demon_(attribute)`, `Dampen_Melee`
+(redirect target of the Strategies "Deflect Melee" link), `Soul_Split`, `Protect_from_Melee`, `Ruinous_Powers`,
+`Bandosian_Censer`, `Armadylean_Censer`. Code: `src/lib/fracturedArchive/ocellus.ts`, phase lists in
+`src/lib/fracturedArchive/constants.ts`, demonbane in `demonbane.ts`, floors in `src/lib/scaling/FracturedArchive.ts`,
+tests `src/tests/lib/fracturedArchive/Ocellus.test.ts`, UI check `scripts/verifyOcellus.mjs`.
+
+| Phase | Mechanic (source) | Model |
+|---|---|---|
+| all | ids P1 16673/16674, P2 100090/16675/16676, P3 16677 | `OCELLUS_P1/P2/P3_IDS` drive floors, demonbane, phase dropdowns, party size and the P2 hint |
+| P1 | demon, 80% demonbane (Demon (attribute)) | `DEMONBANE_EFFECTIVENESS` 80 (both P1 ids; 16673 is the id the wiki/monsters.json use) |
+| P1 | floor 129 (page, 60% hotfix) | unchanged from phase 2 |
+| P1 | "While walking to a quadrant, he will have Protect from Melee active" (Strategies) | Phase option **Walking to a corner (Protect from Melee)**: melee deals 0. Default **At a corner** = no prayer |
+| P1 | scorching bow spec roots him (demon); "shield durability" bar | not DPS — not modelled |
+| P2 | The Blade: def 250 / magic 220, stab 150 / slash 120 / crush 10, magic 100, ranged 100/110/80 (infobox v2) | manual entry 100090 (phase 1) |
+| P2 | no attributes (infobox v2 blank) → no demonbane | no table entry; Emberlight/Arclight get no bonus (test) |
+| P2 | floor: page body 150 vs Strategies table / Gearscape 0 | **0** kept (**unverified**, reasons under *Raid-wide notes*) |
+| P2 | timed (3 quadrant cycles), "half of all damage dealt" goes to P3's bar (Strategies) | **HP decision:** keep hp 5250 (option A). DPS shown is damage dealt to the Blade at its own defence, which is what ranks gear; effective P3 damage is DPS / 2. An "effective HP" of 10500 (option B) would only change TTK, which is meaningless on a timed phase either way. UI: "TTK n/a" tooltip next to Party size on P2 |
+| P3 | demon, 80% demonbane; floor 150; drains persist across quadrants (21 Oct hotfix) | demonbane 80; floor 150 (all phase options) |
+| P3 | "Protect from Melee overhead icon will now properly appear in phase 3" (hotfix) | **not modelled** — when he prays it is not stated (the Strategies page has a melee tank and melee DPS in P3; possibly during Untether). **unverified** |
+| P3 | Untether: floats, "unable to be reached by melee attacks" | positional — not modelled (melee uptime < 100%) |
+| P3 | Censers: Bandosian/Armadylean "appears to make the next melee/ranged attack max hit" | single-hit buff, upstream has no "next hit is max" option (only per-monster `ALWAYS_MAX_HIT_MONSTERS`) — not modelled |
+| P3 last quadrant ("Phase 4") | cycle Deflect Melee (floating) → Soul Split (landed) → Deflect Range → Soul Split (Strategies) | Phase options **Last quadrant: Deflect Melee**, **… Deflect Ranged** (that style deals 0), **… Soul Split** (no reduction; his healing from it is not modelled). Default **Quadrants 1-3** = no prayer |
+| P3 last quadrant | "While the explosions are occurring the boss takes 50% less damage" (Strategies + page body) | Phase options **… Deflect Melee + void explosions**, **… Deflect Ranged + void explosions**: each hitsplat `trunc(hit / 2)` (rounding **unverified**). Explosions happen during the deflect states (Strategies steps 1–3, 6–7) |
+| P3 last quadrant | tick-perfect dodges speed up the next attack ("unconfirmed amount") | not modelled |
+| P3 last quadrant | void crystals always max-hit by standard ranged | adds, not Ocellus — not modelled |
+
+Unverified in the phase 6 model:
+
+- **Deflect strength.** Neither page says how much of a player's damage Ocellus's Deflect prayers block. The player
+  prayer (Dampen Melee, formerly Deflect Melee) blocks "100% of incoming melee damage dealt by NPCs (40% for other
+  players)", and the Ruinous Powers table lists the old beta Deflect as "reduces damage ... by 90%". We model a
+  **full block** (0 damage), like other NPC protection prayers; P1's Protect from Melee likewise.
+- **Magic during deflects.** The Ocellus page body says he prays "reflect melee + mage" and "reflect range + mage";
+  the Strategies page names only Deflect Melee / Deflect Range (and links them). We follow the Strategies page, so
+  magic is never blocked. If the page body is right, magic would deal 0 in all four deflect options.
+- Void explosion rounding (rounded down) and whether 1-damage hits become 0 (they do in the model).
+- P2 hp 5250 / no attributes / floor 0 (unchanged from phases 1–2).
 
 ## Other raid monsters (came with the refresh, not checked field-by-field)
 

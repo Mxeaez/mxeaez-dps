@@ -3,7 +3,8 @@
  *
  * Usage (dev server running): node scripts/verifySmorksAndBork.mjs [baseUrl]
  * Loads the "Max Melee" equipment preset + Scythe of Vitur (charged), Super combat, Piety and Chop (aggressive slash),
- * selects Bork, cycles every option of the Phase dropdown and reads max hit / DPS, then selects The Smorks. Values are compared with the "UI parity" test in
+ * selects Bork, cycles every option of the Phase dropdown and reads max hit / DPS, then selects The Smorks.
+ * Values are compared with the "UI parity" test in
  * src/tests/lib/fracturedArchive/SmorksAndBork.test.ts. Also checks the party size input shows 2 for these bosses.
  * Saves docs/screenshots/phase4-bork-<option>.png and phase4-smorks.png.
  */

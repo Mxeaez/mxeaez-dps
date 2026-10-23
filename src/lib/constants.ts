@@ -1,5 +1,8 @@
 import { CombatStyleStance } from '@/types/PlayerCombatStyle';
-import { BORK_IDS, BORK_PHASES, FRACTURED_ARCHIVE_BOSS_IDS } from '@/lib/fracturedArchive/constants';
+import {
+  BORK_IDS, BORK_PHASES, FRACTURED_ARCHIVE_BOSS_IDS, OCELLUS_P1_IDS, OCELLUS_P1_PHASES, OCELLUS_P3_IDS,
+  OCELLUS_P3_PHASES,
+} from '@/lib/fracturedArchive/constants';
 
 export * from '@/lib/fracturedArchive/constants';
 
@@ -557,6 +560,9 @@ MAD_ANGEL_IDS.forEach((id) => { MONSTER_PHASES_BY_ID[id] = MAD_ANGEL_PHASES; });
 
 // Fractured Archive: Bork's flat armour depends on the Smorks' health / stun (src/lib/fracturedArchive)
 BORK_IDS.forEach((id) => { MONSTER_PHASES_BY_ID[id] = BORK_PHASES; });
+// Ocellus's prayers / void explosions (src/lib/fracturedArchive/ocellus.ts)
+OCELLUS_P1_IDS.forEach((id) => { MONSTER_PHASES_BY_ID[id] = OCELLUS_P1_PHASES; });
+OCELLUS_P3_IDS.forEach((id) => { MONSTER_PHASES_BY_ID[id] = OCELLUS_P3_PHASES; });
 
 export const INFINITE_HEALTH_MONSTERS: number[] = [
   14779, // gemstone crab
