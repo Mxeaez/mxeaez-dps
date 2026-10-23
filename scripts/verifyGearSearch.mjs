@@ -2,8 +2,8 @@
  * Phase 9 UI check (not part of the Jest run).
  *
  * Usage (dev server running): node scripts/verifyGearSearch.mjs [baseUrl]
- * Opens /best-setup → "Search", runs the full search (all styles) for Xarth (drains None) and Ocellus P2 (Team),
- * records the wall time, checks the top row against a Jest run of runGearSearch with the same inputs (docs/BEST_SETUP.md,
+ * Opens /best-setup (Search is the default tab and runs automatically since phase 12), switches to Xarth (drains None)
+ * and Ocellus P2 (Team) — each change re-runs the full search (all styles) — records the wall time (change → table), checks the top row against a Jest run of runGearSearch with the same inputs (docs/BEST_SETUP.md,
  * "Search results"), checks Cancel stops a run, screenshots docs/screenshots/phase9-search-*.png, and loads each top
  * row into the main calculator to compare DPS / max hit.
  */
@@ -24,21 +24,20 @@ const check = (ok, msg) => {
   console.log(`${ok ? 'OK  ' : 'FAIL'} ${msg}`);
 };
 
-const openSearch = async (ctx, bossKey, drain) => {
+// Opens /best-setup and waits for the automatic search of the default boss.
+const openSearch = async (ctx) => {
   const page = await ctx.newPage();
   await page.goto(`${BASE}best-setup`, { waitUntil: 'load', timeout: 120000 });
-  await page.locator('[data-testid="ranking-row"]').first().waitFor({ timeout: 120000 });
-  await page.locator('[data-testid="search-tab"]').click();
-  await page.locator('[data-testid="boss-select"]').selectOption(bossKey);
-  await page.locator(`[data-testid="drain-${drain}"]`).click();
-  await page.waitForTimeout(300);
+  await page.locator('[data-testid="search-row"]').first().waitFor({ timeout: 120000 });
   return page;
 };
 
-const runSearch = async (page) => {
+// Changing the boss / drains re-runs the search automatically (300 ms debounce).
+const runSearch = async (page, bossKey, drain) => {
   const t0 = Date.now();
-  await page.locator('[data-testid="search-run"]').click();
-  await page.locator('[data-testid="search-progress"]').waitFor({ timeout: 10000 });
+  await page.locator('[data-testid="boss-select"]').selectOption(bossKey);
+  await page.locator(`[data-testid="drain-${drain}"]`).click();
+  await page.locator('[data-testid="search-row"]').first().waitFor({ state: 'detached', timeout: 10000 }).catch(() => {});
   await page.locator('[data-testid="search-row"]').first().waitFor({ timeout: 120000 });
   const wall = (Date.now() - t0) / 1000;
   const top = await page.locator('[data-testid="search-row"]').first().evaluate((r) => ({
@@ -58,9 +57,9 @@ const readCalcRow = async (page, label) => {
 
 const searchAndLoad = async (browser, bossKey, drain, shot) => {
   const ctx = await browser.newContext({ viewport: { width: 1500, height: 1400 } });
-  const page = await openSearch(ctx, bossKey, drain);
-  const { wall, top, stats } = await runSearch(page);
-  console.log(`     ${bossKey} ${drain}: ${wall.toFixed(1)}s wall (click → table); ${stats}`);
+  const page = await openSearch(ctx);
+  const { wall, top, stats } = await runSearch(page, bossKey, drain);
+  console.log(`     ${bossKey} ${drain}: ${wall.toFixed(1)}s wall (change → table); ${stats}`);
   console.log(`     top: ${top.weapon} ${top.dps} / ${top.maxHit} (vs best preset ${top.gain})`);
   const exp = EXPECTED[`${bossKey}|${drain}`];
   check(top.dps === exp.dps && top.maxHit === exp.maxHit, `${bossKey} ${drain}: top ${top.dps} / ${top.maxHit} (Jest ${exp.dps} / ${exp.maxHit})`);
@@ -81,10 +80,10 @@ const searchAndLoad = async (browser, bossKey, drain, shot) => {
 
 const checkCancel = async (browser) => {
   const ctx = await browser.newContext({ viewport: { width: 1500, height: 1000 } });
-  const page = await openSearch(ctx, 'smorks', 'solo');
-  await page.locator('[data-testid="search-run"]').click();
+  const page = await openSearch(ctx);
+  await page.locator('[data-testid="boss-select"]').selectOption('smorks'); // starts an automatic run
   await page.locator('[data-testid="search-progress"]').waitFor({ timeout: 10000 });
-  await page.waitForTimeout(200); // a full search takes ~1 s here: cancel while it runs
+  await page.waitForTimeout(500); // past the 300 ms debounce; a full search takes ~1 s here: cancel while it runs
   await page.locator('[data-testid="search-cancel"]').click();
   await page.waitForTimeout(1500);
   const progress = await page.locator('[data-testid="search-progress"]').count();

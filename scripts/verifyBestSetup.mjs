@@ -33,6 +33,7 @@ const readRows = async (page) => page.locator('[data-testid="ranking-row"]').eva
 const openView = async (browser) => {
   const page = await browser.newPage({ viewport: { width: 1400, height: 1400 } });
   await page.goto(`${BASE}best-setup`, { waitUntil: 'load', timeout: 120000 });
+  await page.locator('[data-testid="boss-tab"]').click(); // Search is the default tab since phase 12
   await waitForRanking(page);
   return page;
 };
@@ -53,6 +54,7 @@ const loadAndCompare = async (browser, bossKey, drain, preset) => {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 1400 } });
   const page = await ctx.newPage();
   await page.goto(`${BASE}best-setup`, { waitUntil: 'load', timeout: 120000 });
+  await page.locator('[data-testid="boss-tab"]').click();
   await waitForRanking(page);
   await selectBoss(page, bossKey);
   await page.locator(`[data-testid="drain-${drain}"]`).click();

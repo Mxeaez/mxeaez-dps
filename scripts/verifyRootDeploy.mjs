@@ -85,13 +85,12 @@ const main = async () => {
 
   const res = await page.goto(`${BASE}best-setup`, { waitUntil: 'load', timeout: 120000 });
   check(res.status() === 200 && new URL(page.url()).pathname.replace(/\/$/, '') === '/best-setup', `/best-setup -> ${res.status()} at ${page.url()}`);
-  await page.locator('[data-testid="ranking-row"]').first().waitFor({ timeout: 120000 });
-  await page.locator('[data-testid="search-tab"]').click();
+  // Search is the default tab and runs automatically (phase 12); changing boss/drains re-runs it
+  await page.locator('[data-testid="search-row"]').first().waitFor({ timeout: 120000 });
+  const t0 = Date.now();
   await page.locator('[data-testid="boss-select"]').selectOption('xarth');
   await page.locator('[data-testid="drain-none"]').click();
-  await page.waitForTimeout(300);
-  const t0 = Date.now();
-  await page.locator('[data-testid="search-run"]').click();
+  await page.locator('[data-testid="search-row"]').first().waitFor({ state: 'detached', timeout: 10000 }).catch(() => {});
   await page.locator('[data-testid="search-row"]').first().waitFor({ timeout: 120000 });
   const top = (await page.locator('[data-testid="search-row"]').first().locator('[data-testid="dps"]').innerText()).trim();
   check(true, `Xarth search done in ${((Date.now() - t0) / 1000).toFixed(1)}s, top DPS ${top}`);

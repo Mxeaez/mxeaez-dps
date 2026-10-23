@@ -18,9 +18,15 @@ import {
 } from '@/lib/fracturedArchive/search';
 import { SearchJob, startGearSearch } from '@/worker/searchWorkerClient';
 import openInCalculator from '@/app/components/bestSetup/loadIntoCalculator';
+import { searchRowIcons, searchRowWeaponParts } from '@/lib/fracturedArchive/loadoutIcons';
+import { LoadoutIconRow, WeaponLine } from '@/app/components/bestSetup/ItemIcons';
 
 // "Search" tab of /best-setup (phase 9): full gear search over the pool in src/lib/fracturedArchive/searchCandidates.ts,
 // run in its own worker (src/worker/searchWorker.ts). Docs: docs/BEST_SETUP.md.
+// Phase 12: the default tab; runs automatically (debounced) when the page opens and whenever the inputs change.
+
+/** Delay between the last input change and the automatic search. */
+export const AUTO_RUN_DEBOUNCE_MS = 300;
 
 const fmt = (n: number, digits = 3) => (Number.isFinite(n) ? n.toFixed(digits) : '-');
 const fmtAcc = (n: number) => `${(n * 100).toFixed(1)}%`;
@@ -50,21 +56,17 @@ const SearchView: React.FC<{
   const [startedAt, setStartedAt] = useState(0);
   const [wallMs, setWallMs] = useState<number | null>(null);
   const job = useRef<SearchJob | null>(null);
+  const autoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  /** Stops a pending automatic run and the running search (the worker is terminated). */
   const cancel = useCallback(() => {
+    if (autoTimer.current) clearTimeout(autoTimer.current);
+    autoTimer.current = null;
     job.current?.cancel();
     job.current = null;
     setRunning(false);
     setProgress(null);
   }, []);
-
-  // inputs changed: the old result no longer applies
-  useEffect(() => {
-    cancel();
-    setResult(null);
-    setError(null);
-    setWallMs(null);
-  }, [targetKey, phase, drain, assumptions, styles, cancel]);
 
   useEffect(() => () => job.current?.cancel(), []);
 
@@ -105,6 +107,28 @@ const SearchView: React.FC<{
       });
   };
 
+  const runRef = useRef(run);
+  runRef.current = run;
+
+  // Inputs changed (or the tab opened): drop the old result, cancel any running search and start a new one after
+  // AUTO_RUN_DEBOUNCE_MS, so quick successive changes only search once. Shown as running (Cancel works) meanwhile.
+  useEffect(() => {
+    cancel();
+    setResult(null);
+    setError(null);
+    setWallMs(null);
+    setRunning(true);
+    setStartedAt(performance.now());
+    autoTimer.current = setTimeout(() => {
+      autoTimer.current = null;
+      runRef.current();
+    }, AUTO_RUN_DEBOUNCE_MS);
+    return () => {
+      if (autoTimer.current) clearTimeout(autoTimer.current);
+      autoTimer.current = null;
+    };
+  }, [targetKey, phase, drain, assumptions, styles, cancel]);
+
   const onLoad = (row: SearchRow) => {
     const { monster } = buildTargetMonster(findTarget(targetKey), phase, drain, assumptions);
     const player = searchRowToPlayer(generateEmptyPlayer(row.weaponLabel), row, monster, assumptions);
@@ -133,7 +157,7 @@ const SearchView: React.FC<{
           </select>
         </label>
         {!running ? (
-          <button type="button" className="btn text-sm" onClick={run} data-testid="search-run">Run search</button>
+          <button type="button" className="btn text-sm" onClick={run} data-testid="search-run" title="Runs automatically when the boss, phase, drains, styles or assumptions change">Run again</button>
         ) : (
           <button type="button" className="btn text-sm" onClick={cancel} data-testid="search-cancel">Cancel</button>
         )}
@@ -208,7 +232,8 @@ const SearchView: React.FC<{
                       <div>{r.styleLabel}</div>
                     </td>
                     <td className="px-2 py-1">
-                      <div className="font-bold text-sm">{r.weaponLabel}</div>
+                      <WeaponLine parts={searchRowWeaponParts(r)} className="font-bold text-sm" />
+                      <LoadoutIconRow icons={searchRowIcons(r)} />
                       <div className="text-[11px] text-gray-500 dark:text-gray-400">{loadoutSummary(r)}</div>
                       <div className="text-[10px] text-gray-400">{`seed (start of the ascent): ${r.seed}`}</div>
                     </td>

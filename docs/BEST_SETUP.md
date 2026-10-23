@@ -1,9 +1,26 @@
-# Best setup view (phase 8; Search tab phase 9)
+# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12)
 
 `/best-setup` (dev: http://localhost:3001/osrs-dps/best-setup; "Best setup" button in the top bar, "Calculator" leads
-back). Ranks every named preset by DPS against one Fractured Archive boss/phase at a time ("Per boss"), or shows the
-best preset for every boss/phase ("Summary"), under three drain states; "Search" (phase 9, see the end of this file)
-searches a pool of end-game items per slot for setups no preset has.
+back). Tabs, in order: **Search** (the default, phase 9/12, see the end of this file) searches a pool of end-game items
+per slot for setups no preset has and runs automatically; "Per boss" ranks every named preset by DPS against one
+Fractured Archive boss/phase; "Summary" shows the best preset for every boss/phase; all under three drain states. The
+page always opens on Search (the last-used tab is deliberately not remembered).
+
+## Item icons (phase 12)
+
+Search and Per-boss rows show the weapon line with icons — weapon, then its ammo (ranged, not a blessing) or blowpipe
+dart, then the autocast spell as text, e.g. "Ascension crossbows · Diamond ascension bolts (e)", "Kodai wand · Fire
+Surge" — and the whole loadout as a row of 20 px icons in the calculator's equipment-grid order (head, cape, neck, ammo,
+weapon, body, shield, legs, hands, feet, ring) with "name (slot)" tooltips; the boss selector shows the monster's icon.
+URLs come from `src/lib/fracturedArchive/loadoutIcons.ts`, which uses the same helper as the calculator's equipment
+slots and monster panel: `getCdnImage('equipment/<image>')` / `getCdnImage('monsters/<image>')` with the `image` field
+of equipment.json / monsters.json. Production therefore serves them from `/cdn/` on our domain
+(`NEXT_PUBLIC_CDN_URL`); dev loads upstream's CDN, which lacks the raid-4 images (Obligator, Ascension crossbows and
+bolts, the bosses) — those icons are hidden in dev (an `<img>` that fails to load hides itself; the name stays as
+text) and load in production. Icons are `loading="lazy"`, `alt` = item name. Spell icons are not shown: upstream loads
+them from the wiki (`getWikiImage`), which would be hotlinking. `LoadoutIcons.test.ts` checks the slot order, URLs,
+weapon lines, and that every preset/pool item and boss image exists in `cdn/` without a `%` in the name (those are
+skipped by the deploy).
 
 ## Files
 
@@ -111,10 +128,16 @@ the ones that could change a winner.
 
 # Search tab (phase 9)
 
-"Search" (third tab on `/best-setup`) searches over end-game items per slot for the selected boss/phase and drain
-state and lists the top loadouts by DPS, so a combination no preset has can still win. Boss, phase and drains are shared
-with "Per boss"; the Assumptions box applies too. Pick the styles (All / Melee / Ranged / Magic), press **Run search**;
-a progress bar shows evaluations done / estimated and the weapon being searched; **Cancel** stops it. "Best per weapon"
+"Search" (the default tab on `/best-setup` since phase 12) searches over end-game items per slot for the selected
+boss/phase and drain state and lists the top loadouts by DPS, so a combination no preset has can still win. Boss, phase
+and drains are shared with "Per boss"; the Assumptions box applies too. Styles: All / Melee / Ranged / Magic.
+
+**Auto-run (phase 12):** the search starts by itself when the tab opens (i.e. when the page loads) and whenever the
+boss, phase option, drain state, style filter or an assumption changes. Each change clears the old table, cancels the
+running search (its worker is terminated) or a pending start, and schedules a new run after a 300 ms debounce
+(`AUTO_RUN_DEBOUNCE_MS` in `SearchView.tsx`), so several quick changes search once. During the debounce and the run the
+progress bar shows ("Starting…", then evaluations done / estimated and the weapon being searched); **Cancel** stops
+both. **Run again** re-runs by hand (e.g. after a cancel). "Best per weapon"
 switches the table from the top 10 loadouts overall to the best loadout of each weapon (top 10).
 
 Table: rank, DPS, gain vs the best Phase 8 preset of the searched styles (same boss/drains; the preset is named above
@@ -130,9 +153,11 @@ against) are listed under the stats line instead of in the table.
 | `src/lib/fracturedArchive/searchCandidates.ts` | The candidate pool (plain data, commented). **Edit this to change what is searched.** |
 | `src/lib/fracturedArchive/search.ts` | The search (pure): `runGearSearch`, `prunePool`, `spellsForMonster`, `searchRowToPlayer`. |
 | `src/worker/searchWorker.ts`, `searchWorkerClient.ts` | `WorkerRequestType.BEST_SETUP_SEARCH`: own worker per run, progress messages, cancel = terminate. |
-| `src/app/components/bestSetup/SearchView.tsx` | The tab. |
+| `src/app/components/bestSetup/SearchView.tsx` | The tab (auto-run). |
+| `src/lib/fracturedArchive/loadoutIcons.ts`, `src/app/components/bestSetup/ItemIcons.tsx` | Item / boss icons (phase 12). |
 | `src/tests/lib/fracturedArchive/Search.test.ts` | Pool data, pruning, spells, search properties (see below). |
 | `scripts/verifyGearSearch.mjs` | Playwright check (screenshots `docs/screenshots/phase9-search-*.png`). |
+| `scripts/verifyBestSetupUx.mjs` | Phase 12 Playwright check: default tab, auto-run, re-run on boss change, icons, Load into calculator from both tables (`docs/screenshots/phase12-*.png`). |
 
 ## Pool (searchCandidates.ts)
 

@@ -26,9 +26,11 @@ import {
 } from '@/lib/fracturedArchive/presets';
 import openInCalculator from '@/app/components/bestSetup/loadIntoCalculator';
 import SearchView from '@/app/components/bestSetup/SearchView';
+import { presetIcons, presetWeaponParts, targetImageUrl } from '@/lib/fracturedArchive/loadoutIcons';
+import { ItemIcon, LoadoutIconRow, WeaponLine } from '@/app/components/bestSetup/ItemIcons';
 
 // Fractured Archive "Best setup" view (phase 8; "Search" tab phase 9). Computation: src/lib/fracturedArchive/bestSetup.ts, run in the calc
-// web worker (WorkerRequestType.BEST_SETUP). Docs: docs/BEST_SETUP.md.
+// web worker (WorkerRequestType.BEST_SETUP). Docs: docs/BEST_SETUP.md. Phase 12: Search is the default tab; item icons.
 
 const fmt = (n: number, digits = 3) => (Number.isFinite(n) ? n.toFixed(digits) : '-');
 const fmtTtk = (r: PresetResult) => (r.ttk === null || !Number.isFinite(r.ttk) ? 'n/a' : `${r.ttk.toFixed(1)}s`);
@@ -121,6 +123,18 @@ const AssumptionsBox: React.FC<{
   );
 };
 
+/** Weapon line + loadout icons of a preset row (phase 12). */
+const PresetItems: React.FC<{ row: PresetResult }> = ({ row }) => {
+  const preset = PRESETS.find((p) => p.name === row.preset);
+  if (!preset) return null;
+  return (
+    <>
+      <WeaponLine parts={presetWeaponParts(preset, row.spell)} className="text-sm" />
+      <LoadoutIconRow icons={presetIcons(preset)} />
+    </>
+  );
+};
+
 const BossView: React.FC<{
   result: BestSetupResult,
   drain: DrainStateId,
@@ -164,6 +178,7 @@ const BossView: React.FC<{
                 <td className="px-2 py-1">{r.cantHit ? '-' : i + 1}</td>
                 <td className="px-2 py-1">
                   <div className="font-bold">{r.preset}</div>
+                  {!r.error && <PresetItems row={r} />}
                   <div className="text-[11px] text-gray-500 dark:text-gray-400">
                     {r.cantHit ? `${r.error ? '' : "Can't hit: "}${r.cantHit}` : `${r.group}${r.note ? ` · ${r.note}` : ''}`}
                   </div>
@@ -236,7 +251,7 @@ const SummaryView: React.FC<{ results: BestSetupResult[] }> = ({ results }) => (
 
 const BestSetupInner: React.FC = () => {
   const calc = useCalc();
-  const [mode, setMode] = useState<'boss' | 'summary' | 'search'>('boss');
+  const [mode, setMode] = useState<'boss' | 'summary' | 'search'>('search');
   const [targetKey, setTargetKey] = useState(BEST_SETUP_TARGETS[0].key);
   const [phase, setPhase] = useState<string | undefined>(undefined);
   const [drain, setDrain] = useState<DrainStateId>('team');
@@ -297,9 +312,9 @@ const BestSetupInner: React.FC = () => {
         <div className="px-4 py-3.5 border-b-body-400 bg-body-100 dark:bg-dark-400 dark:border-b-dark-200 border-b sm:rounded-t flex flex-wrap gap-2 justify-between items-center">
           <h2 className="font-serif text-lg tracking-tight font-bold dark:text-white">Best setup · The Fractured Archive</h2>
           <div className="flex gap-1">
-            <button type="button" className={tabClass(mode === 'boss')} onClick={() => setMode('boss')}>Per boss</button>
-            <button type="button" className={tabClass(mode === 'summary')} onClick={() => setMode('summary')} data-testid="summary-tab">Summary</button>
             <button type="button" className={tabClass(mode === 'search')} onClick={() => setMode('search')} data-testid="search-tab">Search</button>
+            <button type="button" className={tabClass(mode === 'boss')} onClick={() => setMode('boss')} data-testid="boss-tab">Per boss</button>
+            <button type="button" className={tabClass(mode === 'summary')} onClick={() => setMode('summary')} data-testid="summary-tab">Summary</button>
           </div>
         </div>
         <div className="p-4 flex flex-col gap-3 dark:text-body-200">
@@ -309,6 +324,7 @@ const BestSetupInner: React.FC = () => {
             <div className="flex flex-wrap gap-3 items-center">
               <label htmlFor="bs-boss" className="flex items-center gap-1 text-sm">
                 Boss
+                <ItemIcon key={targetKey} name={target.label} src={targetImageUrl(target)} size={24} />
                 <select
                   id="bs-boss"
                   className="form-control text-sm"

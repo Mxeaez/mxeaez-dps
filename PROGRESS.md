@@ -3,6 +3,28 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 12 — Best-setup UX: Search as default + item icons (2026-10-22)
+
+- `/best-setup` opens on **Search** (tab order Search / Per boss / Summary; last tab not remembered). The search runs
+  automatically on open and on every boss / phase / drain / style / assumption change: 300 ms debounce, the running
+  worker or pending start is cancelled first, progress bar + Cancel shown meanwhile; "Run again" re-runs by hand.
+- Item icons: new `src/lib/fracturedArchive/loadoutIcons.ts` (pure: slot order = calculator grid, `searchRowIcons`,
+  `presetIcons`, weapon lines with ammo / blowpipe dart / spell text, boss image) and
+  `src/app/components/bestSetup/ItemIcons.tsx` (lazy `<img>`, alt = name, hides itself on error). Search and Per-boss
+  rows show the weapon line + a row of loadout icons; the boss selector shows the monster icon. Same
+  `getCdnImage('equipment/…')` as the calculator's slots → `/cdn/` in production. No spell icons (upstream hotlinks the
+  wiki for those).
+- In dev the raid-4 images (Obligator, Ascension crossbows/bolts, the bosses) aren't on upstream's CDN, so those icons
+  are hidden there; the Playwright check confirms they return 200 from https://dps.mxeaez.com/cdn/.
+- Tests: new `LoadoutIcons.test.ts` (8: slot order, URLs, weapon lines incl. blowpipe dart and Kodai spell, every preset
+  resolves, bad preset → no icons, every boss/pool/preset image exists in `cdn/` without `%`). `yarn test` 940 pass /
+  4 skipped; `yarn lint`, `tsc --noEmit` clean.
+- Playwright: new `scripts/verifyBestSetupUx.mjs` — Search is default and auto-runs (AG Flying Team top 11.359 with no
+  click), Xarth None re-run on change = 12.839, 103/119 search and 134/148 per-boss icons loaded in dev (the rest are the
+  raid-4 images, hidden, 200 in production), Load into calculator matches from both tables (12.839 / 58, Jelly 14.053 /
+  39). `verifyGearSearch.mjs`, `verifyRootDeploy.mjs`, `verifyBestSetup.mjs` updated for the new default tab/auto-run
+  (gear search and best-setup checks pass). Screenshots `docs/screenshots/phase12-*.png`.
+
 ## Phase 11 — Final review (2026-10-22)
 
 - Cross-cutting pass over `src/lib/fracturedArchive/*`, `src/lib/scaling/FracturedArchive.ts` and every upstream hook.
