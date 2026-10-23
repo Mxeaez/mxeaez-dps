@@ -16,7 +16,7 @@ import {
   CandidateItem, refName, SEARCH_POOL, StylePool,
 } from '@/lib/fracturedArchive/searchCandidates';
 import {
-  GearSearchOptions, prunePool, runGearSearch, searchRowToPlayer, spellsForMonster,
+  GearSearchOptions, prunePool, runGearSearch, searchRowToPlayer, spellsForMonster, styleOptionsFor,
 } from '@/lib/fracturedArchive/search';
 
 // Phase 9: full gear search ("Search" tab of /best-setup). Pool: src/lib/fracturedArchive/searchCandidates.ts;
@@ -223,6 +223,72 @@ describe('search', () => {
     expect(full.evaluations).toBeGreaterThan(30);
     expect(progress).toEqual(expect.arrayContaining([10, 20, 30]));
     expect(r.rows[0]?.ttk ?? null).toBeNull();
+  });
+
+  // Reduced pools (2 weapons x 3 helms x 3 bodies x 2 gloves, other slots fixed, no preset seeds): the search must reach
+  // the exhaustive optimum over the same pool and all style options. The multi-piece sets are seeded like in the real
+  // pool — without them the one-slot ascent misses Inquisitor's/Void (the documented limitation; Xarth 11.488 vs 11.533).
+  const bruteForcePools: [string, StylePool, Partial<Record<string, ItemRef>>][] = [
+    ['xarth', {
+      group: 'melee',
+      weapons: [{ weapon: 'Scythe of Vitur' }, { weapon: 'Obligator' }],
+      slots: {
+        head: [{ ref: 'Torva full helm' }, { ref: "Inquisitor's great helm", keep: true }, { ref: ['Void melee helm', 'Normal'], keep: true }],
+        body: [{ ref: 'Torva platebody' }, { ref: "Inquisitor's hauberk", keep: true }, { ref: ['Elite void top', 'Normal'], keep: true }],
+        hands: [{ ref: 'Ferocious gloves' }, { ref: ['Void knight gloves', 'Normal'], keep: true }],
+        legs: [{ ref: "Inquisitor's plateskirt" }],
+        neck: [{ ref: 'Amulet of rancour' }],
+        ring: [{ ref: 'Ultor ring' }],
+      },
+      sets: [
+        { name: "Inquisitor's", pieces: { head: "Inquisitor's great helm", body: "Inquisitor's hauberk" } },
+        { name: 'Void', pieces: { head: ['Void melee helm', 'Normal'], body: ['Elite void top', 'Normal'], hands: ['Void knight gloves', 'Normal'] } },
+      ],
+    }, { legs: "Inquisitor's plateskirt", neck: 'Amulet of rancour', ring: 'Ultor ring' }],
+    ['jelly', {
+      group: 'ranged',
+      weapons: [{ weapon: 'Twisted bow', ammo: [['Dragon arrow', 'Unpoisoned']] }, { weapon: 'Ascension crossbows', ammo: ['Onyx ascension bolts (e)'] }],
+      slots: {
+        head: [{ ref: 'Masori mask (f)' }, { ref: ['Crystal helm', 'Active'], keep: true }, { ref: ['Void ranger helm', 'Normal'], keep: true }],
+        body: [{ ref: 'Masori body (f)' }, { ref: ['Crystal body', 'Active'], keep: true }, { ref: ['Elite void top', 'Normal'], keep: true }],
+        hands: [{ ref: 'Zaryte vambraces' }, { ref: ['Void knight gloves', 'Normal'], keep: true }],
+        legs: [{ ref: ['Elite void robe', 'Normal'] }],
+        neck: [{ ref: 'Necklace of anguish' }],
+        cape: [{ ref: "Dizana's quiver" }],
+      },
+      sets: [
+        { name: 'Void', pieces: { head: ['Void ranger helm', 'Normal'], body: ['Elite void top', 'Normal'], hands: ['Void knight gloves', 'Normal'] } },
+      ],
+    }, { legs: ['Elite void robe', 'Normal'], neck: 'Necklace of anguish', cape: "Dizana's quiver" }],
+  ];
+
+  test.each(bruteForcePools)('%s: reduced-pool search = exhaustive brute force', (targetKey, pool, fixed) => {
+    const r = search(targetKey, 'none', { pool: { [pool.group]: pool }, presetSeeds: false }, pool.group);
+    const { monster } = buildTargetMonster(findTarget(targetKey), undefined, 'none', A);
+    const fixedItems = Object.fromEntries(Object.entries(fixed).map(([slot, ref]) => [slot, resolveItem(ref!)]));
+    let best = -1;
+    let count = 0;
+    for (const w of pool.weapons) {
+      const weapon = resolveItem(w.weapon);
+      const ammo = w.ammo ? resolveItem(w.ammo[0]) : null;
+      const options = styleOptionsFor(weapon, w, pool.group, monster);
+      for (const head of pool.slots.head!) {
+        for (const body of pool.slots.body!) {
+          for (const hands of pool.slots.hands!) {
+            for (const o of options) {
+              const p = applyLoadoutToPlayer(base(), 'bf', pool.group, {
+                ...fixedItems, weapon, ammo, head: resolveItem(head.ref), body: resolveItem(body.ref), hands: resolveItem(hands.ref),
+              }, o.style, o.spell, monster, A);
+              best = Math.max(best, evaluateLoadout(p, monster, false).dps);
+              count += 1;
+            }
+          }
+        }
+      }
+    }
+    expect(count).toBeGreaterThanOrEqual(2 * 18);
+    expect(r.rows[0].dps).toBeCloseTo(best, 12);
+    expect(r.evaluations).toBeLessThanOrEqual(count);
   });
 
   test('toy 2-slot search finds the brute-force optimum', () => {

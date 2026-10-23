@@ -178,6 +178,20 @@ found if that set is seeded in `sets`; a set missing there would be missed. Mixe
 seeds (e.g. Torva helm + Oathplate comes from its preset). Only items in the pool are considered — anything else
 (e.g. a slayer helm) is never tried.
 
+## Modelling caveats (search)
+
+- **Soulreaper axe** is evaluated at 0 stacks (the calculator's default), so it is undervalued: on Xarth (Solo) it
+  scores ~9.03 DPS vs ~11.04 at 5 stacks (review check).
+- **Special-attack weapons** (Burning claws, Voidwaker, Elder maul, Dual macuahuitl, ...) are scored on their normal
+  attacks only; specs are not part of the search.
+- **Eclipse atlatl** gets the ranged assumptions (Rigour + Ranging potion), i.e. no Strength boost although its max
+  hit uses Strength, and its Eclipse Moon set effect isn't modelled upstream, so it is undervalued.
+- **Blue Moon / Eclipse Moon set effects** are not modelled by the upstream calculator (it shows a warning); those sets
+  only count for their stats.
+- The one-slot ascent cannot reach a multi-piece set by itself: in a reduced test pool without set seeds it stopped at
+  11.488 vs the brute-force 11.533 (Xarth, Inquisitor's helm + hauberk). With the sets seeded (as in the real pool) the
+  search equals brute force (Search.test.ts).
+
 ## Timings
 
 ~1,200–1,330 evaluations per boss for all three styles (34 variants). In the browser (Chromium on this laptop, dev

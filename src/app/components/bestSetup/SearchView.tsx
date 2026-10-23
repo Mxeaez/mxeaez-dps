@@ -175,7 +175,7 @@ const SearchView: React.FC<{
             <div className="text-gray-500 dark:text-gray-400" data-testid="search-stats">
               {`${result.evaluations} evaluations over ${result.variants} weapon variants in ${(result.elapsedMs / 1000).toFixed(1)}s`}
               {wallMs !== null && ` (wall ${(wallMs / 1000).toFixed(1)}s)`}
-              {result.cantHit.length > 0 && ` · can't hit: ${result.cantHit.map((c) => c.weapon).join(', ')} (${result.cantHit[0].reason})`}
+              {Array.from(new Set(result.cantHit.map((c) => c.reason))).map((reason) => ` · can't hit (${reason}): ${result.cantHit.filter((c) => c.reason === reason).map((c) => c.weapon).join(', ')}`)}
             </div>
             {target.note && <div className="text-orange-700 dark:text-orange-300">{target.note}</div>}
           </div>
