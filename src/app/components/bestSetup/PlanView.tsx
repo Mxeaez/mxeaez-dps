@@ -13,8 +13,6 @@ import {
   enumerateRoutes, formatDuration, PhaseTime,
 } from '@/lib/fracturedArchive/raidTime';
 import {
-  DEFAULT_NON_ITEM_SLOTS,
-  DEFAULT_PINNED_NAMES,
   equipmentById,
   INVENTORY_SLOTS,
   InventoryCell,
@@ -215,10 +213,11 @@ const PhaseRows: React.FC<{ phases: PhaseTime[] }> = ({ phases }) => (
 
 const PlanView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStateId, raid: RaidConfig }> = ({ assumptions, drain, raid }) => {
   const routes = useMemo(() => enumerateRoutes(raid.time.routeSlots, raid.time.labels), [raid]);
-  const defaultPinned = useMemo(() => DEFAULT_PINNED_NAMES.map((n) => planItemByName(n).id), []);
+  // phase 21: per-raid defaults (src/lib/raids/planDefaults.ts); the view is remounted on a raid change
+  const defaultPinned = useMemo(() => raid.planDefaults.pinned.map((n) => planItemByName(n).id), [raid]);
   const [route, setRoute] = useState('all');
   const [supplies, setSupplies] = useState<SupplyCounts>(raid.defaultSupplies);
-  const [nonItem, setNonItem] = useState(DEFAULT_NON_ITEM_SLOTS);
+  const [nonItem, setNonItem] = useState(raid.planDefaults.nonItemSlots);
   const [pinned, setPinned] = useState<number[]>(defaultPinned);
   const [result, setResult] = useState<PlanResult | null>(null);
   const [running, setRunning] = useState(false);
@@ -376,7 +375,12 @@ const PlanView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStateI
                 </span>
               );
             })}
-            <button type="button" className="underline" onClick={() => setPinned(defaultPinned)}>reset</button>
+            <button type="button" className="underline" onClick={() => setPinned(defaultPinned)} data-testid="pinned-reset">reset</button>
+            {raid.planDefaults.raidSupplied.length > 0 && (
+              <span className="text-gray-500 dark:text-gray-400" data-testid="raid-supplied" title="Handed out by the raid: free to use on any loadout, no inventory slot">
+                {`Raid items (0 slots): ${raid.planDefaults.raidSupplied.map((r) => (typeof r === 'string' ? r : r[0])).join(', ')}`}
+              </span>
+            )}
           </div>
           <div className="max-w-[360px]">
             <EquipmentSelect
@@ -450,11 +454,16 @@ const PlanView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStateI
             <div className="flex flex-col gap-1 text-xs min-w-[300px] flex-1" data-testid="kit-loadouts">
               <div className="font-semibold">{`Kit loadouts (${result.kit.length})`}</div>
               {result.kit.map((c, i) => (
-                <div key={c.key} className="border-l-4 pl-2 border-body-400 dark:border-dark-200" data-testid="kit-loadout">
+                <div key={c.key} className="border-l-4 pl-2 border-body-400 dark:border-dark-200" data-testid="kit-loadout" data-weapon={c.equipment.weapon?.name ?? ''} data-group={c.group}>
                   <div>
                     <span className="font-semibold">{i === 0 ? 'Worn: ' : 'Switch: '}</span>
                     {c.label}
                     <span className="text-gray-500 dark:text-gray-400">{` · ${c.group} · ${c.source}`}</span>
+                    {result.kit.length > 1 && result.kitMarginal?.[i] && (
+                      <span className="text-gray-500 dark:text-gray-400" data-testid="kit-marginal" data-slots={result.kitMarginal[i].slots}>
+                        {` · +${result.kitMarginal[i].slots} slot${result.kitMarginal[i].slots === 1 ? '' : 's'}, saves ${fmtS(result.kitMarginal[i].seconds)}`}
+                      </span>
+                    )}
                   </div>
                   <LoadoutIconRow
                     icons={LOADOUT_SLOT_ORDER.filter((s) => c.equipment[s]).map((s) => searchItemIcon(s, c.equipment[s]!))}

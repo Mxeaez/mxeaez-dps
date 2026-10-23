@@ -11,7 +11,7 @@ import { THEATRE_OF_BLOOD_RAID } from '@/lib/raids/theatreOfBlood';
 
 export * from '@/lib/raids/types';
 export {
-  raidBase, teamDpsMultiplier, teamTimeLabel, withScalingInput,
+  raidBase, teamDpsMultiplier, teamTimeLabel, visibleTargets, withScalingInput,
 } from '@/lib/raids/base';
 export type { RaidBase } from '@/lib/raids/base';
 
@@ -25,7 +25,7 @@ export type { RaidBase } from '@/lib/raids/base';
  * party size (default team-DPS multiplier) and whether potion boosts need inventory supplies. On top of it:
  * - `time`, `defaultTimeSettings`, `timeSettingFields`, `timeModelNote`: the encounter damage model (FA: 8 routes; ToA:
  *   one fixed route), its own settings object and how the settings box shows it.
- * - `defaultSupplies`, `planNote`: Plan-tab defaults.
+ * - `defaultSupplies` (= `planDefaults.supplies`, phase 21: src/lib/raids/planDefaults.ts), `planNote`: Plan-tab defaults.
  * - `routesLabel`, `encounterTarget`, `hpNote`, `raidOnlyAssumptions`: UI.
  * Drain floors, weaknesses and immunities come from upstream (`getDefenceFloor`, monsters.json, `isImmune`) plus the
  * raid's own hooks (FA: src/lib/fracturedArchive/*; ToA: src/lib/raids/toa/prayers.ts).

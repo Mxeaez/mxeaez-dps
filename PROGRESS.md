@@ -3,6 +3,40 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 21 — Planner for ToA / CoX / ToB: per-raid defaults, raid items, dedupe (2026-10-23)
+
+- **Per-raid Plan defaults** (new `src/lib/raids/planDefaults.ts`, `RaidBase.planDefaults`; `DEFAULT_PINNED_NAMES` /
+  `DEFAULT_SUPPLIES` in planner.ts are now FA's aliases, `raid.defaultSupplies` = `planDefaults.supplies`): FA unchanged
+  (user's kit); ToA Lightbearer + Zaryte crossbow, 6 restore + 2 Other (salts) — Strategies max inventory, Helpful
+  Spirit supplies; CoX Dragon pickaxe + Elder maul, 2 brew / 2 restore / 1 Other (Overload) — potions made in the raid;
+  ToB Elder maul, 4 brew / 3 restore / 1 ranging / 1 super combat / 1 heart (chests top up; documented, not modelled);
+  rune pouch everywhere. PlanView loads them per raid (+ "Raid items (0 slots)" note, per-loadout "+N slots, saves X s").
+- **Raid-supplied items** (`planDefaults.raidSupplied`, ToB: Dawnbringer): 0 slots in `kitSlotUsage` / `optimiseKit` /
+  `inventoryGrid` (left out of the carried union, still in a loadout's size); the raid weapon is a partner like a
+  carried weapon and, weapon only, goes on every full candidate of another style.
+- **Single-piece swaps**: base + one piece of another loadout with the same weapon (e.g. Oathplate + Scythe + Salve (ei)).
+- **Dedupe rule** (`SWITCH_MIN_SAVING_SECONDS` = 1, `SWITCH_MIN_SECONDS_PER_SLOT` = 1): the optimiser's prune step drops a
+  kit loadout saving < max(1 s, 1 s × its slots) and swaps one for a cheaper same-style candidate when its extra slots
+  bought < 1 s each; `PlanResult.kitMarginal`; "why" list marks fitting additions that miss the rule.
+- **ToB**: Dawnbringer spec count = 2 × the team-DPS multiplier (was × party size), time = specs × 2.4 ÷ the same
+  multiplier (default unchanged); Prinkipas targets only in the Search list in Hard Mode (`BestSetupTarget.tobModes`,
+  `RaidBase.targetVisible`, `visibleTargets`; a hidden pick falls back to the first target; Summary / time model unchanged).
+- Docs: BEST_SETUP *Per-raid defaults, raid items and the dedupe rule* (table with sources, ToB supply chests, effect
+  per raid); UPSTREAM_MERGE *Fixes worth sending upstream* (ToB ids, Olm melee mitigation, Moon / Staff of the Dead
+  renames, generator UTF-8); UNVERIFIED G2 updated, new D13 (dedupe threshold), D14 (defaults), G12 (Dawnbringer 0 slots).
+- Tests: new `src/tests/lib/raids/Phase21.test.ts` (22: defaults per raid resolve / validate / FA aliases; raid items
+  0 slots in accounting, grid and optimiser; dedupe 0-slot 0.2 s duplicate dropped, 1-slot 3 s kept, 2 slots for 1.5 s
+  dropped / 2.5 s kept, cheaper-variant swap; Prinkipas visibility per mode; Dawnbringer specs at Team DPS × 1/2/3/4/5;
+  reduced-pool ToB plan with a Dawnbringer loadout at +0 slots). Previous tests unchanged. `yarn test` 1193 pass /
+  4 skipped; lint, tsc clean.
+- Playwright: new `scripts/verifyPhase21.mjs` all OK — per-raid defaults in the inputs; plans FA 17.4 s, ToA 19.3,
+  CoX 20.6, ToB 18.2 (≤ 30 s), 28 cells; every loadout obeys the rule; ToB one full Scythe set, Dawnbringer (Ancestral)
+  at +0 slots, no Dawnbringer cell; Prinkipas only in Hard Mode. Screenshots `docs/screenshots/phase21-*.png`.
+- Headlines (Team, defaults): FA **23:18.8** (unchanged); ToA 14:20.0 → **14:20.2** (Torva + Obligator, 0.2 s, dropped;
+  4 free); CoX 6:59.9 → **6:41.9** (new supplies / pins; rule changes nothing); ToB 7:35.5 → **7:34.1** (Oathplate +
+  Scythe worn; Dawnbringer (Ancestral) +0, Shadow, Oathplate + Salve, Ascension crossbows partial; 3 free; the three
+  near-duplicate Scythe sets gone).
+
 ## Phase 20 — Theatre of Blood (2026-10-23)
 
 - **Config**: `src/lib/raids/theatreOfBlood.ts` + `src/lib/raids/tob/{constants,targets,presets,searchPool,damage,time}.ts`;

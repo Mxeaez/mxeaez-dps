@@ -64,8 +64,8 @@ import {
  * - Xarpus: P1 "starting with 75% of his health" + exhumed heals (`xarpusExhumedHeal`); P2 down to "~25% of his health"
  *   (Entry Mode 22.5%), then P3. P2 and P3 share one infobox (no stat change); P3's stare (attack from the quadrant he
  *   isn't watching) isn't modelled.
- * - Verzik: P1 = Dawnbringer specs (`verzikDawnbringerSpecs` per player, 75-150 each → 112.5; each one is a 4-tick
- *   attack of one player's time: specs × 2.4 s ÷ the team) + the rest of the shield at the kit's capped DPS (the cap is
+ * - Verzik: P1 = Dawnbringer specs (`verzikDawnbringerSpecs` per player × the team-DPS multiplier, 75-150 each → 112.5;
+ *   each one is a 4-tick attack of one player's time: specs × 2.4 s ÷ the same multiplier) + the rest of the shield at the kit's capped DPS (the cap is
  *   upstream's: min(hit, a uniform roll 0-10 / 0-3)). There is one Dawnbringer, so one player uses the kit's best on
  *   P1 (which may be the Dawnbringer) and the other (team − 1) the kit's best without it (phase "Shield (Dawnbringer
  *   with a teammate)"); P2 her hp (+ `verzikP2Heal`); P3 her hp (+ `verzikP3Heal`; Hard Mode: + 30%, "a one-time heal ... 30%
@@ -130,10 +130,17 @@ export const tobHp = (a: RaidTimeAssumptions, targetKey: string): number => targ
 const pct = (f: number): string => `${Math.round(f * 1000) / 10}%`;
 const frac = (f: number, max = 1) => Math.min(max, Math.max(0, Number.isFinite(f) ? f : 0));
 
-/** Total Dawnbringer special-attack damage at Verzik P1 (capped at P1's hp) and the number of specs. */
+/**
+ * Total Dawnbringer special-attack damage at Verzik P1 (capped at P1's hp) and the number of specs. Phase 21: the specs
+ * come from the same team as every other phase's time, the team-DPS multiplier ("N players at your DPS"; default the
+ * party size), not the party size: N players × specs each, done in specs × 2.4 s ÷ N (`tobEncounterPass`), so changing
+ * "Team DPS ×" changes the spec count and its time together (each player's share stays specs-per-player × 2.4 s). The
+ * multiplier may be fractional (a weaker / stronger team); so may the spec count.
+ */
 export const dawnbringerSpecs = (a: RaidTimeAssumptions): { specs: number, damage: number } => {
   const perPlayer = Math.max(0, Math.trunc(Number(tobSettings(a).verzikDawnbringerSpecs) || 0));
-  const specs = perPlayer * tobPartySize(a);
+  const team = Math.max(0, a.dpsMultiplier ?? 1);
+  const specs = perPlayer * team;
   return { specs, damage: Math.min(tobHp(a, 'tob-verzik-p1'), specs * DAWNBRINGER_SPEC_AVERAGE) };
 };
 
@@ -212,7 +219,7 @@ export const tobEncounterPlan = (id: EncounterId, a: RaidTimeAssumptions): Plann
       const h3 = frac(s.verzikP3Heal, 5) + (mode === 'hard' ? VERZIK_HM_FINAL_HEAL : 0);
       return [
         {
-          key: 'verzik-p1-dawnbringer', label: `P1: Dawnbringer specs × ${spec.specs} (75-150)`, targetKey: 'tob-verzik-p1', damage: spec.damage,
+          key: 'verzik-p1-dawnbringer', label: `P1: Dawnbringer specs × ${Math.round(spec.specs * 10) / 10} (75-150)`, targetKey: 'tob-verzik-p1', damage: spec.damage,
         },
         {
           key: 'verzik-p1', label: 'P1: rest of the shield (damage capped)', targetKey: 'tob-verzik-p1', damage: Math.max(0, p1 - spec.damage),
@@ -311,7 +318,8 @@ export const tobEncounterPass = (
         ...p,
         choice: dawnbringerChoice,
         dps: dawnbringerChoice.dps,
-        seconds: (specs * DAWNBRINGER_SPEC_SECONDS) / Math.max(1, mult),
+        // the same team as the spec count (dawnbringerSpecs): each player's specs × 2.4 s
+        seconds: mult > 0 ? (specs * DAWNBRINGER_SPEC_SECONDS) / mult : 0,
       });
     }
     return withNote(phaseTime(p, kit, drain, fightSeconds, mult));

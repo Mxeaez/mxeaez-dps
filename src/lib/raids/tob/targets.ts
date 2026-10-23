@@ -123,6 +123,7 @@ export const TOB_TARGETS: BestSetupTarget[] = [
     version: 'Melee',
     raid: 'tob',
     noSummary: true,
+    tobModes: ['hard'],
     note: 'Hard Mode only: three spawn during the waves; changes form like the Vasilias.',
   },
   {
@@ -132,6 +133,7 @@ export const TOB_TARGETS: BestSetupTarget[] = [
     version: 'Ranged',
     raid: 'tob',
     noSummary: true,
+    tobModes: ['hard'],
   },
   {
     key: 'tob-prinkipas-magic',
@@ -140,6 +142,7 @@ export const TOB_TARGETS: BestSetupTarget[] = [
     version: 'Magic',
     raid: 'tob',
     noSummary: true,
+    tobModes: ['hard'],
   },
   {
     key: 'tob-sotetseg',

@@ -69,6 +69,8 @@ export interface BestSetupTarget {
   version: string;
   /** Raid the target belongs to (default: the Fractured Archive). */
   raid?: RaidId;
+  /** Phase 21, ToB: the modes in which this target exists (Search boss list; RaidBase.targetVisible). Undefined = all. */
+  tobModes?: TobMode[];
   /** ToA: the path whose path level scales this target's hp (upstream only scales the path monsters). */
   toaPath?: ToaPath;
   /** Phase dropdown options (MONSTER_PHASES_BY_ID); the first one is the default. */

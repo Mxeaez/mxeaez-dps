@@ -7,13 +7,11 @@ import type { RaidConfig } from '@/lib/raids/index';
 import type { TimeSettingField } from '@/lib/raids/types';
 
 /**
- * Phase 19: Chambers of Xeric supplies. Overloads, brews (Xeric's aid) and restores (Revitalisation / Prayer enhance)
- * are made in the raid; they still take slots, entered as "Other" (default 8). The boost is always Overload (+)
- * (`boostsNeedSupplies: false`), so the potion supply types default to 0.
+ * Chambers of Xeric supplies (phase 21: src/lib/raids/planDefaults.ts, COX_PLAN_DEFAULTS): overloads, brews (Xeric's
+ * aid) and restores (Revitalisation / Prayer enhance) are made in the raid, so the default stock is small: 2 brew,
+ * 2 restore, 1 Other (Overload). The boost is always Overload (+) (`boostsNeedSupplies: false`).
  */
-export const COX_DEFAULT_SUPPLIES: SupplyCounts = {
-  brew: 0, restore: 0, ranging: 0, superCombat: 0, magic: 0, food: 0, other: 8,
-};
+export const COX_DEFAULT_SUPPLIES: SupplyCounts = CHAMBERS_OF_XERIC_BASE.planDefaults.supplies;
 
 const ROOM_FIELDS: TimeSettingField[] = COX_ROOMS.map((r) => ({
   key: `room_${r.id}`,
@@ -69,5 +67,5 @@ export const CHAMBERS_OF_XERIC_RAID: RaidConfig = {
   encounterTarget: COX_ENCOUNTER_TARGET,
   hpNote: 'HP and Defence scaled by party size and Challenge Mode (upstream, verified in-game).',
   defaultSupplies: COX_DEFAULT_SUPPLIES,
-  planNote: 'CoX: overloads, brews and restores are made in the raid — enter their slots under "Other"; every style keeps the Overload (+) boost. Bring a pickaxe if the layout has Guardians.',
+  planNote: 'CoX: overloads, brews (Xeric\'s aid) and restores (Prayer enhance) are made in the raid — "Saradomin brew" / "Super restore" stand for them, "Other" for the Overload; every style keeps the Overload (+) boost. The Dragon pickaxe is for the Guardians (remove it if your layout has none).',
 };

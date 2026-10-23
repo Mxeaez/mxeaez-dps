@@ -4,12 +4,11 @@ import { THEATRE_OF_BLOOD_BASE } from '@/lib/raids/base';
 import type { RaidConfig } from '@/lib/raids/index';
 
 /**
- * Phase 20: Theatre of Blood supplies. The potions are brought (no raid boost: `boostsNeedSupplies`), one of each by
- * default; brews and restores are also sold by the supply chests after Bloat and Sotetseg.
+ * Theatre of Blood supplies (phase 21: src/lib/raids/planDefaults.ts, TOB_PLAN_DEFAULTS). The potions are brought (no
+ * raid boost: `boostsNeedSupplies`), one of each; 4 brews and 3 restores, fewer than a raid without resupply because the
+ * chests after Bloat and Sotetseg sell brews and restores (documented, not modelled).
  */
-export const TOB_DEFAULT_SUPPLIES: SupplyCounts = {
-  brew: 4, restore: 3, ranging: 1, superCombat: 1, magic: 1, food: 0, other: 0,
-};
+export const TOB_DEFAULT_SUPPLIES: SupplyCounts = THEATRE_OF_BLOOD_BASE.planDefaults.supplies;
 
 /**
  * Phase 20: Theatre of Blood. Monsters, hp scaling by party size (normal / Hard Mode / Entry Mode), Verzik P1's damage
@@ -59,5 +58,5 @@ export const THEATRE_OF_BLOOD_RAID: RaidConfig = {
   encounterTarget: TOB_ENCOUNTER_TARGET,
   hpNote: 'HP scaled by party size (upstream; wiki: 75% at 1-3, 87.5% at 4, 100% at 5) for the chosen mode.',
   defaultSupplies: TOB_DEFAULT_SUPPLIES,
-  planNote: 'ToB: the Dawnbringer is picked up at Verzik (not an inventory item here); the supply chests after Bloat and Sotetseg sell brews and restores.',
+  planNote: 'ToB: the Dawnbringer is the raid\'s own item (picked up at Verzik): it costs no inventory slot here and can go on any loadout. The supply chests after Bloat and Sotetseg sell brews and restores, so fewer are brought.',
 };

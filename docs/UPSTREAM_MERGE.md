@@ -63,6 +63,29 @@ values (Bork's flat armour comes from the phase input, so the generated 0 is exp
 No consolidation was done in phase 11. The hooks are already as small as they can be without refactoring upstream
 code, and moving them would not make the merge easier.
 
+## Fixes worth sending upstream
+
+Bugs in upstream's own code or data handling that we fixed locally (phase 21 list); each is small and independent of
+the raid-4 work, so it could go upstream as its own PR.
+
+- **`TOB_MONSTER_IDS` misses 8354 / 10807 / 10786 / 10803** (`src/lib/constants.ts`): monsters.json uses these ids for
+  the Nylocas Vasilias (normal / Hard / Entry) and the melee Prinkipas, so upstream doesn't scale them: Vasilias 2500 hp
+  at 4 players instead of trunc(2500 × 7/8) = 2187 (`src/tests/lib/raids/ToB.test.ts`, "id fix"; infobox "scaledhp = Yes").
+- **Olm melee mitigation on the head and right claw** (`PlayerVsNPCCalc.applyNpcTransforms`, ours in
+  `src/lib/raids/cox/damage.ts`): Chambers_of_Xeric/Strategies "The head has 66% damage mitigation from all non-ranged
+  attacks ... The right hand ... from all non-mage attacks"; upstream divides magic / ranged but not melee
+  (`src/tests/lib/raids/CoX.test.ts`, Olm melee mitigation).
+- **Moon sets / Staff of the Dead renames** (`BaseCalc.ts`, `PlayerVsNPCCalc.ts`): the wiki renamed "Blood moon helm /
+  chestplate / tassets" → "Blood Moon …" (Blue / Eclipse Moon and "Blue Moon spear" too) and "Staff of the dead" / "Toxic
+  staff of the dead" → "Staff of the Dead" / "Toxic Staff of the Dead" (upstream's two spell checks already disagree on
+  the casing). After an equipment refresh upstream's `wearing` checks silently stop matching: the Moon set effects and
+  the Flames of Zamorak / Magic Dart staff checks break (phase 7b, 44 renamed entries;
+  `src/tests/lib/fracturedArchive/Equipment.test.ts`, rename regression).
+- **Generators on Windows: UTF-8** (`scripts/generateMonsters.py`, `generateEquipment.py`): `open()` without an
+  encoding uses the platform's (cp1252 on Windows), so reading `manual_*.json` / writing `monsters.json` /
+  `equipment.json` fails on non-ASCII text; `encoding='utf-8'` on the four `open` calls fixes it (2 lines per script;
+  phase 1 / 7b re-runs on Windows).
+
 ## Things upstream might add that overlap with ours
 
 - **ToB** (phase 20): if upstream fixes the Vasilias / Prinkipas ids in `TOB_MONSTER_IDS` itself, drop our four

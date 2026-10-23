@@ -38,6 +38,7 @@ import {
 import { raidBase } from '@/lib/raids/base';
 import { TimeSettings } from '@/lib/raids/types';
 import { SPEC_WEAPONS, SpecWeapon } from '@/lib/fracturedArchive/specs';
+import { FA_PLAN_DEFAULTS } from '@/lib/raids/planDefaults';
 
 /**
  * Phase 17: raid planner ("Plan" tab of /best-setup). Pure and React-free: runs in the search worker
@@ -65,6 +66,10 @@ import { SPEC_WEAPONS, SpecWeapon } from '@/lib/fracturedArchive/specs';
  *    change. Best kit overall: lowest time, then fewest slots. Deterministic (fixed orders, stable ties).
  *    The inner loop times kits from the matrix with drains planned at the fixed fight length (exact for Team / None,
  *    an approximation for Solo); the reported times are recomputed with `createKitEvaluator` + `compareRoutes`.
+ *
+ * Phase 21: per-raid defaults (`RaidBase.planDefaults`); raid-supplied items (ToB's Dawnbringer) cost 0 slots and the
+ * raid weapon is put, weapon only, on every full candidate of another style; single-piece swaps within a base's weapon
+ * (e.g. + Salve amulet(ei)); the dedupe rule (`SWITCH_MIN_*`) prunes every optimiser result.
  */
 
 export const INVENTORY_SLOTS = 28;
@@ -86,9 +91,11 @@ export const SUPPLY_TYPES: { id: SupplyType, label: string, image: string | null
 
 export type SupplyCounts = Record<SupplyType, number>;
 
-export const DEFAULT_SUPPLIES: SupplyCounts = {
-  brew: 6, restore: 4, ranging: 2, superCombat: 1, magic: 0, food: 0, other: 0,
-};
+/**
+ * The Fractured Archive's default supplies (6 brew / 4 restore / 2 ranging / 1 super combat). Phase 21: each raid has its
+ * own (`RaidBase.planDefaults`, src/lib/raids/planDefaults.ts); this name stays for the phase 17 code and tests.
+ */
+export const DEFAULT_SUPPLIES: SupplyCounts = FA_PLAN_DEFAULTS.supplies;
 
 /**
  * The supply that carries each style's boost. A style whose supply count is 0 is evaluated without its potion (the
@@ -106,11 +113,28 @@ export const planAssumptions = (a: BestSetupAssumptions, supplies: SupplyCounts)
   return without.length ? { ...a, withoutPotion: without } : a;
 };
 
-/** Items the user always brings (the user's own kit, 2026-10-23); spec weapons come from "My specs" on top. */
-export const DEFAULT_PINNED_NAMES = ['Lightbearer', 'Elder maul', 'Zaryte crossbow', 'Kodai wand', 'Ancestral robe top', 'Elidinis\' ward (f)'];
+/**
+ * Items the user always brings in the Fractured Archive (the user's own kit, 2026-10-23); spec weapons come from "My
+ * specs" on top. Phase 21: per raid in `RaidBase.planDefaults.pinned`; this name stays for the phase 17 code and tests.
+ */
+export const DEFAULT_PINNED_NAMES: ItemRef[] = FA_PLAN_DEFAULTS.pinned;
 
 /** Non-equipment slots (rune pouch, teleports, ...); the first is labelled "Rune pouch". */
-export const DEFAULT_NON_ITEM_SLOTS = 1;
+export const DEFAULT_NON_ITEM_SLOTS = FA_PLAN_DEFAULTS.nonItemSlots;
+
+/**
+ * Phase 21 dedupe rule for kit loadouts (applied to every optimiser result: `optimiseKit`'s prune step): a loadout stays in the kit only
+ * if removing it would cost at least `SWITCH_MIN_SAVING_SECONDS` of route time, and at least
+ * `SWITCH_MIN_SECONDS_PER_SLOT` per inventory slot it takes. So a switch that costs 0 extra slots but saves < 1 s (a
+ * near-duplicate of another loadout: same weapon, one different piece) is dropped, and a switch must save ≥ 1 s per
+ * extra slot. Switching costs a tick in-game while the model counts it as free, so sub-second differences are noise.
+ */
+export const SWITCH_MIN_SAVING_SECONDS = 1;
+export const SWITCH_MIN_SECONDS_PER_SLOT = 1;
+
+/** The seconds a kit loadout taking `slots` extra inventory slots must save to stay (the dedupe rule). */
+export const switchSavingRequired = (slots: number): number => Math
+  .max(SWITCH_MIN_SAVING_SECONDS, Math.max(0, slots) * SWITCH_MIN_SECONDS_PER_SLOT);
 
 const SPEC_ORDER: SpecWeapon[] = ['elderMaul', 'dwh', 'bgs', 'tonalztics', 'ayak'];
 
@@ -120,6 +144,13 @@ export const carriedSpecWeaponNames = (mySpecs: BestSetupAssumptions['mySpecs'])
   .map((k) => SPEC_WEAPONS[k].item);
 
 // --- items ---------------------------------------------------------------------------------------------------------
+
+/** Phase 21: equipment ids of the raid's own items (`RaidBase.planDefaults.raidSupplied`; every version of each name). */
+export const raidSuppliedItemIds = (a: Pick<BestSetupAssumptions, 'raid'>): number[] => {
+  const names = new Set(raidBase(a.raid).planDefaults.raidSupplied.map((r) => (typeof r === 'string' ? r : r[0])));
+  if (!names.size) return [];
+  return availableEquipment.filter((e) => names.has(e.name)).map((e) => e.id).sort((x, y) => x - y);
+};
 
 export type Slot = keyof PlayerEquipment;
 
@@ -200,7 +231,9 @@ const sumSupplies = (s: SupplyCounts) => SUPPLY_TYPES.reduce((t, x) => t + Math.
 
 /**
  * Slot use of a kit. `loadouts` = item ids per kit loadout, `worn` = index of the worn one, `carried` = pinned items +
- * spec weapons (free to use in loadouts; counted once).
+ * spec weapons (free to use in loadouts; counted once). Phase 21: `raidSupplied` = items the raid hands out (ToB's
+ * Dawnbringer): never in the carried union (0 slots), but still counted in a loadout's size, so a loadout that wears
+ * one in place of a weapon needs no extra swap space (it takes the place of the item it replaces).
  */
 export const kitSlotUsage = (
   loadouts: number[][],
@@ -209,15 +242,21 @@ export const kitSlotUsage = (
   supplies: SupplyCounts,
   nonItemSlots: number,
   total = INVENTORY_SLOTS,
+  raidSupplied: number[] = [],
 ): SlotUsage => {
-  const all = new Set<number>(carried);
-  loadouts.forEach((l) => l.forEach((id) => all.add(id)));
-  const wornItems = loadouts.length ? new Set(loadouts[worn]).size : 0;
+  const free = new Set(raidSupplied);
+  const all = new Set<number>(carried.filter((id) => !free.has(id)));
+  loadouts.forEach((l) => l.forEach((id) => {
+    if (!free.has(id)) all.add(id);
+  }));
+  const wornSet = loadouts.length ? new Set(loadouts[worn]) : new Set<number>();
+  const wornItems = wornSet.size;
+  const wornFree = Array.from(wornSet).filter((id) => free.has(id)).length;
   const minLoadoutItems = loadouts.length ? Math.min(...loadouts.map((l) => new Set(l).size)) : 0;
   const s = sumSupplies(supplies);
   const nonItem = Math.max(0, Math.floor(nonItemSlots || 0));
-  const inventoryItems = all.size - wornItems;
-  const swapReserve = wornItems - minLoadoutItems;
+  const inventoryItems = all.size - (wornItems - wornFree);
+  const swapReserve = wornItems - wornFree - minLoadoutItems;
   const used = s + nonItem + inventoryItems + swapReserve;
   return {
     total,
@@ -261,13 +300,16 @@ export const inventoryGrid = (
   supplies: SupplyCounts,
   nonItemSlots: number,
   total = INVENTORY_SLOTS,
+  raidSupplied: number[] = [],
 ): InventoryCell[] => {
   const cells: InventoryCell[] = [];
+  const free = new Set(raidSupplied);
   SUPPLY_TYPES.forEach((t) => {
     for (let i = 0; i < Math.max(0, Math.floor(supplies[t.id] || 0)); i++) cells.push({ kind: 'supply', label: t.label, supply: t.id });
   });
   const wornIds = new Set(kit.length ? equipmentItemIds(kit[worn].equipment) : []);
-  const placed = new Set<number>(wornIds);
+  // raid-supplied items (ToB's Dawnbringer) take no cell
+  const placed = new Set<number>([...Array.from(wornIds), ...raidSupplied]);
   for (const g of GROUP_ORDER) {
     kit.forEach((l, i) => {
       if (i === worn || l.group !== g) return;
@@ -294,7 +336,8 @@ export const inventoryGrid = (
   });
   for (let i = 0; i < Math.max(0, Math.floor(nonItemSlots || 0)); i++) cells.push({ kind: 'non-item', label: i === 0 ? 'Rune pouch' : 'Other (non-item)' });
   const loadoutSizes = kit.map((l) => equipmentItemIds(l.equipment).length);
-  const reserve = kit.length ? loadoutSizes[worn] - Math.min(...loadoutSizes) : 0;
+  const wornFree = Array.from(wornIds).filter((id) => free.has(id)).length;
+  const reserve = kit.length ? loadoutSizes[worn] - wornFree - Math.min(...loadoutSizes) : 0;
   for (let i = 0; i < reserve && cells.length < total; i++) cells.push({ kind: 'swap', label: 'Swap space (a smaller loadout is worn)' });
   while (cells.length < total) cells.push({ kind: 'free', label: 'Free slot' });
   return cells;
@@ -363,6 +406,15 @@ export interface KitProblem {
   seeds: number[];
   /** Only these candidates may join a kit (default: all). */
   allowed?: boolean[];
+  /** Phase 21: raid-supplied item ids (0 slots; see kitSlotUsage). */
+  raidSupplied?: number[];
+  /** Phase 21: skip the dedupe rule (the optimiser's prune step); default false. */
+  noPrune?: boolean;
+  /**
+   * Phase 21: style group (any label) per candidate; the dedupe rule may swap a kit loadout for a cheaper candidate of
+   * the same group. Undefined = drops only.
+   */
+  groups?: string[];
   shouldCancel?: () => boolean;
   onProgress?: (done: number, total: number) => void;
 }
@@ -419,11 +471,14 @@ export const optimiseKit = (p: KitProblem): KitOptimum => {
     }
     return t;
   };
+  const free = new Set(p.raidSupplied || []);
   const usedOf = (m: number[]) => {
-    const all = new Set<number>(p.carried);
+    const all = new Set<number>(p.carried.filter((id) => !free.has(id)));
     let min = Infinity;
     for (const i of m) {
-      p.items[i].forEach((id) => all.add(id));
+      p.items[i].forEach((id) => {
+        if (!free.has(id)) all.add(id);
+      });
       min = Math.min(min, p.items[i].length);
     }
     return p.fixedSlots + all.size - (m.length ? min : 0);
@@ -431,6 +486,39 @@ export const optimiseKit = (p: KitProblem): KitOptimum => {
   const solution = (members: number[], seed: number): KitSolution => ({
     members, time: timeOf(members), used: usedOf(members), seed,
   });
+
+  // the dedupe rule (SWITCH_MIN_*): repeatedly apply the move that breaks it the most, until none does —
+  // drop a loadout that saves less than switchSavingRequired(its slots), or swap one for a cheaper candidate of the same
+  // style (`groups`) when the slots it frees bought less than SWITCH_MIN_SECONDS_PER_SLOT each
+  const loss = (from: KitSolution, to: KitSolution) => (to.time === from.time ? 0 : to.time - from.time);
+  const prune = (start: KitSolution): KitSolution => {
+    if (p.noPrune) return start;
+    let cur = start;
+    for (let iter = 0; iter < 50 && cur.members.length > 0; iter++) {
+      let move: { s: KitSolution, margin: number } | null = null;
+      for (let i = 0; i < cur.members.length; i++) {
+        if (cur.members.length > 1) {
+          const s = solution(cur.members.filter((_, j) => j !== i), cur.seed);
+          const margin = loss(cur, s) - switchSavingRequired(cur.used - s.used);
+          if (margin < -EPS && (!move || margin < move.margin)) move = { s, margin };
+        }
+        if (p.groups) {
+          for (let c = 0; c < n; c++) {
+            if (p.groups[c] !== p.groups[cur.members[i]] || cur.members.includes(c) || (p.allowed && !p.allowed[c])) continue;
+            const m = cur.members.map((x, j) => (j === i ? c : x));
+            const used = usedOf(m);
+            if (used >= cur.used) continue;
+            const s = solution(m, cur.seed);
+            const margin = loss(cur, s) - (cur.used - used) * SWITCH_MIN_SECONDS_PER_SLOT;
+            if (margin < -EPS && (!move || margin < move.margin)) move = { s, margin };
+          }
+        }
+      }
+      if (!move) return cur;
+      cur = move.s;
+    }
+    return cur;
+  };
 
   const greedy = (start: KitSolution, byRatio: boolean): KitSolution => {
     let cur = start;
@@ -492,7 +580,7 @@ export const optimiseKit = (p: KitProblem): KitOptimum => {
     p.onProgress?.(i, p.seeds.length);
     const start = solution([seed], seed);
     for (const byRatio of [true, false]) {
-      const s = local(greedy(start, byRatio), byRatio);
+      const s = prune(local(greedy(start, byRatio), byRatio));
       finals.push(s);
       if (!best || better(s, best, p.totalSlots)) best = s;
     }
@@ -556,9 +644,11 @@ export interface PlanTuning {
   presets?: PresetDef[];
   /** Phase 18: the raid's time model (default: the Fractured Archive's; the worker passes the one of `assumptions.raid`). */
   model?: RaidTimeModel;
+  /** Phase 21: skip the dedupe rule (comparisons / tests only). */
+  noPrune?: boolean;
 }
 
-export const PLAN_DEFAULTS: Required<Omit<PlanTuning, 'search' | 'presets' | 'model'>> = {
+export const PLAN_DEFAULTS: Required<Omit<PlanTuning, 'search' | 'presets' | 'model' | 'noPrune'>> = {
   perGroupWeapons: 3,
   perWeapon: 2,
   bases: 2,
@@ -600,6 +690,11 @@ export interface PlanResult {
   cancelled: boolean;
   /** Kit loadouts, the worn one first. */
   kit: PlanCandidate[];
+  /**
+   * Phase 21: per kit loadout (same order), the inventory slots it adds and the route seconds it saves vs the kit without
+   * it (optimiser times; a single-loadout kit: 0 slots, Infinity). The dedupe rule keeps saved ≥ switchSavingRequired(slots).
+   */
+  kitMarginal: { slots: number, seconds: number }[];
   slots: SlotUsage | null;
   inventory: InventoryCell[];
   specItems: PlanItem[];
@@ -708,13 +803,18 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
 
   const specItems = carriedSpecWeaponNames(assumptions.mySpecs).map(planItemByName);
   const pinnedItems = inputs.pinned.map((id) => equipmentById(id)).filter((p): p is EquipmentPiece => !!p).map((p) => toPlanItem(p));
+  // phase 21: the raid's own items (ToB: Dawnbringer) cost no slot and are free to put on any loadout
+  const raidSupplied = raidSuppliedItemIds(assumptions);
+  const raidSuppliedSet = new Set(raidSupplied);
   const carried = Array.from(new Set([...specItems, ...pinnedItems].map((i) => i.id)));
   const carriedSet = new Set(carried);
+  const isFreeItem = (id: number) => carriedSet.has(id) || raidSuppliedSet.has(id);
   const fixedSlots = sumSupplies(inputs.supplies) + Math.max(0, Math.floor(inputs.nonItemSlots || 0));
 
   const emptyResult = (searchRows: Record<string, SearchRow[]>): PlanResult => ({
     cancelled: true,
     kit: [],
+    kitMarginal: [],
     slots: null,
     inventory: [],
     specItems,
@@ -940,8 +1040,8 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     const bases = GROUP_ORDER.flatMap((g) => byGroup(g).slice(0, cfg.bases));
     const partnersOf = (g: StyleGroup) => {
       const top = byGroup(g).slice(0, cfg.partners);
-      // + the best loadout of each carried weapon of this group (they cost no slot)
-      const carriedWeapons = byGroup(g).filter((i) => carriedSet.has(candidates[i].equipment.weapon?.id ?? -1));
+      // + the best loadout of each carried / raid-supplied weapon of this group (they cost no slot)
+      const carriedWeapons = byGroup(g).filter((i) => isFreeItem(candidates[i].equipment.weapon?.id ?? -1));
       const seenWeapon = new Set<number>();
       const extra = carriedWeapons.filter((i) => {
         const w = candidates[i].equipment.weapon!.id;
@@ -953,6 +1053,61 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     };
     const pending: (Omit<PlanCandidate, 'key' | 'label'> & { label: string })[] = [];
     const pairs = bases.flatMap((a) => GROUP_ORDER.filter((g) => g !== candidates[a].group).flatMap((g) => partnersOf(g).map((b) => [a, b])));
+    // phase 21: single-piece swaps within a weapon — a base with one piece of another full loadout of the same weapon
+    // (e.g. Torva helm + Oathplate + Scythe with the Salve amulet(ei) of "Torva + Salve (ei) + Scythe"), so near-duplicate
+    // sets of one weapon can merge into one set + the pieces that matter (then the dedupe rule drops the leftovers)
+    bases.forEach((a) => {
+      const A = candidates[a];
+      const weapon = A.equipment.weapon?.id;
+      if (weapon === undefined) return;
+      const seenPiece = new Set<string>();
+      for (let b = 0; b < fullCount; b++) {
+        const B = candidates[b];
+        if (b === a || B.group !== A.group || B.equipment.weapon?.id !== weapon || !dps[b].some((d) => d > 0)) continue;
+        PIECE_SLOTS.forEach((slot) => {
+          const it = B.equipment[slot];
+          if (!it || it.id === A.equipment[slot]?.id || seenPiece.has(`${slot}|${it.id}`)) return;
+          seenPiece.add(`${slot}|${it.id}`);
+          pending.push({
+            label: `${A.label} + ${it.name}`,
+            kind: 'partial',
+            group: A.group,
+            equipment: { ...A.equipment, [slot]: it },
+            options: mergeOptions(A.options, B.options),
+            source: `${A.label} with ${it.name} (${slot}, from ${B.label})`,
+            base: A.label,
+            partner: B.label,
+            pieces: [slot],
+          });
+        });
+      }
+    });
+    // phase 21: a raid-supplied weapon (ToB's Dawnbringer) on every full candidate of another style ("Dawnbringer on
+    // worn gear"): weapon only, so it costs 0 slots whichever loadout ends up worn
+    const freeWeaponPartners = GROUP_ORDER.flatMap((g) => byGroup(g)).filter((i) => raidSuppliedSet.has(candidates[i].equipment.weapon?.id ?? -1));
+    const seenFreeWeapon = new Set<number>();
+    freeWeaponPartners.forEach((b) => {
+      const w = candidates[b].equipment.weapon!.id;
+      if (seenFreeWeapon.has(w)) return;
+      seenFreeWeapon.add(w);
+      const B = candidates[b];
+      for (let a = 0; a < fullCount; a++) {
+        const A = candidates[a];
+        if (A.group === B.group || bases.includes(a) || !dps[a].some((d) => d > 0)) continue;
+        const v0 = partialSwitchVariants(A.equipment, B.equipment, () => 0)[0];
+        pending.push({
+          label: `${B.equipment.weapon?.name ?? B.label} switch on ${A.label}`,
+          kind: 'partial',
+          group: B.group,
+          equipment: v0.equipment,
+          options: B.options,
+          source: `${A.label} → ${B.label}, weapon only (raid item: 0 slots)`,
+          base: A.label,
+          partner: B.label,
+          pieces: [],
+        });
+      }
+    });
     pairs.forEach(([a, b], pi) => {
       if (cancelled()) throw new PlanCancelled();
       const A = candidates[a];
@@ -967,7 +1122,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         const relBest = colMax[col] > 0 ? dps[b][col] / colMax[col] : 0;
         if (rel > relBest + EPS || (Math.abs(rel - relBest) <= EPS && d > dps[b][col])) col = c;
       });
-      const variants = partialSwitchVariants(A.equipment, B.equipment, (eq) => dpsOn(B, eq, col).dps, (id) => carriedSet.has(id));
+      const variants = partialSwitchVariants(A.equipment, B.equipment, (eq) => dpsOn(B, eq, col).dps, isFreeItem);
       variants.forEach((v) => {
         pending.push({
           label: `${B.equipment.weapon?.name ?? B.label} switch${v.pieces.length ? ` +${v.pieces.length}` : ''} on ${A.label}`,
@@ -1031,6 +1186,9 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       totalSlots: total,
       time: routeTime,
       seeds: seeds.length ? seeds : [0],
+      raidSupplied,
+      noPrune: tuning.noPrune,
+      groups: candidates.map((c) => c.group),
       shouldCancel: hooks.shouldCancel,
       onProgress: (done, n) => progress({
         stage: 'optimise', done, total: n, label: 'kits',
@@ -1091,16 +1249,25 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
   if (wornIx < 0) wornIx = 0;
   const kitOrder = [members[wornIx], ...members.filter((_, j) => j !== wornIx)];
   const kit = kitOrder.map((i) => candidates[i]);
-  const slots = kitSlotUsage(kitOrder.map((i) => items[i]), 0, carried, inputs.supplies, inputs.nonItemSlots, total);
-  const inventory = inventoryGrid(kit, 0, specItems, pinnedItems, inputs.supplies, inputs.nonItemSlots, total);
+  const slots = kitSlotUsage(kitOrder.map((i) => items[i]), 0, carried, inputs.supplies, inputs.nonItemSlots, total, raidSupplied);
+  const inventory = inventoryGrid(kit, 0, specItems, pinnedItems, inputs.supplies, inputs.nonItemSlots, total, raidSupplied);
 
   // 7. why: improvements that don't fit, and the best kit of every other style mix
   const T = chosen.time;
   const usedOfKit = (m: number[]) => {
-    const allIds = new Set<number>(carried);
-    m.forEach((x) => items[x].forEach((id) => allIds.add(id)));
+    const allIds = new Set<number>(carried.filter((id) => !raidSuppliedSet.has(id)));
+    m.forEach((x) => items[x].forEach((id) => {
+      if (!raidSuppliedSet.has(id)) allIds.add(id);
+    }));
     return fixedSlots + allIds.size - Math.min(...m.map((x) => items[x].length));
   };
+  // phase 21: what each kit loadout costs and saves (vs the kit without it; optimiser times)
+  const kitMarginal = kitOrder.map((i) => {
+    if (kitOrder.length < 2) return { slots: 0, seconds: Infinity };
+    const without = kitOrder.filter((x) => x !== i);
+    const tw = routeTime(without);
+    return { slots: chosen.used - usedOfKit(without), seconds: tw === T ? 0 : tw - T };
+  });
   const additions: PlanRejection[] = [];
   candidates.forEach((c, i) => {
     if (members.includes(i)) return;
@@ -1108,12 +1275,16 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     const t = routeTime(m);
     if (!(t < T - 0.05)) return;
     const used = usedOfKit(m);
+    const extra = used - chosen.used;
+    let reason = 'fits (not taken)';
+    if (used > total) reason = `needs ${extra} more slot${extra === 1 ? '' : 's'}, ${Math.max(0, total - chosen.used)} free`;
+    else if (T - t < switchSavingRequired(extra)) reason = `fits, but saves < ${switchSavingRequired(extra)} s for ${Math.max(0, extra)} slot${extra === 1 ? '' : 's'} (dedupe rule)`;
     additions.push({
       label: c.label,
       kind: 'addition',
       deltaSeconds: T - t,
-      deltaSlots: used - chosen.used,
-      reason: used > total ? `needs ${used - chosen.used} more slot${used - chosen.used === 1 ? '' : 's'}, ${Math.max(0, total - chosen.used)} free` : 'fits (not taken)',
+      deltaSlots: extra,
+      reason,
     });
   });
   additions.sort((a, b) => (b.deltaSeconds - a.deltaSeconds) || (a.deltaSlots - b.deltaSlots) || a.label.localeCompare(b.label));
@@ -1140,7 +1311,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       const mixSeeds = seeds.filter((i) => allowed[i]).slice(0, 5);
       if (!mixSeeds.length) continue;
       let s = optimiseKit({
-        items, carried, fixedSlots, totalSlots: total, time: routeTime, seeds: mixSeeds, allowed, shouldCancel: hooks.shouldCancel,
+        items, carried, fixedSlots, totalSlots: total, time: routeTime, seeds: mixSeeds, allowed, raidSupplied, noPrune: tuning.noPrune, groups: candidates.map((c) => c.group), shouldCancel: hooks.shouldCancel,
       }).best;
       for (const g of mix) {
         if (s.members.some((i) => candidates[i].group === g)) continue;
@@ -1186,6 +1357,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
   return {
     cancelled: false,
     kit,
+    kitMarginal,
     slots,
     inventory,
     specItems,

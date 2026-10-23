@@ -1,4 +1,3 @@
-import { DEFAULT_SUPPLIES } from '@/lib/fracturedArchive/planner';
 import { FA_TIME_MODEL, RAID_TIME_DEFAULTS } from '@/lib/fracturedArchive/raidTime';
 import { FRACTURED_ARCHIVE_BASE } from '@/lib/raids/base';
 import type { RaidConfig } from '@/lib/raids/index';
@@ -53,5 +52,5 @@ export const FRACTURED_ARCHIVE_RAID: RaidConfig = {
     ocellus: 'ocellus-p1',
   },
   hpNote: 'Expected TTK uses the infobox HP (party-size scaling unverified) — compare setups, don\'t trust the absolute seconds.',
-  defaultSupplies: DEFAULT_SUPPLIES,
+  defaultSupplies: FRACTURED_ARCHIVE_BASE.planDefaults.supplies,
 };

@@ -97,7 +97,7 @@ Requested after the site went live (2026-10-23). Same workflow per phase as abov
 | 18 | Raid tabs + ToA | Per-raid config (bosses, phases, scaling inputs) so Search/Summary/Plan work for any raid; ToA with invocation level (default 500), party size, path levels; Akkha, Ba-Ba, Kephri, Zebak, Wardens; presets | in review |
 | 19 | CoX | Normal / CM, team size (Defence scales); Tekton, Vasa, Vanguards, Vespula, Muttadiles, Mystics, Shamans, Guardians, Ice demon, Olm | in review |
 | 20 | ToB | Normal / HM (+ Entry), team size 1-5; Maiden, Bloat, Nylocas, Sotetseg, Xarpus, Verzik P1–P3 | in review |
-| 21 | Planner for ToA/CoX/ToB | Fixed routes; time model from upstream's verified hp scaling | planned |
+| 21 | Planner for ToA/CoX/ToB | Fixed routes; time model from upstream's verified hp scaling; per-raid Plan defaults (pinned items, supplies) from the Strategies pages; raid-supplied items at 0 slots (ToB Dawnbringer); dedupe rule (≥ 1 s saved, ≥ 1 s per extra slot); Prinkipas only in Hard Mode; Dawnbringer specs follow the team-DPS multiplier | in review |
 | 22 | Final review (round 2) | Fresh pass; UNVERIFIED.md updated for new raids and planner (incl. "does FA Defence scale with players?" with an in-game check) | planned |
 
 ### Decisions (round 2)
@@ -110,5 +110,7 @@ Requested after the site went live (2026-10-23). Same workflow per phase as abov
 - Routes are compared (Guardian and Ocellus fixed; the middle bosses vary), so Ezekiel, Moia and Dagon'hai must be modelled.
 - Bork and the Smorks are killed evenly, not Bork first.
 - Fractured Archive Defence is assumed not to scale with party size (wiki mentions hp only) — unverified.
+- Plan (phase 21): a kit loadout must save ≥ 1 s and ≥ 1 s per extra inventory slot (`SWITCH_MIN_*` in planner.ts);
+  raid-handed items (ToB Dawnbringer) cost no slot; per-raid default pins / supplies follow the wiki Strategies inventories.
 - CoX (phase 19): party size 1-15 in the tab (the raid allows 1-100); rooms are a user-picked set (default: all, an
   upper bound) + the Great Olm; team-DPS multiplier defaults to the party size; Team carriers = FA's + 1 BGS.

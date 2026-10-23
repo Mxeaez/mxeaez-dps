@@ -15,7 +15,7 @@ import {
 } from '@/lib/fracturedArchive/presets';
 import { scaleMonster } from '@/lib/MonsterScaling';
 import {
-  RaidConfig, RaidId, RAIDS, raidConfig, teamDpsMultiplier, teamTimeLabel, withScalingInput,
+  RaidConfig, RaidId, RAIDS, raidConfig, teamDpsMultiplier, teamTimeLabel, visibleTargets, withScalingInput,
 } from '@/lib/raids';
 import { ayakExpectedDrain, drainModel, specProfile } from '@/lib/fracturedArchive/specs';
 import SpecPlanPanel from '@/app/components/bestSetup/SpecPlanPanel';
@@ -326,10 +326,13 @@ const RaidBestSetup: React.FC<{
   raid, assumptions, setAssumptions, raidTabs,
 }) => {
   const [mode, setMode] = useState<'summary' | 'search' | 'routes' | 'plan'>('search');
-  const [targetKey, setTargetKey] = useState(raid.targets[0].key);
+  const [chosenKey, setTargetKey] = useState(raid.targets[0].key);
   const [phase, setPhase] = useState<string | undefined>(undefined);
   const [drain, setDrain] = useState<DrainStateId>('team');
 
+  // phase 21: the boss list follows the raid inputs (ToB: Prinkipas only in Hard Mode); a hidden pick falls back to the first
+  const bossList = useMemo(() => visibleTargets(raid, assumptions), [raid, assumptions]);
+  const targetKey = bossList.some((t) => t.key === chosenKey) ? chosenKey : bossList[0].key;
   const target = useMemo(() => findTarget(targetKey), [targetKey]);
   const phases = useMemo(() => targetPhases(target), [target]);
   const ayakHint = useMemo(() => {
@@ -397,7 +400,7 @@ const RaidBestSetup: React.FC<{
                     setPhase(undefined);
                   }}
                 >
-                  {raid.targets.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
+                  {bossList.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
                 </select>
               </label>
               {targetHp !== undefined && (

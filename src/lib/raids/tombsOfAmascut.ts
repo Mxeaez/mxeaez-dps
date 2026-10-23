@@ -4,13 +4,11 @@ import { TOMBS_OF_AMASCUT_BASE } from '@/lib/raids/base';
 import type { RaidConfig } from '@/lib/raids/index';
 
 /**
- * Phase 18: Tombs of Amascut supplies. Salts, nectars, tears and ambrosia come from the raid's supply chest; they still
- * take slots, entered as "Other" (default 8: e.g. 3 nectar, 2 tears, 3 salts). The boost is always Smelling salts
- * (`boostsNeedSupplies: false`), so the potion supply types default to 0.
+ * Tombs of Amascut supplies (phase 21: src/lib/raids/planDefaults.ts, TOA_PLAN_DEFAULTS): 6 restores (Sanfew serums,
+ * later Tears / Nectar from the Helpful Spirit) + 2 Other (Smelling salts). The boost is always Smelling salts
+ * (`boostsNeedSupplies: false`), so the potion supply types are 0.
  */
-export const TOA_DEFAULT_SUPPLIES: SupplyCounts = {
-  brew: 0, restore: 0, ranging: 0, superCombat: 0, magic: 0, food: 0, other: 8,
-};
+export const TOA_DEFAULT_SUPPLIES: SupplyCounts = TOMBS_OF_AMASCUT_BASE.planDefaults.supplies;
 
 /**
  * Phase 18: Tombs of Amascut. Monsters, hp scaling (raid level, path level, party size), the defence-roll scaling,
@@ -56,5 +54,5 @@ export const TOMBS_OF_AMASCUT_RAID: RaidConfig = {
   encounterTarget: TOA_ENCOUNTER_TARGET,
   hpNote: 'HP scaled by raid level, path level and party size (upstream, verified in-game).',
   defaultSupplies: TOA_DEFAULT_SUPPLIES,
-  planNote: 'ToA: salts, nectar and tears come from the supply chest — enter their slots under "Other"; every style keeps the Smelling salts boost.',
+  planNote: 'ToA: salts, nectar and tears come from the Helpful Spirit after two paths; "Super restore" stands for Sanfew serums / Tears, "Other" for Smelling salts; every style keeps the salts boost.',
 };

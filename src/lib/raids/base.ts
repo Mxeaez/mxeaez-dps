@@ -21,6 +21,9 @@ import { TOB_TARGETS, TOB_VERSIONS } from '@/lib/raids/tob/targets';
 import { TOB_DEFAULT_ASSUMPTIONS, TOB_PRESETS } from '@/lib/raids/tob/presets';
 import { TOB_SEARCH_POOL } from '@/lib/raids/tob/searchPool';
 import { TOB_MAX_PARTY, TOB_MIN_PARTY } from '@/lib/raids/tob/constants';
+import {
+  COX_PLAN_DEFAULTS, FA_PLAN_DEFAULTS, RaidPlanDefaults, TOA_PLAN_DEFAULTS, TOB_PLAN_DEFAULTS,
+} from '@/lib/raids/planDefaults';
 
 /**
  * Phase 18: the per-raid rules the pure best-setup modules need (bestSetup.ts, search.ts, raidTime.ts, planner.ts look
@@ -51,6 +54,16 @@ export interface RaidBase {
    * target's own name / version. Applied by buildTargetMonster.
    */
   resolveTarget?: (target: BestSetupTarget, a: BestSetupAssumptions) => BestSetupTarget;
+  /**
+   * Phase 21: Plan-tab defaults (items always brought, rune pouch / non-item slots, supplies) and the raid-supplied
+   * items the planner gives 0 inventory slots (src/lib/raids/planDefaults.ts).
+   */
+  planDefaults: RaidPlanDefaults;
+  /**
+   * Phase 21: whether a target is offered in the Search boss list for these assumptions (ToB: the Nylocas Prinkipas
+   * only in Hard Mode). Undefined = always. Summary rows and the time model don't use it.
+   */
+  targetVisible?: (target: BestSetupTarget, a: BestSetupAssumptions) => boolean;
 }
 
 const partyInput = (min: number, max: number, title: string): ScalingInputDef => ({
@@ -78,6 +91,7 @@ export const FRACTURED_ARCHIVE_BASE: RaidBase = {
   presets: PRESETS,
   searchPool: SEARCH_POOL,
   boostsNeedSupplies: true,
+  planDefaults: FA_PLAN_DEFAULTS,
 };
 
 export const TOMBS_OF_AMASCUT_BASE: RaidBase = {
@@ -118,6 +132,7 @@ export const TOMBS_OF_AMASCUT_BASE: RaidBase = {
   presets: TOA_PRESETS,
   searchPool: TOA_SEARCH_POOL,
   boostsNeedSupplies: false,
+  planDefaults: TOA_PLAN_DEFAULTS,
 };
 
 const coxOf = (a: BestSetupAssumptions) => a.cox || DEFAULT_COX_INPUTS;
@@ -161,6 +176,7 @@ export const CHAMBERS_OF_XERIC_BASE: RaidBase = {
   searchPool: COX_SEARCH_POOL,
   // Overloads come from the raid's own herbs
   boostsNeedSupplies: false,
+  planDefaults: COX_PLAN_DEFAULTS,
 };
 
 const tobOf = (a: BestSetupAssumptions) => a.tob || DEFAULT_TOB_INPUTS;
@@ -204,6 +220,9 @@ export const THEATRE_OF_BLOOD_BASE: RaidBase = {
     const version = TOB_VERSIONS[target.key]?.[tobOf(a).mode];
     return version && version !== target.version ? { ...target, version } : target;
   },
+  planDefaults: TOB_PLAN_DEFAULTS,
+  // targets tagged with modes (Hard Mode's Nylocas Prinkipas) are only offered in those modes
+  targetVisible: (target, a) => !target.tobModes || target.tobModes.includes(tobOf(a).mode),
 };
 
 export const RAID_BASES: RaidBase[] = [FRACTURED_ARCHIVE_BASE, TOMBS_OF_AMASCUT_BASE, CHAMBERS_OF_XERIC_BASE, THEATRE_OF_BLOOD_BASE];
@@ -212,6 +231,11 @@ export const raidBase = (id: RaidId | undefined): RaidBase => RAID_BASES.find((r
 
 /** Every raid's targets (keys are unique across raids). */
 export const ALL_RAID_TARGETS: BestSetupTarget[] = RAID_BASES.flatMap((r) => r.targets);
+
+/** The targets the Search boss list offers for these assumptions (`targetVisible`; default all). */
+export const visibleTargets = (base: RaidBase, a: BestSetupAssumptions): BestSetupTarget[] => (base.targetVisible
+  ? base.targets.filter((t) => base.targetVisible!(t, a))
+  : base.targets);
 
 /** Sets a scaling input, clamped to its range (non-numbers → its default). */
 export const withScalingInput = (a: BestSetupAssumptions, def: ScalingInputDef, value: number): BestSetupAssumptions => def

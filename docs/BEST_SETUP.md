@@ -1,4 +1,4 @@
-# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14; Routes tab phase 16; Plan tab phase 17; raid tabs + ToA phase 18; CoX phase 19; ToB phase 20)
+# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14; Routes tab phase 16; Plan tab phase 17; raid tabs + ToA phase 18; CoX phase 19; ToB phase 20; per-raid Plan defaults + dedupe phase 21)
 
 `/best-setup` (dev: http://localhost:3001/osrs-dps/best-setup; "Best setup" button in the top bar, "Calculator" leads
 back). Tabs, in order: **Search** (the default, phase 9/12, see the end of this file) searches a pool of end-game items
@@ -165,7 +165,9 @@ Fourth raid tab, same code (`THEATRE_OF_BLOOD_RAID`, `src/lib/raids/theatreOfBlo
   exhumed heals, default 0; Entry 22.5%), P3 25% (same stats); Verzik P1 = Dawnbringer specs (2 per player × 112.5,
   each costs one 4-tick attack: specs × 2.4 s ÷ team) + the rest at **1 player × the kit's best + (team − 1) × the
   kit's best without the Dawnbringer**, P2 (+ heals, default 0), P3 (+ heals; Hard Mode always +30%).
-- **Plan**: supplies brew 4 / restore 3 / one of each potion.
+- **Plan**: supplies brew 4 / restore 3 / one of each potion (lower than a no-resupply raid: the chests after Bloat and
+  Sotetseg sell brews and restores — documented, not modelled); phase 21: the Dawnbringer costs 0 slots (*Plan tab →
+  Per-raid defaults*).
 
 **Headline (normal, 4-man, Team drains, 2026-10-23)** — top search result per target: Maiden Ascension crossbows +
 onyx (e) 14.792; Bloat Scythe 16.383; Vasilias melee form Scythe 14.592, ranged form Ascension crossbows + diamond (e)
@@ -186,7 +188,8 @@ so a change of supplies / items / route skips the searches.
 **Inputs.** From the boxes above the tabs: party size (default 6), drain state (default Team), spec weapons ("My
 specs": Elder maul, DWH, BGS, Tonalztics when ticked, Eye of Ayak when its count > 0 — each takes a slot). In the tab's
 "Assumptions (plan)" box: **Route** — one of the 8, or *Compare all* (default: plan for the fastest route; the route
-table then shows the other routes' times with the same kit); **Supplies** as slot counts (default Saradomin brew 6,
+table then shows the other routes' times with the same kit); **Supplies** as slot counts (Fractured Archive defaults
+below; phase 21: each raid has its own, see *Per-raid defaults* — default Saradomin brew 6,
 Super restore 4, Ranging potion 2, Super combat 1, Magic boost (Saturated heart) 0, food 0, other 0); **Rune pouch / other
 non-items** (default 1);
 **Items I always bring** (default Lightbearer, Elder maul, Zaryte crossbow, Kodai wand, Ancestral robe top, Elidinis'
@@ -225,7 +228,8 @@ so magic loadouts get no boost.
 5. *Optimiser* (`optimiseKit`): seeds = the 20 best single loadouts by their own route time (+ the best of each style);
    from each, two greedy passes (add the loadout with the best Δtime ÷ Δslots; add the one with the best Δtime) while
    one fits and helps, then local search (drop a loadout that doesn't help; swap one for any candidate) until stable.
-   Best kit: lowest time, then fewest slots, then fewest loadouts. Deterministic. The best 5 distinct kits are then
+   Phase 21: then the **dedupe rule** (below) prunes each result. Best kit: lowest time, then fewest slots, then fewest
+   loadouts. Deterministic. The best 5 distinct kits are then
    re-timed with `createKitEvaluator` + `compareRoutes` (the Routes tab's code, drains planned with each kit's own
    encounter lengths) and the fastest of those wins; those times are what the tab shows.
 6. *Why*: every candidate that would make the route faster if added (none fits, otherwise the optimiser would have
@@ -263,6 +267,59 @@ the full Ascension crossbows (Masori) −39.7 s, +2 slots; Tumeken's shadow + In
 boost). Five always-brought items are in no loadout (Lightbearer, Zaryte crossbow, Kodai wand, Ancestral robe top,
 Elidinis' ward (f)); removing them (one click) gives Ascension crossbows worn + Inquisitor's + Obligator + Twisted bow,
 **21:50.1** with 1 free slot. Brews 6 → 10: 25:45.9. Solo drains: 24:29.3 (Bork + Smorks 210.1 s, = the exact time).
+
+### Per-raid defaults, raid items and the dedupe rule (phase 21)
+
+**Defaults per raid** (`RaidBase.planDefaults`, `src/lib/raids/planDefaults.ts`; the Plan inputs load them when the
+raid tab opens, "reset" restores the pinned list). Spec weapons still come from "My specs" (default Elder maul + Eye of
+Ayak) and are counted once with the pinned items. Every raid has 1 non-item slot (the rune pouch: every Strategies
+example inventory has one).
+
+| Raid | Items always brought | Supplies (slots) | Raid items (0 slots) | Source |
+|---|---|---|---|---|
+| Fractured Archive | Lightbearer, Elder maul, Zaryte crossbow, Kodai wand, Ancestral robe top, Elidinis' ward (f) | 6 brew, 4 restore, 2 ranging, 1 super combat | — | the user's kit (2026-10-23) |
+| Tombs of Amascut | Lightbearer, Zaryte crossbow | 6 restore (Sanfew serums, later Tears / Nectar), 2 Other (Smelling salts) | — | Tombs_of_Amascut/Strategies max-gear inventory: Zaryte crossbow, Lightbearer, 6 Sanfew serums, 1 divine super combat, rune pouch; "Players can no longer eat food" at high invocations; salts / nectar / tears from the Helpful Spirit "once after completing two paths, and once again …" (Tombs of Amascut). The boost is always the salts, so no combat potions |
+| Chambers of Xeric | Dragon pickaxe, Elder maul | 2 brew (Xeric's aid), 2 restore (Prayer enhance / Revitalisation), 1 Other (Overload) | — | Chambers_of_Xeric/Strategies: "If guardians are in the raid, bring the best pickaxe possible"; specials "Bandos godsword + Elder maul > Dragon warhammer" (the first maul / DWH spec on Tekton always hits); the potions are made in the raid and dropped by Tekton, Vasa, Vanguards, Vespula, Muttadiles. Olm wants more ("6-7 brews, 2-3 restores"): raise them for an Olm-heavy plan |
+| Theatre of Blood | Elder maul | 4 brew, 3 restore, 1 ranging, 1 super combat, 1 Saturated heart | **Dawnbringer** | Theatre_of_Blood/Strategies max-gear inventories (Elder maul + BGS + claws, rune pouch, 1 brew + 1 restore + combat potions + food); the chests after Bloat and Sotetseg sell brews / restores, hence fewer than a raid without resupply. Lightbearer isn't in those inventories |
+
+**ToB supply chests** (documented, not modelled): "When the Pestilent Bloat and Sotetseg are killed, players will gain
+access to a chest with supplies ... containing food and potions" (Saradomin brews, Super restores, staminas; Strategies).
+The plan uses one inventory for the whole raid, so it can't swap brews in at a chest; the lower ToB default (4 / 3 vs
+FA's 6 / 4) stands for "top up at the chests". Raise it if you don't.
+
+**Raid-supplied items** (`planDefaults.raidSupplied`; ToB: the Dawnbringer, CoX / ToA / FA: none) cost **0 inventory
+slots** and may go on any loadout. In the slot accounting they are left out of the carried-item union but still count
+in a loadout's size, so a loadout wearing the Dawnbringer in place of the main weapon needs no swap space (it takes the
+weapon's place; `kitSlotUsage` / `optimiseKit` / `inventoryGrid`, which shows no cell for it). The planner adds the
+raid weapon as a partial-switch partner (like a carried weapon) and, weapon only, on **every** full candidate of another
+style ("Dawnbringer switch on <loadout>"), so it is free whichever loadout ends up worn. Before phase 21 the only
+Dawnbringer loadouts were "Dawnbringer (Ancestral)" and search rows, priced at +6 slots, so the kit skipped them.
+
+**Single-piece swaps** (new candidates): for each base loadout, the same loadout with one piece of another full loadout
+of the **same weapon** (e.g. "Torva helm + Oathplate + Scythe (slash) + Salve amulet(ei)", the Salve taken from "Torva +
+Salve (ei) + Scythe (slash)"). Without them the only way to get the Salve at Bloat was a whole second Scythe set.
+
+**Dedupe rule** (`SWITCH_MIN_SAVING_SECONDS` = 1, `SWITCH_MIN_SECONDS_PER_SLOT` = 1 in planner.ts; the optimiser's
+prune step after every greedy + local search, matrix times): a kit loadout stays only if removing it costs ≥ max(1 s,
+1 s × the slots it frees); and a loadout is swapped for a cheaper one of the same style when the slots it frees bought
+< 1 s each. So a switch that costs 0 extra slots and saves < 1 s (a near-duplicate) is dropped, and each extra slot
+must buy ≥ 1 s. Slots freed this way stay free (shown in the badge). Switching takes ticks in-game but is free in the
+model, so differences under a second are noise. The kit table shows each loadout's "+N slots, saves X s" (vs the kit
+without it). The "why" list marks additions that fit but miss the rule.
+
+**Effect** (defaults, Team drains, 2026-10-23, `scripts/verifyPhase21.mjs`, browser timings):
+
+| Raid | Phase 17–20 headline (FA pins + old supplies in every raid) | Phase 21 defaults, rule off (`noPrune`) | Phase 21 |
+|---|---|---|---|
+| FA | 23:18.8 — Ascension crossbows partial over Inquisitor's + Obligator, Inquisitor's + Obligator | 23:18.8 | **23:18.8, unchanged** (both loadouts are needed; 17.4 s in the browser) |
+| ToA | 14:20.0 — Keris partisan of breaching (Torva) worn; Shadow, fang, Scythe, Obligator; 1 free | 14:20.0 — same kit incl. Torva + Obligator (saves 0.2 s for +1 slot); 3 free | **14:20.2** — Torva + Obligator dropped; Keris worn, Shadow, fang, Torva + Scythe; **4 free** (19.3 s) |
+| CoX | 6:59.9 (8 "Other" slots) | 6:41.9 | **6:41.9, same kit** — Inquisitor's + Obligator worn; Shadow, Dragon pickaxe, Inquisitor's + Scythe (0 slots, 2.1 s), Harmonised Nightmare staff, Scythe (Tekton; +1 slot, 3.6 s), Ascension crossbows partial; 0 free (every switch ≥ 1 s per slot; 20.6 s) |
+| ToB | 7:35.5 — Torva + Scythe worn; Torva helm + Oathplate + Scythe, two Scythe search sets, Eye of Ayak, Ascension crossbows partial | 7:32.0 (before the piece swaps) — Torva + Scythe worn; Oathplate + Scythe (+2 slots, 6.0 s), Torva + Salve (ei) + Scythe (+1, 3.8 s), Dawnbringer + 5 Ancestral pieces (+0), Eye of Ayak, Ascension crossbows partial; 0 free | **7:34.1** — worn Torva helm + Oathplate + Scythe; **Dawnbringer (Ancestral) at +0 slots** (its Ancestral pieces are the Shadow's), Tumeken's shadow, Oathplate + Salve amulet(ei) swap, Ascension crossbows partial (+ Masori body); **3 free** (18.2 s) |
+
+The three ToB Scythe sets each saved ≥ 1 s per slot, so the rule alone didn't drop them; once the single-piece swap
+"Oathplate + Salve (ei)" exists the optimiser keeps one Scythe set + the Salve (7:32.2, 0 free, with drops only), and
+the rule's cheaper-variant swaps (Dawnbringer search set +1 slot → Dawnbringer (Ancestral) +0; a smaller Ascension
+crossbows partial) give up 1.9 s for 3 free slots (< 1 s per slot).
 
 ## Routes tab (phase 16: raid time model)
 
