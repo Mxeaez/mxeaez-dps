@@ -1,7 +1,9 @@
+import type { BestSetupAssumptions } from '@/lib/fracturedArchive/presets';
+
 /**
- * Phase 18: shared raid types. Data-only (no imports from the best-setup modules) so that bestSetup.ts, presets.ts and
- * the per-raid data files can all import it without import cycles. The full `RaidConfig` (presets, search pool, time
- * model, ...) is in `src/lib/raids/index.ts`.
+ * Phase 18: shared raid types. Data-only (only type imports) so that bestSetup.ts, presets.ts and the per-raid data
+ * files can all import it without import cycles. The per-raid rules the pure modules need are in
+ * `src/lib/raids/base.ts`; the full `RaidConfig` (time model, UI) is in `src/lib/raids/index.ts`.
  */
 
 export type RaidId = 'fractured-archive' | 'toa';
@@ -54,7 +56,7 @@ export interface BestSetupTarget {
   note?: string;
 }
 
-/** One scaling input shown in the assumptions box of a raid tab. */
+/** One scaling input shown in the assumptions box of a raid tab; it reads and writes its own assumption field. */
 export interface ScalingInputDef {
   key: string;
   label: string;
@@ -63,15 +65,34 @@ export interface ScalingInputDef {
   step?: number;
   default: number;
   title?: string;
+  get: (a: BestSetupAssumptions) => number;
+  /** Sets the (already clamped) value. */
+  set: (a: BestSetupAssumptions, value: number) => BestSetupAssumptions;
+}
+
+/** A time model's settings (each model has its own object; FA: RaidTimeSettings, ToA: ToaTimeSettings). */
+export type TimeSettings = Record<string, number | boolean | string>;
+
+/** One field of a time model's settings box (Routes / Encounters tab). */
+export interface TimeSettingField {
+  key: string;
+  label: string;
+  /** number (with `unit`), percent (stored as a fraction), bool (checkbox), select (`options`). */
+  kind: 'number' | 'percent' | 'bool' | 'select';
+  unit?: string;
+  title: string;
+  max?: number;
+  options?: { value: string, label: string }[];
 }
 
 /** Tombs of Amascut time-model settings (src/lib/raids/toa/time.ts, Encounters tab). */
-export interface ToaTimeSettings {
+export type ToaTimeSettings = {
   /** The warden fought in Wardens P2 (the other one is P3). Strategies: Elidinis' is the usual choice. */
   p2Warden: 'elidinis' | 'tumeken';
   /**
-   * Akkha prays against the style he attacks with and rotates: true = his main hp is split equally over Praying Melee /
-   * Ranged / Magic (the kit's best unblocked style each third); false = always attacked with an unprotected style.
+   * Akkha prays against the style he attacks with and rotates on a fixed attack count: true = equal *time* under
+   * Praying Melee / Ranged / Magic (his hp split in proportion to the kit's best DPS under each); false = always
+   * attacked with an unprotected style.
    */
   akkhaPrayerRotation: boolean;
   /** Extra Kephri shield per intermission from leaked swarms, as a fraction of one shield (0-1; Strategies: ~10%/swarm). */
@@ -80,4 +101,4 @@ export interface ToaTimeSettings {
   kephriOverlords: boolean;
   /** Share of the P3 Warden's hp taken off by reversed energy siphons (unpublished; 0 = not counted). */
   p3SiphonFraction: number;
-}
+};

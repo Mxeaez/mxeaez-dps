@@ -14,13 +14,12 @@ import {
   EncounterTime,
   formatDuration,
   PhaseSearchBest,
-  RAID_TIME_DEFAULTS,
-  RaidTimeSettings,
   RouteComparisonProgress,
   RouteComparisonResult,
 } from '@/lib/fracturedArchive/raidTime';
-import { RaidConfig, ToaTimeSettings } from '@/lib/raids';
-import { TOA_TIME_DEFAULTS } from '@/lib/raids/toa/time';
+import {
+  RaidConfig, teamDpsMultiplier, teamTimeLabel, TimeSettings,
+} from '@/lib/raids';
 import { RoutesJob, startRouteComparison } from '@/worker/searchWorkerClient';
 import { targetImageUrl } from '@/lib/fracturedArchive/loadoutIcons';
 import { ItemIcon } from '@/app/components/bestSetup/ItemIcons';
@@ -46,127 +45,60 @@ const fmtS = (v: number | null | undefined) => {
   return Number.isFinite(s) ? `${s.toFixed(1)} s` : '∞';
 };
 
-const SETTING_FIELDS: {
-  key: Exclude<keyof RaidTimeSettings, 'toa'>, label: string, unit: '%' | 's' | 'hp', title: string, max?: number,
-}[] = [
-  {
-    key: 'agShieldHp', label: 'AG shield', unit: 'hp', title: 'Archive Guardian flying shield hp at 6 players (wiki: "1490 health shield in 6-scale", unverified), dealt at the Flying version\'s DPS; scaled by the (identity, unverified) party-size table',
-  },
-  {
-    key: 'agGroundedFraction', label: 'AG grounded', unit: '%', title: 'Share of AG\'s 550 hp dealt while grounded; the rest at Flying DPS (it flies permanently below 30%)',
-  },
-  {
-    key: 'borkStunUptime', label: 'Bork stun uptime', unit: '%', title: 'Share of Bork\'s damage dealt while he is stunned (heavy cannonball); the rest is split over armour 8/10/12/14. Stun length unpublished',
-  },
-  {
-    key: 'ocellusWalkingFraction', label: 'Ocellus P1 walking', unit: '%', title: 'Share of P1\'s hp dealt while he walks to a corner (Protect from Melee)',
-  },
-  {
-    key: 'ocellusP2Seconds', label: 'Ocellus P2 length', unit: 's', title: 'P2 (The Blade) is time-limited: its length in seconds (0 = ignore P2). The damage dealt to the Blade × carry-over comes off P3', max: 600,
-  },
-  {
-    key: 'ocellusP2CarryOver', label: 'P2 carry-over', unit: '%', title: 'Share of the Blade damage that comes off P3 (wiki: half)',
-  },
-  {
-    key: 'ocellusLastQuadrantFraction', label: 'Ocellus last quadrant', unit: '%', title: 'Share of P3\'s hp dealt in the last quadrant, at the Deflect option that blocks the kit\'s best style (pessimistic)',
-  },
-];
-
-const TimeSettingsBox: React.FC<{ value: RaidTimeSettings, onChange: (s: RaidTimeSettings) => void }> = ({ value, onChange }) => (
+/** Phase 18: the raid's time-model settings box, from its `timeSettingFields` (each model has its own settings object). */
+const TimeSettingsBox: React.FC<{
+  raid: RaidConfig, value: TimeSettings, onChange: (s: TimeSettings) => void,
+}> = ({ raid, value, onChange }) => (
   <div className="text-xs bg-body-100 dark:bg-dark-400 border border-body-400 dark:border-dark-200 rounded p-3 flex flex-col gap-2" data-testid="time-settings">
     <div className="font-bold text-sm">Assumptions (time model)</div>
-    <div>
-      Time = Σ damage ÷ DPS per phase, the kit&apos;s best loadout + style per phase (switching is free); no puzzles, travel,
-      healing or adds. HP: infobox × party-size table (unverified). Drains (Solo / Team) are planned per encounter with
-      that encounter&apos;s undrained time as the fight length.
-    </div>
+    <div>{raid.timeModelNote}</div>
     <div className="flex flex-wrap gap-x-4 gap-y-2 items-center">
-      {SETTING_FIELDS.map((f) => {
-        const pct = f.unit === '%';
-        const shown = pct ? Math.round(value[f.key] * 1000) / 10 : value[f.key];
+      {raid.timeSettingFields.map((f) => {
+        const id = `rt-${f.key}`;
+        const v = value[f.key];
+        if (f.kind === 'bool') {
+          return (
+            <label key={f.key} htmlFor={id} className="flex items-center gap-1" title={f.title}>
+              <input id={id} type="checkbox" checked={v === true} onChange={(e) => onChange({ ...value, [f.key]: e.target.checked })} />
+              {f.label}
+            </label>
+          );
+        }
+        if (f.kind === 'select') {
+          return (
+            <label key={f.key} htmlFor={id} className="flex items-center gap-1" title={f.title}>
+              {f.label}
+              <select id={id} className="form-control text-xs py-0.5" value={String(v)} onChange={(e) => onChange({ ...value, [f.key]: e.target.value })}>
+                {(f.options || []).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </label>
+          );
+        }
+        const pct = f.kind === 'percent';
+        const n = typeof v === 'number' ? v : 0;
         return (
-          <label key={f.key} htmlFor={`rt-${f.key}`} className="flex items-center gap-1" title={f.title}>
+          <label key={f.key} htmlFor={id} className="flex items-center gap-1" title={f.title}>
             {f.label}
             <input
-              id={`rt-${f.key}`}
+              id={id}
               type="number"
               className="form-control text-xs py-0.5 w-16"
               min={0}
               max={pct ? 100 : f.max}
-              value={shown}
+              value={pct ? Math.round(n * 1000) / 10 : n}
               onChange={(e) => {
-                const n = Math.max(0, Number(e.target.value) || 0);
-                onChange({ ...value, [f.key]: pct ? Math.min(100, n) / 100 : n });
+                const x = Math.max(0, Number(e.target.value) || 0);
+                onChange({ ...value, [f.key]: pct ? Math.min(100, x) / 100 : x });
               }}
             />
-            {f.unit}
+            {pct ? '%' : f.unit}
           </label>
         );
       })}
-      <button type="button" className="underline" onClick={() => onChange(RAID_TIME_DEFAULTS)}>Reset</button>
+      <button type="button" className="underline" onClick={() => onChange(raid.defaultTimeSettings)}>Reset</button>
     </div>
   </div>
 );
-
-/** Phase 18: the Tombs of Amascut time-model settings (src/lib/raids/toa/time.ts). */
-const ToaTimeSettingsBox: React.FC<{
-  value: RaidTimeSettings, onChange: (s: RaidTimeSettings) => void, reset: RaidTimeSettings,
-}> = ({ value, onChange, reset }) => {
-  const toa: ToaTimeSettings = { ...TOA_TIME_DEFAULTS, ...(value.toa || {}) };
-  const set = (patch: Partial<ToaTimeSettings>) => onChange({ ...value, toa: { ...toa, ...patch } });
-  const pctInput = (key: 'kephriSwarmLeak' | 'p3SiphonFraction', label: string, title: string) => (
-    <label htmlFor={`rt-toa-${key}`} className="flex items-center gap-1" title={title}>
-      {label}
-      <input
-        id={`rt-toa-${key}`}
-        type="number"
-        className="form-control text-xs py-0.5 w-16"
-        min={0}
-        max={100}
-        value={Math.round(toa[key] * 1000) / 10}
-        onChange={(e) => set({ [key]: Math.min(100, Math.max(0, Number(e.target.value) || 0)) / 100 })}
-      />
-      %
-    </label>
-  );
-  return (
-    <div className="text-xs bg-body-100 dark:bg-dark-400 border border-body-400 dark:border-dark-200 rounded p-3 flex flex-col gap-2" data-testid="time-settings">
-      <div className="font-bold text-sm">Assumptions (time model)</div>
-      <div>
-        Time = Σ damage ÷ (party size × your DPS) per phase — every member is assumed to deal your DPS — with the kit&apos;s
-        best loadout + style per phase (switching is free); DPS time only (no paths, puzzles, invulnerable phases or
-        healing). HP: upstream&apos;s ToA scaling (raid level, path level, party size; verified in-game). Kephri: 3 shields,
-        the overlord scarabs, then her hp; Akkha: his hp + 4 shadows + 20% final stand in melee; Wardens: obelisk, P2
-        downs (shield, then the core for 21/29/37 ticks, ×5 damage), P3 95% + 25% enraged.
-      </div>
-      <div className="flex flex-wrap gap-x-4 gap-y-2 items-center">
-        <label htmlFor="rt-toa-p2Warden" className="flex items-center gap-1" title="The warden fought in P2 (prays Melee + Ranged: Elidinis', Melee + Magic: Tumeken's); the other one is P3 (same stats)">
-          P2 warden
-          <select
-            id="rt-toa-p2Warden"
-            className="form-control text-xs py-0.5"
-            value={toa.p2Warden}
-            onChange={(e) => set({ p2Warden: e.target.value as ToaTimeSettings['p2Warden'] })}
-          >
-            <option value="elidinis">Elidinis&apos; (magic only)</option>
-            <option value="tumeken">Tumeken&apos;s (ranged only)</option>
-          </select>
-        </label>
-        <label htmlFor="rt-toa-akkha" className="flex items-center gap-1" title="Akkha prays against the style he attacks with: split his hp over his three prayers (the kit's best unblocked style each third). Off: always an unprotected style">
-          <input id="rt-toa-akkha" type="checkbox" checked={toa.akkhaPrayerRotation} onChange={(e) => set({ akkhaPrayerRotation: e.target.checked })} />
-          Akkha prayer rotation
-        </label>
-        <label htmlFor="rt-toa-overlords" className="flex items-center gap-1" title="Kill Kephri's overlord scarabs (Spitting, Soldier, Arcane)">
-          <input id="rt-toa-overlords" type="checkbox" checked={toa.kephriOverlords} onChange={(e) => set({ kephriOverlords: e.target.checked })} />
-          Kephri scarabs
-        </label>
-        {pctInput('kephriSwarmLeak', 'Kephri swarm leak', 'Extra Kephri shield per intermission from leaked swarms, as % of one shield (Strategies: ~10% per swarm, capped ~15% over max)')}
-        {pctInput('p3SiphonFraction', 'P3 siphons', 'Share of the P3 Warden hp taken off by reversed energy siphons (unpublished; 0 = not counted)')}
-        <button type="button" className="underline" onClick={() => onChange(reset)}>Reset</button>
-      </div>
-    </div>
-  );
-};
 
 const PhaseRows: React.FC<{ e: EncounterTime }> = ({ e }) => (
   <>
@@ -195,7 +127,7 @@ const RoutesView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStat
   const PRESETS = raid.presets;
   const ROUTE_SLOTS = raid.time.routeSlots;
   const singleRoute = ROUTE_SLOTS.every((s) => s.options.length === 1);
-  const [settings, setSettings] = useState<RaidTimeSettings>(raid.defaultTimeSettings);
+  const [settings, setSettings] = useState<TimeSettings>(raid.defaultTimeSettings);
   const [searchGroups, setSearchGroups] = useState<StyleGroup[]>(GROUPS);
   const [presets, setPresets] = useState<string[]>([]);
   const [useCalc, setUseCalc] = useState(false);
@@ -282,9 +214,7 @@ const RoutesView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStat
 
   return (
     <div className="flex flex-col gap-3" data-testid="routes-view">
-      {raid.id === 'toa'
-        ? <ToaTimeSettingsBox value={settings} onChange={setSettings} reset={raid.defaultTimeSettings} />
-        : <TimeSettingsBox value={settings} onChange={setSettings} />}
+      <TimeSettingsBox raid={raid} value={settings} onChange={setSettings} />
 
       <div className="text-xs flex flex-col gap-2" data-testid="kit">
         <div className="flex flex-wrap gap-x-3 gap-y-1 items-center">
@@ -337,6 +267,7 @@ const RoutesView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStat
         <>
           <div className="text-[11px] text-gray-500 dark:text-gray-400" data-testid="routes-stats">
             {`${result.evaluations} evaluations, ${result.searches} new searches, ${(result.elapsedMs / 1000).toFixed(1)} s. `}
+            <span data-testid="routes-team-label">{`${teamTimeLabel(teamDpsMultiplier(assumptions))}. `}</span>
             {result.fastest >= 0
               ? `Fastest: ${result.routes[result.fastest].route.label} (${formatDuration(secs(result.routes[result.fastest].seconds))}).`
               : 'No route can be cleared with this kit (some phase has no loadout that deals damage).'}

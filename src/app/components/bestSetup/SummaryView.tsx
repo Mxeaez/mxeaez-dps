@@ -23,6 +23,8 @@ import openInCalculator from '@/app/components/bestSetup/loadIntoCalculator';
 import { searchRowIcons, searchRowWeaponParts, targetImageUrl } from '@/lib/fracturedArchive/loadoutIcons';
 import { ItemIcon, LoadoutIconRow, WeaponLine } from '@/app/components/bestSetup/ItemIcons';
 import DPS_TEXT_CLASS from '@/app/components/bestSetup/styles';
+import { scaleMonster } from '@/lib/MonsterScaling';
+import { raidOf, teamDpsMultiplier, teamTimeLabel } from '@/lib/raids';
 
 // "Summary" tab of /best-setup (phase 13): the top gear-search result for every Summary boss / phase × drain state.
 // The 60 searches (20 rows × 3 drain states) run one after the other in the search worker when the tab opens;
@@ -163,6 +165,9 @@ const SummaryView: React.FC<{ assumptions: BestSetupAssumptions, targets?: BestS
         </div>
       )}
       {error && <div className="text-red-600 text-xs">{`Error: ${error}`}</div>}
+      <div className="text-xs text-gray-500 dark:text-gray-400" data-testid="summary-scaling">
+        {`${raidOf(assumptions).scalingInputs.map((d) => `${d.label} ${d.get(assumptions)}`).join(' · ')} · hp as scaled for these · ${teamTimeLabel(teamDpsMultiplier(assumptions))}`}
+      </div>
       <div className="overflow-x-auto max-w-[100vw]">
         <table className="w-full text-sm" data-testid="summary">
           <thead>
@@ -174,6 +179,7 @@ const SummaryView: React.FC<{ assumptions: BestSetupAssumptions, targets?: BestS
           <tbody>
             {summaryQueries(targets).map((row) => {
               const target = findTarget(row.targetKey);
+              const hp = scaleMonster(buildTargetMonster(target, row.phase, 'none', assumptions).monster).skills.hp;
               return (
                 <tr key={`${row.targetKey}|${row.phase}`} data-testid="summary-row">
                   <td className="px-2 py-1 align-top">
@@ -182,6 +188,7 @@ const SummaryView: React.FC<{ assumptions: BestSetupAssumptions, targets?: BestS
                       {target.label}
                     </div>
                     {row.phase && <div className="text-[11px] text-gray-500 dark:text-gray-400">{row.phase}</div>}
+                    <div className="text-[11px] text-gray-500 dark:text-gray-400" data-testid="summary-hp">{`${hp} hp`}</div>
                   </td>
                   {DRAIN_STATES.map((d) => {
                     const q = queries.find((x) => x.targetKey === row.targetKey && x.phase === row.phase && x.drain === d.id)!;

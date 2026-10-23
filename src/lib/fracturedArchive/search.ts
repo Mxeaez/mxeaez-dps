@@ -31,7 +31,7 @@ import {
 import {
   CandidateItem, SEARCH_SLOTS, SearchSlot, StylePool, WeaponCandidate, refName,
 } from '@/lib/fracturedArchive/searchCandidates';
-import { raidPresets, raidSearchPool } from '@/lib/raids/data';
+import { raidBase } from '@/lib/raids/base';
 import { BestSetupTarget } from '@/lib/raids/types';
 
 /**
@@ -127,9 +127,9 @@ export interface GearSearchOptions {
   maxPasses?: number;
   /** Only search these weapons (by name) — a reduced pool for tests. */
   weapons?: string[];
-  /** Replace the candidate pool (tests; default: the raid's pool, src/lib/raids/data.ts). */
+  /** Replace the candidate pool (tests; default: the raid's pool, src/lib/raids/base.ts). */
   pool?: Partial<Record<StyleGroup, StylePool>>;
-  /** Presets used as seeds and for the "vs best preset" comparison (default: the raid's presets, src/lib/raids/data.ts). */
+  /** Presets used as seeds and for the "vs best preset" comparison (default: the raid's presets, src/lib/raids/base.ts). */
   presets?: PresetDef[];
   /** Seed with the presets' armour (default true). */
   presetSeeds?: boolean;
@@ -415,7 +415,7 @@ export const runGearSearch = (
   const target = findTarget(query.targetKey);
   const styles = query.styles || 'all';
   const groups = groupsFor(styles);
-  const presets = options.presets || raidPresets(assumptions.raid);
+  const presets = options.presets || raidBase(assumptions.raid).presets;
   const topN = options.topN ?? 10;
   const maxPasses = options.maxPasses ?? 3;
   const progressEvery = options.progressEvery ?? 25;
@@ -429,7 +429,7 @@ export const runGearSearch = (
   const bestPreset = presetRows[0] ?? null;
 
   const variants = groups.flatMap((g) => {
-    const poolDef = options.pool ? options.pool[g] : raidSearchPool(assumptions.raid)[g];
+    const poolDef = options.pool ? options.pool[g] : raidBase(assumptions.raid).searchPool[g];
     return poolDef ? buildVariants(poolDef, monster, resolve, presets, options) : [];
   });
 

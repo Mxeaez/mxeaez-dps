@@ -15,7 +15,7 @@ import {
 } from '@/lib/fracturedArchive/presets';
 import { scaleMonster } from '@/lib/MonsterScaling';
 import {
-  RaidConfig, RaidId, RAIDS, raidConfig, scalingInputValue, withScalingInput,
+  RaidConfig, RaidId, RAIDS, raidConfig, teamDpsMultiplier, teamTimeLabel, withScalingInput,
 } from '@/lib/raids';
 import { ayakExpectedDrain, drainModel, specProfile } from '@/lib/fracturedArchive/specs';
 import SpecPlanPanel from '@/app/components/bestSetup/SpecPlanPanel';
@@ -53,7 +53,7 @@ const ScalingInputs: React.FC<{
   <div className="flex flex-wrap gap-x-4 gap-y-2 items-center" data-testid="scaling-inputs">
     <span className="font-semibold">Raid scaling:</span>
     {raid.scalingInputs.map((d) => {
-      const id = d.key === 'partySize' ? 'bs-party' : `bs-scale-${d.key.replace('.', '-')}`;
+      const id = d.key === 'partySize' ? 'bs-party' : `bs-scale-${d.key}`;
       return (
         <label key={d.key} htmlFor={id} className="flex items-center gap-1" title={d.title}>
           {d.label}
@@ -64,7 +64,7 @@ const ScalingInputs: React.FC<{
             min={d.min}
             max={d.max}
             step={d.step ?? 1}
-            value={scalingInputValue(value, d.key)}
+            value={d.get(value)}
             data-testid={`scaling-${d.key}`}
             onChange={(e) => onChange(withScalingInput(value, d, Number(e.target.value)))}
           />
@@ -129,6 +129,24 @@ const AssumptionsBox: React.FC<{
             </label>
           </>
         )}
+        <label htmlFor="bs-team-mult" className="flex items-center gap-1" title="Players assumed to deal your DPS in every time shown (Search TTK, Routes / Encounters, Plan). Default: the party size where boss hp scales with it (ToA), else 1 (Fractured Archive: identity hp table)">
+          Team DPS ×
+          <input
+            id="bs-team-mult"
+            type="number"
+            className="form-control text-xs py-0.5 w-14"
+            min={1}
+            max={8}
+            step={0.5}
+            value={teamDpsMultiplier(value)}
+            data-testid="team-dps-mult"
+            onChange={(e) => set({ teamDpsMultiplier: Math.min(8, Math.max(1, Number(e.target.value) || 1)) })}
+          />
+          {value.teamDpsMultiplier !== undefined && (
+            <button type="button" className="underline" onClick={() => set({ teamDpsMultiplier: undefined })}>auto</button>
+          )}
+          <span className="text-gray-500 dark:text-gray-400" data-testid="team-time-label">{`(${teamTimeLabel(teamDpsMultiplier(value))})`}</span>
+        </label>
         <label htmlFor="bs-fight" className="flex items-center gap-1" title="Fight length for the spec-energy budget: 100% + 10% per 30 s (15 s with Lightbearer). Rough default until the phase 16 time model.">
           Fight length
           <input
@@ -398,7 +416,7 @@ const RaidBestSetup: React.FC<{
           {mode === 'routes' && <RoutesView assumptions={assumptions} drain={drain} raid={raid} />}
 
           <div className="text-[11px] text-gray-500 dark:text-gray-400">
-            {`Same calculation as the main calculator. ${raid.hpNote} Prayers: ${Object.values(GROUP_PRAYER).join(' / ')}. See docs/BEST_SETUP.md for caveats.`}
+            {`Same calculation as the main calculator. ${raid.hpNote} ${teamTimeLabel(teamDpsMultiplier(assumptions))}. Prayers: ${Object.values(GROUP_PRAYER).join(' / ')}. See docs/BEST_SETUP.md for caveats.`}
           </div>
         </div>
       </div>

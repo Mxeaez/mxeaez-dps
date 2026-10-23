@@ -13,12 +13,10 @@ import { drainModel, PlanLabel } from '@/lib/fracturedArchive/specs';
 import {
   carriersFromCounts, describeAttempts, formatProbability, soloSpecPlan, teamSpecPlan,
 } from '@/lib/fracturedArchive/teamSpecs';
-import {
-  BORK_PHASES, BORK_STUNNED_PHASE, DAGONHAI_PHASES, DAGONHAI_SHIELDED_PHASE, OCELLUS_P1_PHASES, OCELLUS_P3_PHASES,
-} from '@/lib/fracturedArchive/constants';
 import { isOutOfMeleeReach } from '@/lib/fracturedArchive/immunities';
-import { BestSetupTarget, DEFAULT_TOA_INPUTS } from '@/lib/raids/types';
-import { TOA_TARGETS } from '@/lib/raids/toa/targets';
+import { BestSetupTarget } from '@/lib/raids/types';
+import { ALL_RAID_TARGETS, raidBase } from '@/lib/raids/base';
+import { BEST_SETUP_TARGETS } from '@/lib/fracturedArchive/targets';
 import {
   BestSetupAssumptions, PRESETS, PresetDef, StyleGroup,
 } from '@/lib/fracturedArchive/presets';
@@ -45,84 +43,13 @@ export {
 
 // --- targets -------------------------------------------------------------------------------------------------------
 
-// Phase 18: the target type lives in src/lib/raids/types.ts (shared by every raid's target list).
+// Phase 18: the target type lives in src/lib/raids/types.ts (shared by every raid's target list); the Fractured
+// Archive's targets in src/lib/fracturedArchive/targets.ts (re-exported here).
 export type { BestSetupTarget };
-
-export const BEST_SETUP_TARGETS: BestSetupTarget[] = [
-  {
-    key: 'ag-flying', label: 'Archive Guardian (Flying)', name: 'Archive Guardian', version: 'Flying',
-  },
-  {
-    key: 'ag-grounded', label: 'Archive Guardian (Grounded)', name: 'Archive Guardian', version: 'Grounded',
-  },
-  {
-    key: 'smorks', label: 'The Smorks', name: 'The Smorks', version: '',
-  },
-  {
-    key: 'bork',
-    label: 'Bork',
-    name: 'Bork',
-    version: '',
-    phases: BORK_PHASES,
-    summaryPhases: [BORK_PHASES[0], BORK_STUNNED_PHASE],
-  },
-  // Phase 15: Ezekiel is the alternative to Bork and the Smorks (2nd boss); no phase options (no stat changes on the wiki)
-  {
-    key: 'ezekiel', label: 'Ezekiel', name: 'Ezekiel', version: '',
-  },
-  {
-    key: 'dreadnoth', label: 'Dreadnoth the Jellied', name: 'Dreadnoth the Jellied', version: '',
-  },
-  {
-    key: 'jelly', label: 'Jelly (Dreadnoth)', name: 'Jelly (Dreadnoth)', version: '',
-  },
-  // Phase 15: Moia is the alternative to Dreadnoth (3rd boss); melee can't reach her
-  {
-    key: 'moia', label: 'Moia', name: 'Moia', version: '', note: 'Out of melee reach: ranged or magic only.',
-  },
-  {
-    key: 'xarth', label: 'Xarth', name: 'Xarth', version: '',
-  },
-  // Phase 15: the Dagon'hai trio is the alternative to Xarth (4th boss). Elder and Monks share stats and one health
-  // pool, so the Elder stands for all three; "Unshielded" only changes hp (7), so the Summary shows the shielded row.
-  {
-    key: 'dagonhai',
-    label: 'Dagon\'hai Elder + Monks',
-    name: 'Dagon\'hai Elder',
-    version: '',
-    phases: DAGONHAI_PHASES,
-    summaryPhases: [DAGONHAI_SHIELDED_PHASE],
-    note: 'Elder and Monks share stats and one health pool; the shield gauge is depleted 5 times (unverified).',
-  },
-  {
-    key: 'ocellus-p1',
-    label: 'Ocellus P1',
-    name: 'Ocellus',
-    version: 'Phase 1',
-    phases: OCELLUS_P1_PHASES,
-    summaryPhases: OCELLUS_P1_PHASES,
-  },
-  {
-    key: 'ocellus-p2',
-    label: 'Ocellus P2 (The Blade)',
-    name: 'Ocellus',
-    version: 'Phase 2',
-    ttkNotApplicable: true,
-    note: 'DPS = damage to the Blade; 50% transfers to P3. TTK n/a (timed phase).',
-  },
-  {
-    key: 'ocellus-p3',
-    label: 'Ocellus P3',
-    name: 'Ocellus',
-    version: 'Phase 3',
-    phases: OCELLUS_P3_PHASES,
-    summaryPhases: OCELLUS_P3_PHASES,
-    note: 'Last-quadrant options are low-confidence (deflect strength and dodge speed-up unverified).',
-  },
-];
+export { BEST_SETUP_TARGETS };
 
 /** Every raid's targets (phase 18: + Tombs of Amascut, keys "toa-…"); keys are unique across raids. */
-export const ALL_TARGETS: BestSetupTarget[] = [...BEST_SETUP_TARGETS, ...TOA_TARGETS];
+export const ALL_TARGETS: BestSetupTarget[] = ALL_RAID_TARGETS;
 
 export const findTarget = (key: string): BestSetupTarget => {
   const t = ALL_TARGETS.find((x) => x.key === key);
@@ -246,25 +173,10 @@ export const drainStateFor = (m: Monster, id: DrainStateId, assumptions: BestSet
 };
 
 /**
- * Phase 18: per-raid monster inputs. Tombs of Amascut: party size 1-8 (solo allowed), raid level and the target's path
- * level, exactly the calculator's ToA inputs (upstream scales hp and the defence roll from them).
- */
-export const raidMonsterInputs = (
-  target: BestSetupTarget,
-  assumptions: BestSetupAssumptions,
-): Partial<Monster['inputs']> => {
-  if (target.raid !== 'toa') return {};
-  const toa = assumptions.toa || DEFAULT_TOA_INPUTS;
-  return {
-    partySize: Math.min(8, Math.max(1, Math.trunc(assumptions.partySize))),
-    toaInvocationLevel: Math.max(0, Math.trunc(toa.invocationLevel)),
-    toaPathLevel: target.toaPath ? Math.min(6, Math.max(0, Math.trunc(toa.pathLevels[target.toaPath] ?? 0))) : 0,
-  };
-};
-
-/**
  * The monster as the main calculator holds it after selecting the boss, phase and party size and pressing the drain
  * buttons: raw stats + inputs (current HP = scaled HP, like MonsterContainer sets it). The calc scales it itself.
+ * Phase 18: the party-size range and any extra inputs (ToA raid / path level) come from the target's raid
+ * (`raidBase`, src/lib/raids/base.ts).
  */
 export const buildTargetMonster = (
   target: BestSetupTarget,
@@ -273,14 +185,15 @@ export const buildTargetMonster = (
   assumptions: BestSetupAssumptions,
 ): { monster: Monster, drain: DrainState } => {
   const phases = targetPhases(target);
+  const raid = raidBase(target.raid);
   let m: Monster = {
     ...baseMonster(target),
     inputs: {
       ...INITIAL_MONSTER_INPUTS,
       defenceReductions: { ...INITIAL_MONSTER_INPUTS.defenceReductions },
-      partySize: Math.min(8, Math.max(2, assumptions.partySize)),
+      partySize: Math.min(raid.partySize.max, Math.max(raid.partySize.min, Math.trunc(assumptions.partySize))),
       phase: phase && phases.includes(phase) ? phase : phases[0],
-      ...raidMonsterInputs(target, assumptions),
+      ...raid.monsterInputs(target, assumptions),
     },
   };
   m = withInputs(m, { monsterCurrentHp: scaleMonster(m).skills.hp });

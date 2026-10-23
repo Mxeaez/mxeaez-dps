@@ -3,6 +3,34 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 18 fixes — review follow-ups (2026-10-23)
+
+- No raid branches in shared code: new `src/lib/raids/base.ts` (`RaidBase`: targets, party-size range, `monsterInputs`,
+  scaling inputs with their own get / set, default assumptions, presets, pool, `hpScalesWithParty`,
+  `boostsNeedSupplies`), looked up by `assumptions.raid` / `target.raid` in bestSetup (party clamp + inputs), search,
+  raidTime, planner (`planAssumptions`). `RaidConfig` extends it (time model, own settings object + `timeSettingFields`
+  / `timeModelNote`, default supplies, Plan note); RoutesView renders the settings box from the fields (FA field ids
+  unchanged), PlanView takes supplies / note from the config. FA targets moved to `fracturedArchive/targets.ts`
+  (re-exported). Removed `raids/data.ts`, `RaidTimeSettings.toa` (ToA's settings are their own object),
+  `P2_WARDEN_ACTIVE_IDS` (upstream `P2_WARDEN_IDS`), `'toaPath.'` key parsing.
+- Team-DPS multiplier (`teamDpsMultiplier`, assumptions box "Team DPS ×", "auto" reset): default party size where hp
+  scales with party (ToA), 1 for FA; used by every time model (`RaidTimeAssumptions.dpsMultiplier`; Ocellus P2 keeps
+  its wall-clock length) and the Search TTK; Search, Routes / Encounters, Plan headline, Summary and footer carry
+  "times assume N players at your DPS" / "your DPS alone".
+- Akkha: rotation by time ("six auto-attacks followed by a special attack") — equal time under each prayer, hp in
+  proportion to the kit's DPS under each (`akkhaRotation`).
+- Summary: scaled hp per row; header lists the raid inputs and the team label.
+- Docs: UNVERIFIED E3 (Kephri page "two phases of shields" vs Strategies "third shield"; Strategies followed), E4
+  (rotation quote), E6, new E8 (Zebak "Not Just a Head" heal not modelled) and E9 (drains don't carry across phases of
+  one NPC); BEST_SETUP / DATA_SOURCES updated.
+- Tests: RaidConfig.test.ts +2 (multiplier defaults 1 / party size, override, labels, `dpsMultiplier` in the time
+  assumptions; raidBase = config), ToA.test.ts +2 (Akkha equal-time split 60/60/30 → 36.8 s each, 2208/2208/1104, a
+  blocked prayer still costs its time; override 3 = twice the 6-player time). `yarn test` 1114 pass / 4 skipped; lint,
+  tsc clean. Playwright: verifyPhase18 all OK (+ multiplier 1 / 6 and labels, Summary hp), verifyPhase13 and
+  verifyPhase17 OK (FA plan still 23:18.8; their tracked screenshots restored).
+- Headline changes: DPS unchanged; Akkha 138.1 → 137.5 s, Encounters 14:02.9 → 14:02.4, Plan 14:22.4 → 14:20.0 (same
+  kit); Search TTK now shown for the team (Zebak 125.6 s at 6×, was 753.5 s solo).
+
 ## Phase 18 — Raid tabs + Tombs of Amascut (2026-10-23)
 
 - **RaidConfig** (`src/lib/raids/`): `types.ts` (RaidId, BestSetupTarget moved here, ToA inputs / time settings,

@@ -31,8 +31,3 @@ export const P2_WARDEN_PHASES = [P2_WARDEN_NO_PRAYER_PHASE, P2_WARDEN_MELEE_RANG
 /** The initial prayers of each warden in P2 (Strategies). */
 export const P2_ELIDINIS_INITIAL_PHASE = P2_WARDEN_MELEE_RANGED_PHASE;
 export const P2_TUMEKEN_INITIAL_PHASE = P2_WARDEN_MELEE_MAGIC_PHASE;
-
-export const P2_WARDEN_ACTIVE_IDS = [
-  11753, 11754, // Elidinis' Warden (Active)
-  11756, 11757, // Tumeken's Warden (Active)
-];

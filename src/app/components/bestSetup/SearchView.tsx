@@ -21,6 +21,7 @@ import openInCalculator from '@/app/components/bestSetup/loadIntoCalculator';
 import { searchRowIcons, searchRowWeaponParts } from '@/lib/fracturedArchive/loadoutIcons';
 import { LoadoutIconRow, WeaponLine } from '@/app/components/bestSetup/ItemIcons';
 import DPS_TEXT_CLASS from '@/app/components/bestSetup/styles';
+import { teamDpsMultiplier, teamTimeLabel } from '@/lib/raids';
 
 // "Search" tab of /best-setup (phase 9): full gear search over the pool in src/lib/fracturedArchive/searchCandidates.ts,
 // run in its own worker (src/worker/searchWorker.ts). Docs: docs/BEST_SETUP.md.
@@ -49,6 +50,8 @@ const SearchView: React.FC<{
   targetKey, phase, drain, assumptions,
 }) => {
   const [styles, setStyles] = useState<StyleFilter>('all');
+  // phase 18: the TTK shown assumes this many players at the user's DPS
+  const teamMult = teamDpsMultiplier(assumptions);
   const [perWeapon, setPerWeapon] = useState(false);
   const [progress, setProgress] = useState<GearSearchProgress | null>(null);
   const [result, setResult] = useState<GearSearchResult | null>(null);
@@ -200,6 +203,7 @@ const SearchView: React.FC<{
             <div className="text-gray-500 dark:text-gray-400" data-testid="search-stats">
               {`${result.evaluations} evaluations over ${result.variants} weapon variants in ${(result.elapsedMs / 1000).toFixed(1)}s`}
               {wallMs !== null && ` (wall ${(wallMs / 1000).toFixed(1)}s)`}
+              {` · TTK: ${teamTimeLabel(teamMult)}`}
               {Array.from(new Set(result.cantHit.map((c) => c.reason))).map((reason) => ` · can't hit (${reason}): ${result.cantHit.filter((c) => c.reason === reason).map((c) => c.weapon).join(', ')}`)}
             </div>
             {target.note && <div className="text-orange-700 dark:text-orange-300">{target.note}</div>}
@@ -211,7 +215,7 @@ const SearchView: React.FC<{
                   <th>#</th>
                   <th className="text-right">DPS</th>
                   <th className="text-right" title="Gain over the best Phase 8 preset of the searched styles (same boss and drains)">vs best preset</th>
-                  <th className="text-right">Exp. TTK</th>
+                  <th className="text-right" title={teamTimeLabel(teamMult)} data-testid="ttk-header">{teamMult === 1 ? 'Exp. TTK' : `Exp. TTK (${teamMult}×)`}</th>
                   <th className="text-right">Max hit</th>
                   <th className="text-right">Accuracy</th>
                   <th>Style</th>
@@ -225,7 +229,7 @@ const SearchView: React.FC<{
                     <td className="px-2 py-1">{i + 1}</td>
                     <td className={`px-2 py-1 text-right font-mono ${DPS_TEXT_CLASS}`} data-testid="dps">{fmt(r.dps)}</td>
                     <td className="px-2 py-1 text-right font-mono text-xs" data-testid="gain">{fmtGain(r.dps, baseDps)}</td>
-                    <td className="px-2 py-1 text-right font-mono" data-testid="ttk">{i === 0 ? fmtTtk(r.ttk) : ''}</td>
+                    <td className="px-2 py-1 text-right font-mono" data-testid="ttk">{i === 0 ? fmtTtk(r.ttk === null ? null : r.ttk / teamMult) : ''}</td>
                     <td className="px-2 py-1 text-right font-mono" data-testid="maxhit">{r.maxHit}</td>
                     <td className="px-2 py-1 text-right font-mono">{fmtAcc(r.accuracy)}</td>
                     <td className="px-2 py-1 text-xs">

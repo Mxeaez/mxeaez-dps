@@ -15,8 +15,8 @@ import {
 import {
   BestSetupAssumptions, DEFAULT_ASSUMPTIONS, PresetDef, StyleGroup,
 } from '@/lib/fracturedArchive/presets';
-import { raidPresets } from '@/lib/raids/data';
-import { ToaInputs, ToaTimeSettings } from '@/lib/raids/types';
+import { raidBase, teamDpsMultiplier } from '@/lib/raids/base';
+import { TimeSettings, ToaInputs } from '@/lib/raids/types';
 import {
   GearSearchProgress, runGearSearch, SearchRow, searchRowToPlayer, StyleOption,
 } from '@/lib/fracturedArchive/search';
@@ -53,7 +53,8 @@ import {
 
 // --- settings ------------------------------------------------------------------------------------------------------
 
-export interface RaidTimeSettings {
+/** The Fractured Archive model's settings (phase 18: each time model has its own settings object). */
+export type RaidTimeSettings = {
   /** Archive Guardian flying shield hp at the reference party size (`agShieldPartySize`). */
   agShieldHp: number;
   /** Party size the shield hp was quoted for. */
@@ -70,9 +71,7 @@ export interface RaidTimeSettings {
   ocellusP2CarryOver: number;
   /** Fraction of P3's remaining hp dealt in the last quadrant (at the worse Deflect option for the kit); 0–1. */
   ocellusLastQuadrantFraction: number;
-  /** Phase 18: Tombs of Amascut time-model settings (src/lib/raids/toa/time.ts); unused by the Fractured Archive. */
-  toa?: ToaTimeSettings;
-}
+};
 
 export const RAID_TIME_DEFAULTS: RaidTimeSettings = {
   // Strategies → Archive Guardian: charging the inert guardians does "596 damage to 1490 health shield in 6-scale"
@@ -333,7 +332,13 @@ export interface RaidTimeAssumptions {
   /** HP scaling party size (2–8). */
   partySize: number;
   drain: DrainStateId;
-  settings: RaidTimeSettings;
+  /** The model's own settings (FA: RaidTimeSettings; ToA: ToaTimeSettings). */
+  settings: TimeSettings;
+  /**
+   * Phase 18: damage dealt per second of the user's DPS — the team-DPS multiplier (`teamDpsMultiplier`: players assumed
+   * to deal the user's DPS; default 1 = the user alone). Fixed-length phases (Ocellus P2) keep their wall-clock length.
+   */
+  dpsMultiplier?: number;
   /** Fight length handed to the drain planner when the first pass can't kill (infinite time). */
   fallbackFightSeconds: number;
   /**
@@ -372,13 +377,14 @@ export interface RaidTimeModel {
 export const raidTimeAssumptionsFrom = (
   best: BestSetupAssumptions,
   drain: DrainStateId,
-  settings: RaidTimeSettings = RAID_TIME_DEFAULTS,
+  settings: TimeSettings = RAID_TIME_DEFAULTS,
   model?: RaidTimeModel,
 ): RaidTimeAssumptions => ({
   partySize: best.partySize,
   drain,
   settings,
   fallbackFightSeconds: best.fightSeconds,
+  dpsMultiplier: teamDpsMultiplier(best),
   ...(model ? { model } : {}),
   ...(best.toa ? { toa: best.toa } : {}),
 });
@@ -416,10 +422,11 @@ const evalEncounterPass = (
   drain: DrainStateId,
   fightSeconds: number,
 ): PhaseTime[] => {
-  const { settings } = a;
+  const settings = a.settings as RaidTimeSettings;
+  const mult = a.dpsMultiplier ?? 1;
   const rows = encounterPlan(id as FaEncounterId, settings, a.partySize)
     .filter((p) => p.damage > 0)
-    .map((p) => phaseTime(p, kit, drain, fightSeconds));
+    .map((p) => phaseTime(p, kit, drain, fightSeconds, mult));
   if (id !== 'ocellus') return rows;
 
   // P2 (The Blade): a fixed duration; the damage dealt in it × carry-over comes off P3's hp
@@ -429,7 +436,7 @@ const evalEncounterPass = (
       targetKey: 'ocellus-p2', drain, fightSeconds,
     });
     const dps = choice?.dps ?? 0;
-    const dealt = dps * settings.ocellusP2Seconds;
+    const dealt = dps * mult * settings.ocellusP2Seconds;
     carried = dealt * settings.ocellusP2CarryOver;
     rows.push({
       key: 'ocellus-p2',
@@ -447,13 +454,13 @@ const evalEncounterPass = (
   const q13: PlannedPhase = {
     key: 'ocellus-p3', label: `P3 quadrants 1-3${last ? ` (${pctText(1 - last)})` : ''}`, targetKey: 'ocellus-p3', phase: OCELLUS_P3_PHASES[0], damage: p3Total * (1 - last),
   };
-  if (q13.damage > 0) rows.push(phaseTime(q13, kit, drain, fightSeconds));
+  if (q13.damage > 0) rows.push(phaseTime(q13, kit, drain, fightSeconds, mult));
   if (p3Total * last > 0) {
     // Pessimistic: the Deflect that hurts the kit most (= the one blocking the kit's best style; magic is never
     // deflected in our model, so a magic-best kit gets the lower of the two)
     const options = [OCELLUS_P3_DEFLECT_MELEE_PHASE, OCELLUS_P3_DEFLECT_RANGED_PHASE].map((phase) => phaseTime({
       key: 'ocellus-p3-last', label: `P3 last quadrant, ${phase.replace('Last quadrant: ', '')} (${pctText(last)})`, targetKey: 'ocellus-p3', phase, damage: p3Total * last,
-    }, kit, drain, fightSeconds));
+    }, kit, drain, fightSeconds, mult));
     rows.push(options[1].dps < options[0].dps ? options[1] : options[0]);
   }
   return rows;
@@ -487,7 +494,7 @@ export const FA_TIME_MODEL: RaidTimeModel = {
   routeSlots: ROUTE_SLOTS,
   labels: ENCOUNTER_LABELS,
   encounterPass: evalEncounterPass,
-  requiredPhaseTargets: (a) => requiredPhaseTargets(a.settings, a.partySize),
+  requiredPhaseTargets: (a) => requiredPhaseTargets(a.settings as RaidTimeSettings, a.partySize),
 };
 
 const modelOf = (a: RaidTimeAssumptions): RaidTimeModel => a.model ?? FA_TIME_MODEL;
@@ -704,7 +711,7 @@ export interface RouteComparisonRequest {
   basePlayer: Player;
   assumptions: BestSetupAssumptions;
   drain: DrainStateId;
-  settings: RaidTimeSettings;
+  settings: TimeSettings;
   kit: RaidKitSpec;
   /** Search results already known (the UI's session cache), by phase key; missing ones are searched. */
   searchBest: PhaseSearchBest;
@@ -774,7 +781,7 @@ export const computeRouteComparison = (
       if (row) loadouts.push(searchRowKitLoadout(req.basePlayer, row, t.targetKey, t.phase, assumptions));
     }
   }
-  const presets = raidPresets(assumptions.raid);
+  const presets = raidBase(assumptions.raid).presets;
   for (const name of req.kit.presets) {
     const preset = presets.find((p) => p.name === name);
     if (preset) loadouts.push(presetKitLoadout(req.basePlayer, preset, assumptions));

@@ -3,7 +3,7 @@ import {
   BORK_IDS, BORK_PHASES, DAGONHAI_IDS, DAGONHAI_PHASES, FRACTURED_ARCHIVE_BOSS_IDS, OCELLUS_P1_IDS, OCELLUS_P1_PHASES,
   OCELLUS_P3_IDS, OCELLUS_P3_PHASES,
 } from '@/lib/fracturedArchive/constants';
-import { AKKHA_PHASES, P2_WARDEN_ACTIVE_IDS, P2_WARDEN_PHASES } from '@/lib/raids/toa/constants';
+import { AKKHA_PHASES, P2_WARDEN_PHASES } from '@/lib/raids/toa/constants';
 
 export * from '@/lib/fracturedArchive/constants';
 
@@ -568,7 +568,7 @@ OCELLUS_P3_IDS.forEach((id) => { MONSTER_PHASES_BY_ID[id] = OCELLUS_P3_PHASES; }
 DAGONHAI_IDS.forEach((id) => { MONSTER_PHASES_BY_ID[id] = DAGONHAI_PHASES; });
 // Tombs of Amascut prayers (phase 18, src/lib/raids/toa/prayers.ts)
 AKKHA_IDS.forEach((id) => { MONSTER_PHASES_BY_ID[id] = AKKHA_PHASES; });
-P2_WARDEN_ACTIVE_IDS.forEach((id) => { MONSTER_PHASES_BY_ID[id] = P2_WARDEN_PHASES; });
+P2_WARDEN_IDS.forEach((id) => { MONSTER_PHASES_BY_ID[id] = P2_WARDEN_PHASES; });
 
 export const INFINITE_HEALTH_MONSTERS: number[] = [
   14779, // gemstone crab

@@ -17,7 +17,11 @@ Summary's "best preset" reference; `computeBestSetup` / `evaluatePreset` stay as
 
 **Raid tabs** at the top of `/best-setup`: *Fractured Archive* (default) and *Tombs of Amascut* (CoX and ToB come in
 phases 19-20). Each raid keeps its own assumptions while you switch; the four tabs (Search, Plan, Routes / Encounters,
-Summary) are the same code driven by a **`RaidConfig`** (`src/lib/raids/index.ts`):
+Summary) are the same code driven by a **`RaidConfig`** (`src/lib/raids/index.ts`). Shared code has no raid branches:
+the pure modules read the per-raid rules from **`RaidBase`** (`src/lib/raids/base.ts`: targets, party-size range,
+monster inputs, scaling inputs with their own get / set, default assumptions, presets, pool, `hpScalesWithParty`,
+`boostsNeedSupplies`) by `assumptions.raid` / `target.raid`; `RaidConfig` adds the time model and its own settings
+object + settings-box fields (`timeSettingFields`, `timeModelNote`), default supplies, Plan note and UI labels.
 
 | Field | Fractured Archive | Tombs of Amascut |
 |---|---|---|
@@ -27,13 +31,21 @@ Summary) are the same code driven by a **`RaidConfig`** (`src/lib/raids/index.ts
 | `presets` | `PRESETS` | FA list + Osmumten's fang, Keris partisan of breaching, Ghrazi rapier (Torva + Avernic defender) |
 | `searchPool` | `SEARCH_POOL` | FA pool + Keris partisan of breaching, Keris partisan of amascut, Blade of Saeldor (c), Eye of Ayak |
 | `time` (encounter model) | `FA_TIME_MODEL` (raidTime.ts): 8 routes | `TOA_TIME_MODEL` (`src/lib/raids/toa/time.ts`): one fixed route |
+| team-DPS multiplier default | 1 (identity hp table) | party size (hp scales with party) |
 | routes tab | "Routes" | "Encounters" (the single route, breakdown open) |
 
 The raid is `assumptions.raid` (undefined = Fractured Archive), so every cache key, the worker requests and the
 pure modules pick the raid from the assumptions: `findTarget` searches every raid's targets (ToA keys start with
 `toa-`), `buildTargetMonster` sets the calculator's ToA inputs (`toaInvocationLevel`, `toaPathLevel` of the target's
-path, party size 1-8), the search and planner default to the raid's presets / pool (`src/lib/raids/data.ts`), and the
-worker hands Routes / Plan the raid's time model. Fractured Archive behaviour is unchanged (all phase 8-17 tests pass
+path, the raid's party-size range), the search and planner default to the raid's presets / pool (`raidBase`), and the
+worker hands Routes / Plan the raid's time model.
+
+**Team-DPS multiplier** (assumptions box, "Team DPS ×"; `teamDpsMultiplier` in base.ts): every time shown — Search
+TTK, Routes / Encounters rows and totals, the Plan headline — assumes this many players dealing your DPS, and says so
+("times assume 6 players at your DPS" / "your DPS alone"). Default: the party size where boss hp scales with it (ToA),
+1 for the Fractured Archive (identity hp table, so its numbers are unchanged); "auto" resets an override. Ocellus P2
+stays its wall-clock length (the damage dealt in it scales). The Summary shows the scaled hp of each row and the raid
+inputs in its header. Fractured Archive behaviour is unchanged (all phase 8-17 tests pass
 as they were).
 
 **Tombs of Amascut — what comes from upstream** (not re-modelled): hp scaling by raid level (+4% per 10 levels; the
@@ -52,13 +64,15 @@ scaled by accuracy (and the double Twisted bow scaling there); melee always max 
   your style* (default, = upstream), *Praying Melee / Ranged / Magic*, *Final stand (Protect from Magic + Missiles)*;
   P2 Warden (Active) options *Not praying* (default, = upstream), *Praying Melee + Ranged* (Elidinis' initial),
   *Praying Melee + Magic* (Tumeken's initial). The best-setup P2 targets default to each warden's initial prayers.
-- **Encounter model** (`time.ts`): time = damage ÷ (party size × your DPS), i.e. every member deals your DPS:
+- **Encounter model** (`time.ts`): time = damage ÷ (team-DPS multiplier × your DPS):
   - Kephri: 3 × shield hp (+ *swarm leak* × shield per intermission, default 0) + Spitting / Soldier / Arcane Scarab
     (setting, default on) + the unshielded hp.
   - Zebak, Ba-Ba: their hp.
-  - Akkha: his hp split in thirds over *Praying Melee / Ranged / Magic* (setting *Akkha prayer rotation*, default on;
-    off = always an unprotected style) + 4 × Akkha's Shadow + 20% of his hp in the final stand (melee only, so a kit
-    without melee shows ∞ — you can't finish Akkha without it).
+  - Akkha: he switches style (and prayer) after "six auto-attacks followed by a special attack", i.e. on time, so with
+    *Akkha prayer rotation* (default on) he spends **equal time** under *Praying Melee / Ranged / Magic*; his hp is
+    dealt in proportion to the kit's best DPS under each (a prayer that blocks the kit's only style still costs its
+    time); off = always an unprotected style. + 4 × Akkha's Shadow + 20% of his hp in the final stand (melee only, so
+    a kit without melee shows ∞ — you can't finish Akkha without it).
   - Wardens: P1 obelisk hp; P2 downs: each = the Active warden's hp (the shield) at the warden's prayers, then the
     core for 21 / 29 / 37 ticks (Warden ≥ 80% / ≥ 60% / below) at core DPS × 5 Warden hp, until the Warden's hp (the
     Core-ejected entry's 4500-based hp) is gone; P3 95% of hp + 25% enraged (5% left + 20% heal, Defence 180, floor
@@ -75,9 +89,10 @@ and Unshielded) Keris partisan of breaching 9.520; Zebak Ascension crossbows + d
 Akkha Tumeken's shadow 13.020, final stand Osmumten's fang 9.035; Akkha's Shadow Ascension crossbows + onyx (e)
 15.262; Ba-Ba Ascension crossbows + diamond (e) 9.441; Obelisk Shadow 13.002; P2 Warden (Elidinis', praying melee +
 ranged) Shadow 14.167; core Scythe of Vitur 31.333 (always max hits); P3 Shadow 12.493. Encounters with the best search
-result per style: 14:02.9 (Kephri 145.5, Zebak 125.4, Akkha 138.1, Ba-Ba 92.5, Wardens 341.5 s). **Plan** (defaults:
-pinned items, 8 supply slots): worn Keris partisan of breaching (Torva), switches Tumeken's shadow (Ancestral),
-Osmumten's fang, Scythe and Obligator (Torva), 1 free slot, **14:22.4**.
+result per style: 14:02.4 (Kephri 145.5, Zebak 125.4, Akkha 137.5, Ba-Ba 92.5, Wardens 341.5 s; team of 6 at your
+DPS). **Plan** (defaults: pinned items, 8 supply slots): worn Keris partisan of breaching (Torva), switches Tumeken's
+shadow (Ancestral), Osmumten's fang, Scythe and Obligator (Torva), 1 free slot, **14:20.0**. Search TTK on Zebak:
+125.6 s (6 players; 753.5 s alone).
 
 ## Plan tab (phase 17: raid kit planner)
 

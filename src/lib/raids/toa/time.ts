@@ -7,11 +7,9 @@ import {
   phaseKey,
   phaseTime,
   PlannedPhase,
-  RAID_TIME_DEFAULTS,
   RaidKit,
   RaidTimeAssumptions,
   RaidTimeModel,
-  RaidTimeSettings,
   RouteSlot,
   targetHp,
 } from '@/lib/fracturedArchive/raidTime';
@@ -31,7 +29,8 @@ import {
  * (raidTime.ts): Σ damage required ÷ DPS per phase, the kit's best loadout + style per phase, DPS time only. HP is
  * upstream's verified scaling (src/lib/scaling/TombsOfAmascut.ts: raid level, path level, party size — checked against
  * in-game hp by upstream's src/tests/lib/scaling/TombsOfAmascut.test.ts), so the seconds are meant to be real for a
- * team in which **every member deals the user's DPS** (time = damage ÷ (party size × DPS)).
+ * team in which **every member deals the user's DPS**: time = damage ÷ (team-DPS multiplier × DPS), the multiplier
+ * defaulting to the party size (`teamDpsMultiplier`, src/lib/raids/base.ts).
  *
  * ToA has no route choice (the four paths in any order, then the Wardens): one fixed route. Encounter sequences, from
  * https://oldschool.runescape.wiki/w/Tombs_of_Amascut/Strategies and the boss pages (read 2026-10-23, ?action=raw):
@@ -41,8 +40,10 @@ import {
  *   threshold causes a Soldier and Arcane Scarab"), then the Aggressive (unshielded) hp. Swarms are max hits for
  *   whoever clears them: not counted.
  * - Zebak: his hp (the "Enraged" version below ~25% only attacks faster: same stats).
- * - Akkha: his hp, split over his prayers when `akkhaPrayerRotation` ("he will always pray against the same style with
- *   which he is currently attacking"); at 80/60/40/20% one of four Akkha's Shadows must be dispelled ("Only focus one
+ * - Akkha: "Akkha will change combat styles after he performs six auto-attacks followed by a special attack" and "he
+ *   will always pray against the same style with which he is currently attacking": the rotation is by attack count,
+ *   i.e. time, so with `akkhaPrayerRotation` each prayer lasts the same time and his hp is dealt in proportion to the
+ *   kit's DPS under each (`akkhaRotation`); at 80/60/40/20% one of four Akkha's Shadows must be dispelled ("Only focus one
  *   shadow at a time ... fully restores all damaged shadows") → 4 × the shadow hp; "Upon having his health depleted,
  *   Akkha will make his final stand, restoring 20% of his maximum health ... with Protect from Magic and Missiles" →
  *   20% of his hp in melee.
@@ -66,9 +67,6 @@ export const TOA_TIME_DEFAULTS: ToaTimeSettings = {
   kephriOverlords: true,
   p3SiphonFraction: 0,
 };
-
-/** Settings object for ToA's time model: the shared fields (unused) + `toa`. */
-export const TOA_RAID_TIME_DEFAULTS: RaidTimeSettings = { ...RAID_TIME_DEFAULTS, toa: TOA_TIME_DEFAULTS };
 
 export type ToaEncounterId = 'toa-kephri' | 'toa-zebak' | 'toa-akkha' | 'toa-baba' | 'toa-wardens';
 
@@ -119,7 +117,8 @@ export const coreExposureSeconds = (remainingFraction: number): number => {
   return row.ticks * 0.6;
 };
 
-export const toaSettings = (a: RaidTimeAssumptions): ToaTimeSettings => ({ ...TOA_TIME_DEFAULTS, ...(a.settings.toa || {}) });
+/** The ToA model's own settings object (missing fields = defaults). */
+export const toaSettings = (a: RaidTimeAssumptions): ToaTimeSettings => ({ ...TOA_TIME_DEFAULTS, ...(a.settings as Partial<ToaTimeSettings>) });
 
 /** Party size used for hp and the team-DPS factor (ToA: 1-8). */
 export const toaPartySize = (a: Pick<RaidTimeAssumptions, 'partySize'>): number => Math.min(8, Math.max(1, Math.trunc(a.partySize)));
@@ -177,13 +176,10 @@ export const toaEncounterPlan = (id: EncounterId, a: RaidTimeAssumptions): Plann
       }];
     case 'toa-akkha': {
       const akkha = hp('toa-akkha', AKKHA_NO_PRAYER_PHASE);
-      const rows: PlannedPhase[] = s.akkhaPrayerRotation
-        ? [AKKHA_PRAYING_MELEE_PHASE, AKKHA_PRAYING_RANGED_PHASE, AKKHA_PRAYING_MAGIC_PHASE].map((phase) => ({
-          key: `akkha-${phase}`, label: `Akkha, ${phase} (⅓ of hp)`, targetKey: 'toa-akkha', phase, damage: akkha / 3,
-        }))
-        : [{
-          key: 'akkha', label: 'Akkha (an unprotected style)', targetKey: 'toa-akkha', phase: AKKHA_NO_PRAYER_PHASE, damage: akkha,
-        }];
+      // with the prayer rotation, his main hp depends on the kit's DPS under each prayer: built in toaEncounterPass
+      const rows: PlannedPhase[] = s.akkhaPrayerRotation ? [] : [{
+        key: 'akkha', label: 'Akkha (an unprotected style)', targetKey: 'toa-akkha', phase: AKKHA_NO_PRAYER_PHASE, damage: akkha,
+      }];
       rows.push(
         {
           key: 'akkha-shadows', label: `Akkha's Shadow × ${AKKHA_SHADOWS} (one per 20% threshold)`, targetKey: 'toa-akkha-shadow', damage: AKKHA_SHADOWS * hp('toa-akkha-shadow'),
@@ -236,7 +232,7 @@ export interface WardensP2Result {
 /**
  * Wardens P2 (see the file comment): downs until the Warden's hp is gone; each down = shield hp at `shieldRate`, then
  * one core exposure at `coreRate` (damage to the core per second; × 5 to the Warden), capped by the remaining hp.
- * Rates are team rates (party × DPS). Infinite when a rate is 0 or more than 100 downs are needed.
+ * Rates are team rates (team-DPS multiplier × DPS). Infinite when a rate is 0 or more than 100 downs are needed.
  */
 export const wardensP2Time = (wardenHp: number, shieldHp: number, shieldRate: number, coreRate: number): WardensP2Result => {
   let remaining = wardenHp;
@@ -271,7 +267,22 @@ export const wardensP2Time = (wardenHp: number, shieldHp: number, shieldRate: nu
   };
 };
 
-const teamNote = (n: number) => (n > 1 ? `team of ${n} at your DPS` : undefined);
+const teamNote = (n: number) => (n !== 1 ? `team of ${n} at your DPS` : undefined);
+
+export const AKKHA_PRAYER_PHASES = [AKKHA_PRAYING_MELEE_PHASE, AKKHA_PRAYING_RANGED_PHASE, AKKHA_PRAYING_MAGIC_PHASE];
+
+/**
+ * Akkha's prayer rotation: equal time under each prayer. With team rates r_i (multiplier × the kit's best DPS under
+ * prayer i), each prayer lasts t = hp ÷ Σ r_i and takes hp × r_i ÷ Σ r_i; a prayer under which the kit deals nothing
+ * still costs its t. Infinite when the kit deals nothing under every prayer.
+ */
+export const akkhaRotation = (hp: number, rates: number[]): { seconds: number, damage: number }[] => {
+  const sum = rates.reduce((t, r) => t + Math.max(0, r), 0);
+  if (hp <= 0) return rates.map(() => ({ seconds: 0, damage: 0 }));
+  if (sum <= 0) return rates.map(() => ({ seconds: Infinity, damage: hp / rates.length }));
+  const t = hp / sum;
+  return rates.map((r) => ({ seconds: t, damage: (hp * Math.max(0, r)) / sum }));
+};
 
 /** One pass over a ToA encounter (the model's `encounterPass`). */
 export const toaEncounterPass = (
@@ -281,11 +292,29 @@ export const toaEncounterPass = (
   drain: DrainStateId,
   fightSeconds: number,
 ): PhaseTime[] => {
-  const party = toaPartySize(a);
-  const note = teamNote(party);
+  const mult = a.dpsMultiplier ?? 1;
+  const note = teamNote(mult);
   const rows = toaEncounterPlan(id, a)
     .filter((p) => p.damage > 0)
-    .map((p) => ({ ...phaseTime(p, kit, drain, fightSeconds, party), ...(note ? { note } : {}) }));
+    .map((p) => ({ ...phaseTime(p, kit, drain, fightSeconds, mult), ...(note ? { note } : {}) }));
+  const best = (q: Omit<PhaseQuery, 'drain' | 'fightSeconds'>): KitChoice | null => kit.best({ ...q, drain, fightSeconds });
+  if (id === 'toa-akkha' && toaSettings(a).akkhaPrayerRotation) {
+    const hp = toaHp(a, 'toa-akkha', AKKHA_NO_PRAYER_PHASE);
+    const choices = AKKHA_PRAYER_PHASES.map((phase) => best({ targetKey: 'toa-akkha', phase }));
+    const split = akkhaRotation(hp, choices.map((c) => (c?.dps ?? 0) * mult));
+    const rotation: PhaseTime[] = AKKHA_PRAYER_PHASES.map((phase, i) => ({
+      key: `akkha-${phase}`,
+      label: `Akkha, ${phase} (⅓ of the time)`,
+      targetKey: 'toa-akkha',
+      phase,
+      damage: split[i].damage,
+      choice: choices[i],
+      dps: choices[i]?.dps ?? 0,
+      seconds: split[i].seconds,
+      ...(note ? { note } : {}),
+    }));
+    return [...rotation, ...rows];
+  }
   if (id !== 'toa-wardens') return rows;
 
   // P2, between P1 and P3
@@ -293,12 +322,11 @@ export const toaEncounterPass = (
   const warden = p2WardenTarget(s);
   const shieldHp = toaHp(a, warden.targetKey, warden.phase);
   const wardenHp = toaHp(a, 'toa-warden-core');
-  const best = (q: Omit<PhaseQuery, 'drain' | 'fightSeconds'>): KitChoice | null => kit.best({ ...q, drain, fightSeconds });
   const shieldChoice = best(warden);
   const coreChoice = best({ targetKey: 'toa-warden-core' });
   const shieldDps = shieldChoice?.dps ?? 0;
   const coreDps = coreChoice?.dps ?? 0;
-  const p2 = wardensP2Time(wardenHp, shieldHp, shieldDps * party, coreDps * party);
+  const p2 = wardensP2Time(wardenHp, shieldHp, shieldDps * mult, coreDps * mult);
   const downs = Number.isFinite(p2.downs) ? p2.downs : 0;
   const p2Rows: PhaseTime[] = [
     {

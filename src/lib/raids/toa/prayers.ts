@@ -1,12 +1,11 @@
 import { Monster } from '@/types/Monster';
 import { CombatStyleType } from '@/types/PlayerCombatStyle';
-import { AKKHA_IDS } from '@/lib/constants';
+import { AKKHA_IDS, P2_WARDEN_IDS } from '@/lib/constants';
 import {
   AKKHA_FINAL_STAND_PHASE,
   AKKHA_PRAYING_MAGIC_PHASE,
   AKKHA_PRAYING_MELEE_PHASE,
   AKKHA_PRAYING_RANGED_PHASE,
-  P2_WARDEN_ACTIVE_IDS,
   P2_WARDEN_MELEE_MAGIC_PHASE,
   P2_WARDEN_MELEE_RANGED_PHASE,
 } from '@/lib/raids/toa/constants';
@@ -44,7 +43,7 @@ const wardenPrayers = (phase: string): PrayedStyle[] => {
 /** The styles the ToA boss is praying against (empty for every other monster). */
 export const toaPrayedStyles = (m: Monster): PrayedStyle[] => {
   if (AKKHA_IDS.includes(m.id)) return akkhaPrayers(m.inputs.phase);
-  if (P2_WARDEN_ACTIVE_IDS.includes(m.id)) return wardenPrayers(m.inputs.phase || '');
+  if (P2_WARDEN_IDS.includes(m.id)) return wardenPrayers(m.inputs.phase || '');
   return [];
 };
 

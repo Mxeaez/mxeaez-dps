@@ -7,7 +7,8 @@
  * - ToA Search on Zebak completes; the boss hp shown is the raid-level-500 hp (8000); raid level 300 → 5870 hp and a
  *   different TTK.
  * - Encounters tab: one route, the per-encounter breakdown open. Plan runs for ToA (28-cell grid).
- * - ToA Summary: one row per summary target, all cells filled.
+ * - ToA Summary: one row per summary target, all cells filled, scaled hp per row, raid level / party in the header.
+ * - Team-DPS multiplier: 1 on FA ("your DPS alone"), 6 on ToA (= party size); the time displays carry the label.
  * - Back to FA: Xarth 12.839 again. Screenshots docs/screenshots/phase18-*.png.
  */
 import { chromium } from '@playwright/test';
@@ -60,6 +61,8 @@ const main = async () => {
   check(h === 'Best setup · The Fractured Archive', `FA is the default raid (${h})`);
   check((await page.locator('[data-testid="routes-tab"]').innerText()).trim() === 'Routes', 'FA routes tab = Routes');
   check(await page.locator('#bs-zeal').count() === 1, 'FA keeps Zeal / fragments');
+  check(await page.locator('#bs-team-mult').inputValue() === '1'
+    && (await page.locator('[data-testid="team-time-label"]').innerText()).includes('your DPS alone'), 'FA team-DPS multiplier 1 (your DPS alone)');
   await faXarth(page, 'before');
   await shot(page, 'fa-xarth');
 
@@ -74,6 +77,8 @@ const main = async () => {
   check(await page.locator('#bs-zeal').count() === 0 && await page.locator('#bs-fragments').count() === 0, 'no Zeal / fragments on ToA');
   const potions = await page.locator('select[id^="bs-potion-"]').evaluateAll((els) => els.map((e) => e.selectedOptions[0].textContent));
   check(potions.every((p) => p === 'Smelling salts'), `potions: ${potions.join(', ')}`);
+  check(await page.locator('#bs-team-mult').inputValue() === '6'
+    && (await page.locator('[data-testid="team-time-label"]').innerText()).includes('6 players at your DPS'), 'ToA team-DPS multiplier 6 (= party size)');
   const bosses = await page.locator('[data-testid="boss-select"] option').allInnerTexts();
   console.log(`     bosses: ${bosses.join(', ')}`);
   check(bosses.length === 15 && bosses.includes('Zebak') && bosses.includes('Akkha'), `${bosses.length} ToA targets`);
@@ -111,6 +116,7 @@ const main = async () => {
   await page.locator('[data-testid="route-row"]').first().waitFor({ timeout: 600000 });
   const rows = await page.locator('[data-testid="route-row"]').count();
   check(rows === 1, `one route (${rows})`);
+  check((await page.locator('[data-testid="routes-team-label"]').innerText()).includes('6 players'), 'Encounters labelled with the team multiplier');
   const total = (await page.locator('[data-testid="route-total"]').innerText()).trim();
   const encs = await page.locator('[data-testid="route-row"] [data-testid^="enc-"]').evaluateAll((els) => els.map((e) => `${e.getAttribute('data-testid').slice(4)}=${Number(e.getAttribute('data-seconds')).toFixed(1)}`));
   console.log(`     Encounters (best search result per style, Team): ${total} — ${encs.join(', ')} (${((Date.now() - tr) / 1000).toFixed(1)} s)`);
@@ -133,6 +139,7 @@ const main = async () => {
   kit.forEach((k) => console.log(`     kit: ${k.replace(/\s+/g, ' ').slice(0, 200)}`));
   check(cells === 28, `Plan for ToA: 28-cell inventory (${cells})`);
   check(/\d+:\d\d\.\d/.test(headline), 'Plan total time shown');
+  check(headline.includes('times assume 6 players at your DPS'), 'Plan headline labelled with the team multiplier');
   await shot(page, 'toa-plan');
 
   // 6. Summary
@@ -145,6 +152,10 @@ const main = async () => {
   const sCells = await page.locator('[data-testid="summary-cell"] [data-testid="dps"]').count();
   console.log(`     Summary ${sRows} rows, ${sCells} cells (${((Date.now() - ts) / 1000).toFixed(1)} s)`);
   check(sRows === 12 && sCells === 36, `ToA Summary 12 rows × 3 drain states (${sRows}, ${sCells})`);
+  const sHp = await page.locator('[data-testid="summary-hp"]').allInnerTexts();
+  const sHead = (await page.locator('[data-testid="summary-scaling"]').innerText()).trim();
+  console.log(`     summary: ${sHead}; hp ${sHp.join(', ')}`);
+  check(sHp.length === 12 && sHp.includes('8000 hp') && sHead.includes('raid level 500') && sHead.includes('party size 6'), 'Summary shows scaled hp per row and raid level / party');
   await shot(page, 'toa-summary');
 
   // 7. back to FA

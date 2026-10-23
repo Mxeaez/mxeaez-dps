@@ -15,8 +15,6 @@ import {
 import {
   DEFAULT_NON_ITEM_SLOTS,
   DEFAULT_PINNED_NAMES,
-  DEFAULT_SUPPLIES,
-  TOA_DEFAULT_SUPPLIES,
   equipmentById,
   INVENTORY_SLOTS,
   InventoryCell,
@@ -33,7 +31,7 @@ import {
 } from '@/lib/fracturedArchive/planner';
 import { SearchRow } from '@/lib/fracturedArchive/search';
 import { PlanJob, startRaidPlan } from '@/worker/searchWorkerClient';
-import { RaidConfig } from '@/lib/raids';
+import { RaidConfig, teamDpsMultiplier, teamTimeLabel } from '@/lib/raids';
 import {
   equipmentImageUrl, LOADOUT_SLOT_ORDER, searchItemIcon, targetImageUrl,
 } from '@/lib/fracturedArchive/loadoutIcons';
@@ -218,9 +216,8 @@ const PhaseRows: React.FC<{ phases: PhaseTime[] }> = ({ phases }) => (
 const PlanView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStateId, raid: RaidConfig }> = ({ assumptions, drain, raid }) => {
   const routes = useMemo(() => enumerateRoutes(raid.time.routeSlots, raid.time.labels), [raid]);
   const defaultPinned = useMemo(() => DEFAULT_PINNED_NAMES.map((n) => planItemByName(n).id), []);
-  const defaultSupplies = raid.id === 'toa' ? TOA_DEFAULT_SUPPLIES : DEFAULT_SUPPLIES;
   const [route, setRoute] = useState('all');
-  const [supplies, setSupplies] = useState<SupplyCounts>(defaultSupplies);
+  const [supplies, setSupplies] = useState<SupplyCounts>(raid.defaultSupplies);
   const [nonItem, setNonItem] = useState(DEFAULT_NON_ITEM_SLOTS);
   const [pinned, setPinned] = useState<number[]>(defaultPinned);
   const [result, setResult] = useState<PlanResult | null>(null);
@@ -325,7 +322,7 @@ const PlanView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStateI
           {` ${INVENTORY_SLOTS} `}
           inventory slots. Party size, drains and spec weapons (&quot;My specs&quot;) come from the boxes above; spec weapons
           and the items below take a slot unless a loadout wears them.
-          {raid.id === 'toa' && ' ToA: salts, nectar and tears come from the supply chest — enter their slots under "Other"; every style keeps the Smelling salts boost.'}
+          {raid.planNote && ` ${raid.planNote}`}
         </div>
         <div className="flex flex-wrap gap-x-4 gap-y-2 items-center">
           <label htmlFor="plan-route" className="flex items-center gap-1">
@@ -418,6 +415,7 @@ const PlanView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStateI
               {' · '}
               <span className={`font-mono ${DPS_TEXT_CLASS}`} data-testid="plan-total">{formatDuration(secs(planned.seconds))}</span>
               {route === 'all' && <span className="text-xs text-gray-500 dark:text-gray-400"> (fastest route with this kit)</span>}
+              <span className="text-xs text-gray-500 dark:text-gray-400" data-testid="plan-team-label">{` · ${teamTimeLabel(teamDpsMultiplier(assumptions))}`}</span>
             </div>
             <span
               className={`px-2 py-0.5 rounded text-sm font-bold ${result.slots.free > 0 ? 'bg-green-600' : 'bg-orange-500'} text-white`}

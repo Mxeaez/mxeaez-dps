@@ -219,6 +219,12 @@ export interface BestSetupAssumptions {
   raid?: RaidId;
   /** Phase 18: Tombs of Amascut raid / path levels (ToA targets only; party size is `partySize`). */
   toa?: ToaInputs;
+  /**
+   * Phase 18: players assumed to deal the user's DPS in every time display (Search TTK, Routes / Encounters, Plan,
+   * Summary). Undefined = the raid's default (`teamDpsMultiplier` in src/lib/raids/base.ts: the party size where boss hp
+   * scales with it, else 1). Ocellus P2 stays a fixed wall-clock length.
+   */
+  teamDpsMultiplier?: number;
 }
 
 /** Drain weapons the user carries (phase 14). */

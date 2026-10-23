@@ -8,12 +8,11 @@ import {
 import { BestSetupAssumptions, PresetDef } from '@/lib/fracturedArchive/presets';
 import { runGearSearch } from '@/lib/fracturedArchive/search';
 import {
-  encounterTime, PhaseQuery, phaseKey, RaidKit, raidTimeAssumptionsFrom, RaidTimeSettings,
+  encounterTime, PhaseQuery, phaseKey, RaidKit, raidTimeAssumptionsFrom,
 } from '@/lib/fracturedArchive/raidTime';
-import {
-  DEFAULT_PINNED_NAMES, plan, planItemByName, TOA_DEFAULT_SUPPLIES,
-} from '@/lib/fracturedArchive/planner';
-import { TOMBS_OF_AMASCUT_RAID } from '@/lib/raids';
+import { DEFAULT_PINNED_NAMES, plan, planItemByName } from '@/lib/fracturedArchive/planner';
+import { TimeSettings, TOMBS_OF_AMASCUT_RAID } from '@/lib/raids';
+import { TOA_DEFAULT_SUPPLIES } from '@/lib/raids/tombsOfAmascut';
 import { TOA_DEFAULT_ASSUMPTIONS, TOA_PRESETS } from '@/lib/raids/toa/presets';
 import { TOA_TARGETS } from '@/lib/raids/toa/targets';
 import {
@@ -28,7 +27,7 @@ import {
 } from '@/lib/raids/toa/constants';
 import { toaPrayedStyles } from '@/lib/raids/toa/prayers';
 import {
-  coreExposureSeconds, TOA_TIME_DEFAULTS, toaEncounterPlan, wardensP2Time,
+  akkhaRotation, coreExposureSeconds, TOA_TIME_DEFAULTS, toaEncounterPlan, wardensP2Time,
 } from '@/lib/raids/toa/time';
 
 // Phase 18: Tombs of Amascut. Sources: https://oldschool.runescape.wiki/w/Tombs_of_Amascut (scaling),
@@ -186,8 +185,8 @@ describe('ToA prayers (src/lib/raids/toa/prayers.ts)', () => {
 });
 
 describe('ToA encounter damage sequences (src/lib/raids/toa/time.ts)', () => {
-  const settings: RaidTimeSettings = TOMBS_OF_AMASCUT_RAID.defaultTimeSettings;
-  const timeA = (drain: 'none' | 'team' = 'none', s: RaidTimeSettings = settings, best: BestSetupAssumptions = A) => raidTimeAssumptionsFrom(best, drain, s, TOMBS_OF_AMASCUT_RAID.time);
+  const settings: TimeSettings = TOMBS_OF_AMASCUT_RAID.defaultTimeSettings;
+  const timeA = (drain: 'none' | 'team' = 'none', s: TimeSettings = settings, best: BestSetupAssumptions = A) => raidTimeAssumptionsFrom(best, drain, s, TOMBS_OF_AMASCUT_RAID.time);
   const plan1 = (id: string, s = settings) => toaEncounterPlan(id, timeA('none', s)).map((p) => [p.targetKey, p.phase ?? '', Math.round(p.damage * 10) / 10]);
 
   test('Kephri: 3 shields + overlords + her hp; leaks add per intermission', () => {
@@ -198,19 +197,16 @@ describe('ToA encounter damage sequences (src/lib/raids/toa/time.ts)', () => {
       ['toa-arcane-scarab', '', 550],
       ['toa-kephri', '', 1100],
     ]);
-    const leaky = { ...settings, toa: { ...TOA_TIME_DEFAULTS, kephriSwarmLeak: 0.1, kephriOverlords: false } };
+    const leaky = { ...TOA_TIME_DEFAULTS, kephriSwarmLeak: 0.1, kephriOverlords: false };
     expect(plan1('toa-kephri', leaky)).toEqual([['toa-kephri-shielded', '', 2070 * 3.2], ['toa-kephri', '', 1100]]);
   });
 
-  test('Akkha: thirds over his prayers, 4 shadows, 20% final stand in melee', () => {
+  test('Akkha: fixed rows = 4 shadows + 20% final stand in melee (his main hp depends on the kit, see below)', () => {
     expect(plan1('toa-akkha')).toEqual([
-      ['toa-akkha', AKKHA_PRAYING_MELEE_PHASE, 1840],
-      ['toa-akkha', AKKHA_PRAYING_RANGED_PHASE, 1840],
-      ['toa-akkha', AKKHA_PRAYING_MAGIC_PHASE, 1840],
       ['toa-akkha-shadow', '', 4 * 970],
       ['toa-akkha', AKKHA_FINAL_STAND_PHASE, 1104],
     ]);
-    const noRot = { ...settings, toa: { ...TOA_TIME_DEFAULTS, akkhaPrayerRotation: false } };
+    const noRot = { ...TOA_TIME_DEFAULTS, akkhaPrayerRotation: false };
     expect(plan1('toa-akkha', noRot)[0]).toEqual(['toa-akkha', AKKHA_NO_PRAYER_PHASE, 5520]);
   });
 
@@ -222,7 +218,7 @@ describe('ToA encounter damage sequences (src/lib/raids/toa/time.ts)', () => {
       ['toa-warden-p3', '', 11533],
       ['toa-warden-p3-enraged', '', 3035],
     ]);
-    const siphons = { ...settings, toa: { ...TOA_TIME_DEFAULTS, p3SiphonFraction: 0.2 } };
+    const siphons = { ...TOA_TIME_DEFAULTS, p3SiphonFraction: 0.2 };
     expect(plan1('toa-wardens', siphons)[1]).toEqual(['toa-warden-p3', '', 9105]);
   });
 
@@ -269,7 +265,7 @@ describe('ToA encounter damage sequences (src/lib/raids/toa/time.ts)', () => {
     expect(w.phases[2].seconds).toBeCloseTo(p2.coreSeconds);
     expect(w.seconds).toBeCloseTo(3590 / 60 + p2.shieldSeconds + p2.coreSeconds + (12140 * 0.95) / 60 + (12140 * 0.25) / 48);
     // Tumeken's Warden in P2 is queried with its own prayers
-    const tum = encounterTime('toa-wardens', toyKit({ 'toa-warden-p2-tumeken': 5 }), timeA('none', { ...settings, toa: { ...TOA_TIME_DEFAULTS, p2Warden: 'tumeken' } }));
+    const tum = encounterTime('toa-wardens', toyKit({ 'toa-warden-p2-tumeken': 5 }), timeA('none', { ...TOA_TIME_DEFAULTS, p2Warden: 'tumeken' }));
     expect(tum.phases[1].targetKey).toBe('toa-warden-p2-tumeken');
     expect(tum.phases[1].phase).toBe(P2_WARDEN_MELEE_MAGIC_PHASE);
   });
@@ -290,6 +286,38 @@ describe('ToA encounter damage sequences (src/lib/raids/toa/time.ts)', () => {
       [phaseKey('toa-akkha', AKKHA_FINAL_STAND_PHASE)]: 5,
     });
     expect(encounterTime('toa-akkha', withMelee, timeA()).seconds).toBeCloseTo((5520 + 3880) / 60 + 1104 / 30);
+  });
+
+  test('Akkha rotation is by time (six autos + a special per style): equal time under each prayer, hp in proportion to DPS', () => {
+    // pure split: rates 60 / 60 / 30 → t = 5520 / 150 = 36.8 s each; damage 2208 / 2208 / 1104
+    const split = akkhaRotation(5520, [60, 60, 30]);
+    split.forEach((x) => expect(x.seconds).toBeCloseTo(36.8));
+    expect(split.map((x) => x.damage)).toEqual([2208, 2208, 1104]);
+    // a style blocked under one prayer still costs that prayer's time
+    const blocked = akkhaRotation(5520, [0, 60, 60]);
+    blocked.forEach((x) => expect(x.seconds).toBeCloseTo(46));
+    expect(blocked[0].damage).toBe(0);
+    expect(akkhaRotation(5520, [0, 0, 0])[0].seconds).toBe(Infinity);
+    // through the encounter (team of 6 by default): melee 10, ranged 10, magic 5 under the three prayers
+    const kit = toyKit({
+      [phaseKey('toa-akkha', AKKHA_PRAYING_MELEE_PHASE)]: 10,
+      [phaseKey('toa-akkha', AKKHA_PRAYING_RANGED_PHASE)]: 10,
+      [phaseKey('toa-akkha', AKKHA_PRAYING_MAGIC_PHASE)]: 5,
+      'toa-akkha-shadow': 10,
+      [phaseKey('toa-akkha', AKKHA_FINAL_STAND_PHASE)]: 5,
+    });
+    const e = encounterTime('toa-akkha', kit, timeA());
+    expect(e.phases.slice(0, 3).map((p) => Math.round(p.damage))).toEqual([2208, 2208, 1104]);
+    e.phases.slice(0, 3).forEach((p) => expect(p.seconds).toBeCloseTo(36.8));
+    expect(e.seconds).toBeCloseTo(3 * 36.8 + 3880 / 60 + 1104 / 30);
+  });
+
+  test('team-DPS multiplier: an override replaces the party size (3 players → twice the 6-player time)', () => {
+    const kit = toyKit({ 'toa-zebak': 10 });
+    const six = encounterTime('toa-zebak', kit, timeA()).seconds;
+    const three = encounterTime('toa-zebak', kit, timeA('none', settings, { ...A, teamDpsMultiplier: 3 })).seconds;
+    expect(six).toBeCloseTo(8000 / 60);
+    expect(three).toBeCloseTo(2 * six);
   });
 
   test('raid level 300 shortens every encounter (less hp)', () => {

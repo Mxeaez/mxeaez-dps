@@ -485,13 +485,14 @@ path level will modify most enemy hitpoints and damage by +8%, with every additi
 
 | Mechanic (source) | Upstream | Phase 18 |
 |---|---|---|
-| Akkha "will always pray against the same style with which he is currently attacking" (Akkha) | no | phase options + `isImmune` (prayers.ts); time model splits his hp in thirds (setting) |
+| Akkha "will always pray against the same style with which he is currently attacking"; "Akkha will change combat styles after he performs six auto-attacks followed by a special attack" (Akkha) | no | phase options + `isImmune` (prayers.ts); time model: equal time under each prayer, hp in proportion to the kit's DPS under each (setting; UNVERIFIED E4) |
 | Akkha's shadows: "After reaching 80% ... four shadows ... Once one of these four shadows are dispelled ... repeated at 60%, 40% and 20%"; "fully restores all damaged shadows" (Strategies) | monster only | 4 × shadow hp in the time model |
 | Akkha's final stand: "restoring 20% of his maximum health ... with Protect from Magic and Missiles simultaneously active" | no | phase option (melee only) + 20% of hp in the time model |
 | Akkha: "he will remain in one quadrant until three successful hits are made" (final stand) | — | documented only (movement, not DPS) |
 | Akkha: Defence floor 70; "restores drained levels significantly faster" | floor yes | floor; faster restore not modelled |
 | Ba-Ba: floor 60; Rolling Stones at 66% / 33% (boulders take max hits) | floor yes | documented only |
-| Kephri: "After the third shield is cleared ... fourth and final phase"; Defence "restored when she enters final phase" (Strategies) | monsters, floor | 3 × Shielded hp + Aggressive hp; drains planned per phase target |
+| Kephri: "After the third shield is cleared ... fourth and final phase"; Defence "restored when she enters final phase" (Strategies). The Kephri page says "After two phases of shields" — conflict, Strategies followed (UNVERIFIED E3) | monsters, floor | 3 × Shielded hp + Aggressive hp; drains planned per phase target |
+| Zebak "Not Just a Head" invocation: heals "for 2x the damage inflicted" (Strategies, Zebak's invocations) | no | not modelled (UNVERIFIED E8) |
 | Kephri: swarms "recover Kephri's shields, usually ~10% or lower ... per swarm"; "capped to roughly ~15% over her max capacity" | no | *Kephri swarm leak* setting (default 0, unverified) |
 | Kephri: "first shield threshold ... Spitting Scarab ..., the second ... a Soldier and Arcane Scarab" | monsters (no def-roll scaling) | included (setting, default on) |
 | Kephri / scarabs kalphite: keris +33% accuracy (breaching), damage bonus | yes | — |

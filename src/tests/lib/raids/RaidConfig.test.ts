@@ -16,11 +16,12 @@ import {
   FRACTURED_ARCHIVE_RAID,
   RAIDS,
   raidConfig,
-  scalingInputValue,
+  raidBase,
+  teamDpsMultiplier,
+  teamTimeLabel,
   TOMBS_OF_AMASCUT_RAID,
   withScalingInput,
 } from '@/lib/raids';
-import { raidPresets, raidSearchPool, raidTargets } from '@/lib/raids/data';
 import { TOA_ROUTE_ID } from '@/lib/raids/toa/time';
 
 // Phase 18: every raid config is valid — targets resolve to monsters, inputs have defaults, routes enumerate, and the
@@ -74,10 +75,10 @@ describe('RaidConfig: every raid', () => {
         raid.scalingInputs.forEach((d) => {
           expect(d.default).toBeGreaterThanOrEqual(d.min);
           expect(d.default).toBeLessThanOrEqual(d.max);
-          expect(scalingInputValue(raid.defaultAssumptions, d.key)).toBe(d.default);
+          expect(d.get(raid.defaultAssumptions)).toBe(d.default);
           // setters clamp and round trip
-          expect(scalingInputValue(withScalingInput(raid.defaultAssumptions, d, d.max + 100), d.key)).toBe(d.max);
-          expect(scalingInputValue(withScalingInput(raid.defaultAssumptions, d, d.min - 100), d.key)).toBe(d.min);
+          expect(d.get(withScalingInput(raid.defaultAssumptions, d, d.max + 100))).toBe(d.max);
+          expect(d.get(withScalingInput(raid.defaultAssumptions, d, d.min - 100))).toBe(d.min);
         });
         expect(raid.partySize.min).toBe(raid.scalingInputs[0].min);
         expect(raid.partySize.max).toBe(raid.scalingInputs[0].max);
@@ -113,13 +114,35 @@ describe('RaidConfig: every raid', () => {
         }));
       });
 
-      test('the data helpers pick the same lists as the config', () => {
+      test('the pure modules\' raid rules (raidBase) are the config\'s; settings fields exist in the defaults', () => {
         const id = raid.id === 'fractured-archive' ? undefined : raid.id;
-        expect(raidTargets(id)).toBe(raid.targets);
-        expect(raidPresets(id)).toBe(raid.presets);
-        expect(raidSearchPool(id)).toBe(raid.searchPool);
+        const base = raidBase(id);
+        expect(base.targets).toBe(raid.targets);
+        expect(base.presets).toBe(raid.presets);
+        expect(base.searchPool).toBe(raid.searchPool);
+        expect(base.monsterInputs).toBe(raid.monsterInputs);
+        raid.timeSettingFields.forEach((f) => expect(raid.defaultTimeSettings[f.key]).toBeDefined());
+        expect(Object.values(raid.defaultSupplies).every((n) => n >= 0)).toBe(true);
       });
     });
+  });
+});
+
+describe('Team-DPS multiplier (times assume N players at your DPS)', () => {
+  test('defaults: 1 for the Fractured Archive (identity hp table), the party size for ToA (hp scales with party)', () => {
+    expect(teamDpsMultiplier(DEFAULT_ASSUMPTIONS)).toBe(1);
+    expect(teamDpsMultiplier({ ...DEFAULT_ASSUMPTIONS, partySize: 4 })).toBe(1);
+    expect(teamDpsMultiplier(TOMBS_OF_AMASCUT_RAID.defaultAssumptions)).toBe(6);
+    expect(teamDpsMultiplier({ ...TOMBS_OF_AMASCUT_RAID.defaultAssumptions, partySize: 3 })).toBe(3);
+    expect(teamDpsMultiplier({ ...TOMBS_OF_AMASCUT_RAID.defaultAssumptions, teamDpsMultiplier: 2 })).toBe(2);
+    expect(teamDpsMultiplier({ ...DEFAULT_ASSUMPTIONS, teamDpsMultiplier: 5 })).toBe(5);
+  });
+
+  test('the time model gets it; labels', () => {
+    expect(raidTimeAssumptionsFrom(DEFAULT_ASSUMPTIONS, 'none').dpsMultiplier).toBe(1);
+    expect(raidTimeAssumptionsFrom(TOMBS_OF_AMASCUT_RAID.defaultAssumptions, 'none').dpsMultiplier).toBe(6);
+    expect(teamTimeLabel(1)).toBe('times: your DPS alone');
+    expect(teamTimeLabel(6)).toBe('times assume 6 players at your DPS');
   });
 });
 
@@ -173,7 +196,7 @@ describe('RaidConfig: Tombs of Amascut', () => {
     const { monster } = buildTargetMonster(findTarget('toa-zebak'), undefined, 'none', solo);
     expect(monster.inputs.toaInvocationLevel).toBe(500);
     expect(monster.inputs.partySize).toBe(1);
-    const path = withScalingInput(solo, TOMBS_OF_AMASCUT_RAID.scalingInputs.find((d) => d.key === 'toaPath.zebak')!, 3);
+    const path = withScalingInput(solo, TOMBS_OF_AMASCUT_RAID.scalingInputs.find((d) => d.key === 'toaPath-zebak')!, 3);
     expect(buildTargetMonster(findTarget('toa-zebak'), undefined, 'none', path).monster.inputs.toaPathLevel).toBe(3);
     // the other paths' levels don't apply to Zebak, and non-path monsters never get one
     expect(buildTargetMonster(findTarget('toa-akkha'), undefined, 'none', path).monster.inputs.toaPathLevel).toBe(0);

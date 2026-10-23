@@ -31,12 +31,12 @@ import {
   RaidTimeAssumptions,
   raidTimeAssumptionsFrom,
   RaidTimeModel,
-  RaidTimeSettings,
   Route,
   RouteComparison,
   routesFor,
 } from '@/lib/fracturedArchive/raidTime';
-import { raidPresets } from '@/lib/raids/data';
+import { raidBase } from '@/lib/raids/base';
+import { TimeSettings } from '@/lib/raids/types';
 import { SPEC_WEAPONS, SpecWeapon } from '@/lib/fracturedArchive/specs';
 
 /**
@@ -91,15 +91,6 @@ export const DEFAULT_SUPPLIES: SupplyCounts = {
 };
 
 /**
- * Phase 18: Tombs of Amascut supplies. Salts, nectars, tears and ambrosia come from the raid's supply chest; they still
- * take slots, entered as "Other" (default 8: e.g. 3 nectar, 2 tears, 3 salts). The boost is always Smelling salts
- * (`planAssumptions` doesn't drop it), so the potion supply types default to 0.
- */
-export const TOA_DEFAULT_SUPPLIES: SupplyCounts = {
-  brew: 0, restore: 0, ranging: 0, superCombat: 0, magic: 0, food: 0, other: 8,
-};
-
-/**
  * The supply that carries each style's boost. A style whose supply count is 0 is evaluated without its potion (the
  * Assumptions box's potion is the one used "if brought"). The drain / spec model keeps the potions.
  */
@@ -109,7 +100,7 @@ export const SUPPLY_POTION_GROUP: Partial<Record<SupplyType, StyleGroup>> = {
 
 /** The best-setup assumptions as the plan uses them: styles whose potion isn't in the supplies lose the boost. */
 export const planAssumptions = (a: BestSetupAssumptions, supplies: SupplyCounts): BestSetupAssumptions => {
-  if (a.raid === 'toa') return a; // salts from the raid's supply chest (TOA_DEFAULT_SUPPLIES)
+  if (!raidBase(a.raid).boostsNeedSupplies) return a; // e.g. ToA: salts from the raid's supply chest
   const without = (Object.entries(SUPPLY_POTION_GROUP) as [SupplyType, StyleGroup][])
     .filter(([t]) => !(supplies[t] > 0)).map(([, g]) => g);
   return without.length ? { ...a, withoutPotion: without } : a;
@@ -533,7 +524,7 @@ export interface PlanInputs {
   basePlayer: Player;
   assumptions: BestSetupAssumptions;
   drain: DrainStateId;
-  settings: RaidTimeSettings;
+  settings: TimeSettings;
   /** A route id (enumerateRoutes / routesFor) or 'all' (plan for the fastest route). */
   route: string;
   /** Items always brought (equipment ids). */
@@ -561,7 +552,7 @@ export interface PlanTuning {
   seeds?: number;
   /** Search hooks (reduced pools in tests). */
   search?: Pick<GearSearchOptions, 'weapons' | 'pool' | 'maxPasses'>;
-  /** Presets offered as candidates (default: the raid's presets, src/lib/raids/data.ts). */
+  /** Presets offered as candidates (default: the raid's presets, src/lib/raids/base.ts). */
   presets?: PresetDef[];
   /** Phase 18: the raid's time model (default: the Fractured Archive's; the worker passes the one of `assumptions.raid`). */
   model?: RaidTimeModel;
@@ -807,7 +798,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
   };
   let nPreset = 0;
   let nSearch = 0;
-  for (const preset of tuning.presets || raidPresets(assumptions.raid)) {
+  for (const preset of tuning.presets || raidBase(assumptions.raid).presets) {
     let equipment: PlanEquipment;
     try {
       equipment = presetEquipment(preset);
