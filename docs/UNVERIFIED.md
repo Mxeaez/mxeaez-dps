@@ -16,8 +16,8 @@ use the highest one seen. Put the calculator's numbers next to yours: select the
 with your own gear, and read Max hit / Accuracy.
 
 Already verified (no action needed): Ocellus P2 (The Blade) defence floor **0**, from the official news post.
-The other floors (AG 156, Bork 180, Xarth 102, Ocellus P1 129 / P3 150, Smorks and Dreadnoth 0) match the wiki's
-Strategies table, the boss pages and Gearscape.
+The other floors (AG 156, Bork 180, Ezekiel 78, Moia 117, Xarth 102, Ocellus P1 129 / P3 150, Smorks, Dreadnoth and
+Dagon'hai 0) match the wiki's Strategies table, the boss pages, the news post and Gearscape.
 
 ## (A) Could change which setup wins
 
@@ -32,6 +32,7 @@ Strategies table, the boss pages and Gearscape.
 | A7 | Bork flat armour steps | 8 / 10 / 12 / 14 when the Smorks are at 100–76 / 75–51 / 50–26 / 25–0% HP; exactly 75% counts as 10 | Bork phase options. Flat armour hurts multi-hit weapons (Scythe) most | Wrong steps change Scythe vs Obligator vs magic on Bork | With one weapon, record your highest hit on Bork with the Smorks above 75% and below 25%. It should be (your max − 8) and (your max − 14) |
 | A8 | Demonbane effectiveness: Xarth 80%, Ocellus P1/P3 80%, Dreadnoth 25% | Values from the wiki "Demon (attribute)" list (added 20 Oct "per orion", no in-game source) | Emberlight / Arclight / Scorching bow / Purging staff / Dark Demonbane vs Obligator | At 100% the demonbane weapons gain about 25% on Xarth and Ocellus and could win | Emberlight (or Arclight) on Xarth: compare your highest hit with the calculator's max hit. A hit above it means the effectiveness is higher than 80% |
 | A9 | Zorya's tome base max hit | Flat 18 at every Magic level; the spec's empowered follow-up attacks are not modelled | Zorya's tome preset / search rows | If it scales with Magic, a boosted Magic level adds max hit. The spec is undervalued either way | Read the tome's max hit with and without a Magic boost (e.g. a Saturated heart). If it changes, the base scales with Magic |
+| A10 | Moia: melee can't reach her (phase 15) | The whole fight: every melee style (halberds included) deals 0, from the Strategies line "A ranged or magic weapon is required as she is too far to reach with melee or halberds" | Moia: Search / Summary rank only ranged and magic; drain plans use Tonalztics (2 hits) | If she comes into melee range at some point (e.g. enrage), melee setups could win that part | Stand next to her during each part of the fight (incl. enrage) and try to attack with a melee weapon and a halberd |
 
 ## (B) Changes the numbers, probably not the ranking
 
@@ -48,6 +49,9 @@ Strategies table, the boss pages and Gearscape.
 | B9 | Ocellus P2 (The Blade) attributes | None (infobox blank), so no demonbane | Emberlight / Arclight on the Blade | If it's a demon, demonbane weapons gain on P2 | Emberlight on the Blade: highest hit vs the calculator's max |
 | B10 | Spec energy at each boss (phase 14) | Full 100% at the start of every boss; +10% per 30 s (15 s with Lightbearer); fight length 90 s for every boss | Solo / Team drain plans (spec budget, labels) | Solo plans with more / less energy (e.g. 3 specs instead of 2 changes P(floor) a lot) | Note the spec bar when entering each boss room after using specs on the previous one |
 | B11 | Elder maul drain on an accurate hit that deals 0 (phase 14) | Counts (wiki says only "successful hit"); matters only under flat armour (Bork 8) | Elder maul hit chance on Bork (76.8%; lower if damage is needed) | Bork maul plans need more specs | Elder maul spec Bork; when the hitsplat is 0 (blue), read his Defence |
+| B12 | Dagon'hai shield gauge (phase 15) | The infobox 640 hp is one gauge shared by the Elder and both Monks, depleted 5 times, then the survivors have 7 hp (`dagonhaiEncounterDamage` = 5 × 640 + 7 = 3207); the gauge scales with party size like the other bosses; "Unshielded" changes no stat | Dagon'hai Phase dropdown (hp only), phase 16 route time (Dagon'hai vs Xarth) | DPS is unaffected; the route time of the Dagon'hai option could be far off (e.g. if each NPC had its own 640, or the gauge isn't 640) | Note the gauge's full HP (Opponent Information) at the start and after each restore, and count the restores; hit an unshielded Dagon'hai and compare max hits |
+| B13 | Ezekiel's stun and enrage (phase 15) | No stat change when a sword stuns him or when he "imbue[s] himself with magic" at 33.3% (the wiki describes none) | Ezekiel (one stat set for the whole fight) | A Defence change in either state would move every Ezekiel number | Compare your max hit / hit rate on Ezekiel while stunned and in enrage with the calculator |
+| B14 | Ezekiel perfect dodges give 3% spec energy each (phase 15) | Not counted in the spec-energy budget | Solo drain plans on Ezekiel | Solo plans could afford one more spec | — (wiki-stated; only the budget model ignores it) |
 
 ## (C) Cosmetic / TTK only
 
@@ -57,7 +61,7 @@ Strategies table, the boss pages and Gearscape.
 | C2 | Which party size the infobox HP is for | Unknown | Same as C1 |
 | C3 | Ocellus P2 HP 5250 (= P3 pool) | The phase is timed and 50% of damage goes to P3, so TTK is shown as n/a | None for DPS |
 | C4 | Archive Guardian shield ("1490 in 6-scale") | Not modelled; Flying TTK counts the 550 HP bar | Shield time not shown |
-| C5 | Ezekiel, Moia, Dagon'hai, Corpses, Void adds | Bucket data only, not checked field by field | Out of scope |
+| C5 | Corpses (Xarth), Void adds, Undead binders (Moia) | Bucket data only, not checked field by field | Adds aren't modelled |
 | C6 | Obligator (Uncharged) | Same effect as the charged version (by name) | — |
 | C7 | Ocellus P3 combat level 1601 (infobox) vs 1603 (prose) | Infobox | Cosmetic |
 
@@ -72,8 +76,8 @@ To record it:
    the game's own HP bar if it shows numbers.
 2. For each boss, write down the **full HP at the start of the fight** for at least **2 or 3 different team sizes**
    (e.g. duo, 4-man, 6-man). Practice mode is fine if it scales the same way. Note the team size and the date.
-3. Compare with the infobox HP (AG 550, Bork 1500, Smorks 600, Dreadnoth 2100, Xarth 2600, Ocellus P1 2500 / P3
-   5250). The size whose HP equals the infobox is the reference size.
+3. Compare with the infobox HP (AG 550, Bork 1500, Smorks 600, Ezekiel 3000, Dreadnoth 2100, Moia 785, Xarth 2600,
+   Dagon'hai 640 per shield gauge, Ocellus P1 2500 / P3 5250). The size whose HP equals the infobox is the reference size.
 4. Fill the table as a factor relative to the infobox HP, `[recordedHp, infoboxHp]` per size, e.g. if Xarth has 2600 at
    2 players and 3900 at 4: `2: [1, 1]`, `4: [3, 2]`. Interpolate the sizes you didn't record only if the numbers are
    clearly linear. Then set `FRACTURED_ARCHIVE_HP_SCALING_VERIFIED = true` (this hides the "unverified" marker) and
@@ -92,7 +96,9 @@ To record it:
 - **Rondache**: its +2 flat armour / magic resistance and the Shield Slam spec are not modelled.
 - **Ocellus**: tick-perfect dodge speed-ups (amount unknown), censers (next hit is a max hit), Untether (melee can't
   reach), and his healing from Soul Split are not modelled, so last-quadrant rankings are low-confidence.
-- **Healing and adds**: Dreadnoth's slam heals and jelly absorption, and Xarth's corpse healing, are not modelled.
+- **Healing and adds**: Dreadnoth's slam heals and jelly absorption, Xarth's corpse healing, Ezekiel's heal when a
+  sword misses him (and the sword damage / stun when it hits), Moia's undead binders and the Dagon'hai imps ("killing
+  an imp buffs your next attack", effect unknown) and elemental-channel interrupts are not modelled.
 - **Drain presets** always start with at least one spec of the named weapon, so all-Tonalztics plans (the wiki's
   "4 Tonalztics of Ralos" for AG) aren't offered. Eye of Ayak specs are counted at 40 damage each.
 - **Gear search** only tries items in `searchCandidates.ts`. Multi-piece set effects are found only if the set is

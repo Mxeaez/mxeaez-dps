@@ -1,7 +1,7 @@
 import { CombatStyleStance } from '@/types/PlayerCombatStyle';
 import {
-  BORK_IDS, BORK_PHASES, FRACTURED_ARCHIVE_BOSS_IDS, OCELLUS_P1_IDS, OCELLUS_P1_PHASES, OCELLUS_P3_IDS,
-  OCELLUS_P3_PHASES,
+  BORK_IDS, BORK_PHASES, DAGONHAI_IDS, DAGONHAI_PHASES, FRACTURED_ARCHIVE_BOSS_IDS, OCELLUS_P1_IDS, OCELLUS_P1_PHASES,
+  OCELLUS_P3_IDS, OCELLUS_P3_PHASES,
 } from '@/lib/fracturedArchive/constants';
 
 export * from '@/lib/fracturedArchive/constants';
@@ -563,6 +563,8 @@ BORK_IDS.forEach((id) => { MONSTER_PHASES_BY_ID[id] = BORK_PHASES; });
 // Ocellus's prayers / void explosions (src/lib/fracturedArchive/ocellus.ts)
 OCELLUS_P1_IDS.forEach((id) => { MONSTER_PHASES_BY_ID[id] = OCELLUS_P1_PHASES; });
 OCELLUS_P3_IDS.forEach((id) => { MONSTER_PHASES_BY_ID[id] = OCELLUS_P3_PHASES; });
+// Dagon'hai trio shield gauge / 7-hp remainder (src/lib/fracturedArchive/dagonhai.ts)
+DAGONHAI_IDS.forEach((id) => { MONSTER_PHASES_BY_ID[id] = DAGONHAI_PHASES; });
 
 export const INFINITE_HEALTH_MONSTERS: number[] = [
   14779, // gemstone crab

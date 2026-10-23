@@ -71,6 +71,12 @@ export const DAGONHAI_IDS = [
   16648, // TFA_DAGONHAI_MINION_2_UNSHIELDED
 ];
 
+// Dagon'hai trio shield gauge / final state by phase input; how it's applied: src/lib/fracturedArchive/dagonhai.ts.
+// The first option is the default (the UI selects phases[0]). Sources: docs/DATA_SOURCES.md.
+export const DAGONHAI_SHIELDED_PHASE = 'Shielded (shield gauge)';
+export const DAGONHAI_UNSHIELDED_PHASE = 'Unshielded (after the cauldron explodes, 7 hp)';
+export const DAGONHAI_PHASES = [DAGONHAI_SHIELDED_PHASE, DAGONHAI_UNSHIELDED_PHASE];
+
 // bosses whose hitpoints scale with party size ("All bosses' hitpoints scale to the amount of players present",
 // https://oldschool.runescape.wiki/w/The_Fractured_Archive); adds such as the jellies are not listed
 export const FRACTURED_ARCHIVE_BOSS_IDS = [

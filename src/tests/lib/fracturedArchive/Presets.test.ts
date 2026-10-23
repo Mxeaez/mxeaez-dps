@@ -139,14 +139,15 @@ describe('preset data', () => {
 describe('targets and drain states', () => {
   test('every in-scope boss/version is listed with the calculator phase options', () => {
     expect(BEST_SETUP_TARGETS.map((t) => t.key)).toEqual([
-      'ag-flying', 'ag-grounded', 'smorks', 'bork', 'dreadnoth', 'jelly', 'xarth', 'ocellus-p1', 'ocellus-p2', 'ocellus-p3',
+      'ag-flying', 'ag-grounded', 'smorks', 'bork', 'ezekiel', 'dreadnoth', 'jelly', 'moia', 'xarth', 'dagonhai',
+      'ocellus-p1', 'ocellus-p2', 'ocellus-p3',
     ]);
     expect(targetPhases(findTarget('bork'))).toHaveLength(5);
     expect(findTarget('bork').summaryPhases).toEqual(['Smorks 100-76% HP (armour 8)', BORK_STUNNED_PHASE]);
     expect(targetPhases(findTarget('ocellus-p1'))).toEqual(['At a corner', 'Walking to a corner (Protect from Melee)']);
     expect(targetPhases(findTarget('ocellus-p3'))).toEqual(OCELLUS_P3_PHASES);
     expect(targetPhases(findTarget('xarth'))).toEqual([]);
-    expect(summaryQueries()).toHaveLength(1 + 1 + 1 + 2 + 1 + 1 + 1 + 2 + 1 + 6);
+    expect(summaryQueries()).toHaveLength(1 + 1 + 1 + 2 + 1 + 1 + 1 + 1 + 1 + 1 + 2 + 1 + 6);
   });
 
   test('the monster is set up like the main calculator: party size (default 6), phase, current HP = scaled HP', () => {

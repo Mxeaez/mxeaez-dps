@@ -4,7 +4,7 @@
  *
  * Usage (dev server running): node scripts/verifyBestSetup.mjs [baseUrl]
  * Opens /best-setup → Summary: the searches run one after the other with a progress bar; Cancel stops them and
- * Continue resumes (cached cells stay); waits for every cell (17 rows × None/Solo/Team), checks the DPS cells use the
+ * Continue resumes (cached cells stay); waits for every cell (20 rows × None/Solo/Team), checks the DPS cells use the
  * accent orange, that switching tabs keeps the cache (no re-run), and loads one cell into the calculator (same DPS).
  * Screenshots docs/screenshots/phase13-summary*.png.
  */
@@ -34,7 +34,7 @@ const main = async () => {
   const t0 = Date.now();
   await page.locator('[data-testid="summary-tab"]').click();
   await page.locator('[data-testid="summary-progress"]').waitFor({ timeout: 30000 });
-  check(await page.locator('[data-testid="summary-row"]').count() === 17, 'Summary: 17 boss / phase rows');
+  check(await page.locator('[data-testid="summary-row"]').count() === 20, 'Summary: 20 boss / phase rows');
   await page.locator('[data-testid="summary-cell"]').nth(1).waitFor({ timeout: 120000 });
 
   // Cancel, then Continue
@@ -48,7 +48,7 @@ const main = async () => {
 
   await page.locator('[data-testid="summary-progress"]').waitFor({ state: 'detached', timeout: 900000 });
   const cells = await page.locator('[data-testid="summary-cell"]').count();
-  check(cells === 51, `all searches done: ${cells} cells in ${((Date.now() - t0) / 1000).toFixed(0)}s`);
+  check(cells === 60, `all searches done: ${cells} cells in ${((Date.now() - t0) / 1000).toFixed(0)}s`);
   const cls = await page.locator('[data-testid="summary"] [data-testid="dps"]').first().getAttribute('class');
   check(cls.includes('text-orange-400') && cls.includes('font-semibold'), `Summary DPS class: ${cls}`);
   const icons = await page.locator('[data-testid="summary"] img[data-testid="item-icon"]').evaluateAll(async (imgs) => {
@@ -73,7 +73,7 @@ const main = async () => {
   await page.waitForTimeout(500);
   await page.locator('[data-testid="summary-tab"]').click();
   await page.waitForTimeout(800);
-  check(await page.locator('[data-testid="summary-cell"]').count() === 51
+  check(await page.locator('[data-testid="summary-cell"]').count() === 60
     && await page.locator('[data-testid="summary-progress"]').count() === 0, 'tab switch: cached, no re-run');
 
   // load the Xarth / Team cell into the calculator

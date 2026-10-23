@@ -91,7 +91,7 @@ import {
   rubyBolts,
 } from '@/lib/dists/bolts';
 import { burningClawDoT, burningClawSpec, dClawDist } from '@/lib/dists/claws';
-import { isImmuneToSpell } from '@/lib/fracturedArchive/immunities';
+import { isImmuneToSpell, isOutOfMeleeReach } from '@/lib/fracturedArchive/immunities';
 import { getMagicResistance, hasGuaranteedMeleeAccuracy } from '@/lib/fracturedArchive/bork';
 import { getOcellusDamageDivisor, isBlockedByOcellusPrayer } from '@/lib/fracturedArchive/ocellus';
 import {
@@ -2145,6 +2145,9 @@ export default class PlayerVsNPCCalc extends BaseCalc {
       }
     }
     if (styleType === 'magic' && isImmuneToSpell(this.monster, this.player.spell)) {
+      return true;
+    }
+    if (isOutOfMeleeReach(this.monster) && this.isUsingMeleeStyle()) {
       return true;
     }
     if (isBlockedByOcellusPrayer(this.monster, styleType, this.isUsingMeleeStyle())) {

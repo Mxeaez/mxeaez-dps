@@ -3,6 +3,38 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 15 — Ezekiel, Moia, Dagon'hai Elder + Monks (2026-10-23)
+
+- Wiki re-read (`?action=raw` + rendered, revision history): Ezekiel, Moia, Dagon'hai Elder / Monk, Undead binder,
+  raid page, Strategies (*Layout*, *Ezekiel*, *Moia*, *Dagon'hai trio*, drain table), Demon (attribute) (unchanged
+  since 20 Oct: Dreadnoth 25 / Xarth 80 / Ocellus 80 stay). Mechanic → model tables and the route structure in
+  `docs/DATA_SOURCES.md` (*Phase 15*). All five monsters.json entries match the infoboxes field by field → generator
+  not re-run.
+- **Moia**: "too far to reach with melee or halberds" → `isOutOfMeleeReach` (`immunities.ts`), hooked into
+  `PlayerVsNPCCalc.isImmune` (+3) with a weapon-slot warning in `BaseCalc` (+3) and a `cantHitReason`. Drain plans
+  follow automatically via `hittable.ts`: 2 Tonalztics hits → 117 (= wiki table). Air 80% via upstream.
+- **Dagon'hai**: shared stats and health pool; shield gauge depleted 5×, then 7 hp. New `dagonhai.ts`: Phase dropdown
+  on all six ids (`DAGONHAI_PHASES`: *Shielded (shield gauge)* default / *Unshielded (after the cauldron explodes,
+  7 hp)*; hp only, no stat change on the wiki), chained last in `applyFracturedArchiveScaling`;
+  `DAGONHAI_SHIELD_GAUGE_DEPLETIONS = 5`, `dagonhaiEncounterDamage(gauge)` = 5 × gauge + 7 for phase 16. Floor 0.
+- **Ezekiel**: nothing beyond infobox (earth 25%) and floor 78; sword stun / heal, enrage, +3% spec per perfect dodge
+  documented only.
+- Best setup: targets `ezekiel` (after Bork), `moia` (after the Jelly), `dagonhai` (after Xarth; Elder stands for all
+  three, Summary row = Shielded). Summary now 20 rows / 60 searches (SummaryView comment, BEST_SETUP.md,
+  verifyBestSetup.mjs counts). Search spells: Earth Surge on Ezekiel, Wind Surge on Moia.
+- Upstream edits: `PlayerVsNPCCalc.ts` +4/−1, `BaseCalc.ts` +4/−1, `constants.ts` +4/−2 (UPSTREAM_MERGE.md updated).
+- Tests: new `EzekielMoiaDagonhai.test.ts` (28: infobox stats, no demonbane, weaknesses, Moia melee / halberd 0 + drain
+  plan, Dagon'hai phases / hp / identical DPS / encounter damage, floors 78 / 117 / 0 via DWH / BGS / Elder maul with
+  DPS, Max Melee + Inquisitor's mace and Max Mage + Shadow per boss with derivations, Summary rows, search runs per
+  target). With the two modules disabled 6 fail. Presets.test.ts target list updated. `yarn test` 1024 pass / 4
+  skipped; `yarn lint`, `tsc --noEmit` clean.
+- Playwright: new `scripts/verifyPhase15.mjs` all OK (stat panels = wiki for Ezekiel, Moia, Elder, Monk staff / book;
+  mace 58 / 9.802 Ezekiel, 0 Moia (+ warning), 58 / 10.024 Dagon'hai; Shadow 70 / 8.087, 9.479, 8.486 = Jest;
+  Dagon'hai default Shielded, Unshielded same DPS). `verifyBestSetup.mjs` OK (20 rows, 60 cells in 55 s).
+  Screenshots `docs/screenshots/phase15-*.png`, `phase13-summary.png` re-shot.
+- Unverified (UNVERIFIED.md A10, B12–B14): Moia never in melee range; Dagon'hai 640 = one shared gauge × 5 (+ party
+  scaling); no stat change on Ezekiel's stun / enrage; perfect-dodge energy not in the budget.
+
 ## Phase 14 fixes — review follow-ups (2026-10-23)
 
 - ROADMAP round-2 decision: Solo = budget + carried weapons; Team computed from the carriers (floor when P ≥ 95%, else

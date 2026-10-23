@@ -14,8 +14,9 @@ import {
   carriersFromCounts, describeAttempts, formatProbability, soloSpecPlan, teamSpecPlan,
 } from '@/lib/fracturedArchive/teamSpecs';
 import {
-  BORK_PHASES, BORK_STUNNED_PHASE, OCELLUS_P1_PHASES, OCELLUS_P3_PHASES,
+  BORK_PHASES, BORK_STUNNED_PHASE, DAGONHAI_PHASES, DAGONHAI_SHIELDED_PHASE, OCELLUS_P1_PHASES, OCELLUS_P3_PHASES,
 } from '@/lib/fracturedArchive/constants';
+import { isOutOfMeleeReach } from '@/lib/fracturedArchive/immunities';
 import {
   BestSetupAssumptions, PRESETS, PresetDef, StyleGroup,
 } from '@/lib/fracturedArchive/presets';
@@ -74,14 +75,33 @@ export const BEST_SETUP_TARGETS: BestSetupTarget[] = [
     phases: BORK_PHASES,
     summaryPhases: [BORK_PHASES[0], BORK_STUNNED_PHASE],
   },
+  // Phase 15: Ezekiel is the alternative to Bork and the Smorks (2nd boss); no phase options (no stat changes on the wiki)
+  {
+    key: 'ezekiel', label: 'Ezekiel', name: 'Ezekiel', version: '',
+  },
   {
     key: 'dreadnoth', label: 'Dreadnoth the Jellied', name: 'Dreadnoth the Jellied', version: '',
   },
   {
     key: 'jelly', label: 'Jelly (Dreadnoth)', name: 'Jelly (Dreadnoth)', version: '',
   },
+  // Phase 15: Moia is the alternative to Dreadnoth (3rd boss); melee can't reach her
+  {
+    key: 'moia', label: 'Moia', name: 'Moia', version: '', note: 'Out of melee reach: ranged or magic only.',
+  },
   {
     key: 'xarth', label: 'Xarth', name: 'Xarth', version: '',
+  },
+  // Phase 15: the Dagon'hai trio is the alternative to Xarth (4th boss). Elder and Monks share stats and one health
+  // pool, so the Elder stands for all three; "Unshielded" only changes hp (7), so the Summary shows the shielded row.
+  {
+    key: 'dagonhai',
+    label: 'Dagon\'hai Elder + Monks',
+    name: 'Dagon\'hai Elder',
+    version: '',
+    phases: DAGONHAI_PHASES,
+    summaryPhases: [DAGONHAI_SHIELDED_PHASE],
+    note: 'Elder and Monks share stats and one health pool; the shield gauge is depleted 5 times (unverified).',
   },
   {
     key: 'ocellus-p1',
@@ -350,6 +370,9 @@ export const cantHitReason = (monster: Monster, style: PlayerCombatStyle, issues
   if (issues.length) return issues.join(' ');
   if (monster.attributes.includes(MonsterAttribute.FLYING) && ['stab', 'slash', 'crush'].includes(style.type || '')) {
     return 'Flying: melee can\'t reach it';
+  }
+  if (isOutOfMeleeReach(monster) && ['stab', 'slash', 'crush'].includes(style.type || '')) {
+    return 'Out of melee reach: ranged or magic only';
   }
   return 'Deals no damage (immune or blocked)';
 };

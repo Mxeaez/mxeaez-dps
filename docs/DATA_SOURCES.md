@@ -374,15 +374,88 @@ Unverified in the phase 6 model:
 - Void explosion rounding (rounded down) and whether 1-damage hits become 0 (they do in the model).
 - P2 hp 5250 / no attributes (unchanged from phases 1–2). The P2 floor 0 is now verified (news post).
 
+## Phase 15 — Ezekiel, Moia, Dagon'hai Elder + Monks (re-read 2026-10-23)
+
+Sources (all `?action=raw` + rendered, 2026-10-23): https://oldschool.runescape.wiki/w/Ezekiel,
+https://oldschool.runescape.wiki/w/Moia, https://oldschool.runescape.wiki/w/Dagon%27hai_Elder,
+https://oldschool.runescape.wiki/w/Dagon%27hai_Monk, https://oldschool.runescape.wiki/w/Undead_binder,
+https://oldschool.runescape.wiki/w/The_Fractured_Archive (boss table, *Changes*),
+https://oldschool.runescape.wiki/w/The_Fractured_Archive/Strategies (*Layout*, *Ezekiel*, *Moia*, *Dagon'hai trio*,
+"Maximum defence reduction" table), https://oldschool.runescape.wiki/w/Demon_(attribute), Talk:Moia (stat-block
+screenshots only). `Imp_(Dagon'hai_Trio)` has no page yet. Revision history checked: the boss pages were last edited
+21–22 Oct (typo / strategy header), Demon (attribute) on 20 Oct ("per orion") — **no change** since phase 5, so
+Dreadnoth 25% / Xarth 80% / Ocellus 80% stay as they are.
+
+**Stats verified** field by field (hitpoints, six levels, all offensive and defensive bonuses incl. light / standard /
+heavy, flat armour, weakness + percent, size, attack speed, attributes, ids) against the infoboxes: `monsters.json`
+matches for all five entries, so the generator was **not** re-run. Notes: the Dagon'hai Elder infobox has
+`attack style = 6` and a blank attack speed (an editor slip; generated as style "6", speed 0 — cosmetic, the calculator
+doesn't use NPC attack speed for player DPS). Poison / venom resistance 100 and cannon immunity (Dagon'hai) aren't
+modelled by the calculator (no effect on player DPS). No infobox lists any attribute (no demon, undead, dragon,
+flying), freeze resistance or burn immunity for the three encounters.
+
+### Route structure (Strategies → *Layout*, raid page boss table)
+
+Five bosses; the 1st and 5th are fixed, and for each of the 2nd–4th the team picks one of two:
+
+| Order | Option A (west side) | Option B (east side) |
+|---|---|---|
+| 1st | Archive Guardian | — |
+| 2nd | **Ezekiel** | Bork and the Smorks |
+| 3rd | **Moia** | Dreadnoth the Jellied |
+| (Quartermaster arrives after the 3rd boss) | | |
+| 4th | **Dagon'hai trio** (Elder + 2 Monks) | Xarth |
+| 5th | Ocellus (P1 → P2 → P3) | — |
+
+So 2 × 2 × 2 = 8 routes. Best-setup targets are listed in this order (Ezekiel after Bork, Moia after the Jelly,
+Dagon'hai after Xarth).
+
+### Ezekiel (id 16652)
+
+| Mechanic (wiki wording) | Calculator |
+|---|---|
+| Stats: 3000 hp, Defence 130, crush def 35 (stab 150, slash 90), magic def 200 (Magic 200), ranged 445 / 370 / 320, earth 25% | Infobox, unchanged. Earth 25% through upstream's spell-element code (Earth Surge 24 → 30, roll ×1.25). |
+| Defence floor 78 (`130 × 0.6`, page body + news hotfix + Strategies table "2 Elder Maul / 1 Elder + 7 Bandos Godsword Damage") | Phase 2 floor; drain plan 2 Elder maul (130 → 85 → 56, capped 78) = the wiki's sequence. Tests via DWH / BGS / Elder maul. |
+| Flying Swords: "If Ezekiel is completely hit by a sword ... he will take damage and be stunned for a few seconds. Otherwise, he will heal for a significant amount of HP." Hitting a sword empowers it ("resistant to ranged and very weak to air magic"), raising its damage to Ezekiel and to players | Not modelled: no stat or defence change is described for the stun, and the heal / sword damage are encounter time (phase 16 territory), not per-attack DPS. Sword damage amounts and heal size are unpublished. |
+| Enrage at 33.3%: repositions, players are forced into the middle 3×3, he "imbue[s] himself with magic"; lightning pattern ×3 | No stat change described → no phase option (**unverified** that "imbue himself with magic" changes nothing). Strategies recommend high-cost melee specs in enrage (Crimson kisten, Dragon / Burning claws, Abyssal bludgeon), so melee still reaches him. |
+| Perfect dodges (swords, lightning) "gives you 3% special attack energy each time" | Not modelled (the phase 14 energy budget only counts regeneration and Lightbearer). Noted for the planner. |
+| Tank: the first player in is the tank; cleave; lightning if he can't melee the tank | Defensive only. |
+
+No module: nothing on the wiki changes the damage a player deals beyond the infobox and the floor.
+
+### Moia (id 16667)
+
+| Mechanic (wiki wording) | Calculator |
+|---|---|
+| Stats: 785 hp, Defence 195, crush 15 / stab 20 / slash 110, magic def 30 (Magic 350), ranged 60 / 120 / 140, air 80% | Infobox, unchanged. Air 80% through upstream's spell-element code (Wind Surge 24 → 43, roll ×1.8). |
+| "Moia begins the fight outside of her arena ... A ranged or magic weapon is required as she is too far to reach with melee or halberds." | **Modelled**: `isOutOfMeleeReach` in `src/lib/fracturedArchive/immunities.ts` (list `OUT_OF_MELEE_REACH_IDS`), hooked into `PlayerVsNPCCalc.isImmune` → every melee style (halberds included) deals 0; `BaseCalc` adds the weapon-slot warning "Melee can't reach this monster: use ranged or magic."; `cantHitReason` "Out of melee reach: ranged or magic only". `hittable.ts` picks it up, so drain plans skip the melee hammers: **2 Tonalztics hits** (195 → 152 → 109, capped 117) = the wiki table's "2 Tonalztics of Ralos". The whole fight is treated as unreachable (**unverified**: the wiki never says she comes into melee range, enrage included). |
+| Defence floor 117 (`195 × 0.6`) | Phase 2 floor. |
+| Undead binders (adds, id 16670, 95 hp, Defence 225, magic def −20) shuffle around; enrage at 33%: binders in a diamond, all must die before her charge completes or the team takes massive damage; "A venator bow is highly recommended" | Not modelled (adds / encounter time). Undead binder is selectable from the generated data. |
+| Magic attack, cough (poison-like DoT), ranged auto | Defensive only. |
+| Talk page "Does salve work?" (unanswered); no undead attribute in the infobox | No salve / undead bonus. |
+
+### Dagon'hai Elder + Monks (ids 16643/16644 Elder, 16645/16646 Monk staff, 16647/16648 Monk book)
+
+| Mechanic (wiki wording) | Calculator |
+|---|---|
+| Stats: 640 hp, Defence 100, stab / slash / crush 50, magic def 100 (Magic 290), ranged 80 / 80 / 80, no weakness; Elder and both Monk versions identical | Infobox, unchanged (test: identical DPS). |
+| "The elder and monks share the same stats and health pool, so there is no advantage in focusing one of them down." | One best-setup target ("Dagon'hai Elder + Monks", the Elder entry) stands for all three. |
+| Shield gauge: "Once the health bar of the three enemies are fully depleted, the Dagon'hai will channel Zamorak's energy ... and restore their shield gauge to full ... After depleting the mages' shield gauge the fifth time ... the cauldron will explode, killing one of the monks instantly ... the remaining enemies only have 7 hitpoints" | **Modelled** as a Phase dropdown on every Dagon'hai id (`DAGONHAI_PHASES`, new `src/lib/fracturedArchive/dagonhai.ts`): **Shielded (shield gauge)** (default) = infobox, **Unshielded (after the cauldron explodes, 7 hp)** = hp 7 (not party-scaled). The shield changes **no** defensive stat (the infobox lists one stat set for both ids of each NPC; the editor's note: "there are also unshielded versions of both NPCs but not sure what differs if anything"), so DPS is identical; only hp / TTK differ. For phase 16: `DAGONHAI_SHIELD_GAUGE_DEPLETIONS = 5`, `dagonhaiEncounterDamage(gauge) = 5 × gauge + 7` (3207 at infobox hp). **Unverified**: that the infobox 640 is the shared gauge per cycle, that it is party-scaled like the other bosses, and that the unshielded ids are only the 7-hp remainder. |
+| Defence floor: Strategies table "-"; news hotfix "no cap on their Defence Reduction ... the Dagon'Hai Trio" | 0 (phase 2). Drain plan 1 Elder maul + 2 Tonalztics hits (100 → 65 → 29 → 0). |
+| Elemental Channel: "cast the corresponding elemental spell on them ... Players can splash if their magic accuracy is not high enough"; Tome Empowerment (block projectiles); imps from portals ("Players will always land successful and maximum hits on imps. Killing an imp buffs your next attack, although it is not clear how") | Not modelled (utility casts / adds; the imp buff is unknown). Imps have no infobox. |
+| Elder attacks with ranged + surge spells; full ritual = wipe | Defensive only. |
+
+Best setup: targets `ezekiel`, `moia` (note "Out of melee reach"), `dagonhai` (phases Shielded / Unshielded; Summary
+row = Shielded only, as Unshielded has the same DPS). Summary: 20 rows × None / Solo / Team = 60 searches. Search spell
+list: Fire Surge + the weakness surge (Earth on Ezekiel, Wind on Moia; Fire only on the Dagon'hai).
+
 ## Other raid monsters (came with the refresh, not checked field-by-field)
+
+Ezekiel, Moia and the Dagon'hai were checked in phase 15 (section above).
 
 | Monster | NPC id(s) | Source |
 |---|---|---|
-| Ezekiel | 16652 | https://oldschool.runescape.wiki/w/Ezekiel (Bucket only) |
-| Moia | 16667 | https://oldschool.runescape.wiki/w/Moia (Bucket only) |
-| Undead binder (Moia add) | 16670 | Bucket only |
-| Dagon'hai Elder | 16643 | https://oldschool.runescape.wiki/w/Dagon%27hai_Elder (Bucket only) |
-| Dagon'hai Monk (Book / Staff) | 16647 / 16645 | https://oldschool.runescape.wiki/w/Dagon%27hai_Monk (Bucket only) |
+| Undead binder (Moia add) | 16670 | Bucket only (infobox read in phase 15: 95 hp, Defence 225) |
 | Corpse (Xarth) (Normal / Doused) | 16687 / 16688 | Bucket only |
 | Void Rift / Siphon / Augmenter / Vine | 16678 / 16679 / 16680 / 16681 | Bucket only |
 
@@ -428,7 +501,9 @@ several specs — "max" with only a BGS). All counts are *successful* specs; mis
 | Ocellus P1 | 215 → 129 | 2 | 2 | 86 | 100 | 3 |
 | Ocellus P2 (The Blade) | 250 → 0 | 2 + 4 Tonalztic hits (= wiki) | 1 + 7 | 250 | 100 | 3 |
 | Ocellus P3 | 250 → 150 | 2 | 2 | 100 | 200 | 5 |
-| Ezekiel / Moia (not modelled further) | 130 → 78 / 195 → 117 | 2 / 2 | 2 / 2 | 52 / 78 | 200 / 30 | 5 / 1 |
+| Ezekiel | 130 → 78 | 2 (= wiki) | 2 | 52 | 200 | 5 |
+| Moia, melee can't reach (phase 15) | 195 → 117 | 2 Tonalztic hits (= wiki) | 2 hits | 2 hits | 30 | 1 |
+| Dagon'hai Elder / Monks (phase 15) | 100 → 0 | 1 + 2 Tonalztic hits | 1 + 2 | 100 | 100 | 3 |
 
 **Unverified / differences from the wiki table:** the table's Smorks "2 Elder Maul + 4 Tonalztics" and Dreadnoth
 "1 Elder Maul + 3 Tonalztics" leave **1** Defence with upstream's truncation (220 → 143 → 93, 4 × trunc(185/8) = 92;
@@ -463,6 +538,7 @@ a tooltip and a line naming the plan actually applied.
 | Ocellus P1, at a corner | yes / yes / yes | unchanged | 129 |
 | Ocellus P3 last quadrant: Deflect Melee (with or without void) | no / yes / yes | 3× Tonalztics hits (2 specs) | 150 |
 | Ocellus P3 last quadrant: Deflect Ranged (with or without void) | yes / no / yes | unchanged (floor 150, no Tonalztics needed) | 150 |
+| Moia (phase 15: out of melee reach) | no / yes / yes | 2× Tonalztics hits (1 spec), as the wiki table's "2 Tonalztics of Ralos" | 117 |
 | Ocellus P3 quadrants 1-3 / Soul Split, every other boss | yes / yes / yes | unchanged | - |
 
 Model note: each phase is planned on its own, as if all drains were done in that phase. In the fight Defence drained

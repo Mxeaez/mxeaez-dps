@@ -21,7 +21,7 @@ import { EquipmentCategory } from '@/enums/EquipmentCategory';
 import { getRangedDamageType } from '@/types/PlayerCombatStyle';
 import { AttackDistribution, HitDistribution } from '@/lib/HitDist';
 import { Spellement } from '@/types/Spell';
-import { isImmuneToSpell } from '@/lib/fracturedArchive/immunities';
+import { isImmuneToSpell, isOutOfMeleeReach } from '@/lib/fracturedArchive/immunities';
 import { getFracturedArchiveDemonbaneVulnerability } from '@/lib/fracturedArchive/demonbane';
 import { isBlockedByOcellusPrayer } from '@/lib/fracturedArchive/ocellus';
 
@@ -835,6 +835,9 @@ export default class BaseCalc {
     }
     if (isBlockedByOcellusPrayer(this.monster, this.player.style.type, this.isUsingMeleeStyle())) {
       this.addIssue(UserIssueType.WEAPON_WRONG_MONSTER, 'Ocellus is praying against this combat style.');
+    }
+    if (isOutOfMeleeReach(this.monster) && this.isUsingMeleeStyle()) {
+      this.addIssue(UserIssueType.WEAPON_WRONG_MONSTER, 'Melee can\'t reach this monster: use ranged or magic.');
     }
 
     // some weapons are only available to use against certain monsters

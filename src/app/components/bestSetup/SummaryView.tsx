@@ -25,7 +25,7 @@ import { ItemIcon, LoadoutIconRow, WeaponLine } from '@/app/components/bestSetup
 import DPS_TEXT_CLASS from '@/app/components/bestSetup/styles';
 
 // "Summary" tab of /best-setup (phase 13): the top gear-search result for every Summary boss / phase × drain state.
-// The 51 searches (17 rows × 3 drain states) run one after the other in the search worker when the tab opens;
+// The 60 searches (20 rows × 3 drain states) run one after the other in the search worker when the tab opens;
 // results are cached in memory for the session (module scope, so switching tabs keeps them) and keyed by the
 // assumptions, so changing an assumption re-runs (debounced by ASSUMPTION_DEBOUNCE_MS, so typing a multi-digit value
 // restarts once). Cancel terminates the current search and stops; "Continue" resumes with the uncached ones.

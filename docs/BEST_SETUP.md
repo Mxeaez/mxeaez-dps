@@ -14,10 +14,10 @@ Summary's "best preset" reference; `computeBestSetup` / `evaluatePreset` stay as
 ## Summary tab (phase 13)
 
 One gear search (all styles, `runGearSearch`, same as the Search tab) per Summary row × drain state
-(`summarySearchQueries()` in `search.ts`: 17 rows × None / Solo / Team = 51 searches; the rows are `summaryQueries()`:
+(`summarySearchQueries()` in `search.ts`: 20 rows × None / Solo / Team = 60 searches (17 / 51 before phase 15 added Ezekiel, Moia and the Dagon'hai); the rows are `summaryQueries()`:
 each boss/version at its default phase, plus Bork stunned, Ocellus P1 walking and the Ocellus P3 last-quadrant
 options). They run one after the other in the search worker when the tab is opened, with a progress bar (searches
-done / 51 + progress inside the current one) and **Cancel**; **Continue** resumes with the missing ones. Results are
+done / 60 + progress inside the current one) and **Cancel**; **Continue** resumes with the missing ones. Results are
 cached in memory for the session (module scope in `SummaryView.tsx`, so switching tabs doesn't re-run), keyed by
 `searchCacheKey(query, assumptions)`; changing any assumption clears the cache and re-runs. Each row starts with the
 boss icon; each cell shows the top result's weapon line (18 px icons), a 16 px loadout icon strip (names in
@@ -51,7 +51,7 @@ skipped by the deploy).
 | `src/app/components/bestSetup/SpecPlanPanel.tsx` | Phase 14: plan text, P(floor) and carrier table under the selectors. |
 | `src/app/components/bestSetup/SummaryView.tsx` | Summary tab (phase 13): sequential searches, session cache, Cancel / Continue. |
 | `src/tests/lib/fracturedArchive/Presets.test.ts` | Item names resolve, players are valid, the view's numbers equal a direct `PlayerVsNPCCalc`, ranking order, drain spec counts. |
-| `scripts/verifyBestSetup.mjs` | Playwright check of the Summary tab since phase 13 (51 cells, Cancel / Continue, cache on tab switch, icons, load a cell; `docs/screenshots/phase13-summary.png`). |
+| `scripts/verifyBestSetup.mjs` | Playwright check of the Summary tab since phase 13 (60 cells since phase 15, Cancel / Continue, cache on tab switch, icons, load a cell; `docs/screenshots/phase13-summary.png`). |
 
 ## Editing presets
 

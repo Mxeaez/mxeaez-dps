@@ -16,6 +16,7 @@ import {
 } from '@/lib/fracturedArchive/constants';
 import { Factor } from '@/lib/Math';
 import { applyBorkFlatArmour } from '@/lib/fracturedArchive/bork';
+import { applyDagonhaiPhase } from '@/lib/fracturedArchive/dagonhai';
 
 export const FRACTURED_ARCHIVE_MIN_PARTY_SIZE = 2;
 export const FRACTURED_ARCHIVE_MAX_PARTY_SIZE = 8;
@@ -86,6 +87,9 @@ const applyPartySizeScaling = (m: Monster): Monster => {
   };
 };
 
-const applyFracturedArchiveScaling = (m: Monster): Monster => applyBorkFlatArmour(applyPartySizeScaling(m));
+// Dagon'hai last: the unshielded remainder has a fixed 7 hp, not a party-scaled value
+const applyFracturedArchiveScaling = (m: Monster): Monster => applyDagonhaiPhase(
+  applyBorkFlatArmour(applyPartySizeScaling(m)),
+);
 
 export default applyFracturedArchiveScaling;
