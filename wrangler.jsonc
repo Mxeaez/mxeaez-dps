@@ -1,0 +1,15 @@
+// Cloudflare Workers config: serves the static export in ./out as a Workers
+// Static Assets site (no Worker script needed). Used by Workers Builds
+// (deploy command: `npx wrangler deploy`) and by `npx wrangler dev` locally.
+// See docs/DEPLOY.md.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "mxeaez-dps",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./out",
+    // /best-setup serves out/best-setup.html; /best-setup.html redirects to /best-setup
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  }
+}

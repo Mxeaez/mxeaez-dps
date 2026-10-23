@@ -49,6 +49,32 @@ the vendored 4.9.2, so no `corepack` step is needed.
 
 ## One-time setup in the Cloudflare dashboard
 
+Cloudflare now offers two ways to host a static site from a Git repo. Either works; pick whichever the dashboard
+shows you first.
+
+### Option 1: Workers (static assets) — what the "Create" flow shows by default
+
+The repo contains `wrangler.jsonc`, which tells Wrangler to serve `./out` as a Workers Static Assets site (no Worker
+script). `wrangler` is a dev dependency, so `npx wrangler deploy` uses the committed version.
+
+1. **Compute → Workers & Pages → Create → Import a repository** → authorise GitHub, select `Mxeaez/mxeaez-dps`.
+2. **Set up your application**:
+   - Project name: `mxeaez-dps`
+   - Build command: `node .yarn/releases/yarn-4.9.2.cjs install --immutable && node .yarn/releases/yarn-4.9.2.cjs build`
+   - Deploy command: `npx wrangler deploy` (the default)
+   - Preview command: leave the default, or clear it
+   - Build variables (under *Advanced settings* / *Build variables*): `NODE_VERSION` = `22.23.4`
+   - Production branch: `main-mxeaez`
+3. **Deploy**. The first build takes ~3–5 min and uploads ~7,800 asset files. The site appears at
+   `https://mxeaez-dps.<account>.workers.dev`.
+4. Custom domain: in the Worker → **Settings → Domains & Routes → Add → Custom domain** → `dps.mxeaez.com`.
+   With `mxeaez.com` on Cloudflare the DNS record and certificate are created automatically.
+
+Verified locally with `npx wrangler deploy --dry-run` (reads 7,842 files from `out/`). Clean URLs come from
+`html_handling: "auto-trailing-slash"` (`/best-setup` serves `best-setup.html`).
+
+### Option 2: Pages
+
 1. **Workers & Pages → Create → Pages → Connect to Git** → pick GitHub, authorise, select `Mxeaez/mxeaez-dps`.
 2. **Set up builds and deployments**:
    - Project name: `mxeaez-dps` (gives `mxeaez-dps.pages.dev`)
