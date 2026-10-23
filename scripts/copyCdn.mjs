@@ -14,10 +14,26 @@ if (!existsSync(join(root, 'out'))) {
   process.exit(1);
 }
 
-cpSync(src, dest, { recursive: true });
+// Cloudflare's asset upload rejects the whole deploy if any path contains a bare '%' ("Manifest path must be URI
+// encoded"). Only a few wiki image names do (e.g. "The Maiden of Sugadinti (30% health).png"); skip those.
+const skipped = [];
+cpSync(src, dest, {
+  recursive: true,
+  filter: (p) => {
+    if (p.includes('%')) {
+      skipped.push(p.slice(src.length + 1));
+      return false;
+    }
+    return true;
+  },
+});
 
 const count = (dir) => readdirSync(dir).reduce((n, f) => {
   const p = join(dir, f);
   return n + (statSync(p).isDirectory() ? count(p) : 1);
 }, 0);
 console.log(`copyCdn: copied ${count(dest)} files from cdn/ to out/cdn/`);
+if (skipped.length) {
+  console.log(`copyCdn: skipped ${skipped.length} file(s) with '%' in the name (not deployable as Cloudflare assets):`);
+  skipped.forEach((f) => console.log(`  ${f}`));
+}

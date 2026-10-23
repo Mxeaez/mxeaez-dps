@@ -70,7 +70,11 @@ script). `wrangler` is a dev dependency, so `npx wrangler deploy` uses the commi
 4. Custom domain: in the Worker → **Settings → Domains & Routes → Add → Custom domain** → `dps.mxeaez.com`.
    With `mxeaez.com` on Cloudflare the DNS record and certificate are created automatically.
 
-Verified locally with `npx wrangler deploy --dry-run` (reads 7,842 files from `out/`). Clean URLs come from
+Verified locally with `npx wrangler deploy --dry-run` (reads 7,842 files from `out/`). Note that the dry run does
+not catch server-side manifest validation: the first real deploy failed with "Manifest path must be URI encoded"
+because three wiki image names contain a bare `%` (`The Maiden of Sugadinti (30% health).png` etc.).
+`scripts/copyCdn.mjs` now skips any file with `%` in its name and lists them; those few images fall back to broken
+in the UI, which only affects the ToB Maiden health variants. Clean URLs come from
 `html_handling: "auto-trailing-slash"` (`/best-setup` serves `best-setup.html`).
 
 ### Option 2: Pages
