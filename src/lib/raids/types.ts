@@ -6,7 +6,7 @@ import type { BestSetupAssumptions } from '@/lib/fracturedArchive/presets';
  * `src/lib/raids/base.ts`; the full `RaidConfig` (time model, UI) is in `src/lib/raids/index.ts`.
  */
 
-export type RaidId = 'fractured-archive' | 'toa';
+export type RaidId = 'fractured-archive' | 'toa' | 'cox';
 
 export const DEFAULT_RAID: RaidId = 'fractured-archive';
 
@@ -35,6 +35,14 @@ export const DEFAULT_TOA_INPUTS: ToaInputs = {
   },
 };
 
+/** Phase 19: Chambers of Xeric scaling inputs of the best-setup assumptions (party size is shared). */
+export interface CoxInputs {
+  /** Challenge Mode: upstream's `isFromCoxCm` (+50% stats and hp except Olm hp; Tekton Defence +20% / +35%). */
+  challengeMode: boolean;
+}
+
+export const DEFAULT_COX_INPUTS: CoxInputs = { challengeMode: false };
+
 /** A boss / phase the best-setup view can target (Search boss list, Summary rows, time-model phases). */
 export interface BestSetupTarget {
   key: string;
@@ -51,6 +59,11 @@ export interface BestSetupTarget {
   summaryPhases?: string[];
   /** Not shown as its own Summary row (still searchable and used by the time model). */
   noSummary?: boolean;
+  /**
+   * Phase 19: drains never apply to this target (the drain state is forced to None), with the reason shown as the
+   * drain plan. CoX Vanguards: "they will restore all drained stats upon retreating into their shell".
+   */
+  noDrains?: string;
   /** Expected TTK isn't meaningful (Ocellus P2: the Blade phase is timed, damage transfers 50% to P3). */
   ttkNotApplicable?: boolean;
   note?: string;
@@ -65,6 +78,8 @@ export interface ScalingInputDef {
   step?: number;
   default: number;
   title?: string;
+  /** Phase 19: 'bool' = a checkbox storing 1 / 0 (CoX Challenge Mode); default 'number'. */
+  kind?: 'number' | 'bool';
   get: (a: BestSetupAssumptions) => number;
   /** Sets the (already clamped) value. */
   set: (a: BestSetupAssumptions, value: number) => BestSetupAssumptions;
@@ -101,4 +116,24 @@ export type ToaTimeSettings = {
   kephriOverlords: boolean;
   /** Share of the P3 Warden's hp taken off by reversed energy siphons (unpublished; 0 = not counted). */
   p3SiphonFraction: number;
+};
+
+/** Chambers of Xeric rooms the user can include in the layout (src/lib/raids/cox/time.ts; Olm is always fought). */
+export type CoxRoom = 'tekton' | 'vasa' | 'vanguards' | 'vespula' | 'mystics' | 'shamans' | 'muttadiles' | 'guardians' | 'iceDemon';
+
+/** Chambers of Xeric time-model settings (src/lib/raids/cox/time.ts, Encounters tab). */
+export type CoxTimeSettings = {
+  /** Rooms in the layout (a raid has a random subset; the default ticks every room, an upper bound). */
+  [K in `room_${CoxRoom}`]: boolean;
+} & {
+  /** Share of Tekton's hp dealt while he is enraged (raised defence bonuses after the anvil; unpublished). */
+  tektonEnragedFraction: number;
+  /** Tekton's anvil repairs, as a share of his hp added to the damage needed (Strategies: 1.33% per few ticks; 0 = not counted). */
+  tektonAnvilHeal: number;
+  /** Glowing crystals destroyed during Vasa (each one = the crystal's hp, stab only). */
+  vasaCrystals: number;
+  /** Vespula: 'ground' = take her to 20% so she lands, then the portal (Strategies' normal method); 'portal' = only the portal (Redemption method). */
+  vespulaMethod: 'ground' | 'portal';
+  /** Muttadile meat-tree heals, as a share of each muttadile's hp added to the damage needed (0 = tree chopped / frozen). */
+  muttadileHeal: number;
 };

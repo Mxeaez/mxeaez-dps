@@ -308,7 +308,7 @@ const RoutesView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStat
                               <ItemIcon name={e.label} src={targetImageUrl(findTarget(raid.encounterTarget[e.id]))} size={18} />
                               <span className="font-normal">{e.label}</span>
                             </div>
-                            <div className="font-mono text-xs">{fmtS(e.seconds)}</div>
+                            <div className="font-mono text-xs">{e.phases.length ? fmtS(e.seconds) : '—'}</div>
                           </td>
                         ))}
                       </tr>

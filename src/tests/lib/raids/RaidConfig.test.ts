@@ -29,9 +29,10 @@ import { TOA_ROUTE_ID } from '@/lib/raids/toa/time';
 
 describe('RaidConfig: every raid', () => {
   test('raid ids are unique; FA is the default tab', () => {
-    expect(RAIDS.map((r) => r.id)).toEqual(['fractured-archive', 'toa']);
+    expect(RAIDS.map((r) => r.id)).toEqual(['fractured-archive', 'toa', 'cox']);
     expect(raidConfig(undefined)).toBe(FRACTURED_ARCHIVE_RAID);
     expect(raidConfig('toa')).toBe(TOMBS_OF_AMASCUT_RAID);
+    expect(raidConfig('cox').name).toBe('Chambers of Xeric');
   });
 
   test('target keys are unique across raids and findTarget finds every one', () => {
@@ -53,8 +54,7 @@ describe('RaidConfig: every raid', () => {
           expect(monster.image).toBeTruthy();
           expect(monster.image!.includes('%')).toBe(false);
           expect(existsSync(join(process.cwd(), 'cdn', 'monsters', monster.image!))).toBe(true);
-          if (t.raid !== 'toa') expect(raid.id).toBe('fractured-archive');
-          else expect(raid.id).toBe('toa');
+          expect(raid.id).toBe(t.raid ?? 'fractured-archive');
         });
       });
 
@@ -87,7 +87,7 @@ describe('RaidConfig: every raid', () => {
       test('routes enumerate; every phase the time model queries is a target of this raid', () => {
         const a = raidTimeAssumptionsFrom(raid.defaultAssumptions, 'none', raid.defaultTimeSettings, raid.time);
         const routes = routesFor(a);
-        expect(routes.length).toBe(raid.id === 'toa' ? 1 : 8);
+        expect(routes.length).toBe(raid.id === 'fractured-archive' ? 8 : 1);
         routes.forEach((r) => r.encounters.forEach((e) => {
           expect(raid.time.labels[e]).toBeTruthy();
           expect(raid.targets.map((t) => t.key)).toContain(raid.encounterTarget[e]);

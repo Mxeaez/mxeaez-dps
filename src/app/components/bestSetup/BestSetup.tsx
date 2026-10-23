@@ -54,6 +54,20 @@ const ScalingInputs: React.FC<{
     <span className="font-semibold">Raid scaling:</span>
     {raid.scalingInputs.map((d) => {
       const id = d.key === 'partySize' ? 'bs-party' : `bs-scale-${d.key}`;
+      if (d.kind === 'bool') {
+        return (
+          <label key={d.key} htmlFor={id} className="flex items-center gap-1" title={d.title}>
+            <input
+              id={id}
+              type="checkbox"
+              checked={d.get(value) > 0}
+              data-testid={`scaling-${d.key}`}
+              onChange={(e) => onChange(withScalingInput(value, d, e.target.checked ? 1 : 0))}
+            />
+            {d.label}
+          </label>
+        );
+      }
       return (
         <label key={d.key} htmlFor={id} className="flex items-center gap-1" title={d.title}>
           {d.label}
@@ -93,7 +107,7 @@ const AssumptionsBox: React.FC<{
       <div>
         {raid.raidOnlyAssumptions
           ? 'All skills 99. Prayers: Piety (or Zeal) / Rigour / Augury by style. Items per preset: src/lib/fracturedArchive/presets.ts.'
-          : 'All skills 99. Prayers: Piety / Rigour / Augury by style. Presets: the Fractured Archive list + src/lib/raids/toa/presets.ts.'}
+          : `All skills 99. Prayers: Piety / Rigour / Augury by style. ${raid.presetsNote ?? ''}`}
       </div>
       {scalingRow && <ScalingInputs raid={raid} value={value} onChange={onChange} />}
       <div className="flex flex-wrap gap-x-4 gap-y-2 items-center">
@@ -129,18 +143,18 @@ const AssumptionsBox: React.FC<{
             </label>
           </>
         )}
-        <label htmlFor="bs-team-mult" className="flex items-center gap-1" title="Players assumed to deal your DPS in every time shown (Search TTK, Routes / Encounters, Plan). Default: the party size where boss hp scales with it (ToA), else 1 (Fractured Archive: identity hp table)">
+        <label htmlFor="bs-team-mult" className="flex items-center gap-1" title="Players assumed to deal your DPS in every time shown (Search TTK, Routes / Encounters, Plan). Default: the party size where boss hp scales with it (ToA, CoX), else 1 (Fractured Archive: identity hp table)">
           Team DPS ×
           <input
             id="bs-team-mult"
             type="number"
             className="form-control text-xs py-0.5 w-14"
             min={1}
-            max={8}
+            max={raid.partySize.max}
             step={0.5}
             value={teamDpsMultiplier(value)}
             data-testid="team-dps-mult"
-            onChange={(e) => set({ teamDpsMultiplier: Math.min(8, Math.max(1, Number(e.target.value) || 1)) })}
+            onChange={(e) => set({ teamDpsMultiplier: Math.min(raid.partySize.max, Math.max(1, Number(e.target.value) || 1)) })}
           />
           {value.teamDpsMultiplier !== undefined && (
             <button type="button" className="underline" onClick={() => set({ teamDpsMultiplier: undefined })}>auto</button>
@@ -311,11 +325,12 @@ const RaidBestSetup: React.FC<{
     const drained = ayakExpectedDrain(profile, assumptions.mySpecs.ayak, model.magicDef);
     return `≈ ${drained.toFixed(0)} magic def drained on ${target.label} (of ${model.magicDef}; ${(profile.hitChance * 100).toFixed(0)}% × ${profile.expectedDamageOnHit.toFixed(1)} per spec)`;
   }, [mode, target, phase, phases, assumptions]);
-  // the boss's hp as the calculator scales it (party size, ToA raid / path levels)
-  const targetHp = useMemo(() => {
+  // the boss's hp and (undrained) Defence as the calculator scales them (party size, ToA raid / path levels, CoX CM)
+  const targetStats = useMemo(() => {
     if (mode !== 'search') return undefined;
-    return scaleMonster(buildTargetMonster(target, phase ?? phases[0], 'none', assumptions).monster).skills.hp;
+    return scaleMonster(buildTargetMonster(target, phase ?? phases[0], 'none', assumptions).monster).skills;
   }, [mode, target, phase, phases, assumptions]);
+  const targetHp = targetStats?.hp;
 
   const drainButtons = (
     <div className="flex gap-1 items-center text-sm" title={DRAIN_STATES.find((s) => s.id === drain)?.description}>
@@ -372,6 +387,11 @@ const RaidBestSetup: React.FC<{
               {targetHp !== undefined && (
                 <span className="text-xs text-gray-500 dark:text-gray-400" data-testid="target-hp" title="Hitpoints as the calculator scales them for these assumptions">
                   {`${targetHp} hp`}
+                </span>
+              )}
+              {targetStats !== undefined && (
+                <span className="text-xs text-gray-500 dark:text-gray-400" data-testid="target-def" title="Defence level as the calculator scales it, before drains">
+                  {`Def ${targetStats.def}`}
                 </span>
               )}
               {phases.length > 0 && (

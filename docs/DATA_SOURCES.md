@@ -510,6 +510,55 @@ path level will modify most enemy hitpoints and damage by +8%, with every additi
 Invocations other than raid / path level (e.g. Overclocked, Stay Vigilant, Blood Thinners) change attack speeds and
 mechanics, not the player's DPS against the bosses, and aren't modelled.
 
+## Chambers of Xeric (phase 19, read 2026-10-23)
+
+Pages read with `?action=raw`: https://oldschool.runescape.wiki/w/Chambers_of_Xeric,
+https://oldschool.runescape.wiki/w/Chambers_of_Xeric/Strategies, https://oldschool.runescape.wiki/w/Chambers_of_Xeric/Challenge_Mode,
+https://oldschool.runescape.wiki/w/Great_Olm and the pages Tekton, Vasa_Nistirio, Glowing_crystal, Vanguard, Vespula,
+Abyssal_portal, Muttadile, Skeletal_Mystic, Lizardman_shaman_(Chambers_of_Xeric), Guardian_(Chambers_of_Xeric),
+Ice_demon. There is **no `Chambers_of_Xeric/Scaling` page** (HTTP 404 on 2026-10-23). Monster stats: upstream's
+monsters.json (unchanged; the generator skips the CM rows, "handled by the calculator UI").
+
+**Scaling** — upstream `src/lib/scaling/ChambersOfXeric.ts`, pinned to in-game Monster Examine values by upstream's
+`src/tests/lib/scaling/ChambersOfXeric.test.ts`. Hp, offence **and Defence** scale with party size: hp × (1 +
+trunc(party / 2)); Defence × (100 + iSqrt(party − 1) + trunc(7 (party − 1) / 10))%; offence × (100 + 7 iSqrt(party − 1)
++ party − 1)%; the best player's combat / hp levels (all 99s here: no reduction). CM: +50% offence, hp and Defence; Olm
+hp not raised; Glowing crystal not raised; Tekton Defence +20% (< 4 players) / +35%. Wiki support: "The stats of the
+enemies in the raid will likewise scale accordingly to the team size" (Chambers of Xeric); "In all rooms, their stats
+will scale accordingly" (Strategies); "Apart from the Great Olm's health, all of the enemies' combat stats (including
+health) are increased by 50%" (Challenge Mode); changelog "Tekton's defence will scale less harshly for challenge raids
+consisting of smaller numbers of players". Worked examples (tested): Tekton 300 hp / Def 205 → 1200 / 215 at 6, CM
+1800 / 290; Vasa 1200 / 183, CM 1800 / 274; Olm head 800 + 400 × 5 = 2800 / Def 157 (CM 2800 / 235), claws 600 + 300 ×
+5 = 2100. Inputs the tab sets: `isFromCoxCm`, `partySize` (1-15), `partyMaxCombatLevel` 126, `partyMaxHpLevel` 99,
+`partySumMiningLevel` 99 × party.
+
+**Olm phase rule**: "In a team size of 1-7, Olm has four phases in total, three standard phases and a head phase. For
+every 8 players in the raid, Olm will gain an additional standard phase" (Strategies → Great Olm; Great Olm page: "Olm
+has at least four phases, with an additional phase for every 8 players in the raid") → `olmStandardPhases = 3 +
+trunc(party / 8)`; upstream's hand / head hp factor `min(party − 1, 50) − 3 trunc(min(party, 50) / 8)` spreads the same
+total over the extra phase (claw hp total at 8 = at 7).
+
+| Mechanic (source) | Upstream | Phase 19 |
+|---|---|---|
+| Tekton "immune to Range and takes 80% reduced Magic damage" | yes (immune, ÷5) | — |
+| Tekton enraged after the anvil: "increasing his melee defensive bonuses" (Strategies) | Enraged entry | *Tekton enraged* share (default 20%, UNVERIFIED F1) |
+| Tekton anvil: "recovering 1.33% of his maximum health every few ticks"; "no longer resets his Defence when healing at the anvil" | — | *Tekton anvil heal* (default 0); drains carry |
+| Tekton: first Elder maul / DWH spec always lands; missed maul / DWH drain 5%, missed BGS 10 levels | no | documented only (F2) |
+| Vasa invulnerable at a crystal; crystals "immune to ranged attacks and take 66% less damage from magic", "highly resistant to slash and crush" | crystal immunity / ÷3 | *Vasa crystals* (default 1) × crystal hp, then Vasa |
+| Vanguards: "damage must be spread equally to all three"; "they will restore all drained stats upon retreating into their shell" | monsters | 3 × hp; targets `noDrains` (drain state forced to None) |
+| Vespula flying (melee-immune); "Upon reaching 20% of her health ... drop to the ground"; "The portal must be destroyed" | melee immunity (Vespula, portal) | 80% of Vespula + the portal (setting: portal only) |
+| Mystics 1-2 → 3, 3-5 → 4, 6-8 → 5 … 27+ → 12; shamans 1-4 → 2, 5-9 → 3, 10-14 → 4, 15+ → 5 (Strategies tables) | — | `mysticCount`, `shamanCount` |
+| Mystics are undead (Salve) | attribute | Salve amulet(ei) in every style's pool |
+| Muttadiles eat at ~50%, "up to 50% of their health", at most three times | — | *Muttadile heals* (default 0 = tree chopped / frozen) |
+| Guardians "can only be harmed through pickaxes"; damage × (50 + Mining + pick level) / 150 | yes | 2 × hp; Dragon / Crystal pickaxe in presets / pool |
+| Guardian hp: wiki H = 151 (1 + ⌊T/2⌋) + ⌊avg M⌋ T (1198 at 6) vs upstream (151 + avg M)(1 + ⌊T/2⌋) (1000 at 6) | upstream formula | upstream kept (F5) |
+| Ice demon −67% unless fire spells / demonbane; magic defence from Defence | yes | kindling / braziers not counted |
+| Great Olm is a dragon ("vulnerable to dragonbane weapons") — Dragon hunter weapons **do** apply | attribute | DHL / DHCB in presets, + DH wand in the pool |
+| Olm "head has 66% damage mitigation from all non-range attacks ... right hand ... non-mage ... left hand ... non-melee" | magic on head / left claw, ranged on both claws | **+ melee on the head and right claw ÷3** (`cox/damage.ts`, hook in `applyNpcTransforms`) |
+| Olm: both claws per hand phase; the head only killable in the final phase; "His stats also reset when a new phase starts" | — | per-phase rows; every target drained independently (F7) |
+| Olm left-hand clench / penultimate heal; head life-siphon heal (5×) | — | documented only (F6) |
+| Defence floors | none in `getDefenceFloor` | none (drains can reach 0) |
+
 ## Other raid monsters (came with the refresh, not checked field-by-field)
 
 Ezekiel, Moia and the Dagon'hai were checked in phase 15 (section above).

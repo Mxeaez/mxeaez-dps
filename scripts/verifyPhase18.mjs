@@ -56,7 +56,7 @@ const main = async () => {
 
   // 1. raid tabs
   const raids = await page.locator('[data-testid^="raid-tab-"]').allInnerTexts();
-  check(raids.join(',') === 'Fractured Archive,Tombs of Amascut', `raid tabs: ${raids.join(', ')}`);
+  check(raids.slice(0, 2).join(',') === 'Fractured Archive,Tombs of Amascut', `raid tabs: ${raids.join(', ')}`); // phase 19: + Chambers of Xeric
   const h = (await page.locator('h2').first().innerText()).trim();
   check(h === 'Best setup · The Fractured Archive', `FA is the default raid (${h})`);
   check((await page.locator('[data-testid="routes-tab"]').innerText()).trim() === 'Routes', 'FA routes tab = Routes');

@@ -1,4 +1,4 @@
-# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14; Routes tab phase 16; Plan tab phase 17; raid tabs + ToA phase 18)
+# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14; Routes tab phase 16; Plan tab phase 17; raid tabs + ToA phase 18; CoX phase 19)
 
 `/best-setup` (dev: http://localhost:3001/osrs-dps/best-setup; "Best setup" button in the top bar, "Calculator" leads
 back). Tabs, in order: **Search** (the default, phase 9/12, see the end of this file) searches a pool of end-game items
@@ -93,6 +93,44 @@ result per style: 14:02.4 (Kephri 145.5, Zebak 125.4, Akkha 137.5, Ba-Ba 92.5, W
 DPS). **Plan** (defaults: pinned items, 8 supply slots): worn Keris partisan of breaching (Torva), switches Tumeken's
 shadow (Ancestral), Osmumten's fang, Scythe and Obligator (Torva), 1 free slot, **14:20.0**. Search TTK on Zebak:
 125.6 s (6 players; 753.5 s alone).
+
+## Chambers of Xeric (phase 19)
+
+Third raid tab, same code (`CHAMBERS_OF_XERIC_RAID`, `src/lib/raids/chambersOfXeric.ts`; `src/lib/raids/cox/*`).
+
+- **Inputs** ("Raid scaling" row): party size **1-15** (CoX allows 1-100; the times assume every member deals your
+  DPS, which means nothing for mass raids) and a **Challenge Mode** checkbox (scaling inputs can now be `kind: 'bool'`).
+  The calculator's CoX inputs are set per target: `isFromCoxCm`, best player 126 combat / 99 hp, party Mining 99 ×
+  size. Search shows the scaled hp **and Defence** next to the boss (`target-def`).
+- **Scaling** is upstream's (hp and Defence scale with party size; CM +50%, Olm hp unchanged, Tekton Defence +20/35%);
+  see DATA_SOURCES *Chambers of Xeric*. No Defence floors.
+- **Targets** (18): Tekton, Tekton (enraged), Vasa Nistirio, Glowing crystal, Vanguard melee / ranged / magic (drains
+  never apply: `noDrains`), Vespula, Abyssal portal, Muttadile small / large, Skeletal Mystic, Lizardman shaman,
+  Guardian, Ice demon, Great Olm left claw / right claw / head.
+- **Defaults**: Overload (+) for every style (raid boost, `boostsNeedSupplies: false`), Piety / Rigour / Augury, Team
+  carriers = FA's + 1 BGS, team-DPS multiplier = party size.
+- **Presets** = FA list + Dragon hunter lance (Torva), Dragon pickaxe (Torva, Smash), Dragon hunter crossbow + ruby (e)
+  (Masori). The Great Olm *is* a dragon in the data / wiki, so the dragonbane bonuses apply. **Pool** = FA pool + DHL,
+  Dragon / Crystal pickaxe, DHCB (ruby / diamond (e)), Dragon hunter wand, Salve amulet(ei) (kept) in every neck slot.
+- **New damage rule**: Olm head and right claw take ÷3 from melee (wiki "66% damage mitigation"; upstream only divides
+  magic / ranged) — `cox/damage.ts`.
+- **Encounters** (one route; `cox/time.ts`): rooms are checkboxes (default all = an upper bound; unticked rooms show
+  "—"), the Great Olm always. Tekton 80% + 20% enraged (+ anvil heal, default 0); Vasa 1 crystal (setting) + hp;
+  Vanguards 3 × hp, no drains; Vespula 80% then the portal (or portal only); Mystics / shamans count by party size;
+  Muttadiles small + large (+ meat-tree heal, default 0); Guardians 2 × hp (pickaxe only, ∞ without one); Ice demon hp;
+  Olm 3 (+1 per 8 players) hand phases × (right claw + left claw), then the head.
+- **Plan**: supplies default to 8 "Other" (raid-made potions); note to bring a pickaxe for Guardians.
+
+**Headline (normal, 6-man, Team drains, every room, 2026-10-23)** — top search result per target: Tekton Obligator
+14.416 (enraged 12.446); Vasa Obligator 15.845; Glowing crystal Scythe 14.545; Vanguards melee Tumeken's shadow 11.479,
+ranged Scythe 10.757, magic Ascension crossbows + diamond (e) 11.591; Vespula Ascension + onyx (e) 15.331; portal
+Ascension + diamond (e) 13.297; Muttadile small Ascension + onyx (e) 15.535, large Twisted bow 16.402; Mystic Ascension
++ diamond (e) 17.880; shaman Ascension + onyx (e) 15.626; Guardian Dragon pickaxe 9.410; Ice demon Harmonised staff +
+Fire Surge 16.186; Olm left claw Scythe 14.994, right claw Shadow 12.087, head Twisted bow 16.324. Encounters with the
+best search result per style: **6:25.6** (Olm 185.5 s). **Plan** (20.8 s): worn Inquisitor's + Scythe (slash), switches
+Tumeken's shadow (Ancestral), Dragon pickaxe, Kodai + best Surge (Ice demon), Ascension crossbows (weapon-only switch
+on the Shadow set, Salve (ei)); 0 free slots; **6:59.9**. Same kit in **Challenge Mode** (6-man): **9:12.5** (Olm 199.2
+s vs 197.5 s — Olm keeps its hp).
 
 ## Plan tab (phase 17: raid kit planner)
 

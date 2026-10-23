@@ -197,7 +197,10 @@ export const buildTargetMonster = (
     },
   };
   m = withInputs(m, { monsterCurrentHp: scaleMonster(m).skills.hp });
-  const d = drainStateFor(m, drain, assumptions);
+  // phase 19: targets whose drains never stick (CoX Vanguards) stay undrained in every drain state
+  const undrained = target.noDrains && drain !== 'none';
+  const d0 = drainStateFor(m, undrained ? 'none' : drain, assumptions);
+  const d = undrained ? { ...d0, id: drain, plan: `No drains: ${target.noDrains}` } : d0;
   return { monster: withInputs(m, { defenceReductions: d.reductions }), drain: d };
 };
 

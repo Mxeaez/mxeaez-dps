@@ -105,6 +105,21 @@ Monster stats and hp scaling are upstream's (verified in-game); these are the ti
 | E8 | Zebak "Not Just a Head" invocation | Not modelled: with it, Zebak's blood clouds / jugs can "heal for 2x the damage inflicted" (Strategies, Zebak's invocations) | Zebak time too low when the invocation is on and the heal isn't prevented | Note Zebak's hp after a missed heal |
 | E9 | Spec drains across phases of one NPC | Each phase target gets its own fresh first round of specs (Solo / Team), e.g. Akkha main vs final stand, P3 vs P3 enraged; drains are never carried over (conservative where the Defence would persist; right where it resets: Kephri's final phase, the enraged P3 Warden's Defence 180) | Drained DPS slightly overstated where a phase would need specs again, understated where drains persist and no new specs are needed | Read the boss's Defence at each phase change |
 
+## (F) Chambers of Xeric (phase 19, Encounters tab / planner)
+
+Stats, hp / Defence scaling and the damage rules are upstream's (verified in-game); these are the readings on top.
+
+| # | What | Assumed | Impact if wrong | In-game check |
+|---|---|---|---|---|
+| F1 | Tekton enraged share | 20% of his hp dealt at the Enraged version (setting) | Tekton time off by a few % | Count hits landed while he is enraged |
+| F2 | Tekton spec rules | Not modelled: the first maul / DWH spec always lands, missed maul / DWH specs still drain 5%, a missed BGS 10 levels | Drained DPS on Tekton slightly understated | — (wiki-confirmed; model limitation) |
+| F3 | Room set | Every room ticked by default (an upper bound; real layouts have 3-5 bosses + puzzles) | Total too high until the user unticks rooms | — (choice) |
+| F4 | Heals / adds | 1 Vasa crystal, Vespula to 20% + portal, no meat-tree, anvil or vespine-soldier heals (settings) | Absolute times too low when heals happen | Time a few rooms |
+| F5 | Guardian hp | Upstream's formula (1000 at 6, Mining 99); the wiki's formula gives 1198 at 6 (both agree at 1-2 players) | Guardians time −17% if the wiki is right | Monster Examine a Guardian at 3+ players |
+| F6 | Olm | Hand phases = both claws' hp each; left-hand clench, penultimate heal, head siphon heal and transitions not modelled; melee on the head / right claw ÷3 from the wiki's "66% damage mitigation" (upstream lacks it) | Olm time too low; head / right-claw melee misjudged if the mitigation reading is wrong | Hit the head with melee in the final phase |
+| F7 | Drains on Olm | Each Olm target (each claw per phase, the head) gets the team's fresh first round of specs ("His stats also reset when a new phase starts"); spec energy across the 7 targets isn't budgeted | Olm drained DPS overstated for Team / Solo | — (model choice) |
+| F8 | Party range | 1-15 in the tab (CoX allows 1-100); a second extra Olm phase (16+) is out of range | — | — |
+
 ## HP scaling: how to fill the gap
 
 The wiki only says "hitpoints scale to the amount of players present, minimum 2". Nobody has published numbers yet,

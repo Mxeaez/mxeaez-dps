@@ -42,7 +42,7 @@ values (Bork's flat armour comes from the phase input, so the generated 0 is exp
 
 | File | +/− | What | Conflict risk |
 |---|---|---|---|
-| `src/lib/PlayerVsNPCCalc.ts` | 62 / 6 | imports; Zorya's tome accuracy, max hit and spec; fragment max-hit bonus; stunned-Bork accuracy; Obligator thrust distribution (+ Maggot King exclusion); ascension (e) bolts added to the diamond/onyx `wearing` lists; Bork magic resistance and Ocellus void-explosion transforms; `isImmune` checks (incl. Moia out of melee reach, phase 15; ToA prayers, phase 18: +4); 3 capitalisation fixes in `UNIMPLEMENTED_SPECS` | **Medium–high**: about 9 separate places in upstream's busiest file. Each hunk is 2–6 lines next to an upstream anchor (Eye of Ayak spec, elemental amulet, Eclipse Moon clone, scythe dist, flat armour, `isImmune`), so conflicts are local and easy to redo by hand |
+| `src/lib/PlayerVsNPCCalc.ts` | 62 / 6 | imports; Zorya's tome accuracy, max hit and spec; fragment max-hit bonus; stunned-Bork accuracy; Obligator thrust distribution (+ Maggot King exclusion); ascension (e) bolts added to the diamond/onyx `wearing` lists; Bork magic resistance and Ocellus void-explosion transforms; `isImmune` checks (incl. Moia out of melee reach, phase 15; ToA prayers, phase 18: +4); CoX Olm melee divisor (phase 19: +5); 3 capitalisation fixes in `UNIMPLEMENTED_SPECS` | **Medium–high**: about 9 separate places in upstream's busiest file. Each hunk is 2–6 lines next to an upstream anchor (Eye of Ayak spec, elemental amulet, Eclipse Moon clone, scythe dist, flat armour, `isImmune`), so conflicts are local and easy to redo by hand |
 | `src/lib/BaseCalc.ts` | 24 / 7 | imports; demonbane hook (`?? 100`); spell-immunity, Ocellus-prayer, ToA-prayer (phase 18) and melee-reach (Moia) issues; Blood/Blue/Eclipse Moon and Staff of the Dead name fixes | Medium: the name fixes will conflict if upstream fixes them too. Take upstream's version of those lines |
 | `src/lib/constants.ts` | 19 / 0 | re-export of the raid constants; party-size list; phase dropdowns for Bork / Ocellus / Dagon'hai; Akkha and P2 Warden prayer phases (phase 18, phase names from `src/lib/raids/toa/constants.ts`, upstream's `AKKHA_IDS` / `P2_WARDEN_IDS`) | Low (additions next to the Mad Angel phases and the party-size list) |
 | `src/lib/Equipment.ts` | 11 / 0 | ascension ammo; Obligator Smash speed; Zorya spec cost | Low |
@@ -65,6 +65,10 @@ code, and moving them would not make the merge easier.
 
 ## Things upstream might add that overlap with ours
 
+- **CoX Olm melee mitigation** (phase 19): if upstream divides melee on the Olm head / right claw itself, drop
+  `src/lib/raids/cox/damage.ts` and its hook in `PlayerVsNPCCalc.applyNpcTransforms` (+5 lines). The CoX scaling,
+  immunities and Guardian / Ice demon rules are upstream's; `src/tests/lib/raids/CoX.test.ts` pins the hp / Defence at
+  party 6, so an upstream scaling change shows up there.
 - **Tombs of Amascut prayers** (phase 18): if upstream models Akkha's or the P2 Wardens' protection prayers, drop
   `src/lib/raids/toa/prayers.ts`, its two hooks and the phase registrations, and point `src/lib/raids/toa/targets.ts` /
   `time.ts` at upstream's phase names. The ToA hp / defence-roll scaling, floors and item effects are upstream's

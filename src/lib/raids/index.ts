@@ -6,6 +6,7 @@ import {
 import { RaidBase } from '@/lib/raids/base';
 import { FRACTURED_ARCHIVE_RAID } from '@/lib/raids/fracturedArchive';
 import { TOMBS_OF_AMASCUT_RAID } from '@/lib/raids/tombsOfAmascut';
+import { CHAMBERS_OF_XERIC_RAID } from '@/lib/raids/chambersOfXeric';
 
 export * from '@/lib/raids/types';
 export {
@@ -16,7 +17,7 @@ export type { RaidBase } from '@/lib/raids/base';
 /**
  * Phase 18: per-raid configuration. Search / Plan / Routes (Encounters) / Summary are raid-independent code driven by
  * one of these (the raid is `assumptions.raid`; undefined = the Fractured Archive). Tabs at the top of /best-setup
- * list `RAIDS` in order (CoX and ToB come in later phases).
+ * list `RAIDS` in order (phase 19: + Chambers of Xeric; ToB comes later).
  *
  * `RaidBase` (src/lib/raids/base.ts) holds what the pure modules need: targets, party-size range, monster inputs,
  * scaling inputs (each with its own get / set), default assumptions, presets, search pool, whether boss hp scales with
@@ -33,6 +34,8 @@ export interface RaidConfig extends RaidBase {
   shortName: string;
   /** Show the Fractured Archive-only assumptions (Zeal, elemental fragments). */
   raidOnlyAssumptions: boolean;
+  /** Phase 19: the assumptions box's line about where the presets come from (default: the Fractured Archive's). */
+  presetsNote?: string;
   time: RaidTimeModel;
   defaultTimeSettings: TimeSettings;
   timeSettingFields: TimeSettingField[];
@@ -49,9 +52,9 @@ export interface RaidConfig extends RaidBase {
   planNote?: string;
 }
 
-export { FRACTURED_ARCHIVE_RAID, TOMBS_OF_AMASCUT_RAID };
+export { CHAMBERS_OF_XERIC_RAID, FRACTURED_ARCHIVE_RAID, TOMBS_OF_AMASCUT_RAID };
 
-export const RAIDS: RaidConfig[] = [FRACTURED_ARCHIVE_RAID, TOMBS_OF_AMASCUT_RAID];
+export const RAIDS: RaidConfig[] = [FRACTURED_ARCHIVE_RAID, TOMBS_OF_AMASCUT_RAID, CHAMBERS_OF_XERIC_RAID];
 
 export const raidConfig = (id: RaidId | undefined): RaidConfig => RAIDS.find((r) => r.id === (id ?? DEFAULT_RAID)) ?? FRACTURED_ARCHIVE_RAID;
 

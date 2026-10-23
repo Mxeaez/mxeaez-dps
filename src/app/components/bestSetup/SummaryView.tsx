@@ -166,7 +166,7 @@ const SummaryView: React.FC<{ assumptions: BestSetupAssumptions, targets?: BestS
       )}
       {error && <div className="text-red-600 text-xs">{`Error: ${error}`}</div>}
       <div className="text-xs text-gray-500 dark:text-gray-400" data-testid="summary-scaling">
-        {`${raidOf(assumptions).scalingInputs.map((d) => `${d.label} ${d.get(assumptions)}`).join(' · ')} · hp as scaled for these · ${teamTimeLabel(teamDpsMultiplier(assumptions))}`}
+        {`${raidOf(assumptions).scalingInputs.map((d) => (d.kind === 'bool' ? `${d.get(assumptions) ? '' : 'no '}${d.label}` : `${d.label} ${d.get(assumptions)}`)).join(' · ')} · hp as scaled for these · ${teamTimeLabel(teamDpsMultiplier(assumptions))}`}
       </div>
       <div className="overflow-x-auto max-w-[100vw]">
         <table className="w-full text-sm" data-testid="summary">

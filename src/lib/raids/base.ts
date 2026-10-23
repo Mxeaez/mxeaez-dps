@@ -5,11 +5,17 @@ import {
 import { SEARCH_POOL, StylePool } from '@/lib/fracturedArchive/searchCandidates';
 import { BEST_SETUP_TARGETS } from '@/lib/fracturedArchive/targets';
 import {
-  BestSetupTarget, DEFAULT_RAID, DEFAULT_TOA_INPUTS, RaidId, ScalingInputDef, TOA_PATHS,
+  BestSetupTarget, DEFAULT_COX_INPUTS, DEFAULT_RAID, DEFAULT_TOA_INPUTS, RaidId, ScalingInputDef, TOA_PATHS,
 } from '@/lib/raids/types';
 import { TOA_TARGETS } from '@/lib/raids/toa/targets';
 import { TOA_DEFAULT_ASSUMPTIONS, TOA_PRESETS } from '@/lib/raids/toa/presets';
 import { TOA_SEARCH_POOL } from '@/lib/raids/toa/searchPool';
+import { COX_TARGETS } from '@/lib/raids/cox/targets';
+import { COX_DEFAULT_ASSUMPTIONS, COX_PRESETS } from '@/lib/raids/cox/presets';
+import { COX_SEARCH_POOL } from '@/lib/raids/cox/searchPool';
+import {
+  COX_MAX_COMBAT_LEVEL, COX_MAX_HP_LEVEL, COX_MAX_PARTY, COX_MIN_PARTY, COX_MINING_LEVEL,
+} from '@/lib/raids/cox/constants';
 
 /**
  * Phase 18: the per-raid rules the pure best-setup modules need (bestSetup.ts, search.ts, raidTime.ts, planner.ts look
@@ -104,7 +110,50 @@ export const TOMBS_OF_AMASCUT_BASE: RaidBase = {
   boostsNeedSupplies: false,
 };
 
-export const RAID_BASES: RaidBase[] = [FRACTURED_ARCHIVE_BASE, TOMBS_OF_AMASCUT_BASE];
+const coxOf = (a: BestSetupAssumptions) => a.cox || DEFAULT_COX_INPUTS;
+
+/**
+ * Phase 19: Chambers of Xeric. Upstream scales every "xerician" monster from the calculator's CoX inputs
+ * (src/lib/scaling/ChambersOfXeric.ts): party size (hp, offence and Defence), the party's best combat / hitpoints levels
+ * (all 99s here: 126 / 99, no reduction), the party's total Mining level (Guardians' hp; 99 × party size) and Challenge
+ * Mode (`isFromCoxCm`).
+ */
+export const CHAMBERS_OF_XERIC_BASE: RaidBase = {
+  id: 'cox',
+  targets: COX_TARGETS,
+  partySize: { min: COX_MIN_PARTY, max: COX_MAX_PARTY },
+  hpScalesWithParty: true,
+  monsterInputs: (_target, a) => {
+    const party = Math.min(COX_MAX_PARTY, Math.max(COX_MIN_PARTY, Math.trunc(a.partySize)));
+    return {
+      isFromCoxCm: !!coxOf(a).challengeMode,
+      partyMaxCombatLevel: COX_MAX_COMBAT_LEVEL,
+      partyMaxHpLevel: COX_MAX_HP_LEVEL,
+      partySumMiningLevel: COX_MINING_LEVEL * party,
+    };
+  },
+  scalingInputs: [
+    partyInput(COX_MIN_PARTY, COX_MAX_PARTY, 'Party size: hp and Defence scaling (upstream, verified), Mystic / shaman counts, Olm phases (+1 per 8 players) and the team spec planner. CoX allows 1-100; this tab stops at 15'),
+    {
+      key: 'coxChallengeMode',
+      label: 'Challenge Mode',
+      kind: 'bool',
+      min: 0,
+      max: 1,
+      default: 0,
+      title: 'Challenge Mode: +50% combat stats and hp (Olm keeps its hp; Tekton Defence +20% below 4 players, +35% from 4; Glowing crystal unchanged) (upstream)',
+      get: (a) => (coxOf(a).challengeMode ? 1 : 0),
+      set: (a, v) => ({ ...a, cox: { ...coxOf(a), challengeMode: v > 0 } }),
+    },
+  ],
+  defaultAssumptions: COX_DEFAULT_ASSUMPTIONS,
+  presets: COX_PRESETS,
+  searchPool: COX_SEARCH_POOL,
+  // Overloads come from the raid's own herbs
+  boostsNeedSupplies: false,
+};
+
+export const RAID_BASES: RaidBase[] = [FRACTURED_ARCHIVE_BASE, TOMBS_OF_AMASCUT_BASE, CHAMBERS_OF_XERIC_BASE];
 
 export const raidBase = (id: RaidId | undefined): RaidBase => RAID_BASES.find((r) => r.id === (id ?? DEFAULT_RAID)) ?? FRACTURED_ARCHIVE_BASE;
 

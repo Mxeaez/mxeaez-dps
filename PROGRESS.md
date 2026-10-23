@@ -3,6 +3,33 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 19 — Chambers of Xeric (2026-10-23)
+
+- **Config**: `src/lib/raids/chambersOfXeric.ts` + `src/lib/raids/cox/{constants,targets,presets,searchPool,damage,time}.ts`;
+  `CHAMBERS_OF_XERIC_BASE` in base.ts (party 1-15, CM checkbox input, calculator CoX inputs, Overload (+), +1 BGS
+  carrier). Shared code stays raid-agnostic: `ScalingInputDef.kind: 'bool'`, `BestSetupTarget.noDrains` (honoured by
+  `buildTargetMonster`), `RaidConfig.presetsNote`, `assumptions.cox` / `RaidTimeAssumptions.cox`, Team DPS × max = the
+  raid's party max, "—" for an encounter with no phases, Search shows the scaled Defence next to the hp.
+- **Scaling**: upstream's (hp and Defence scale with party; CM; verified by upstream tests). No `Chambers_of_Xeric/Scaling`
+  wiki page exists (404); cited the raid / Strategies / Challenge Mode pages instead.
+- **Mechanics**: upstream already had Tekton ranged-immune / magic ÷5, crystal / portal / Vespula immunities, Olm
+  magic / ranged mitigation, Guardians pickaxe-only + mining factor (+ hp), Ice demon ÷3. New: Olm melee ÷3 on the head
+  and right claw (wiki "66% mitigation"; +5 lines in `PlayerVsNPCCalc`), Vanguard drains reset, Olm phase rule (3 + 1 per
+  8 players), Mystic / shaman counts, encounter model with room checkboxes and heal / enrage settings. Documented only:
+  Tekton guaranteed first spec / missed-spec drains, Olm clench / heals, lux grubs, Guardian hp formula disagreement
+  (UNVERIFIED F1-F8).
+- Tests: new `src/tests/lib/raids/CoX.test.ts` (23: hp / Def at 6 normal vs CM for Tekton, Vasa, Olm with hand
+  derivations; every target's Defence scales; CoX inputs; party clamp / CM input; no floors; Guardians can't hit
+  without a pickaxe; Olm dragon; Olm melee mitigation; immunities; Vanguard no-drains; pool / presets; Olm phases at
+  1-16; room plans; settings; CM; team time; required targets; searches on Tekton / Olm head / Guardians; reduced-pool
+  planner). RaidConfig.test.ts generalised for a third raid. `yarn test` 1143 pass / 4 skipped; lint, tsc clean.
+- Playwright: new `scripts/verifyPhase19.mjs` all OK (3 raid tabs; CoX inputs; Tekton 1200 hp / Def 215 → CM 1800 /
+  290; Guardians pickaxe on top, others can't hit; Encounters 10 encounters, Olm 3 × 2 claws + head, 15.9 s; Plan 20.8
+  s, 28 cells; ToA Zebak 8000; FA Xarth 12.839 before / after). `verifyPhase18.mjs` tab check relaxed for the 3rd tab.
+  Screenshots `docs/screenshots/phase19-*.png`.
+- Headline (normal, 6-man, Team drains, all rooms): Encounters 6:25.6; Plan 6:59.9 (Inquisitor's + Scythe worn;
+  Shadow, Dragon pickaxe, Kodai, Ascension crossbows switches); same kit in CM 9:12.5 (docs/BEST_SETUP.md).
+
 ## Phase 18 fixes — review follow-ups (2026-10-23)
 
 - No raid branches in shared code: new `src/lib/raids/base.ts` (`RaidBase`: targets, party-size range, `monsterInputs`,

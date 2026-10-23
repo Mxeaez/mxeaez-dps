@@ -95,6 +95,7 @@ import { isImmuneToSpell, isOutOfMeleeReach } from '@/lib/fracturedArchive/immun
 import { getMagicResistance, hasGuaranteedMeleeAccuracy } from '@/lib/fracturedArchive/bork';
 import { getOcellusDamageDivisor, isBlockedByOcellusPrayer } from '@/lib/fracturedArchive/ocellus';
 import { isBlockedByToaPrayer } from '@/lib/raids/toa/prayers';
+import { getCoxMeleeDamageDivisor } from '@/lib/raids/cox/damage';
 import {
   DIAMOND_ASCENSION_BOLTS_E,
   getElementalFragmentBonus,
@@ -2078,6 +2079,11 @@ export default class PlayerVsNPCCalc extends BaseCalc {
     const ocellusDivisor = getOcellusDamageDivisor(this.monster);
     if (ocellusDivisor !== 1) {
       relevantEffects.push([divisionTransformer(ocellusDivisor)]);
+    }
+    // Chambers of Xeric: Olm's head / right claw mitigate melee too (wiki; upstream only divides magic / ranged)
+    const coxDivisor = getCoxMeleeDamageDivisor(this.monster, this.isUsingMeleeStyle());
+    if (coxDivisor !== 1) {
+      relevantEffects.push([divisionTransformer(coxDivisor)]);
     }
 
     const transformer: HitTransformer = (hitsplat) => {

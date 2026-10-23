@@ -1,6 +1,6 @@
 import { PlayerEquipment } from '@/types/Player';
 import Potion from '@/enums/Potion';
-import { RaidId, ToaInputs } from '@/lib/raids/types';
+import { CoxInputs, RaidId, ToaInputs } from '@/lib/raids/types';
 
 /**
  * Named setups for the "Best setup" view (phase 8, /best-setup). Plain data — edit freely.
@@ -219,6 +219,8 @@ export interface BestSetupAssumptions {
   raid?: RaidId;
   /** Phase 18: Tombs of Amascut raid / path levels (ToA targets only; party size is `partySize`). */
   toa?: ToaInputs;
+  /** Phase 19: Chambers of Xeric inputs (Challenge Mode; party size is `partySize`). */
+  cox?: CoxInputs;
   /**
    * Phase 18: players assumed to deal the user's DPS in every time display (Search TTK, Routes / Encounters, Plan,
    * Summary). Undefined = the raid's default (`teamDpsMultiplier` in src/lib/raids/base.ts: the party size where boss hp

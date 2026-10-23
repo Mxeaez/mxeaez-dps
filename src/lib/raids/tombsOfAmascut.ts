@@ -23,6 +23,7 @@ export const TOMBS_OF_AMASCUT_RAID: RaidConfig = {
   name: 'Tombs of Amascut',
   shortName: 'Tombs of Amascut',
   raidOnlyAssumptions: false,
+  presetsNote: 'Presets: the Fractured Archive list + src/lib/raids/toa/presets.ts.',
   time: TOA_TIME_MODEL,
   defaultTimeSettings: TOA_TIME_DEFAULTS,
   timeModelNote: 'Time = Σ damage ÷ (team-DPS multiplier × your DPS) per phase, with the kit\'s best loadout + style per '
