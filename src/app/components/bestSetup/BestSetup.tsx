@@ -5,14 +5,17 @@ import { PotionMap } from '@/utils';
 import Potion from '@/enums/Potion';
 import {
   BEST_SETUP_TARGETS,
+  buildTargetMonster,
   DRAIN_STATES,
   DrainStateId,
   findTarget,
   targetPhases,
 } from '@/lib/fracturedArchive/bestSetup';
 import {
-  BestSetupAssumptions, DEFAULT_ASSUMPTIONS, StyleGroup,
+  BestSetupAssumptions, DEFAULT_ASSUMPTIONS, MySpecs, StyleGroup, TeamSpecAssumptions,
 } from '@/lib/fracturedArchive/presets';
+import { ayakExpectedDrain, drainModel, specProfile } from '@/lib/fracturedArchive/specs';
+import SpecPlanPanel from '@/app/components/bestSetup/SpecPlanPanel';
 import SearchView from '@/app/components/bestSetup/SearchView';
 import SummaryView from '@/app/components/bestSetup/SummaryView';
 import { targetImageUrl } from '@/lib/fracturedArchive/loadoutIcons';
@@ -28,11 +31,19 @@ const POTION_OPTIONS = (Object.keys(PotionMap) as unknown as string[])
 
 const GROUP_PRAYER: Record<StyleGroup, string> = { melee: 'Piety', ranged: 'Rigour', magic: 'Augury' };
 
+type MyWeapon = 'elderMaul' | 'dwh' | 'bgs' | 'tonalztics';
+const MY_SPEC_WEAPONS: [MyWeapon, string][] = [['elderMaul', 'Elder maul'], ['dwh', 'DWH'], ['bgs', 'BGS'], ['tonalztics', 'Tonalztics']];
+type TeamWeapon = keyof TeamSpecAssumptions['carriers'];
+const TEAM_WEAPONS: [TeamWeapon, string][] = [['elderMaul', 'maul'], ['dwh', 'DWH'], ['bgs', 'BGS'], ['tonalztics', 'Tonalztics'], ['ayak', 'Ayak']];
+
 const AssumptionsBox: React.FC<{
   value: BestSetupAssumptions,
   onChange: (a: BestSetupAssumptions) => void,
-}> = ({ value, onChange }) => {
+  /** e.g. "≈ 40 magic def drained on Bork" for the selected boss (phase 14). */
+  ayakHint?: string,
+}> = ({ value, onChange, ayakHint }) => {
   const set = (patch: Partial<BestSetupAssumptions>) => onChange({ ...value, ...patch });
+  const carrierTotal = Object.values(value.team.carriers).reduce((t, n) => t + n, 0);
   return (
     <div className="text-xs bg-body-100 dark:bg-dark-400 border border-body-400 dark:border-dark-200 rounded p-3 flex flex-col gap-2" data-testid="assumptions">
       <div className="font-bold text-sm">Assumptions</div>
@@ -66,8 +77,85 @@ const AssumptionsBox: React.FC<{
           />
           Elemental fragments (magic)
         </label>
-        <label htmlFor="bs-party" className="flex items-center gap-1" title="HP scaling by party size is unverified (identity table): TTK is relative only">
-          Party size
+        <label htmlFor="bs-fight" className="flex items-center gap-1" title="Fight length for the spec-energy budget: 100% + 10% per 30 s (15 s with Lightbearer). Rough default until the phase 16 time model.">
+          Fight length
+          <input
+            id="bs-fight"
+            type="number"
+            className="form-control text-xs py-0.5 w-16"
+            min={0}
+            value={value.fightSeconds}
+            onChange={(e) => set({ fightSeconds: Math.max(0, Number(e.target.value) || 0) })}
+          />
+          s
+        </label>
+        <label htmlFor="bs-threshold" className="flex items-center gap-1" title="A drain plan counts as reaching the Defence floor (and is ranked there) when P(floor) is at least this">
+          Floor at P ≥
+          <input
+            id="bs-threshold"
+            type="number"
+            className="form-control text-xs py-0.5 w-14"
+            min={1}
+            max={100}
+            value={Math.round(value.floorThreshold * 100)}
+            onChange={(e) => set({ floorThreshold: Math.min(100, Math.max(1, Number(e.target.value) || 95)) / 100 })}
+          />
+          %
+        </label>
+        <button type="button" className="underline" onClick={() => onChange(DEFAULT_ASSUMPTIONS)}>Reset</button>
+      </div>
+      <div className="flex flex-wrap gap-x-3 gap-y-2 items-center" data-testid="my-specs">
+        <span className="font-semibold" title="Solo drain state: only these weapons, within your own spec energy">My specs:</span>
+        {MY_SPEC_WEAPONS.map(([k, label]) => (
+          <label key={k} htmlFor={`bs-my-${k}`} className="flex items-center gap-1">
+            <input
+              id={`bs-my-${k}`}
+              type="checkbox"
+              checked={value.mySpecs[k]}
+              onChange={(e) => set({ mySpecs: { ...value.mySpecs, [k]: e.target.checked } })}
+            />
+            {label}
+          </label>
+        ))}
+        <label htmlFor="bs-ayak" className="flex items-center gap-1" title="Eye of Ayak specs (mine): drain = specs × hit chance × expected damage on a hit, from the calculator">
+          Ayak ×
+          <input
+            id="bs-ayak"
+            type="number"
+            className="form-control text-xs py-0.5 w-12"
+            min={0}
+            max={10}
+            value={value.mySpecs.ayak}
+            onChange={(e) => set({ mySpecs: { ...value.mySpecs, ayak: Math.min(10, Math.max(0, Math.floor(Number(e.target.value) || 0))) } })}
+          />
+          {ayakHint && <span className="text-gray-500 dark:text-gray-400" data-testid="ayak-hint">{ayakHint}</span>}
+        </label>
+        <label htmlFor="bs-my-lightbearer" className="flex items-center gap-1" title="Lightbearer doubles spec regeneration (10% per 15 s)">
+          <input
+            id="bs-my-lightbearer"
+            type="checkbox"
+            checked={value.mySpecs.lightbearer}
+            onChange={(e) => set({ mySpecs: { ...value.mySpecs, lightbearer: e.target.checked } })}
+          />
+          Lightbearer
+        </label>
+        <label htmlFor="bs-priority" className="flex items-center gap-1" title="When the energy doesn't cover every spec">
+          Energy first to
+          <select
+            id="bs-priority"
+            className="form-control text-xs py-0.5"
+            value={value.mySpecs.priority}
+            onChange={(e) => set({ mySpecs: { ...value.mySpecs, priority: e.target.value as MySpecs['priority'] } })}
+          >
+            <option value="defence">Defence drains</option>
+            <option value="ayak">Ayak</option>
+          </select>
+        </label>
+      </div>
+      <div className="flex flex-wrap gap-x-3 gap-y-2 items-center" data-testid="team-specs">
+        <span className="font-semibold" title="Team drain state: the carriers' first round of specs">Team:</span>
+        <label htmlFor="bs-party" className="flex items-center gap-1" title="Team spec planner party size; also the HP scaling party size (identity table, unverified)">
+          party size
           <input
             id="bs-party"
             type="number"
@@ -78,18 +166,42 @@ const AssumptionsBox: React.FC<{
             onChange={(e) => set({ partySize: Math.min(8, Math.max(2, Number(e.target.value) || 2)) })}
           />
         </label>
-        <label htmlFor="bs-ayak" className="flex items-center gap-1" title="Eye of Ayak damage assumed for the Solo drain state (40 per spec)">
-          Solo Ayak damage
-          <input
-            id="bs-ayak"
-            type="number"
-            className="form-control text-xs py-0.5 w-16"
-            min={0}
-            value={value.soloAyakDamage}
-            onChange={(e) => set({ soloAyakDamage: Math.max(0, Number(e.target.value) || 0) })}
-          />
-        </label>
-        <button type="button" className="underline" onClick={() => onChange(DEFAULT_ASSUMPTIONS)}>Reset</button>
+        <span>carriers:</span>
+        {TEAM_WEAPONS.map(([k, label]) => (
+          <span key={k} className="flex items-center gap-1">
+            <label htmlFor={`bs-team-${k}`} className="flex items-center gap-1">
+              {label}
+              <input
+                id={`bs-team-${k}`}
+                type="number"
+                className="form-control text-xs py-0.5 w-12"
+                min={0}
+                max={8}
+                value={value.team.carriers[k]}
+                onChange={(e) => set({
+                  team: {
+                    ...value.team,
+                    carriers: { ...value.team.carriers, [k]: Math.min(8, Math.max(0, Math.floor(Number(e.target.value) || 0))) },
+                  },
+                })}
+              />
+            </label>
+            <label htmlFor={`bs-team-lb-${k}`} className="flex items-center" title={`${label} carriers wear Lightbearer`}>
+              <input
+                id={`bs-team-lb-${k}`}
+                type="checkbox"
+                checked={value.team.lightbearer[k]}
+                onChange={(e) => set({
+                  team: { ...value.team, lightbearer: { ...value.team.lightbearer, [k]: e.target.checked } },
+                })}
+              />
+              <span className="text-[10px]">LB</span>
+            </label>
+          </span>
+        ))}
+        {carrierTotal > value.partySize && (
+          <span className="text-red-600" data-testid="team-too-many">{`${carrierTotal} carriers > party size: only the first ${value.partySize} count`}</span>
+        )}
       </div>
     </div>
   );
@@ -105,6 +217,15 @@ const BestSetup: React.FC = () => {
 
   const target = useMemo(() => findTarget(targetKey), [targetKey]);
   const phases = useMemo(() => targetPhases(target), [target]);
+  const ayakHint = useMemo(() => {
+    if (mode !== 'search') return undefined;
+    const { monster } = buildTargetMonster(target, phase ?? phases[0], 'none', assumptions);
+    const model = drainModel(monster, assumptions);
+    const profile = specProfile(monster, 'ayak', undefined, assumptions);
+    if (!profile.canHit) return `(can't hit ${target.label})`;
+    const drained = ayakExpectedDrain(profile, assumptions.mySpecs.ayak, model.magicDef);
+    return `≈ ${drained.toFixed(0)} magic def drained on ${target.label} (of ${model.magicDef}; ${(profile.hitChance * 100).toFixed(0)}% × ${profile.expectedDamageOnHit.toFixed(1)} per spec)`;
+  }, [mode, target, phase, phases, assumptions]);
 
   const tabClass = (active: boolean) => `px-3 py-1 rounded text-sm border ${active
     ? 'bg-orange-400 dark:bg-orange-700 text-white border-orange-500'
@@ -121,7 +242,7 @@ const BestSetup: React.FC = () => {
           </div>
         </div>
         <div className="p-4 flex flex-col gap-3 dark:text-body-200">
-          <AssumptionsBox value={assumptions} onChange={setAssumptions} />
+          <AssumptionsBox value={assumptions} onChange={setAssumptions} ayakHint={ayakHint} />
 
           {mode === 'search' && (
             <div className="flex flex-wrap gap-3 items-center">
@@ -171,6 +292,15 @@ const BestSetup: React.FC = () => {
                 ))}
               </div>
             </div>
+          )}
+
+          {mode === 'search' && (
+            <SpecPlanPanel
+              targetKey={targetKey}
+              phase={phase ?? phases[0]}
+              drain={drain}
+              assumptions={assumptions}
+            />
           )}
 
           {mode === 'search' && (

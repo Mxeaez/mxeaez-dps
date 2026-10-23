@@ -1,25 +1,27 @@
 import { Monster } from '@/types/Monster';
-import {
-  EquipmentPiece, Player, PlayerEquipment, PlayerSkills,
-} from '@/types/Player';
+import { Player } from '@/types/Player';
 import { PlayerCombatStyle } from '@/types/PlayerCombatStyle';
-import { Spellement, spells } from '@/types/Spell';
-import { Prayer } from '@/enums/Prayer';
 import { EquipmentCategory } from '@/enums/EquipmentCategory';
 import { MonsterAttribute } from '@/enums/MonsterAttribute';
 import { getMonsters, INITIAL_MONSTER_INPUTS } from '@/lib/Monsters';
-import { availableEquipment, calculateEquipmentBonusesFromGear } from '@/lib/Equipment';
 import { scaleMonster } from '@/lib/MonsterScaling';
 import PlayerVsNPCCalc from '@/lib/PlayerVsNPCCalc';
 import { MONSTER_PHASES_BY_ID } from '@/lib/constants';
-import { getCombatStylesForCategory, PotionMap } from '@/utils';
-import { DefenceReductions, describeDefenceDrains, maxDrainReductions } from '@/lib/fracturedArchive/drains';
+import { getCombatStylesForCategory } from '@/utils';
+import { DefenceReductions } from '@/lib/fracturedArchive/drains';
+import { drainModel, PlanLabel } from '@/lib/fracturedArchive/specs';
+import {
+  carriersFromCounts, describeAttempts, formatProbability, soloSpecPlan, teamSpecPlan,
+} from '@/lib/fracturedArchive/teamSpecs';
 import {
   BORK_PHASES, BORK_STUNNED_PHASE, OCELLUS_P1_PHASES, OCELLUS_P3_PHASES,
 } from '@/lib/fracturedArchive/constants';
 import {
-  BestSetupAssumptions, ItemRef, PRESETS, PresetDef, StyleGroup,
+  BestSetupAssumptions, PRESETS, PresetDef, StyleGroup,
 } from '@/lib/fracturedArchive/presets';
+import {
+  applyLoadoutToPlayer, ITEM_VERSION_PREFERENCE, potionBoosts, resolveItem, resolvePresetEquipment,
+} from '@/lib/fracturedArchive/loadout';
 
 /**
  * "Best setup" view (phase 8): evaluates the named presets (presets.ts) against every Fractured Archive boss/phase
@@ -32,29 +34,11 @@ import {
  * getDisplayHitChance()).
  */
 
-// --- items ---------------------------------------------------------------------------------------------------------
+// --- items (moved to loadout.ts in phase 14, re-exported here) ------------------------------------------------------
 
-/** When an item name has several versions, the first of these that exists is used (else the first entry). */
-export const ITEM_VERSION_PREFERENCE = ['', 'Charged', 'Normal', 'Restored', 'Undamaged', 'Unpoisoned', 'New'];
-
-export const resolveItem = (ref: ItemRef): EquipmentPiece => {
-  const [name, version] = typeof ref === 'string' ? [ref, undefined] : ref;
-  const matches = availableEquipment.filter((e) => e.name === name);
-  let item: EquipmentPiece | undefined;
-  if (version !== undefined) {
-    item = matches.find((e) => e.version === version);
-  } else {
-    item = ITEM_VERSION_PREFERENCE.map((v) => matches.find((e) => e.version === v)).find((e) => e) || matches[0];
-  }
-  if (!item) {
-    throw new Error(`Best setup: no item named '${name}'${version !== undefined ? ` (version '${version}')` : ''} in equipment.json`);
-  }
-  return item;
+export {
+  ITEM_VERSION_PREFERENCE, resolveItem, resolvePresetEquipment, potionBoosts, applyLoadoutToPlayer,
 };
-
-export const resolvePresetEquipment = (preset: PresetDef): Partial<PlayerEquipment> => Object.fromEntries(
-  Object.entries(preset.equipment).map(([slot, ref]) => [slot, resolveItem(ref as ItemRef)]),
-);
 
 // --- targets -------------------------------------------------------------------------------------------------------
 
@@ -156,26 +140,30 @@ export const DRAIN_STATES: { id: DrainStateId, label: string, description: strin
   {
     id: 'solo',
     label: 'Solo',
-    description: 'Defence to the floor with Elder maul (+ Tonalztics hits on uncapped bosses; Tonalztics / Accursed '
-      + 'sceptre only where melee cannot hit, e.g. flying Archive Guardian), Eye of Ayak damage as set in the '
-      + 'assumptions (default 80 ≈ 2 specs), capped at the magic defence bonus',
+    description: 'My specs within my own spec energy (100% + 10% per 30 s of the fight length, 15 s with Lightbearer), '
+      + 'with the weapons ticked under "My specs"; hit chances from the calculator. Ranked at the Defence floor if '
+      + 'P(floor) ≥ the threshold, else at the expected Defence (rounded up); Ayak = specs × expected damage',
   },
   {
     id: 'team',
     label: 'Team',
-    description: 'Defence as in Solo, Eye of Ayak to 0 magic defence however many specs that takes (the drain line '
-      + 'shows the count at 40 damage per spec, e.g. 8 on Bork); assumes the team has the specs to spare',
+    description: 'The team\'s carriers each spec twice at the start (first round); ranked at the Defence floor if '
+      + 'P(floor from the first round) ≥ the threshold, else at the expected Defence (rounded up); Ayak: magic def 0 '
+      + 'if P(0) ≥ the threshold, else bonus − expected drain',
   },
 ];
-
-/** Average Eye of Ayak damage per successful spec used for the spec counts shown (as in docs/DATA_SOURCES.md). */
-export const AYAK_DAMAGE_PER_SPEC = 40;
 
 export interface DrainState {
   id: DrainStateId;
   reductions: DefenceReductions;
-  /** e.g. "2× Elder maul, 2× Ayak (80 dmg)". */
+  /** Short line for tables, e.g. "2× Elder maul (P floor 59%)". */
   specs: string;
+  /** Full plan text (phase 14), e.g. "2× Elder maul → expected Def 191, P(Def 180) 59% → ranked at Def 195; ...". */
+  plan: string;
+  /** P(Defence floor) of the plan (undefined for None). */
+  pFloor?: number;
+  /** Energy label of the plan (Solo: of the full plan the carried weapons need). */
+  label?: PlanLabel;
   defAfter: number;
   magicDefAfter: number;
 }
@@ -186,36 +174,59 @@ const withInputs = (m: Monster, inputs: Partial<Monster['inputs']>): Monster => 
 });
 
 /**
- * e.g. "2× Elder maul, 2× Ayak (80 dmg)" (Solo) or "4× Tonalztics hits (2 specs), Ayak to 0 ≈ 4 specs (130 dmg at
- * 40/spec)" (Team: the Ayak spec count is shown so a big one, 8 on Bork / 10 on The Smorks, is visible).
+ * Phase 14: Solo = `soloSpecPlan` (the user's carried weapons within their own energy budget), Team =
+ * `teamSpecPlan` (the carriers' first round). Both rank at the floor if P(floor) ≥ `floorThreshold`, else at the
+ * expected Defence rounded up to a reachable state; see teamSpecs.ts. The calculator's Max-drain buttons (drains.ts)
+ * are unchanged.
  */
-const describeSpecs = (r: DefenceReductions, ayakToZero: boolean): string => {
-  const parts: string[] = [];
-  const hasDefenceDrains = r.accursed || r.elderMaul || r.dwh || r.tonalztic || r.bgs;
-  if (hasDefenceDrains) parts.push(describeDefenceDrains(r));
-  if (r.ayak) {
-    const n = Math.ceil(r.ayak / AYAK_DAMAGE_PER_SPEC);
-    parts.push(ayakToZero
-      ? `Ayak to 0 ≈ ${n} spec${n === 1 ? '' : 's'} (${r.ayak} dmg at ${AYAK_DAMAGE_PER_SPEC}/spec)`
-      : `${n}× Ayak (${r.ayak} dmg)`);
-  }
-  return parts.length ? parts.join(', ') : 'no specs';
-};
-
 export const drainStateFor = (m: Monster, id: DrainStateId, assumptions: BestSetupAssumptions): DrainState => {
   let reductions: DefenceReductions = { ...INITIAL_MONSTER_INPUTS.defenceReductions };
+  let specs = 'no specs';
+  let plan = 'No drains';
+  let pFloor: number | undefined;
+  let label: PlanLabel | undefined;
   if (id !== 'none') {
-    const plan = maxDrainReductions(m, { weapon: 'elderMaul', ayak: true });
-    reductions = plan.reductions;
+    const model = drainModel(m, assumptions);
+    const threshold = assumptions.floorThreshold;
     if (id === 'solo') {
-      reductions.ayak = Math.min(Math.max(0, assumptions.soloAyakDamage), plan.magicDefBefore);
+      const { mySpecs } = assumptions;
+      const p = soloSpecPlan(model, {
+        carried: {
+          elderMaul: mySpecs.elderMaul, dwh: mySpecs.dwh, tonalztics: mySpecs.tonalztics, bgs: mySpecs.bgs,
+        },
+        ayakSpecs: mySpecs.ayak,
+        lightbearer: mySpecs.lightbearer,
+        fightSeconds: assumptions.fightSeconds,
+        priority: mySpecs.priority,
+        threshold,
+      });
+      reductions = p.reductions;
+      pFloor = p.defence.pFloor;
+      label = p.needed.label;
+      plan = `Solo: ${p.text}`;
+      specs = `${describeAttempts([...p.attempts, ...Array(p.ayakAttempts).fill('ayak')])} (P floor ${formatProbability(pFloor)}, ${label})`;
+    } else {
+      const p = teamSpecPlan(model, {
+        partySize: assumptions.partySize,
+        carriers: carriersFromCounts(assumptions.team.carriers, assumptions.team.lightbearer),
+        fightSeconds: assumptions.fightSeconds,
+        threshold,
+      });
+      reductions = p.reductions;
+      pFloor = p.firstRound.defence.pFloor;
+      label = p.label;
+      plan = `Team (${assumptions.partySize}): ${p.text}`;
+      specs = `first round ${describeAttempts(p.firstRound.attempts)} (P floor ${formatProbability(pFloor)})`;
     }
   }
   const scaled = scaleMonster(withInputs(m, { defenceReductions: reductions }));
   return {
     id,
     reductions,
-    specs: describeSpecs(reductions, id === 'team'),
+    specs,
+    plan,
+    pFloor,
+    label,
     defAfter: scaled.skills.def,
     magicDefAfter: scaled.defensive.magic,
   };
@@ -248,30 +259,6 @@ export const buildTargetMonster = (
 
 // --- players -------------------------------------------------------------------------------------------------------
 
-const PRAYERS: Record<StyleGroup, Prayer> = {
-  melee: Prayer.PIETY,
-  ranged: Prayer.RIGOUR,
-  magic: Prayer.AUGURY,
-};
-
-const ALL_ELEMENTS: Spellement[] = ['air', 'water', 'earth', 'fire'];
-
-/** Same as the store's recomputeBoosts: for each skill, the highest boost of the active potions. */
-export const potionBoosts = (skills: PlayerSkills, potions: Player['buffs']['potions']): Partial<PlayerSkills> => {
-  const boosts: Partial<PlayerSkills> = {
-    atk: 0, def: 0, magic: 0, prayer: 0, ranged: 0, str: 0, mining: 0, herblore: 0,
-  };
-  for (const p of potions) {
-    const result = PotionMap[p].calculateFn(skills);
-    for (const [k, v] of Object.entries(result)) {
-      if ((v as number) > (boosts[k as keyof PlayerSkills] ?? 0)) {
-        boosts[k as keyof PlayerSkills] = v as number;
-      }
-    }
-  }
-  return boosts;
-};
-
 export const NON_CANDIDATE_STANCES = ['Defensive', 'Defensive Autocast', 'Manual Cast'];
 
 /** The combat styles a preset tries (deduplicated by name + stance). */
@@ -284,46 +271,6 @@ export const presetStyles = (preset: PresetDef): PlayerCombatStyle[] => {
 };
 
 export const presetSpells = (preset: PresetDef): (string | null)[] => (preset.spells?.length ? preset.spells : [null]);
-
-/**
- * {@link applyPresetToPlayer} with already-resolved equipment (used by the gear search, phase 9, which resolves its
- * pool once). `equipment` is merged over the base player's equipment.
- */
-export const applyLoadoutToPlayer = (
-  base: Player,
-  name: string,
-  group: StyleGroup,
-  equipment: Partial<PlayerEquipment>,
-  style: PlayerCombatStyle,
-  spellName: string | null,
-  monster: Monster,
-  assumptions: BestSetupAssumptions,
-): Player => {
-  const potion = assumptions.potions[group];
-  const prayer = group === 'melee' && assumptions.useZeal ? Prayer.ZEAL : PRAYERS[group];
-  const spell = spellName ? spells.find((s) => s.name === spellName) : null;
-  if (spellName && !spell) {
-    throw new Error(`Best setup: no spell named '${spellName}'`);
-  }
-
-  const player: Player = {
-    ...base,
-    name,
-    equipment: { ...base.equipment, ...equipment },
-    style,
-    spell: spell || null,
-    prayers: [prayer],
-    buffs: {
-      ...base.buffs,
-      potions: [potion],
-      elementalFragments: group === 'magic' && assumptions.elementalFragments
-        ? Object.fromEntries(ALL_ELEMENTS.map((e) => [e, true]))
-        : {},
-    },
-  };
-  player.boosts = { ...player.boosts, ...potionBoosts(player.skills, player.buffs.potions) };
-  return { ...player, ...calculateEquipmentBonusesFromGear(player, monster) };
-};
 
 /**
  * Applies a preset to a base player (pass `generateEmptyPlayer()` from '@/state'; taken as a parameter so this module

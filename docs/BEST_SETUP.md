@@ -1,4 +1,4 @@
-# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13)
+# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14)
 
 `/best-setup` (dev: http://localhost:3001/osrs-dps/best-setup; "Best setup" button in the top bar, "Calculator" leads
 back). Tabs, in order: **Search** (the default, phase 9/12, see the end of this file) searches a pool of end-game items
@@ -47,6 +47,8 @@ skipped by the deploy).
 | `src/lib/fracturedArchive/presets.ts` | The presets (plain data) and the default assumptions. **Edit this to change setups.** |
 | `src/lib/fracturedArchive/bestSetup.ts` | Pure computation (no React): item lookup, targets, drain states, `applyPresetToPlayer`, `evaluateLoadout`, `evaluatePreset`, `computeBestSetup`. Phase 9 should reuse `evaluateLoadout` / `buildTargetMonster`. |
 | `src/app/best-setup/page.tsx`, `src/app/components/bestSetup/BestSetup.tsx` | The page (tabs, assumptions, boss / phase / drain selectors). |
+| `src/lib/fracturedArchive/specs.ts`, `teamSpecs.ts` | Phase 14: spec mechanics / hit chances per weapon and energy budget; exact solo / team planners and the carrier recommendation (pure). `loadout.ts`: player assembly split out of bestSetup.ts (re-exported). |
+| `src/app/components/bestSetup/SpecPlanPanel.tsx` | Phase 14: plan text, P(floor) and carrier table under the selectors. |
 | `src/app/components/bestSetup/SummaryView.tsx` | Summary tab (phase 13): sequential searches, session cache, Cancel / Continue. |
 | `src/tests/lib/fracturedArchive/Presets.test.ts` | Item names resolve, players are valid, the view's numbers equal a direct `PlayerVsNPCCalc`, ranking order, drain spec counts. |
 | `scripts/verifyBestSetup.mjs` | Playwright check of the Summary tab since phase 13 (51 cells, Cancel / Continue, cache on tab switch, icons, load a cell; `docs/screenshots/phase13-summary.png`). |
@@ -68,37 +70,58 @@ The view tries every listed style (and spell) per preset and shows the one with 
 - Prayers: Piety / Rigour / Augury; "Zeal instead of Piety" switches melee to the raid prayer.
 - Elemental fragments: on for magic presets (all four elements, +2 base max hit to elemental spells). Only the Kodai
   preset casts spells, so only it is affected.
-- Party size 2 (HP scaling is an identity table, see caveats).
-- Solo Ayak damage 80.
+- **Fight length** 90 s (phase 14): the spec-energy budget's fight length, one rough value for every boss until the
+  phase 16 time model replaces it. **Floor at P ≥** 95%: when a drain plan counts as reaching the floor.
+- **My specs** (phase 14, the Solo drain state): `[x] Elder maul [ ] DWH [ ] BGS [ ] Tonalztics`, `Ayak × 2` (with
+  "≈ X magic def drained on <boss>" next to it = specs × hit chance × expected damage on a hit, from the calculator),
+  `[ ] Lightbearer`, "Energy first to: Defence drains / Ayak".
+- **Team** (phase 14, the Team drain state): party size 6 (also the HP-scaling party size, an identity table), carriers
+  per weapon (default maul 2, DWH 0, BGS 0, Tonalztics 2, Ayak 1), "LB" = that weapon's carriers wear Lightbearer. Carriers beyond the
+  party size are ignored (warned in red).
 
 The assumptions are kept in page state only (reset on reload). Change the defaults in `presets.ts`.
 
-## Drain states
+## Drain states (phase 14: spec & drain model)
 
 | State | Defence | Magic defence bonus |
 |---|---|---|
 | None | undrained | undrained |
-| Solo | floor via Elder maul, `maxDrainReductions(m, { weapon: 'elderMaul' })` — + Tonalztics hits for uncapped bosses (Smorks, Dreadnoth, Jelly, The Blade); where melee can't hit, the cheapest plan with weapons that can (phase 13, below) | Eye of Ayak damage = "Solo Ayak damage" (80 ≈ 2 specs), capped at the boss's magic defence bonus |
-| Team | same as Solo | Eye of Ayak to 0, however many specs that takes |
+| Solo | my ticked weapons within **my** spec energy: `soloSpecPlan` | my Ayak specs that fit in the energy left: specs × expected damage per spec |
+| Team | the carriers' **first round** (each specs twice from 100% energy): `teamSpecPlan` | the Ayak carriers' first round |
 
-The specs used are shown above the table, e.g. "2× Elder maul, 2× Ayak (80 dmg) → Defence 156, Magic def bonus 50".
-Ayak spec counts assume 40 damage per successful spec (as in `docs/DATA_SOURCES.md`, *Drain presets*; the Solo
-default of 80 damage = 2 such specs); misses aren't modelled. Solo and Team only differ for magic.
+**Which Defence the DPS ranking uses** (both Solo and Team): the floor if P(floor) ≥ the threshold (95%), otherwise
+the reachable Defence nearest to the expected Defence (`rankedDefence` in `teamSpecs.ts`). Magic defence: 0 if
+P(magic def 0) ≥ the threshold, otherwise bonus − expected drain (rounded down). The state is written into
+`defenceReductions` as landed counts (maul / DWH specs, Tonalztics hits, BGS damage on Defence, Ayak damage) that
+reproduce that Defence exactly in the calculator, so "Load into calculator" shows the same numbers. The plan text and
+P(floor) are shown under the selectors ("Solo drains: …", "P(Defence floor …) …"), and the Search line keeps the short
+form (e.g. "first round 4× Elder maul + 4× Tonalztics + 2× Ayak (P floor 99.5%)").
 
-**Phase 13: weapons that can't hit.** Drain plans only use a weapon whose style can hit the boss in the selected
-version / phase (`src/lib/fracturedArchive/hittable.ts`, which asks upstream's `isImmune`). Archive Guardian (Flying)
-can't be meleed, so Solo / Team use the wiki table's 4 Tonalztics hits (2 specs) → Defence 156; Ocellus P1 "Walking"
-and P3 "Deflect Melee" phases use Tonalztics hits; P3 "Deflect Ranged" never adds Tonalztics. The drain line shows the
-actual plan, e.g. "4× Tonalztics hits (2 specs), 2× Ayak (80 dmg) → Defence 156". Per-boss table:
-`docs/DATA_SOURCES.md`, *Drain presets*.
+- **Hit chances** come from upstream's spec calc (`specs.ts`): a 99s player with the weapon, the Phase 8 preset armour of
+  its style (Inquisitor's / Masori (f) / Ancestral), prayer + potion from the assumptions, `getSpecCalc()` →
+  `getDistribution()`. Against the undrained boss, so follow-up specs are modelled slightly less accurate than they are.
+  Mechanics per weapon: `docs/DATA_SOURCES.md`, *Spec mechanics*.
+- **Energy budget**: `energyBudget({ seconds, lightbearer })` = 100 + 10 × floor(seconds / 30), or per 15 s with
+  Lightbearer (wiki). All drain specs cost 50%, so 90 s = 130% = 2 specs (Lightbearer 160% = 3). 100% at the start of
+  every boss is assumed (unverified).
+- **Solo** (`soloSpecPlan`): Defence first (default): the fewest attempts whose best combination of the carried
+  weapons reaches P(floor) ≥ 95%, else every attempt the budget pays for; leftover energy goes to Ayak (up to the
+  count). It never spends more than the budget (tested). The plan's label is that of the *full* plan (attempts for
+  95% + Ayak count): `solo` (fits 100% + regen), `solo+lightbearer` or `team-only`. With the defaults (maul + 2 Ayak,
+  90 s) every boss is `team-only`: 2 maul attempts use the 130% and the Ayak specs don't fit — the line says so. A floor
+  the carried weapons can't reach is shown as a partial drain, e.g. The Smorks: "2× Elder maul → expected Def 145
+  (floor 0 not reachable; best case Def 93) → ranked at Def 143".
+- **Team** (`teamSpecPlan`): exact P(floor from the first round), expected Defence, Ayak P(0); the "whole fight" part
+  adds each carrier's later attempts (regen, Lightbearer) and gives the expected attempts to reach the floor.
+- **Carrier table** (`recommendCarriers`, under the plan): P(floor from the first round) for 1..party-size carriers of
+  each weapon, Ayak P(magic def 0), and the fewest carriers (one weapon, or a hammer + Tonalztics/BGS pair) reaching
+  95%, e.g. "6-man Bork: 1 Elder maul → 59%, 2 Elder maul → 96%"; "6-man The Smorks: 4 Tonalztics → 84%, 5 Tonalztics
+  → 98%" (hammers alone never reach floor 0).
 
-**Team Ayak spec count.** Team still assumes Ayak to 0 regardless of cost (no behaviour change), but the drain line now
-states the count, e.g. "Ayak to 0 ≈ 4 specs (130 dmg at 40/spec)" on Archive Guardian; it is 8 on Bork (+300) and 10 on
-The Smorks (+400), so treat Team there as "the whole team specs Ayak".
-
-**DPS column.** DPS values in the Search and Summary tables (and in the Per boss table until it was removed) use the site's accent orange
-(`text-orange-400 dark:text-orange-300`, the `orange` tokens in `tailwind.config.js`, as on the active loadout tab)
-and semi-bold (`src/app/components/bestSetup/styles.ts`).
+Phase 13 rule kept: weapons that can't hit the boss in the selected version / phase have hit chance 0 (via upstream's
+`isImmune`, `hittable.ts`), e.g. Archive Guardian (Flying) Solo with the default specs has no Defence drain ("Elder maul
+can't hit here"), Team uses the Tonalztics carriers. The calculator's **Max drain** buttons (`drains.ts`) are unchanged
+(all specs landing).
 
 ## How the numbers are computed
 
@@ -119,6 +142,10 @@ Rows that deal no damage are greyed with the reason (e.g. melee on Archive Guard
 reach it"; Ocellus P1 walking / P3 deflect: "Ocellus is praying against this combat style.").
 
 ## Results snapshot (default assumptions, 2026-10-22)
+
+**Phase 14 note:** this snapshot and the Search results table below predate the spec model; Solo / Team now use the
+spec planners (e.g. Bork Team top = Inquisitor's + Obligator 10.524 at Def 180, The Smorks Solo is ranked at Def 143).
+Re-run the Summary tab for current numbers.
 
 Best preset per boss/phase (default option), DPS under None / Solo / Team:
 
@@ -156,7 +183,7 @@ the ones that could change a winner.
 - **Zorya's tome**: base max hit 18 flat; the spec and its three empowered follow-up attacks are not modelled, so the
   tome is undervalued.
 - Ascension (e) bolts use the normal diamond/onyx proc numbers (unverified).
-- Specs are counted as successful; no fight simulation (spec timing, misses, boss healing) — see ROADMAP decisions.
+- Phase 14: spec misses are modelled (exact probabilities); there is still no fight simulation (spec timing, boss healing), and the fight length is one rough setting.
 
 # Search tab (phase 9)
 

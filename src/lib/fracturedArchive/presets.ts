@@ -193,10 +193,38 @@ export interface BestSetupAssumptions {
   useZeal: boolean;
   /** Magic presets have all four elemental fragments unlocked (+2 base max hit for elemental spells). */
   elementalFragments: boolean;
-  /** Party size (2-8); HP scaling is currently an identity table (unverified), so this only matters once it's filled. */
+  /**
+   * Party size (2-8): the team spec planner's party (phase 14; default 6) and the HP scaling (currently an identity
+   * table, unverified, so it doesn't change HP yet).
+   */
   partySize: number;
-  /** Eye of Ayak damage assumed for the "Solo" drain state (capped at the boss's magic defence bonus). */
-  soloAyakDamage: number;
+  /** Phase 14: the user's own drain specs (the "Solo" drain state; specs.ts / teamSpecs.ts). */
+  mySpecs: MySpecs;
+  /** Phase 14: the team's spec carriers (the "Team" drain state). */
+  team: TeamSpecAssumptions;
+  /** Fight length in seconds for the spec-energy budget (rough default until the phase 16 time model). */
+  fightSeconds: number;
+  /** P(floor) at or above which a drain plan counts as reaching the floor (default 0.95). */
+  floorThreshold: number;
+}
+
+/** Drain weapons the user carries (phase 14). */
+export interface MySpecs {
+  elderMaul: boolean;
+  dwh: boolean;
+  bgs: boolean;
+  tonalztics: boolean;
+  /** Eye of Ayak specs (0 = none). */
+  ayak: number;
+  lightbearer: boolean;
+  /** What the spec energy goes to first when it doesn't cover everything. */
+  priority: 'defence' | 'ayak';
+}
+
+/** Team spec carriers (phase 14): carriers per weapon, and whether that weapon's carriers wear Lightbearer. */
+export interface TeamSpecAssumptions {
+  carriers: { elderMaul: number, dwh: number, bgs: number, tonalztics: number, ayak: number };
+  lightbearer: { elderMaul: boolean, dwh: boolean, bgs: boolean, tonalztics: boolean, ayak: boolean };
 }
 
 export const DEFAULT_ASSUMPTIONS: BestSetupAssumptions = {
@@ -207,6 +235,18 @@ export const DEFAULT_ASSUMPTIONS: BestSetupAssumptions = {
   },
   useZeal: false,
   elementalFragments: true,
-  partySize: 2,
-  soloAyakDamage: 80,
+  partySize: 6,
+  mySpecs: {
+    elderMaul: true, dwh: false, bgs: false, tonalztics: false, ayak: 2, lightbearer: false, priority: 'defence',
+  },
+  team: {
+    carriers: {
+      elderMaul: 2, dwh: 0, bgs: 0, tonalztics: 2, ayak: 1,
+    },
+    lightbearer: {
+      elderMaul: false, dwh: false, bgs: false, tonalztics: false, ayak: false,
+    },
+  },
+  fightSeconds: 90,
+  floorThreshold: 0.95,
 };

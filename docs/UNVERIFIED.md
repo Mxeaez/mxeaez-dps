@@ -46,6 +46,8 @@ Strategies table, the boss pages and Gearscape.
 | B7 | Archive Guardian last 30% | Same stats as the Flying version (no shield) | AG (Flying) TTK | Small | Read stats or max hits below 30% |
 | B8 | Xarth below 50% | Same stats as above 50% (one infobox) | Xarth | Small | Compare max hits above and below 50% |
 | B9 | Ocellus P2 (The Blade) attributes | None (infobox blank), so no demonbane | Emberlight / Arclight on the Blade | If it's a demon, demonbane weapons gain on P2 | Emberlight on the Blade: highest hit vs the calculator's max |
+| B10 | Spec energy at each boss (phase 14) | Full 100% at the start of every boss; +10% per 30 s (15 s with Lightbearer); fight length 90 s for every boss | Solo / Team drain plans (spec budget, labels) | Solo plans with more / less energy (e.g. 3 specs instead of 2 changes P(floor) a lot) | Note the spec bar when entering each boss room after using specs on the previous one |
+| B11 | Elder maul drain on an accurate hit that deals 0 (phase 14) | Counts (wiki says only "successful hit"); matters only under flat armour (Bork 8) | Elder maul hit chance on Bork (76.8%; lower if damage is needed) | Bork maul plans need more specs | Elder maul spec Bork; when the hitsplat is 0 (blue), read his Defence |
 
 ## (C) Cosmetic / TTK only
 

@@ -3,6 +3,41 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 14 — Spec & drain model (2026-10-23)
+
+- New `src/lib/fracturedArchive/specs.ts` (pure): `SPEC_WEAPONS` (Elder maul, DWH, BGS, Tonalztics, Eye of Ayak,
+  Accursed sceptre: energy, modifiers, drain, when it lands, wiki URL, unverified notes), `specProfile(monster, weapon,
+  player?)` → hit chance / expected damage / per-attempt outcome distribution from upstream's own spec calc
+  (`getSpecCalc().getDistribution()`, preset armour of the style, Piety/Rigour/Augury + potions, best style),
+  `drainModel`, `energyBudget` (100 + 10% per 30 s, per 15 s with Lightbearer — wiki), `planLabel`
+  (solo / solo+lightbearer / team-only), `ayakExpectedDrain`.
+- New `teamSpecs.ts` (pure, exact, no simulation): Defence-state convolution in upstream's drain order with upstream's
+  rounding / floor; each state maps back to `defenceReductions` that reproduce it; Ayak P(magic def 0);
+  `soloSpecPlan` (carried weapons within the user's budget, Defence first or Ayak first, never over budget),
+  `teamSpecPlan` (carriers' first round + whole-fight expected attempts), `recommendCarriers` (fewest carriers for
+  ≥ 95%, single weapon or hammer + finisher). Ranking rule: floor if P(floor) ≥ threshold, else the reachable Defence
+  nearest the expected Defence; Ayak: 0 if P(0) ≥ threshold, else bonus − expected drain.
+- `bestSetup.ts`: Solo / Team drain states use the planners (`DrainState.plan / pFloor / label`). Player assembly
+  moved to `loadout.ts` (re-exported) to avoid an import cycle. `presets.ts` assumptions: `soloAyakDamage` replaced by
+  `mySpecs`, `team`, `fightSeconds` (90), `floorThreshold` (0.95); party size default 2 → 6. Max-drain buttons unchanged.
+- UI: Assumptions box "My specs" (weapons, Ayak × N with "≈ X magic def drained on <boss>", Lightbearer, energy
+  priority), "Team" (party size, carriers + LB per weapon), fight length, threshold; new `SpecPlanPanel` under the
+  selectors (plan text, P(floor), carrier table).
+- Examples: 6-man Bork "1 Elder maul → 59%, 2 Elder maul → 96%"; The Smorks Solo (maul) "2× Elder maul → expected Def
+  145 (floor 0 not reachable; best case Def 93) → ranked at Def 143", 6-man Smorks "4 Tonalztics → 84%, 5 → 98%".
+  Ayak per spec: AG 73.1% × 27.0 = 19.7, Bork 75.9% × 26.5 = 20.1.
+- Tests: new `Specs.test.ts` (14: maul / Ayak hand derivations vs AG and Bork incl. Confliction re-roll and Bork magic
+  resistance, Tonalztics / BGS / can't-hit, budget, labels, Smorks partial drain, never over budget) and
+  `TeamSpecs.test.ts` (20: 0.9728 binomial, Tonalztics 0.72, BGS 3/16, Ayak ¼, expected attempts 2.464, ranking,
+  recommendation, states reproduce upstream Defence, party-size cap). Presets / Search tests updated for the new
+  drain states. `yarn test` 993 pass / 4 skipped; `yarn lint`, `tsc --noEmit` clean.
+- Playwright: new `scripts/verifyPhase14.mjs` all OK (inputs, Smorks Solo partial drain Def 143, Bork Team P 99.5% +
+  recommendation, fewer carriers → lower P, Bork Team top row = calculator 10.524 / 50); `verifyPhase13.mjs` updated
+  for the new Solo / Team lines; `verifyDrainPresets.mjs` passes unchanged. Screenshots `docs/screenshots/phase14-*.png`.
+- Unverified (UNVERIFIED.md B10/B11): spec energy full at each boss, 90 s fight length, Elder maul on an accurate 0
+  under Bork's flat armour; Tonalztics rounding (B1) unchanged. Hit chances are against the undrained boss
+  (conservative for follow-up specs). BEST_SETUP results snapshot predates phase 14.
+
 ## Phase 13 fixes — review follow-ups (2026-10-23)
 
 - Summary: assumption changes are debounced (`ASSUMPTION_DEBOUNCE_MS` = 500 ms) before the 51-search run restarts.

@@ -151,7 +151,7 @@ describe('search', () => {
 
   test.each([
     ['xarth', 'solo'],
-    ['ag-flying', 'solo'],
+    ['ag-flying', 'team'], // phase 14: Solo has no Defence drain there (maul can't hit), Shadow (not in REDUCED) wins
     ['jelly', 'solo'],
     ['ocellus-p2', 'team'],
   ] as [string, 'solo' | 'team'][])('%s (%s): top result >= best preset of the same boss/state', (targetKey, drain) => {
@@ -350,7 +350,7 @@ describe('summary searches', () => {
     expect(searchCacheKey({ ...q }, { ...DEFAULT_ASSUMPTIONS })).toBe(k);
     expect(searchCacheKey({ ...q, drain: 'team' }, DEFAULT_ASSUMPTIONS)).not.toBe(k);
     expect(searchCacheKey(q, { ...DEFAULT_ASSUMPTIONS, partySize: 5 })).not.toBe(k);
-    expect(searchCacheKey(q, { ...DEFAULT_ASSUMPTIONS, soloAyakDamage: 1 })).not.toBe(k);
+    expect(searchCacheKey(q, { ...DEFAULT_ASSUMPTIONS, mySpecs: { ...DEFAULT_ASSUMPTIONS.mySpecs, ayak: 1 } })).not.toBe(k);
     expect(searchCacheKey(q, { ...DEFAULT_ASSUMPTIONS, useZeal: !DEFAULT_ASSUMPTIONS.useZeal })).not.toBe(k);
   });
 });

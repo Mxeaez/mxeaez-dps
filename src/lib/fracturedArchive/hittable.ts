@@ -43,7 +43,7 @@ const STYLE_TYPES: Record<HitStyle, CombatStyleType[]> = {
   magic: ['magic'],
 };
 
-const minimalPlayer = (weapon: EquipmentPiece | null, style: Player['style']): Player => {
+export const minimalPlayer = (weapon: EquipmentPiece | null, style: Player['style']): Player => {
   const zero = {
     atk: 0, def: 0, hp: 0, magic: 0, prayer: 0, ranged: 0, str: 0, mining: 0, herblore: 0,
   };

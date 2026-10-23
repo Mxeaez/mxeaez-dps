@@ -47,7 +47,8 @@ const main = async () => {
   await page.waitForTimeout(500);
   let summary = (await page.locator('[data-testid="search-summary"]').innerText()).replace(/\s+/g, ' ');
   console.log(`     ${summary.slice(0, 140)}`);
-  check(summary.includes('4× Tonalztics hits (2 specs)') && summary.includes('Defence 156'), 'AG Flying Solo: Tonalztics plan → Defence 156');
+  // phase 14: Solo only uses the user's carried weapons (default Elder maul + Ayak) → no Defence drain while flying
+  check(summary.includes('Defence 260'), 'AG Flying Solo (phase 14): carried Elder maul can\'t hit → Defence 260');
   const drainLine = summary.match(/Drains: [^]*?Magic def bonus \d+/)?.[0] || '';
   check(drainLine && !drainLine.includes('Elder maul'), `AG Flying Solo: no "Elder maul" in the drain line (${drainLine})`);
   const cls = await page.locator('[data-testid="search-row"] [data-testid="dps"]').first().getAttribute('class');
@@ -67,7 +68,8 @@ const main = async () => {
   await page.locator('[data-testid="drain-team"]').click();
   await waitRows(page, 'search-row');
   summary = (await page.locator('[data-testid="search-summary"]').innerText()).replace(/\s+/g, ' ');
-  check(/Ayak to 0 ≈ \d+ specs/.test(summary), `Team shows the Ayak spec count: ${summary.match(/Ayak to 0[^,.]*\)/)?.[0]}`);
+  // phase 14: Team = the carriers' first round (probabilities: scripts/verifyPhase14.mjs)
+  check(/first round .*× Ayak/.test(summary), `Team shows the first-round specs incl. Ayak: ${summary.match(/first round[^)]*\)/)?.[0]}`);
 
   // 3. The Per boss tab is gone; the search-based Summary is checked by scripts/verifyBestSetup.mjs
   check(await page.locator('[data-testid="boss-tab"]').count() === 0, 'no "Per boss" tab');

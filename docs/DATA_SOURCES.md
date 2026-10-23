@@ -469,6 +469,52 @@ Model note: each phase is planned on its own, as if all drains were done in that
 earlier in Phase 3 carries into the last quadrant, so the "Deflect Melee" plan is only needed if nothing was drained
 before; **unverified** whether Ocellus's Defence resets between quadrants.
 
+## Spec mechanics (phase 14, 2026-10-23)
+
+Code: `src/lib/fracturedArchive/specs.ts` (`SPEC_WEAPONS`, `specProfile`, `drainModel`, `energyBudget`, `planLabel`) and
+`teamSpecs.ts` (exact planners). Wiki pages read with `?action=raw` on 2026-10-23. Hit chance, max hit and the damage
+distribution are **upstream's spec calc** (`PlayerVsNPCCalc.getSpecCalc()` → `getDistribution()`, the numbers behind
+the calculator's "Spec expected hit"), for a 99s player in the Phase 8 preset armour of the weapon's style
+(Inquisitor's / Masori (f) / Ancestral incl. Confliction gauntlets), Piety / Rigour / Augury, Super combat / Ranging /
+Saturated heart, best non-defensive style; one-handed weapons get Avernic defender / Twisted buckler / Elidinis' ward (f).
+
+| Weapon | Energy | Accuracy / damage (as upstream applies them) | Drain | Lands when | Source |
+|---|---|---|---|---|---|
+| Elder maul | 50% | +25% attack roll, crush roll; no damage modifier | current Defence −35% (rounded down), stacks | successful (accurate) hit — **unverified** whether a hit dealing 0 counts | [Elder maul](https://oldschool.runescape.wiki/w/Elder_maul#Special_attack), [Special attacks](https://oldschool.runescape.wiki/w/Special_attacks) table |
+| Dragon warhammer | 50% | +50% max hit, no accuracy bonus | current Defence −30%, stacks | the hit must deal damage (Mod Ash, cited on the page) | [Dragon warhammer](https://oldschool.runescape.wiki/w/Dragon_warhammer#Special_attack) |
+| Bandos godsword | 50% | ×2 accuracy, slash defence roll; max hit ×1.1 ×1.1 | Defence, then Str, Prayer, Att, Magic, Ranged by the damage dealt | damage > 0 (the drain is the damage) | [Bandos godsword](https://oldschool.runescape.wiki/w/Bandos_godsword#Special_attack) |
+| Tonalztics of Ralos (charged) | 50% | +50% accuracy; two hits of 75% max hit; on NPCs the 2nd hit rolls against the Defence lowered by the 1st (upstream models this) | Defence − Magic level / 8 **per hit that deals damage** (0, 1 or 2 per spec) | "If damage is dealt", per hit | [Tonalztics of Ralos](https://oldschool.runescape.wiki/w/Tonalztics_of_Ralos#Special_attack), [Successful hit](https://oldschool.runescape.wiki/w/Successful_hit) |
+| Eye of Ayak | 50% | ×2 accuracy, +30% max hit, 5-tick attack | Magic defence **bonus** − damage dealt, not below 0, not restored | "If the attack deals damage" | [Eye of Ayak](https://oldschool.runescape.wiki/w/Eye_of_Ayak#Special_attack) |
+| Accursed sceptre | 50% | +50% accuracy and max hit | Defence and Magic −15%, doesn't stack (phase 13 fallback only; not in the planners) | successful hit "regardless of the damage" (Mod Ash) | [Accursed sceptre](https://oldschool.runescape.wiki/w/Accursed_sceptre#Special_attack) |
+
+- **Accurate 0s**: upstream raises an accurate 0 to 1 ([Successful hit](https://oldschool.runescape.wiki/w/Successful_hit):
+  "If the roll is from a player, then 0s are pushed up to 1"), so "lands on damage" only differs from "lands on an
+  accurate roll" under a flat damage reduction applied afterwards — Bork's flat armour 8 (melee / ranged) and magic
+  resistance 2. E.g. Bork DWH: accuracy 69.7%, drain lands 62.1%.
+- **Tonalztics rounding**: upstream rounds 1/8 Magic down; the wiki Strategies table matches rounding up (see *Drain
+  presets*) — still **unverified**.
+- **Energy**: 10% per 30 s ([Special attacks](https://oldschool.runescape.wiki/w/Special_attacks): "regenerates at a
+  default rate of 10% every 30 seconds"); **Lightbearer** "twice as fast at 15 seconds per 10%"
+  ([Lightbearer](https://oldschool.runescape.wiki/w/Lightbearer)); upstream's `getSpecDps` uses the same 50 / 25 ticks.
+  Budget = 100 + 10 × floor(s / 30) (or / 15). **Unverified**: that spec energy is full at the start of every
+  Fractured Archive boss (no restore mechanic checked) and the 90 s default fight length.
+- Profiles use the **undrained** boss: specs after the first drains are really a little more accurate (conservative).
+
+Hit chances and Ayak drain (default assumptions, 6-man, 2026-10-23):
+
+| Boss | Elder maul | DWH | Tonalztics (≥1 hit / hits per spec) | BGS | Ayak hit / expected damage per spec |
+|---|---|---|---|---|---|
+| Archive Guardian (Grounded) | 79.8% | 73.6% | 96.1% / 1.62 | 72.3% | 73.1% / 19.7 (max 54) |
+| Archive Guardian (Flying) | can't hit | can't hit | 94.1% / 1.54 | can't hit | 73.1% / 19.7 |
+| Bork (armour 8) | 76.8% | 62.1% | 72.6% / 0.95 | 52.7% | 75.9% / 20.1 (max 52 after magic resistance) |
+| The Smorks | 54.1% | 40.2% | 91.1% / 1.41 | 61.6% | 50.9% / 13.8 |
+| Ocellus P2 (The Blade) | 82.9% | 77.6% | 92.4% / 1.47 | 68.1% | 79.5% / 21.5 |
+
+Hand checks in `Specs.test.ts`: Elder maul spec roll = trunc(normal roll × 5/4) against (Def + 9) × (crush + 64), hit
+chance from the standard formula (AG 0.7978, Bork 0.7678); Ayak roll ×2 against (Magic + 9) × (magic def + 64) with
+the Confliction gauntlets re-roll, E[damage] = acc × (1 + 1 + … + 54) / 55 on AG, and acc × Σ max(0, max(1, d) − 2) / 55
+on Bork. Planner maths (exact binomial / convolution): `TeamSpecs.test.ts`.
+
 ## Equipment (phase 7b, 2026-10-22)
 
 Sources (all fetched 2026-10-22, wikitext via `?action=raw`): item pages
