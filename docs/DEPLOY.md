@@ -9,8 +9,10 @@ Cloudflare Pages builds it from the public GitHub repo `Mxeaez/mxeaez-dps` on ev
 `node scripts/copyCdn.mjs`, which copies `cdn/` (monster + equipment images and the data JSON) into `out/cdn/`.
 Yarn 4 does not run `prebuild`/`postbuild` hooks, so the copy is chained in the `build` script itself.
 
-- `out/` is about 210 MB / ~7,800 files (`cdn/monsters` 185 MB, `cdn/equipment` 13 MB). Pages limits: 20,000 files
-  per deployment, 25 MiB per file; the largest file is well under 1 MiB.
+- `out/` is about 210 MB / ~7,800 files (`cdn/monsters` 185 MB, `cdn/equipment` 13 MB). The largest files are
+  `out/cdn/json/equipment.json` (3.2 MB), `out/cdn/json/monsters.json` (2.5 MB) and the largest JS chunk (~2 MB).
+  Pages limits ([limits](https://developers.cloudflare.com/pages/platform/limits/)): 20,000 files per deployment,
+  25 MiB per file, 20-minute build timeout; we are well inside all three.
 - Images are requested from `/cdn/...` on our own domain (`NEXT_PUBLIC_CDN_URL=/cdn`), so new monsters such as the
   Fractured Archive bosses have images without depending on the OSRS Wiki's bucket.
 - Routes: `out/index.html` (`/`), `out/best-setup.html` (`/best-setup`), `out/404.html`. Pages serves
@@ -36,8 +38,14 @@ RuneLite (WikiSync) discovery only runs when the RuneLite button is clicked, as 
 ## Node version
 
 `.node-version` and `.nvmrc` pin **Node 22.23.4** (current 22.x LTS). Pages' v3 build image reads `.node-version`;
-the `NODE_VERSION` variable below makes it explicit. Verified locally: `corepack enable && yarn install --immutable
-&& yarn build` passes on Node 22.23.4 with the committed `yarn.lock` (no lockfile changes). Node 24 also works.
+the `NODE_VERSION` variable below makes it explicit (it accepts any Node version; see the
+[build image docs](https://developers.cloudflare.com/pages/configuration/build-image/)). Verified locally:
+`yarn install --immutable && yarn build` passes on Node 22.23.4 with the committed `yarn.lock` (no lockfile
+changes). Node 24 also works.
+
+The v3 build image does not read `package.json`'s `packageManager` field, so the build command runs the Yarn
+release committed in `.yarn/releases` directly. `.yarnrc.yml`'s `yarnPath` would also hand any global Yarn off to
+the vendored 4.9.2, so no `corepack` step is needed.
 
 ## One-time setup in the Cloudflare dashboard
 
@@ -46,17 +54,18 @@ the `NODE_VERSION` variable below makes it explicit. Verified locally: `corepack
    - Project name: `mxeaez-dps` (gives `mxeaez-dps.pages.dev`)
    - Production branch: `main-mxeaez` (or whichever branch is pushed as the default)
    - Framework preset: **None** (do not pick "Next.js", that one targets the server runtime)
-   - Build command: `corepack enable && yarn install --immutable && yarn build`
+   - Build command: `node .yarn/releases/yarn-4.9.2.cjs install --immutable && node .yarn/releases/yarn-4.9.2.cjs build`
    - Build output directory: `out`
    - Root directory: *(leave empty)*
    - Environment variables (Production, and Preview if you want previews to build):
      - `NODE_VERSION` = `22.23.4`
-     - `SKIP_DEPENDENCY_INSTALL` = `1` (the build command installs; avoids Pages' own install step running first)
+     - `SKIP_DEPENDENCY_INSTALL` = `1` (accepts `1` or `true`; the build command installs, so Pages' own
+       install step is skipped — see the [build image docs](https://developers.cloudflare.com/pages/configuration/build-image/))
 3. **Save and Deploy**, wait for the first build (~3–5 min), open `https://mxeaez-dps.pages.dev`.
+4. In the project's **Settings → Build**, confirm **Build system version** is **v3** (new projects default to it;
+   switch and redeploy if it shows an older version).
 
-If `corepack enable` fails on the build image, use this build command instead; it runs the Yarn release committed
-in `.yarn/releases` directly and needs no global Yarn:
-`node .yarn/releases/yarn-4.9.2.cjs install --immutable && node .yarn/releases/yarn-4.9.2.cjs build`
+Alternative build command (equivalent, via corepack): `corepack enable && yarn install --immutable && yarn build`.
 
 If the install complains about immutable installs (lockfile out of date), run `yarn install` locally, commit
 `yarn.lock`, and push; do not switch `--immutable` off on CI.
@@ -90,4 +99,5 @@ node scripts/verifyRootDeploy.mjs http://127.0.0.1:8788/
 ```
 
 `verifyRootDeploy.mjs` checks the Archive Guardian image comes from `/cdn` with HTTP 200, a DPS renders, the Share
-notice, `/best-setup` resolves and a Xarth gear search completes, and saves `docs/screenshots/phase10-root-*.png`.
+notice, `/best-setup` resolves and a Xarth gear search completes. Screenshots go to the OS temp dir; pass
+`--screenshots docs/screenshots` to refresh the committed `phase10-root-*.png`.

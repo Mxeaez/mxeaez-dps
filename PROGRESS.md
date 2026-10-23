@@ -3,6 +3,15 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 10 fixes — review follow-ups (2026-10-22)
+
+- DEPLOY.md: correct largest-file sizes (equipment.json 3.2 MB, monsters.json 2.5 MB, JS chunk ~2 MB); primary build
+  command runs the vendored Yarn directly (corepack variant kept as alternative); step to confirm build system v3;
+  links to Cloudflare's build-image and limits docs.
+- Jest `src/tests/lib/DeployEnv.test.ts`: `getCdnImage` with/without `NEXT_PUBLIC_CDN_URL`, `SHORTLINKS_DISABLED`.
+- `verifyRootDeploy.mjs` writes screenshots to the OS temp dir unless `--screenshots <dir>` is passed.
+- `yarn test` 927 pass / 4 skipped; lint and tsc clean.
+
 ## Phase 10 — Deploy preparation for Cloudflare Pages (2026-10-22)
 
 - `.env.production` targets https://dps.mxeaez.com at the root (empty base path), `NEXT_PUBLIC_CDN_URL=/cdn`,
