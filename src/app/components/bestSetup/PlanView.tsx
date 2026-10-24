@@ -8,7 +8,7 @@ import { PlayerEquipment } from '@/types/Player';
 import Spinner from '@/app/components/Spinner';
 import EquipmentSelect from '@/app/components/player/equipment/EquipmentSelect';
 import { buildTargetMonster, DrainStateId, findTarget } from '@/lib/fracturedArchive/bestSetup';
-import { BestSetupAssumptions, StyleGroup } from '@/lib/fracturedArchive/presets';
+import { BestSetupAssumptions, StyleGroup, TeamSpecAssumptions } from '@/lib/fracturedArchive/presets';
 import {
   enumerateRoutes, formatDuration, PhaseTime,
 } from '@/lib/fracturedArchive/raidTime';
@@ -375,8 +375,10 @@ const PlanView: React.FC<{
   assumptions: BestSetupAssumptions, drain: DrainStateId, raid: RaidConfig, timeSettings?: TimeSettings, notOwned?: string[],
   /** Phase 29: the Lightbearer flag the ring policy sets (null = the user's toggle). */
   onLightbearer?: (lock: LightbearerLock | null) => void,
+  /** Phase 29 review 2: the planner's carriers after a Team plan ("Planner decides"), for Search / Summary. */
+  onCarriers?: (c: TeamSpecAssumptions['carriers']) => void,
 }> = ({
-  assumptions, drain, raid, timeSettings, notOwned: notOwnedProp, onLightbearer,
+  assumptions, drain, raid, timeSettings, notOwned: notOwnedProp, onLightbearer, onCarriers,
 }) => {
   const notOwnedKey = JSON.stringify(notOwnedProp ?? []);
   const notOwned = useMemo(() => JSON.parse(notOwnedKey) as string[], [notOwnedKey]);
@@ -535,6 +537,11 @@ const PlanView: React.FC<{
     } else onLightbearer(null);
   }, [ringPolicy, planRing, onLightbearer]);
   useEffect(() => () => onLightbearer?.(null), [onLightbearer]);
+  // phase 29 review 2: hand the planner's carriers to Search / Summary (kept after leaving the tab)
+  useEffect(() => {
+    const t = result?.specs.team;
+    if (onCarriers && t && t.mode === 'auto' && t.carriers) onCarriers(t.carriers);
+  }, [result, onCarriers]);
 
   const planned = result && result.comparison && result.planned >= 0 ? result.comparison.routes[result.planned] : null;
   const firstPhase = planned?.encounters[0]?.phases[0];

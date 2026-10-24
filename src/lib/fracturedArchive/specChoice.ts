@@ -321,6 +321,8 @@ export const greedyCarriers = (p: {
   weapons: PlannerWeapon[],
   total: number,
   perWeapon?: number,
+  /** Review 2: per-weapon caps on top of `perWeapon` (Eye of Ayak: the mages in the party). */
+  caps?: Partial<CarrierCounts>,
   time: (c: CarrierCounts) => number,
   minSaving?: number,
   start?: CarrierCounts,
@@ -335,7 +337,7 @@ export const greedyCarriers = (p: {
     if (count(cur) >= p.total) break;
     let pick: { w: PlannerWeapon, c: CarrierCounts, t: number } | null = null;
     for (const w of p.weapons) {
-      if (cur[w] >= (p.perWeapon ?? p.total)) continue;
+      if (cur[w] >= Math.min(p.perWeapon ?? p.total, p.caps?.[w] ?? Infinity)) continue;
       const c = { ...cur, [w]: cur[w] + 1 };
       const tc = p.time(c);
       if (!pick || tc < pick.t - EPS) pick = { w, c, t: tc };
@@ -491,9 +493,14 @@ export const teamRoles = (
 };
 
 /** The weapon whose carrier count is hardest to fill (most carriers; ties: ROLE_ORDER), among `allowed`. */
-export const mostNeededWeapon = (roles: TeamRoles, allowed: (w: PlannerWeapon) => boolean = () => true): PlannerWeapon | null => (
-  roles.rows.find((r) => allowed(r.weapon))?.weapon ?? null
-);
+export const mostNeededWeapon = (roles: TeamRoles, allowed: (w: PlannerWeapon) => boolean = () => true): PlannerWeapon | null => {
+  const rows = roles.rows.filter((r) => allowed(r.weapon));
+  if (!rows.length) return null;
+  // review 2: ties on the carrier count go to the weapon whose last carrier saves the most (then ROLE_ORDER)
+  const most = Math.max(...rows.map((r) => r.carriers));
+  return rows.filter((r) => r.carriers === most)
+    .sort((a, b) => ((b.lastSaved ?? 0) - (a.lastSaved ?? 0)) || (ROLE_ORDER.indexOf(a.weapon) - ROLE_ORDER.indexOf(b.weapon)))[0].weapon;
+};
 
 /** Phase 29: carrying your share is worth it only if the slot it takes costs you less than this much route time. */
 export const SHARE_MAX_SLOT_SECONDS = 1;

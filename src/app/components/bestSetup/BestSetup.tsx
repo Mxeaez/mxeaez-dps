@@ -13,7 +13,7 @@ import {
   targetPhases,
 } from '@/lib/fracturedArchive/bestSetup';
 import {
-  BestSetupAssumptions, carriersUseLightbearer, ItemRef, MySpecs, StyleGroup, TeamSpecAssumptions, withCarrierLightbearer,
+  BestSetupAssumptions, carriersUseLightbearer, ItemRef, MySpecs, StyleGroup, TeamSpecAssumptions, withCarrierLightbearer, withPlanCarriers,
 } from '@/lib/fracturedArchive/presets';
 import { scaleMonster } from '@/lib/MonsterScaling';
 import {
@@ -211,8 +211,10 @@ const AssumptionsBox: React.FC<{
   onNotOwned: (names: string[]) => void,
   /** Phase 29: set while the Plan tab's ring policy decides the ring (camp Lightbearer / camp one ring). */
   lightbearerLock?: LightbearerLock | null,
+  /** Phase 29 review 2: the last plan's carriers (shown in the disabled counts while the planner decides). */
+  planCarriers?: TeamSpecAssumptions['carriers'] | null,
 }> = ({
-  raid, value, onChange, ayakHint, timeSettings, onTimeSettings, notOwned, onNotOwned, lightbearerLock,
+  raid, value, onChange, ayakHint, timeSettings, onTimeSettings, notOwned, onNotOwned, lightbearerLock, planCarriers,
 }) => {
   const set = (patch: Partial<BestSetupAssumptions>) => onChange({ ...value, ...patch });
   const carrierTotal = Object.values(value.team.carriers).reduce((t, n) => t + n, 0);
@@ -360,7 +362,7 @@ const AssumptionsBox: React.FC<{
                   className="form-control text-xs py-0.5 w-12 disabled:opacity-50"
                   min={0}
                   max={8}
-                  value={value.team.carriers[k]}
+                  value={(!value.team.manual && planCarriers ? planCarriers : value.team.carriers)[k]}
                   onChange={(e) => set({
                     team: {
                       ...value.team,
@@ -380,7 +382,9 @@ const AssumptionsBox: React.FC<{
               carriers use Lightbearer
             </label>
             {!value.team.manual && (
-              <span className="text-gray-500 dark:text-gray-400" data-testid="team-carriers-note">(the Plan tab picks its own; Search / Summary use these)</span>
+              <span className="text-gray-500 dark:text-gray-400" data-testid="team-carriers-note">
+                {planCarriers ? '(from the last plan; Search / Summary use them)' : '(run a plan to fill these; until then Search / Summary use the counts shown)'}
+              </span>
             )}
             {value.team.manual && carrierTotal > value.partySize && (
               <span className="text-red-600" data-testid="team-too-many">{`${carrierTotal} carriers > party size: only the first ${value.partySize} count`}</span>
@@ -467,6 +471,9 @@ const RaidBestSetup: React.FC<{
   const drain: DrainStateId = soloParty && chosenDrain === 'team' ? 'solo' : chosenDrain;
   // phase 29: the Plan tab's ring policy sets the Lightbearer flag while the Plan tab is open
   const [planLightbearer, setPlanLightbearer] = useState<LightbearerLock | null>(null);
+  // phase 29 review 2: the last plan's carriers ("Planner decides"); Search / Summary use them
+  const [planCarriers, setPlanCarriers] = useState<TeamSpecAssumptions['carriers'] | null>(null);
+  const searchA = useMemo(() => withPlanCarriers(assumptions, planCarriers), [assumptions, planCarriers]);
 
   // phase 21: the boss list follows the raid inputs (ToB: Prinkipas only in Hard Mode); a hidden pick falls back to the first
   const bossList = useMemo(() => visibleTargets(raid, assumptions), [raid, assumptions]);
@@ -475,18 +482,18 @@ const RaidBestSetup: React.FC<{
   const phases = useMemo(() => targetPhases(target), [target]);
   const ayakHint = useMemo(() => {
     if (mode !== 'search') return undefined;
-    const { monster } = buildTargetMonster(target, phase ?? phases[0], 'none', assumptions);
-    const model = drainModel(monster, assumptions);
-    const profile = specProfile(monster, 'ayak', undefined, assumptions);
+    const { monster } = buildTargetMonster(target, phase ?? phases[0], 'none', searchA);
+    const model = drainModel(monster, searchA);
+    const profile = specProfile(monster, 'ayak', undefined, searchA);
     if (!profile.canHit) return `(can't hit ${target.label})`;
     // review fix: the Ayak specs that fit in your Solo spec energy (the drain line shows "×0 (no energy)" otherwise)
-    const asked = assumptions.mySpecs.ayak;
-    const solo = buildTargetMonster(target, phase ?? phases[0], 'solo', assumptions).drain;
+    const asked = searchA.mySpecs.ayak;
+    const solo = buildTargetMonster(target, phase ?? phases[0], 'solo', searchA).drain;
     const fitted = solo.line?.items.find((i) => i.weapon === 'ayak')?.count ?? 0;
     const drained = ayakExpectedDrain(profile, fitted, model.magicDef);
     const fitText = fitted < asked ? `${fitted} of your ${asked} specs fit in your spec energy; ` : '';
     return `Solo: ≈ ${drained.toFixed(0)} magic def drained on ${target.label} (${fitText}of ${model.magicDef}; each spec lands ${(profile.hitChance * 100).toFixed(0)}% of the time and drains ≈ ${profile.expectedDamageOnHit.toFixed(1)} when it does)`;
-  }, [mode, target, phase, phases, assumptions]);
+  }, [mode, target, phase, phases, searchA]);
   // the boss's hp and (undrained) Defence as the calculator scales them (party size, ToA raid / path levels, CoX CM)
   const targetStats = useMemo(() => {
     if (mode !== 'search') return undefined;
@@ -537,6 +544,7 @@ const RaidBestSetup: React.FC<{
             notOwned={notOwned}
             onNotOwned={setNotOwned}
             lightbearerLock={mode === 'plan' ? planLightbearer : null}
+            planCarriers={planCarriers}
           />
 
           {mode === 'search' && (
@@ -590,7 +598,7 @@ const RaidBestSetup: React.FC<{
               targetKey={targetKey}
               phase={phase ?? phases[0]}
               drain={drain}
-              assumptions={assumptions}
+              assumptions={searchA}
             />
           )}
 
@@ -599,7 +607,7 @@ const RaidBestSetup: React.FC<{
               targetKey={targetKey}
               phase={phase ?? phases[0]}
               drain={drain}
-              assumptions={assumptions}
+              assumptions={searchA}
               notOwned={notOwned}
               onlyOwned={onlyOwned}
               setOnlyOwned={setOnlyOwned}
@@ -607,7 +615,7 @@ const RaidBestSetup: React.FC<{
           )}
           {mode === 'summary' && (
             <SummaryView
-              assumptions={assumptions}
+              assumptions={searchA}
               targets={raid.targets}
               notOwned={notOwned}
               onlyOwned={onlyOwned}
@@ -615,7 +623,7 @@ const RaidBestSetup: React.FC<{
             />
           )}
           {mode === 'plan' && drainButtons}
-          {mode === 'plan' && <PlanView assumptions={assumptions} drain={drain} raid={raid} timeSettings={timeSettings} notOwned={notOwned} onLightbearer={setPlanLightbearer} />}
+          {mode === 'plan' && <PlanView assumptions={assumptions} drain={drain} raid={raid} timeSettings={timeSettings} notOwned={notOwned} onLightbearer={setPlanLightbearer} onCarriers={setPlanCarriers} />}
 
           <div className="text-[11px] text-gray-500 dark:text-gray-400">
             {`Same calculation as the main calculator. ${raid.hpNote} ${teamTimeLabel(teamDpsMultiplier(assumptions))}. Prayers: ${Object.values(GROUP_PRAYER).join(' / ')}. See docs/BEST_SETUP.md for caveats.`}

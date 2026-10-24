@@ -102,8 +102,8 @@ const main = async () => {
   await waitSearch(page);
   const team = await lineItems(page, '[data-testid="spec-plan"]');
   // phase 29: the Team line reads "needed ×N · team brings ×M" (Tonalztics: "needed ×N (2N hits)")
-  check(JSON.stringify(team.map((i) => [i.weapon, i.count.replace(/^.* · /, '')])) === JSON.stringify([['elderMaul', 'team brings ×4'], ['tonalztics', 'team brings ×4'], ['ayak', 'team brings ×2']]), `Team drain line: ${team.map((i) => `${i.weapon} ${i.count}`).join(', ')}`);
-  check(team.every((i) => /^(needed ×\d+( \(\d+ hits?\))?|not needed|floor not reachable|magic def 0 not reachable) · team brings ×\d+$/.test(i.count)), 'every Team item starts with "needed ×N"');
+  check(JSON.stringify(team.map((i) => [i.weapon, i.count.replace(/^.* · /, '').replace(/ \(.*\)$/, '')])) === JSON.stringify([['elderMaul', 'team brings ×4'], ['tonalztics', 'team brings ×4'], ['ayak', 'team brings ×2']]), `Team drain line: ${team.map((i) => `${i.weapon} ${i.count}`).join(', ')}`);
+  check(team.every((i) => /^(needed ×\d+( \([^)]*\))?|not needed|floor not reachable|magic def 0 not reachable) · team brings ×\d+( \([^)]*\))?$/.test(i.count)), 'every Team item starts with "needed ×N"');
   check(team.every((i) => /^\d+% land$/.test(i.hit || '') && i.icon), `hit chance under each icon: ${team.map((i) => i.hit).join(', ')}`);
   const result = await page.locator('[data-testid="spec-plan"] [data-testid="drain-line-result"]').innerText();
   check(/→ Def \d+ · Magic def \d+/.test(result), `drain line result "${result}"`);
@@ -149,7 +149,7 @@ const main = async () => {
   const toaRoutes = await page.locator('[data-testid="plan-route-row"]').count();
   check(toaRoutes === 1, `ToA Plan: ${toaRoutes} route row (single route)`);
   const toaTotal = (await page.locator('[data-testid="plan-total"]').innerText()).trim();
-  check(toaTotal === '13:19.6', `ToA plan total ${toaTotal} (phase 29 review, planner carriers: 13:19.6; phase 29: 14:10.5; phase 27: 14:22.3)`);
+  check(toaTotal === '14:10.6', `ToA plan total ${toaTotal} (phase 29 review 2, Ayak carriers capped at the mages: 14:10.6; review 1: 13:19.6; phase 27: 14:22.3)`);
   await shot(page, 'plan-toa');
 
   // --- calculator Max-drain buttons

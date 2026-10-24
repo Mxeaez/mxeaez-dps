@@ -344,6 +344,51 @@ export const campRingItems = (notOwned: string[] = []): PlanItem[] => CAMP_RINGS
 export const RING_GUARD_FACTOR = 2;
 /** Phase 27 review: the g multiple taken off a screen-only ring's screen gap for its "≥ +X s (estimate)". */
 export const RING_ESTIMATE_FACTOR = 4;
+/**
+ * Phase 29 review 2: the ring guard. Plans the best two screened rings in full (`already` = those planned before), then
+ * g = the largest screen − full gap among the rings planned in full, and every screened ring within `factor` × g of the
+ * best full time is planned in full; re-checked after each full run. Returns the full times and the final g.
+ */
+export const guardedFullRuns = <K>(
+  screened: { key: K, seconds: number }[],
+  runFull: (key: K) => number,
+  factor = RING_GUARD_FACTOR,
+  already: Map<K, number> = new Map(),
+): { full: Map<K, number>, g: number } => {
+  const done = already;
+  const run = (k: K) => {
+    if (!done.has(k)) done.set(k, runFull(k));
+  };
+  const order = [...screened].sort((a, b) => (a.seconds === b.seconds ? 0 : a.seconds - b.seconds));
+  order.slice(0, 2).forEach((x) => run(x.key));
+  for (;;) {
+    let g = 0;
+    order.forEach((x) => {
+      const f = done.get(x.key);
+      if (f !== undefined && Number.isFinite(f) && Number.isFinite(x.seconds)) g = Math.max(g, x.seconds - f);
+    });
+    const bestFull = Math.min(...Array.from(done.values()));
+    const next = order.find((x) => !done.has(x.key) && (factor === Infinity || x.seconds <= bestFull + factor * g + 1e-9));
+    if (!next) return { full: done, g };
+    run(next.key);
+  }
+};
+
+/**
+ * Phase 29 review 2: the carriers that count: the first `party` in teamSpecPlan's order (the keys' order), Eye of Ayak
+ * at most `mages`.
+ */
+export const effectiveCarriers = (raw: Partial<CarrierCounts>, party: number, mages: number): CarrierCounts => {
+  const out: CarrierCounts = { ...NO_CARRIERS };
+  let left = Math.max(0, Math.floor(party));
+  (Object.keys(raw) as PlannerWeapon[]).forEach((w) => {
+    const k = Math.min(Math.max(0, Math.floor(raw[w] ?? 0)), left);
+    out[w] = w === 'ayak' ? Math.min(k, Math.max(0, mages)) : k;
+    left -= k;
+  });
+  return out;
+};
+
 /** Optimiser seeds of a ring screen. */
 const SCREEN_SEEDS = 6;
 
@@ -1679,6 +1724,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     };
     const cmpSeconds = (cmp: RouteComparison) => (cmp.fastest >= 0 ? cmp.routes[cmp.fastest].seconds : Infinity);
     let carrierSteps: CarrierStep[] | undefined;
+    const carrierNotes: string[] = [];
     if (autoSolo) {
       const fightOfCol = (col: number) => soloFight?.[encounterOfCol[col]] ?? fallbackFight;
       const subsetMemo = new Map<string, { a: BestSetupAssumptions, ms: ReturnType<typeof monstersAt>, ts: string[] }>();
@@ -1760,8 +1806,10 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       // the greedy runs once more on it (at most two rounds). The Team drain state uses exactly these carriers.
       const party = Math.max(1, Math.floor(assumptions.partySize));
       const weaponsFor = (m: number[]): PlannerWeapon[] => ['elderMaul', 'tonalztics', 'dwh', 'bgs', ...(magesOf(m) > 0 ? ['ayak' as PlannerWeapon] : [])];
+      // review 2: Eye of Ayak carriers capped at the mages in the party (only mages gain from its drain; the time model
+      // treats teammates as copies of you, so an uncapped count overstates it, UNVERIFIED D22)
       const greedyOn = (m: number[]) => greedyCarriers({
-        weapons: weaponsFor(m), total: party, perWeapon: party, time: (c) => cmpSeconds(teamCmp(c, m)),
+        weapons: weaponsFor(m), total: party, perWeapon: party, caps: { ayak: magesOf(m) }, time: (c) => cmpSeconds(teamCmp(c, m)),
       });
       opt = optimiseFor(dps, carried, seeds, 'kits');
       let g = greedyOn(opt.best.members);
@@ -1774,14 +1822,36 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         opt = optimiseFor(table, carried, seeds, 'kits');
         if (round === 1 || [...opt.best.members].sort((x, y) => x - y).join(',') === before) break;
         const g2 = greedyOn(opt.best.members);
-        if (JSON.stringify(g2.carriers) === JSON.stringify(g.carriers)) break;
-        g = g2;
+        const same = JSON.stringify(g2.carriers) === JSON.stringify(g.carriers);
+        g = g2; // review 2: the steps as measured on the final kit
+        if (same) break;
       }
       carrierSteps = g.steps;
       assumptions = teamData(g.carriers).a;
       exactA = raidTimeAssumptionsFrom(assumptions, drain, settings, tuning.model);
     } else {
       opt = optimiseFor(dps, carried, seeds, 'kits');
+      if (drain === 'team') {
+        // review 2: manual carriers — only the first party-size count (teamSpecPlan's order), Eye of Ayak capped at the
+        // mages; when that changes the drains, re-optimise under the clamped carriers
+        const party = Math.max(1, Math.floor(assumptions.partySize));
+        const raw: CarrierCounts = { ...NO_CARRIERS, ...assumptions.team.carriers };
+        const eff = effectiveCarriers(assumptions.team.carriers, party, magesOf(opt.best.members));
+        const rawTotal = Object.values(raw).reduce((a, v) => a + v, 0);
+        if (rawTotal > party) carrierNotes.push(`${rawTotal} carriers set in Advanced for a party of ${party}: only the first ${party} count.`);
+        if (eff.ayak < raw.ayak) {
+          carrierNotes.push(`Eye of Ayak carriers capped at the mages in the party (${eff.ayak}): only mages gain from its drain here.`);
+        }
+        // the party cut is what teamSpecPlan does anyway (same drains); the Ayak cap changes them: re-optimise then
+        if (eff.ayak < effectiveCarriers(assumptions.team.carriers, party, Infinity).ayak) {
+          const { ms, ts } = teamData(eff);
+          dps = tableFor(ms, ts, 'drains with the carriers that count');
+          seeds = seedsFor(dps, seedCount);
+          opt = optimiseFor(dps, carried, seeds, 'kits');
+        }
+        assumptions = teamData(eff).a;
+        exactA = raidTimeAssumptionsFrom(assumptions, drain, settings, tuning.model);
+      }
     }
     // Team: the briefing of the carriers the drain state uses (per weapon: carriers, what the last one saves, the
     // encounters it saves most on) + the per-boss 95% minimum (teamRoles) on a route
@@ -2043,7 +2113,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     // phase 29: the spec weapons of the plan (Team: the briefing on the planned route; the Ayak hint)
     const bring = runSpecItems.map(specWeaponOf).filter((w): w is PlannerWeapon => !!w);
     const roles = drain === 'team' && planned >= 0 ? briefing(members, comparison.routes[planned]) : undefined;
-    const notes: string[] = [];
+    const notes: string[] = drain === 'team' ? [...carrierNotes] : [];
     if (bring.includes('ayak')) {
       if (drain === 'team' && roles && roles.mages === 0) {
         notes.push('Eye of Ayak is carried but "Mages in party" is 0 (Advanced (plan)): its Magic defence drain helps no one.');
@@ -2138,12 +2208,12 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       return { ring: it, seconds: runRing(it, true).seconds };
     }).sort((a, b) => ((a.seconds === b.seconds ? 0 : a.seconds - b.seconds) || a.ring.name.localeCompare(b.ring.name)));
     let screened = screenAll();
-    let best: { ring: PlanItem, run: RingRun } | null = null;
+    const runs = new Map<number, RingRun>();
     const fullSeconds = new Map<number, number>();
     const full = (ring: PlanItem) => {
       const run = runRing(ring, false);
+      runs.set(ring.id, run);
       fullSeconds.set(ring.id, run.seconds);
-      if (!best || run.seconds < best.run.seconds - EPS) best = { ring, run };
       return run;
     };
     const first = full(screened[0].ring);
@@ -2157,16 +2227,23 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     if (autoSpecs && drain === 'solo' && screenedSubset && chosenSubset(first).join('+') !== screenedSubset.join('+')) {
       screenSubset = chosenSubset(first);
       ringRounds = 2;
-      const again = screenAll();
-      if (again[0].ring.id !== screened[0].ring.id && !fullSeconds.has(again[0].ring.id)) full(again[0].ring);
-      screened = again;
+      screened = screenAll();
     }
-    const g = Number.isFinite(screened[0].seconds) && Number.isFinite(fullSeconds.get(screened[0].ring.id)!)
-      ? Math.max(0, screened[0].seconds - fullSeconds.get(screened[0].ring.id)!) : 0;
-    const margin = (tuning.ringGuard ?? RING_GUARD_FACTOR) * g;
-    screened.slice(1).forEach((x) => {
-      if (x.seconds <= best!.run.seconds + margin + EPS || tuning.ringGuard === Infinity) full(x.ring);
+    // review 2: the guard (guardedFullRuns): the best two screened rings in full, g = the largest screen − full gap of
+    // the rings planned in full, and every ring within RING_GUARD_FACTOR × g of the best full time in full, re-checked
+    // after each full run (one ring's small screen error used to hide another's large one)
+    const guard = guardedFullRuns(
+      screened.map((x) => ({ key: x.ring.id, seconds: x.seconds })),
+      (id) => full(screened.find((x) => x.ring.id === id)!.ring).seconds,
+      tuning.ringGuard ?? RING_GUARD_FACTOR,
+      fullSeconds,
+    );
+    let best: { ring: PlanItem, run: RingRun } | null = null;
+    screened.forEach((x) => {
+      const run = runs.get(x.ring.id);
+      if (run && (!best || run.seconds < best.run.seconds - EPS)) best = { ring: x.ring, run };
     });
+    const { g } = guard;
     const r0 = best!.run.result!;
     const r = r0.specs.solo ? {
       ...r0, specs: { ...r0.specs, solo: { ...r0.specs.solo, screenedWith: (screenSubset as PlannerWeapon[] | null) ?? [], ringRounds } },

@@ -233,7 +233,8 @@ describe('every raid\'s plan runs (reduced pool)', () => {
 // 1 Ayak); ToB 7:30.6 → 7:30.0 (2 Tonalztics, 1 maul).
 const HEADLINES: [string, string, number][] = [
   ['fractured-archive', '21:53.0', 1313.0],
-  ['toa', '13:19.6', 799.6],
+  // review 2: Eye of Ayak carriers capped at the mages (1): 13:19.6 → 14:10.6 (1 maul, 1 Tonalztics, 1 Ayak; Ultor)
+  ['toa', '14:10.6', 850.6],
   ['cox', '6:36.3', 396.3],
   ['tob', '7:30.0', 450.0],
 ];

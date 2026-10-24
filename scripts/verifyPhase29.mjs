@@ -77,7 +77,9 @@ const main = async () => {
   const ranked = await text(page.locator('[data-testid="search-ranked-at"]'));
   check(/^ranked at Def \d+ · Magic def -?\d+$/.test(ranked) && await page.locator('[data-testid="search-ranked-at"] img').count() === 2, `"${ranked}" with the Defence / Magic icons`);
   const panelTona = await text(page.locator('[data-testid="spec-plan"] [data-testid="drain-line-item"][data-weapon="tonalztics"]'));
-  check(/(needed ×\d+ \(\d+ hits\)|not needed) · team brings ×4/.test(panelTona), `Search drain box (AG Flying, Team): "${panelTona}"`);
+  // review 2: "needed ×3 (86%) · team brings ×4 (8 hits, 98%)" (Search uses the Advanced 2 / 2 / 1 before any plan)
+  check(/needed ×3 \(86%\) · team brings ×4 \(8 hits, 98%\)/.test(panelTona), `Search drain box (AG Flying, Team): "${panelTona}"`);
+  check(/run a plan to fill these/.test((await page.locator('[data-testid="team-carriers-note"]').textContent())), 'carriers note before any plan: "run a plan to fill these"');
   check(await page.locator('[data-testid="team-carrier-mode"]').inputValue() === 'auto', 'Team carriers: "Planner decides" by default');
   check(await page.locator('#bs-team-elderMaul').isDisabled(), 'carrier counts disabled while the planner decides');
   await shot(page, 'search-header');
@@ -101,14 +103,15 @@ const main = async () => {
   check(/^Your share \(assign me\): /.test(shareText), `"${shareText}"`);
   const carry = (await share.getAttribute('data-carry')) === 'true';
   const shareWeapon = await share.getAttribute('data-weapon');
-  check(shareWeapon === rows[0].weapon, `assign me picks the most-needed weapon (${shareWeapon}, ${rows[0].carriers} carriers)`);
+  // review 2: 2 / 2 tie → the weapon whose last carrier saves more (Tonalztics 27.0 s vs Elder maul 3.6 s)
+  check(shareWeapon === 'tonalztics', `assign me picks the most-needed weapon, ties by what the last carrier saves (${shareWeapon})`);
   const specCells = await page.locator('[data-testid="inventory-cell"][data-kind="spec"]').count();
   check(specCells === (carry ? 1 : 0), `spec weapons in the inventory: ${specCells} (carry ${carry})`);
   check((await specs.getAttribute('data-bring')) === (carry ? shareWeapon : ''), `data-bring "${await specs.getAttribute('data-bring')}"`);
 
   // AG Flying drain line in the encounter table
   const agDrains = await text(page.locator('[data-testid="plan-phase-row"][data-target="ag-flying"] [data-testid="plan-phase-drains"]').first());
-  check(/(needed ×\d+ \(\d+ hits\)|not needed) · team brings ×4/.test(agDrains), `AG Flying (Team) drain line: "${agDrains}"`);
+  check(/needed ×3 \(86%\) · team brings ×4 \(8 hits, 98%\)/.test(agDrains), `AG Flying (Team) drain line: "${agDrains}"`);
   const carriers = Object.fromEntries(rows.map((r) => [r.weapon, r.carriers]));
   check(carriers.elderMaul === 2 && carriers.tonalztics === 2 && rows.length === 2, `planner carriers: ${JSON.stringify(carriers)} (2 Elder maul + 2 Tonalztics)`);
   check(/picked by the planner/.test(await text(page.locator('[data-testid="plan-team-roles"] .font-semibold').first())), 'briefing says "picked by the planner"');
@@ -120,6 +123,9 @@ const main = async () => {
   let lb = await lightbearer(page);
   check(lb.locked && lb.on === (ring === 'Lightbearer') && lb.text.includes(`Camp one ring → ${ring}`), `Camp one ring → ${ring}: "${lb.text}"`);
   await shot(page, 'team');
+  // review 2: Search / Summary now use the plan's carriers (shown in the disabled counts)
+  check(/from the last plan/.test((await page.locator('[data-testid="team-carriers-note"]').textContent())), 'carriers note after the plan: "from the last plan"');
+  check(await page.locator('#bs-team-tonalztics').inputValue() === '2' && await page.locator('#bs-team-ayak').inputValue() === '0', `Advanced counts follow the plan: Tonalztics ${await page.locator('#bs-team-tonalztics').inputValue()}, Ayak ${await page.locator('#bs-team-ayak').inputValue()}`);
 
   await page.locator('[data-testid="plan-advanced-toggle"]').click();
   await page.locator('[data-testid="plan-ring-policy"]').selectOption('camp-lightbearer');

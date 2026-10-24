@@ -581,6 +581,13 @@ full time wins (ties: fewer slots, fewer weapons). The DPS matrix is shared: one
 DPS cache key is the monster's reductions), and the Solo reductions are cached by (phase, subset, energy-budget
 bucket) across ring screens and re-plans (`SOLO_DRAIN_CACHE`).
 
+**Ring guard** (review 2, all ring policies' camp-one runs, `guardedFullRuns`): the best *two* screened rings are planned
+in full; g = the *largest* screen − full gap among the rings planned in full; every ring within 2 g of the best full
+time is planned in full, re-checked after each full run. Before, g came from one ring (Lightbearer's screen was 18 s
+off its full run, Ultor's 70 s), so with "Specs I bring" = {Elder maul, Tonalztics} the plan ended on Lightbearer
+(1400.17 s) instead of Ultor (1382.50 s); misses of 17.7-27.1 s on 4 of the 32 subsets. Re-run of the reviewer's
+brute force (every subset planned with and without the guard, `ringGuard: Infinity`): **0.00 s miss on all 32**.
+
 **Ring and subset together** (camp one ring, review fix): the first ring screen searches the subsets, the other screens
 time that subset; the best screened ring is planned in full (its own subset search). If that picks another subset,
 the rings are screened again with it and the new best ring is planned in full if it changed (at most two rounds), so
@@ -603,12 +610,19 @@ the greedy runs once more on it). The Team drain state is `teamSpecPlan` with ex
 ranking rule unchanged), so the briefing and "team brings ×N" agree by construction; Search / Summary keep using the
 Advanced counts. *Team briefing*: per weapon the carriers, what the last one saves (route time without it) and the
 encounters it saves the most on, plus the order they were added; the per-boss 95 % minimum (`recommendCarriers`) is
-listed for reference. The drain line: **"needed ×N · team brings ×M"**, N = the fewest of that weapon's first-round
-specs that give the same ranked drain on this boss with the other carriers' specs (`specsNeeded`; "not needed" when 0;
-Tonalztics also shows hits: "needed ×2 (4 hits)"; Solo lines: "×2 (4 hits)").
+listed for reference. The drain line (review 2 wording): **"needed ×3 (86%) · team brings ×4 (8 hits, 98%)"** — N =
+the fewest of that weapon's first-round specs that keep the ranked drain on this boss (`specsNeeded`, in upstream's
+weapon order: the first weapon minimised with the others as brought, then the next given it, so on Xarth — where 4
+maul or 4 Tonalztics alone each reach the floor — the maul reads "not needed" and Tonalztics "needed ×1 (66%)", not
+both "not needed"); the % is P(floor from the first round) with those specs / with everything brought; "(→ Def X)"
+instead when the plan doesn't rank at the floor (The Smorks, floor 0), "(→ magic def X)" for Eye of Ayak short of 0.
+Hits are on the team's part only ("needed ×3 (6 hits)" read as six hits required: 4 hits reach AG's floor). Solo
+lines: "×2 (4 hits)". The Xarth 66% is the ranking rule at work: below 95% the ranking uses the reachable Defence
+nearest the expected one, which is still the floor there.
 
 *Your share* (`assignMe`, default "assign me"): the Team drain state counts every carrier whoever carries it, so
 carrying gains *you* nothing; you get the most-needed weapon of the planner's carriers (most carriers; ties Elder maul,
+ties: the weapon whose last carrier saves more (review 2; FA: Tonalztics 27.0 s over Elder maul 3.6 s), then Elder maul,
 Tonalztics, DWH, BGS, Ayak) only if it is carried anyway, fits in a free slot, or the slot it takes is worth < 1 s of
 route time as gear (the kit is re-optimised with the weapon carried to measure it); else "none: your last slot is worth
 X s as gear — let a teammate carry …" (UNVERIFIED D21). *Specs I bring* is the manual override ("I'll bring: …").
@@ -621,10 +635,10 @@ party 1 the Search drain box has no team carrier table.
 
 **Numbers** (defaults, Team, compare all, camp one ring; slow `CrossRaid` pins):
 
-| Raid | Phase 28 | Phase 29 | **Review fix (planner carriers)** | Carriers picked | Your share |
+| Raid | Phase 28 | Phase 29 | **Review fixes (planner carriers; review 2: Ayak ≤ mages)** | Carriers picked | Your share |
 |---|---|---|---|---|---|
-| FA | 22:47.9 | 21:53.0 | **21:53.0** | 2 Elder maul, 2 Tonalztics | Elder maul, in a free slot |
-| ToA | 14:22.3 | 14:10.5 | **13:19.6** (Magus) | 1 Elder maul, 5 Eye of Ayak | none: slot worth 5.1 s |
+| FA | 22:47.9 | 21:53.0 | **21:53.0** | 2 Elder maul, 2 Tonalztics | Tonalztics (review 2 tie-break), in a free slot |
+| ToA | 14:22.3 | 14:10.5 | **14:10.6** (Ultor; review 1 without the cap: 13:19.6, 5 Ayak) | 1 Elder maul, 1 Tonalztics, 1 Eye of Ayak | none: slot worth 6.2 s (Ayak) |
 | CoX | 6:40.3 | 6:36.3 | **6:36.3** | 2 Elder maul, 2 Tonalztics, 1 BGS, 1 Ayak | none: 3.4 s |
 | ToB | 7:31.7 | 7:30.6 | **7:30.0** | 2 Tonalztics, 1 Elder maul | Tonalztics: slot worth 0.5 s |
 | FA without Obligator + Ascension crossbows | 25:24.5 | 24:53.8 | **24:53.8** (Ultor) | 2 Tonalztics | Tonalztics, free slot |
@@ -633,7 +647,15 @@ FA 6-man, in the order added: Tonalztics −230.0 s, Tonalztics −35.2 s, Elder
 best (a third Tonalztics, an Ayak carrier without a magic kit) saves < 1 s. In the final kit the last Tonalztics
 carrier saves 27.0 s (Ocellus 19.3, Bork + Smorks 4.2, AG 3.5) and the last Elder maul 3.6 s (Bork + Smorks). The old
 briefing's "5 Tonalztics for The Smorks" (Def 0 at 95 % from the first round) is gone: carriers 3-5 save 0.58 s
-together (reviewer's sweep). "Team carriers: Set manually" at 2 / 2 / 1 gives the same 21:53.0.
+together (reviewer's sweep). "Team carriers: Set manually" at 2 / 2 / 1 gives the same 21:53.0 (the Ayak carrier is
+capped at the mages — 0 with this kit — with a note; more carriers than the party: only the first N count, noted).
+
+**Review 2**: Eye of Ayak carriers are capped at "Mages in party" (the time model treats teammates as copies of you, so
+an uncapped Magic-defence drain looked worth 5 carriers on ToA: UNVERIFIED D22; ToA steps then: maul −47.3, Ayak
+−13.3 / −10.9 / −16.7 / −17.8 / −16.0 s; now maul −55.1, Ayak −14.0, Tonalztics −3.5 s). **Search / Summary follow the
+planner's carriers**: in "Planner decides" mode, after a plan the disabled Advanced counts show its carriers and Search /
+Summary use them (`withPlanCarriers`); before any plan they keep the defaults (note: "run a plan to fill these").
+The briefing's steps are measured on the final kit (ToB: −34.3 / −10.4 / −3.5 s).
 
 **Solo** (FA defaults at party size 1, camp one ring → Ultor; `verifyPhase29`): **22:10.5, "Bring: Tonalztics"** —
 the reviewer's brute force over all 32 sets (each planned with "Specs I bring", re-timed with `compareRoutes`) has

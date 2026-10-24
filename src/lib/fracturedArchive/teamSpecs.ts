@@ -515,35 +515,59 @@ export const neededSpecs = (
   return { defence, ayak };
 };
 
+/** Phase 29 review 2: one weapon of a Team drain line: "needed ×n (86%) · team brings ×M (8 hits, 98%)". */
+export interface TeamNeed {
+  /** Fewest specs of this weapon (earlier weapons at their own needed counts, later ones as brought). */
+  n: number;
+  /** "86%" = P(floor from the first round) with those specs; "→ Def 167" when the plan doesn't rank at the floor. */
+  result: string;
+  /** The same for everything the team brings. */
+  brings: string;
+}
+
 /**
- * Phase 29 review: per weapon of a first round, the fewest of its specs (the other weapons' specs kept) that give the
- * same ranked Defence (Eye of Ayak: the same ranked Magic defence drain) as all of them: "needed ×N · team brings ×M" on
- * that boss under the plan's carriers. 0 = its specs change nothing there.
+ * Phase 29 review: per weapon of a first round, the fewest of its specs that give the same ranked Defence (Eye of Ayak:
+ * the same ranked Magic defence drain) as all of them: "needed ×N · team brings ×M" on that boss under the plan's
+ * carriers. Review 2: in sequence (upstream's weapon order): the first weapon's count is minimised with the others as
+ * brought and fixed, then the next given it, so the counts together still give the same drain (on Xarth 4 maul alone or
+ * 4 Tonalztics alone each reach the floor: one of them is needed). 0 = its specs change nothing there.
  */
 export const specsNeeded = (
   model: Pick<DrainModel, 'def' | 'floor' | 'magicLevel' | 'magicDef' | 'outcomes' | 'expectedDamage'>,
   attempts: PlannerWeapon[],
   threshold = DEFAULT_FLOOR_THRESHOLD,
-): Partial<Record<PlannerWeapon, number>> => {
-  const out: Partial<Record<PlannerWeapon, number>> = {};
-  const def = (xs: PlannerWeapon[]) => defenceOutcome(model, xs.filter((w): w is DefenceDrainWeapon => w !== 'ayak'), threshold).rankedDef;
-  const nAyak = attempts.filter((w) => w === 'ayak').length;
-  const fullDef = def(attempts);
-  const fullAyak = ayakOutcome(model, nAyak, threshold).rankedDrain;
-  Array.from(new Set(attempts)).forEach((w) => {
-    const brought = attempts.filter((x) => x === w).length;
-    const others = attempts.filter((x) => x !== w);
-    for (let n = 0; n <= brought; n++) {
-      const same = w === 'ayak'
-        ? ayakOutcome(model, n, threshold).rankedDrain === fullAyak
-        : def([...others, ...Array(n).fill(w)]) === fullDef;
-      if (same) {
-        out[w] = n;
+): Partial<Record<PlannerWeapon, TeamNeed>> => {
+  const out: Partial<Record<PlannerWeapon, TeamNeed>> = {};
+  const counts: Partial<Record<PlannerWeapon, number>> = {};
+  attempts.forEach((w) => { counts[w] = (counts[w] ?? 0) + 1; });
+  const seq = (c: Partial<Record<PlannerWeapon, number>>): DefenceDrainWeapon[] => DEFENCE_DRAIN_ORDER
+    .flatMap((w) => Array(c[w] ?? 0).fill(w));
+  const full = defenceOutcome(model, seq(counts), threshold);
+  const atFloor = full.rankedDef <= model.floor;
+  const defText = (o: DefenceOutcome) => (atFloor ? pct(o.pFloor) : `→ Def ${o.rankedDef}`);
+  const cur = { ...counts };
+  DEFENCE_DRAIN_ORDER.filter((w) => counts[w]).forEach((w) => {
+    for (let n = 0; n <= counts[w]!; n++) {
+      const o = defenceOutcome(model, seq({ ...cur, [w]: n }), threshold);
+      if (o.rankedDef === full.rankedDef) {
+        cur[w] = n;
+        out[w] = { n, result: defText(o), brings: defText(full) };
         return;
       }
     }
-    out[w] = brought;
   });
+  if (counts.ayak) {
+    const fullAyak = ayakOutcome(model, counts.ayak, threshold);
+    const zero = fullAyak.rankedDrain >= Math.max(0, model.magicDef);
+    const ayakText = (o: AyakOutcome) => (zero ? pct(o.pZero) : `→ magic def ${o.magicDefAfter}`);
+    for (let n = 0; n <= counts.ayak; n++) {
+      const o = ayakOutcome(model, n, threshold);
+      if (o.rankedDrain === fullAyak.rankedDrain) {
+        out.ayak = { n, result: ayakText(o), brings: ayakText(fullAyak) };
+        break;
+      }
+    }
+  }
   return out;
 };
 

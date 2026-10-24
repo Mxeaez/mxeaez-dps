@@ -3,6 +3,35 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 29 fixes 2 — ring guard, Ayak cap, drain-line wording (2026-10-24)
+
+- **Ring guard** (blocker; `guardedFullRuns`, every camp-one run): the best two screened rings in full, g = the largest
+  screen − full gap among the rings planned in full, every ring within 2 g of the best full time in full, re-checked
+  after each run. "Specs I bring" {Elder maul, Tonalztics}, Solo party 1: Lightbearer 1400.17 → **Ultor 1382.50** (slow
+  test). Reviewer's brute force re-run (32 subsets, guard vs every ring in full): **0.00 s miss on all 32** (was 17.7-
+  27.1 s on 4).
+- **Eye of Ayak carriers ≤ mages** (greedy cap; manual counts clamped with a note; more manual carriers than the party:
+  only the first N count, noted, briefing capped). ToA **13:19.6 → 14:10.6** (carriers 5 Ayak + 1 maul → 1 maul, 1
+  Tonalztics, 1 Ayak; Ultor; steps maul −55.1, Ayak −14.0, Tonalztics −3.5 s); FA / CoX / ToB / FA-owned unchanged.
+  UNVERIFIED D22 (gains overstated by party ÷ mages: teammates are copies of you); ROADMAP round 5 item.
+- **`specsNeeded` in sequence** (upstream weapon order; the first minimised with the others as brought, then the next
+  given it): Xarth maul "not needed", Tonalztics "needed ×1 (66%)" (was both "not needed"); Bork maul ×3 (98%),
+  Tonalztics not needed; AG Flying Tonalztics ×3 (86%).
+- **Drain-line wording**: "needed ×3 (86%) · team brings ×4 (8 hits, 98%)" (P(floor from the first round); "→ Def X" /
+  "→ magic def X" when the plan doesn't rank at the floor; hits only on the team's part).
+- **Search / Summary follow the planner's carriers** (`withPlanCarriers`; PlanView `onCarriers`): the disabled
+  Advanced counts show the last plan's carriers; before any plan the defaults with "run a plan to fill these".
+- **Your share tie-break**: equal carriers → the higher "last carrier saves" (FA: Tonalztics 27.0 s over Elder maul 3.6 s).
+- Greedy steps shown from the final kit when the re-run picks the same carriers (ToB −34.3 / −10.4 / −3.5 s).
+- Tests: Phase29 (+ ring-guard toy, Ayak-cap toy, effectiveCarriers, tie-break, Xarth sequence, "→ Def" case, AG
+  wording, withPlanCarriers; slow: {maul, Tonalztics} → Ultor 1382.50, manual 2 / 2 / 1 → ayak capped, 21:53.0);
+  Phase23 regex; CrossRaid ToA 14:10.6.
+  `yarn test` 1361 (1348 pass / 13 skipped); `RUN_SLOW_TESTS=1` CrossRaid + Phase27 + Phase28 + Phase29 85 / 85; lint, tsc
+  clean.
+- Playwright: verifyPhase29 all OK (new wording on AG Flying, share Tonalztics, counts follow the plan, notes before /
+  after a plan, Solo Tonalztics 22:10.5); verifyPhase21 / 23 (ToA 14:10.6) / 26 / 27 all OK; tracked screenshots
+  restored.
+
 ## Phase 29 fixes — review follow-ups (2026-10-24)
 
 - **Blocker: the Solo subset search missed the optimum** (reviewer's brute force over all 32 sets: {Tonalztics}

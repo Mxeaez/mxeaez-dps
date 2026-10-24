@@ -293,6 +293,14 @@ export const DEFAULT_ASSUMPTIONS: BestSetupAssumptions = {
 };
 
 /**
+ * Phase 29 review 2: the assumptions Search / Summary use. "Team carriers: Planner decides" (not `team.manual`) and a plan
+ * has run: the plan's carriers (`planCarriers`, the briefing's); otherwise the Advanced counts.
+ */
+export const withPlanCarriers = (a: BestSetupAssumptions, planCarriers: TeamSpecAssumptions['carriers'] | null | undefined): BestSetupAssumptions => (
+  !a.team.manual && planCarriers ? { ...a, team: { ...a.team, carriers: { ...planCarriers } } } : a
+);
+
+/**
  * Phase 23: the single "carriers use Lightbearer" toggle of the Advanced box — sets every carrier weapon's Lightbearer
  * flag at once (the per-weapon flags stay in the data, for the planners and old saved assumptions).
  */

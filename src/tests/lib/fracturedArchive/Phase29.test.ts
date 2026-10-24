@@ -3,10 +3,11 @@ import { generateEmptyPlayer } from '@/state';
 import { buildTargetMonster, drainStateFor, findTarget } from '@/lib/fracturedArchive/bestSetup';
 import { countText, neededText } from '@/lib/fracturedArchive/drainLine';
 import {
-  DEFAULT_RING_POLICY, DEFAULT_SPEC_MODE, plan, planItemByName, PlanInputs, PlanResult, PlanTuning, SPEC_MODES,
+  DEFAULT_RING_POLICY, DEFAULT_SPEC_MODE, effectiveCarriers, guardedFullRuns, plan, planItemByName, PlanInputs, PlanResult,
+  PlanTuning, SPEC_MODES,
 } from '@/lib/fracturedArchive/planner';
 import { formatDuration } from '@/lib/fracturedArchive/raidTime';
-import { DEFAULT_ASSUMPTIONS, PresetDef } from '@/lib/fracturedArchive/presets';
+import { DEFAULT_ASSUMPTIONS, PresetDef, withPlanCarriers } from '@/lib/fracturedArchive/presets';
 import {
   allSubsets,
   assignMe,
@@ -30,7 +31,7 @@ import {
 } from '@/lib/fracturedArchive/specChoice';
 import { drainModel } from '@/lib/fracturedArchive/specs';
 import {
-  ayakOutcome, ayakSpecsToThreshold, defenceOutcome, neededSpecs, recommendCarriers, soloSpecPlan, specsNeeded,
+  ayakOutcome, ayakSpecsToThreshold, defenceOutcome, formatProbability, neededSpecs, recommendCarriers, soloSpecPlan, specsNeeded,
 } from '@/lib/fracturedArchive/teamSpecs';
 import { FRACTURED_ARCHIVE_RAID } from '@/lib/raids';
 
@@ -198,6 +199,46 @@ describe('team carriers: greedy on route time (review fix)', () => {
     expect(defenceOutcome(smorks, Array(10).fill('tonalztics')).pFloor).toBeGreaterThan(0.95);
   });
 
+  test('Eye of Ayak capped at the mages (review 2: 5 Ayak carriers on ToA → 1 with one mage)', () => {
+    // toy shaped like the ToA steps: maul −47.3, then each Ayak carrier saves 13-18 s
+    const ayakSaves = [0, 13.25, 24.1, 40.77, 58.57, 74.53, 74.53];
+    const t = (c: CarrierCounts) => 900 - (c.elderMaul ? 47.3 : 0) - ayakSaves[c.ayak];
+    expect(greedyCarriers({ weapons: ['elderMaul', 'ayak'], total: 6, time: t }).carriers).toMatchObject({ elderMaul: 1, ayak: 5 });
+    expect(greedyCarriers({
+      weapons: ['elderMaul', 'ayak'], total: 6, time: t, caps: { ayak: 1 },
+    }).carriers).toMatchObject({ elderMaul: 1, ayak: 1 });
+    // the manual counts: the first `party` in teamSpecPlan's order, Ayak at most the mages
+    expect(effectiveCarriers({
+      elderMaul: 2, dwh: 0, bgs: 0, tonalztics: 5, ayak: 1,
+    }, 6, 1)).toEqual({ ...NO_CARRIERS, elderMaul: 2, tonalztics: 4 });
+    expect(effectiveCarriers(A.team.carriers, 6, 0)).toEqual({ ...A.team.carriers, ayak: 0 });
+  });
+
+  test('ring guard (review 2): the best two rings in full, g = the largest screen − full gap, re-checked', () => {
+    // ring A: screen 100 → full 98 (small error); ring B: screen 130 → full 90 (large error); ring C: 150 → 140; D 300
+    const fullOf: Record<string, number> = {
+      A: 98, B: 90, C: 140, D: 290,
+    };
+    const ran: string[] = [];
+    const r = guardedFullRuns([{ key: 'A', seconds: 100 }, { key: 'B', seconds: 130 }, { key: 'C', seconds: 150 }, { key: 'D', seconds: 300 }], (k) => {
+      ran.push(k);
+      return fullOf[k];
+    });
+    expect(ran).toEqual(['A', 'B', 'C']); // the old guard planned A only (g = 2 → margin 4) and missed B
+    expect(r.g).toBe(40);
+    expect(Math.min(...Array.from(r.full.values()))).toBe(90);
+    expect(guardedFullRuns([{ key: 'A', seconds: 100 }], () => 99).full.size).toBe(1);
+  });
+
+  test('Search / Summary use the plan\'s carriers while the planner decides (review 2)', () => {
+    const c = {
+      elderMaul: 2, dwh: 0, bgs: 0, tonalztics: 2, ayak: 0,
+    };
+    expect(withPlanCarriers(A, c).team.carriers).toEqual(c);
+    expect(withPlanCarriers(A, null)).toBe(A);
+    expect(withPlanCarriers({ ...A, team: { ...A.team, manual: true } }, c).team.carriers).toEqual(A.team.carriers);
+  });
+
   test('briefing rows from a carrier set: most carriers first, what the last one saves', () => {
     const rows = rowsFromCarriers({ ...NO_CARRIERS, elderMaul: 2, tonalztics: 2 }, (w) => ({ saved: w === 'elderMaul' ? 3.6 : 27, drivers: [w] }));
     expect(rows.map((r) => [r.weapon, r.carriers, r.lastSaved])).toEqual([['elderMaul', 2, 3.6], ['tonalztics', 2, 27]]);
@@ -271,10 +312,14 @@ describe('Team roles (team briefing)', () => {
     expect(r.text).toBe('6-man: no spec carriers needed');
   });
 
-  test('most-needed weapon: most carriers, ties in the order Elder maul, Tonalztics, DWH, BGS, Ayak', () => {
+  test('most-needed weapon: most carriers; ties to the higher "last carrier saves", then Elder maul, Tonalztics, …', () => {
     expect(mostNeededWeapon(roles)).toBe('elderMaul');
     expect(mostNeededWeapon(roles, (w) => w !== 'elderMaul')).toBe('tonalztics');
     expect(mostNeededWeapon({ ...roles, rows: [] })).toBeNull();
+    // review 2 (FA 6-man: 2 Elder maul, last one 3.6 s; 2 Tonalztics, last one 27.0 s) → Tonalztics
+    const rows = rowsFromCarriers({ ...NO_CARRIERS, elderMaul: 2, tonalztics: 2 }, (w) => ({ saved: w === 'elderMaul' ? 3.6 : 27, drivers: [] }));
+    expect(mostNeededWeapon({ ...roles, rows })).toBe('tonalztics');
+    expect(mostNeededWeapon({ ...roles, rows: rows.map((r) => ({ ...r, carriers: r.weapon === 'elderMaul' ? 3 : 2 })) })).toBe('elderMaul');
   });
 });
 
@@ -307,14 +352,37 @@ describe('Team drain line: "needed ×N · team brings ×M"', () => {
     const ranked = (k: number) => defenceOutcome(model, Array(k).fill('tonalztics')).rankedDef;
     expect(ranked(n)).toBe(ranked(4));
     expect(n === 0 || ranked(n - 1) !== ranked(4)).toBe(true);
-    expect(neededText(tona)).toBe(n ? `needed ×${n} (${2 * n} hits) · team brings ×4` : 'not needed · team brings ×4');
-    expect(neededText({ ...tona, needed: 2 })).toBe('needed ×2 (4 hits) · team brings ×4');
-    expect(neededText({ ...tona, needed: 0 })).toBe('not needed · team brings ×4');
+    // review 2: "needed ×3 (86%) · team brings ×4 (8 hits, 98%)" — P(floor from the first round), hits on the team's part
+    expect(n).toBe(3);
+    const p = (k: number) => formatProbability(defenceOutcome(model, Array(k).fill('tonalztics')).pFloor);
+    expect(p(3)).toBe('86%');
+    expect(p(4)).toBe('98%');
+    expect(neededText(tona)).toBe('needed ×3 (86%) · team brings ×4 (8 hits, 98%)');
+    expect(neededText({ ...tona, needed: 0 })).toBe('not needed · team brings ×4 (8 hits, 98%)');
     expect(tona.title.startsWith(`${neededText(tona)}; `)).toBe(true);
     // the Max-drain plan's deterministic count ("4 Tonalztics of Ralos" hits = 2 specs → Def 156)
     expect(neededSpecs(model, { tonalztics: 4 }).defence).toEqual({ tonalztics: 2 });
     // specsNeeded directly: a weapon whose specs change nothing on this boss needs 0
-    expect(specsNeeded(model, ['tonalztics', 'tonalztics', 'tonalztics', 'tonalztics', 'elderMaul'])).toMatchObject({ elderMaul: 0, tonalztics: n });
+    expect(specsNeeded(model, ['tonalztics', 'tonalztics', 'tonalztics', 'tonalztics', 'elderMaul'])).toMatchObject({ elderMaul: { n: 0 }, tonalztics: { n } });
+  });
+
+  test('Xarth (review 2): 4 maul or 4 Tonalztics alone each reach the floor, so at most one of them is "not needed"', () => {
+    const model = drainModel(undrained('xarth'), A);
+    const four = (w: 'elderMaul' | 'tonalztics') => Array(4).fill(w);
+    const nd = specsNeeded(model, [...four('elderMaul'), ...four('tonalztics')]);
+    expect([nd.elderMaul!.n, nd.tonalztics!.n].filter((x) => x === 0).length).toBeLessThanOrEqual(1);
+    // the counts together keep the ranked Defence (the floor, 102)
+    const together = defenceOutcome(model, [...Array(nd.elderMaul!.n).fill('elderMaul'), ...Array(nd.tonalztics!.n).fill('tonalztics')]);
+    expect(together.rankedDef).toBe(model.floor);
+    expect(nd).toMatchObject({ elderMaul: { n: 0 } });
+    expect(nd.tonalztics!.n).toBeGreaterThan(0);
+  });
+
+  test('no floor target: "needed ×N (→ Def X)"', () => {
+    const smorks = drainModel(undrained('smorks'), A);
+    const nd = specsNeeded(smorks, Array(2).fill('elderMaul'));
+    expect(nd.elderMaul!.result).toMatch(/^→ Def \d+$/);
+    expect(nd.elderMaul!.brings).toMatch(/^→ Def \d+$/);
   });
 
   test('Solo shows Tonalztics as "×2 (4 hits)"', () => {
@@ -396,14 +464,14 @@ describe('planner: spec modes', () => {
     expect(roles.rows.length).toBeGreaterThan(0);
     const share = r.specs.share!;
     expect(share.manual).toBe(false);
-    expect(share.weapon).toBe(roles.rows[0].weapon);
+    expect(share.weapon).toBe(mostNeededWeapon(roles));
     expect(r.specs.bring).toEqual(share.carry ? [share.weapon] : []);
     expect(r.specItems.length).toBe(r.specs.bring.length);
     if (share.carry) expect(r.inventory.some((c) => c.kind === 'spec')).toBe(true);
     expect(r.slots!.used).toBeLessThanOrEqual(28);
     // manual carriers (plan()'s default): the briefing = the Advanced counts (2 maul, 2 Tonalztics, 1 Ayak)
     expect(roles.mode).toBe('manual');
-    expect(roles.carriers).toEqual(A.team.carriers);
+    expect(roles.carriers).toEqual({ ...A.team.carriers, ayak: 0 }); // review 2: Ayak capped at the mages (0)
     // mages in party > 0 makes Eye of Ayak a candidate; it is only added if it saves ≥ 1 s (no magic kit: never)
     const m = plan(inputs({ specMode: 'auto', carrierMode: 'auto', magesInParty: 2 }), MELEE_RANGED);
     expect(m.specs.team!.mages).toBe(2);
@@ -426,6 +494,8 @@ describe('planner: spec modes', () => {
       expect(it.count).toBe(2 * team.carriers![it.weapon as keyof CarrierCounts]);
     }));
     expect(team.rows.every((x) => typeof x.lastSaved === 'number')).toBe(true);
+    // review 2: what Search / Summary get after this plan = the briefing's carriers
+    expect(withPlanCarriers(A, team.carriers!).team.carriers).toEqual(team.carriers);
   }, 300000);
 
   test('Solo, planner decides: no magic loadout → Eye of Ayak is never brought (it costs a slot for nothing)', () => {
@@ -491,6 +561,19 @@ describe('planner: spec modes', () => {
     expect(r.specs.solo!.bestWithout[0].seconds).toBeGreaterThan(total(r));
   }, 900000);
 
+  test('Specs I bring {Elder maul, Tonalztics}, Solo party 1: ends on Ultor at 1382.50 (review 2: the guard used to stop at Lightbearer, 1400.17)', () => {
+    const a = {
+      ...FA.defaultAssumptions,
+      partySize: 1,
+      mySpecs: {
+        ...FA.defaultAssumptions.mySpecs, elderMaul: true, tonalztics: true, ayak: 0, ayakAuto: true,
+      },
+    };
+    const r = full({ drain: 'solo', specMode: 'manual', assumptions: { ...a, mySpecs: mySpecsForSubset(['elderMaul', 'tonalztics'], { lightbearer: false }) } });
+    expect(r.ring.ring).toBe('Ultor ring');
+    expect(Math.abs(total(r) - 1382.50)).toBeLessThanOrEqual(0.01);
+  }, 900000);
+
   test('Team, 6-man: the planner picks 2 Elder maul + 2 Tonalztics; the Advanced 2 / 2 / 1 by hand gives the same 21:53.0', () => {
     const auto = full({ carrierMode: 'auto' });
     expect(auto.specs.team!.carriers).toEqual({
@@ -498,7 +581,9 @@ describe('planner: spec modes', () => {
     });
     expect(auto.specs.team!.steps!.map((x) => x.weapon)).toEqual(['tonalztics', 'tonalztics', 'elderMaul', 'elderMaul']);
     const manual = full({ carrierMode: 'manual' });
-    expect(manual.specs.team!.carriers).toEqual(A.team.carriers);
+    // review 2: the Ayak carrier is capped at the mages (the kit has no magic loadout → 0), with a note
+    expect(manual.specs.team!.carriers).toEqual({ ...A.team.carriers, ayak: 0 });
+    expect(manual.specs.notes.some((x) => x.startsWith('Eye of Ayak carriers capped at the mages'))).toBe(true);
     expect(formatDuration(total(manual))).toBe('21:53.0');
     expect(formatDuration(total(auto))).toBe('21:53.0');
   }, 900000);
