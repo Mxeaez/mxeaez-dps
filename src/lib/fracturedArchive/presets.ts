@@ -251,6 +251,11 @@ export interface MySpecs {
   lightbearer: boolean;
   /** What the spec energy goes to first when it doesn't cover everything. */
   priority: 'defence' | 'ayak';
+  /**
+   * Phase 29 (the Plan's spec choice): only as many of the `ayak` specs as reach P(magic def 0) ≥ the threshold, per
+   * boss (teamSpecs.ts `ayakSpecsToThreshold`). Undefined everywhere else.
+   */
+  ayakAuto?: boolean;
 }
 
 /** Team spec carriers (phase 14): carriers per weapon, and whether that weapon's carriers wear Lightbearer. */

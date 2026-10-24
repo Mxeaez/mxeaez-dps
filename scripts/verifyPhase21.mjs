@@ -6,8 +6,8 @@
  *   that raid's defaults (comfort supplies, rune pouch, items always brought; src/lib/raids/planDefaults.ts), the plan
  *   runs in ≤ 150 s (phase 27: camp one ring screens six rings), 28 inventory cells, every kit loadout obeys the dedupe
  *   rule (saves ≥ max(1, slots) s).
- * - FA: total 22:47.9 (phase 27: potions from the kit, camp one ring = Ultor; was 23:30.4).
- * - ToB: 7:31.7 at 28/28 (phase 27, camp Ultor ring; was 7:32.4 with 1 free slot), a Dawnbringer loadout (the staff
+ * - FA: total 21:53.0 (phase 29: the planner picks the spec weapons; phase 27: 22:47.9; was 23:30.4).
+ * - ToB: 7:30.6 at 28/28 (phase 29; phase 27, camp Ultor ring: 7:31.7; was 7:32.4 with 1 free slot), a Dawnbringer loadout (the staff
  *   free), no Dawnbringer inventory cell, a "Lighter kit" alternative, the "Raid items (0 slots)" note; Search: the
  *   Prinkipas only in Hard Mode. The Scythe loadouts are printed (with one ring camped, single-piece swaps of the Scythe
  *   set merge into the preset names; the dedupe rule is what keeps them).
@@ -32,7 +32,7 @@ const EXPECTED = {
     supplies: {
       brew: 6, restore: 4, food: 0, other: 0,
     },
-    pinned: ['Lightbearer', 'Elder maul', 'Zaryte crossbow', 'Kodai wand', 'Ancestral robe top', 'Elidinis\' ward (f)', 'Saturated heart'],
+    pinned: ['Lightbearer', 'Zaryte crossbow', 'Kodai wand', 'Ancestral robe top', 'Elidinis\' ward (f)', 'Saturated heart'],
     team: 'times: your DPS alone',
   },
   toa: {
@@ -46,14 +46,14 @@ const EXPECTED = {
     supplies: {
       brew: 2, restore: 2, food: 0, other: 1,
     },
-    pinned: ['Dragon pickaxe', 'Elder maul'],
+    pinned: ['Dragon pickaxe'],
     team: 'times assume 6 players at your DPS',
   },
   tob: {
     supplies: {
       brew: 4, restore: 3, food: 0, other: 0,
     },
-    pinned: ['Elder maul', 'Saturated heart'],
+    pinned: ['Saturated heart'],
     team: 'times assume 4 players at your DPS',
   },
 };
@@ -109,7 +109,7 @@ const run = async () => {
 
   // FA
   const fa = await runPlan(page, 'fractured-archive');
-  check(fa.total === '22:47.9', `FA plan total ${fa.total} (phase 27: 22:47.9)`);
+  check(fa.total === '21:53.0', `FA plan total ${fa.total} (phase 29: 21:53.0; phase 27: 22:47.9)`);
   await shot(page, 'plan-fa');
 
   // ToA, CoX
@@ -136,7 +136,8 @@ const run = async () => {
   const alts = await page.locator('[data-testid="plan-alternatives"] li').allInnerTexts();
   alts.slice(0, 2).forEach((a) => console.log(`     alt: ${a.slice(0, 200)}`));
   // phase 25: 7:32.2 → 7:32.4; phase 27 (camp Ultor ring, potions from the kit): 7:31.7 at 28/28 (CrossRaid HEADLINES)
-  check(tob.free === 0 && tob.total === '7:31.7', `ToB main plan 7:31.7, 28/28 (${tob.total}, ${tob.free} free)`);
+  // phase 29 (the planner picks the spec weapons: Tonalztics, its slot worth 0.5 s): 7:30.6
+  check(tob.free === 0 && tob.total === '7:30.6', `ToB main plan 7:30.6, 28/28 (${tob.total}, ${tob.free} free)`);
   check(alts.some((a) => /^Lighter kit: .*−\d+ slots? for \+\d+\.\d s/.test(a)), 'ToB: "Lighter kit" alternative (−N slots for +X.X s)');
   const dawnCell = await page.locator('[data-testid="inventory-cell"][data-label="Dawnbringer"]').count();
   check(dawnCell === 0, 'ToB: no Dawnbringer inventory cell');

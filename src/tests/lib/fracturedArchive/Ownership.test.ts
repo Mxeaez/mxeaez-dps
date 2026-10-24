@@ -228,11 +228,11 @@ describe('planner honours the list', () => {
   });
 
   test('unowned pinned defaults are dropped with a notice; unowned spec weapons get a notice', () => {
-    expect(r.droppedPinned.map((x) => x.name).sort()).toEqual(['Elder maul', 'Lightbearer']);
+    expect(r.droppedPinned.map((x) => x.name).sort()).toEqual(['Lightbearer']); // phase 29: Elder maul isn't pinned any more
     expect(r.pinnedItems.map((x) => x.name)).not.toContain('Lightbearer');
     expect(r.inventory.some((c) => c.kind === 'pinned' && c.label === 'Lightbearer')).toBe(false);
     expect(r.ownershipNotices.some((n) => n.includes('Dropped Lightbearer'))).toBe(true);
-    expect(r.ownershipNotices.some((n) => n.startsWith('Elder maul is in "My specs"'))).toBe(true);
+    expect(r.ownershipNotices.some((n) => n.startsWith('Elder maul is in "Specs I bring"'))).toBe(true);
   });
 
   test('without a list the max plan may use them and is never slower', () => {

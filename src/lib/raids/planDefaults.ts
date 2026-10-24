@@ -15,8 +15,9 @@ export const SATURATED_HEART = 'Saturated heart';
  * it is a pinned item, not a supply: pinned by default where the potions are brought (FA, ToB). ToA / CoX don't pin it:
  * their raid potion (Smelling salts / Overload, the "Other" supply) boosts magic too.
  *
- * Spec weapons are not listed here: they come from "My specs" (default Elder maul + Eye of Ayak) and are counted once
- * with the pinned items. The supply types are slot counts; in raids that make their own potions the brew / restore
+ * Spec weapons are not listed here (phase 29: the Elder maul the FA / CoX / ToB lists had is gone too): the Plan tab's
+ * planner decides them (Solo: the subset search; Team: your share of the team's carriers), or "Specs I bring" does
+ * when picked; they are counted once with the pinned items. The supply types are slot counts; in raids that make their own potions the brew / restore
  * counts stand for the raid's equivalents (CoX: Xeric's aid / Prayer enhance or Revitalisation; ToA: Nectar / Tears of
  * Elidinis, Sanfew serums before the Helpful Spirit).
  */
@@ -48,7 +49,7 @@ const supplies = (s: Partial<SupplyCounts>): SupplyCounts => ({
  * boost, user correction 2026-10-23: "Nobody uses magic potions, they use Saturated heart").
  */
 export const FA_PLAN_DEFAULTS: RaidPlanDefaults = {
-  pinned: ['Lightbearer', 'Elder maul', 'Zaryte crossbow', 'Kodai wand', 'Ancestral robe top', 'Elidinis\' ward (f)', SATURATED_HEART],
+  pinned: ['Lightbearer', 'Zaryte crossbow', 'Kodai wand', 'Ancestral robe top', 'Elidinis\' ward (f)', SATURATED_HEART],
   nonItemSlots: 1,
   supplies: supplies({ brew: 6, restore: 4 }),
   raidSupplied: [],
@@ -62,7 +63,7 @@ export const FA_PLAN_DEFAULTS: RaidPlanDefaults = {
  * Tears of Elidinis, Silk dressing) come from the Helpful Spirit "once after completing two paths, and once again after
  * completing the remaining two paths" (Tombs of Amascut page), so they replace the brought potions on the way: 6
  * restores (Sanfew serum, later Tears / Nectar) + 2 "Other" (Smelling salts, the raid's boost for every style: no
- * combat potions, `boostsNeedSupplies: false`). Elder maul comes from "My specs".
+ * combat potions, `boostsNeedSupplies: false`). Spec weapons: the planner (phase 29).
  */
 export const TOA_PLAN_DEFAULTS: RaidPlanDefaults = {
   pinned: ['Lightbearer', 'Zaryte crossbow'],
@@ -84,7 +85,7 @@ export const TOA_PLAN_DEFAULTS: RaidPlanDefaults = {
  * the counts for an Olm-only plan.
  */
 export const COX_PLAN_DEFAULTS: RaidPlanDefaults = {
-  pinned: ['Dragon pickaxe', 'Elder maul'],
+  pinned: ['Dragon pickaxe'],
   nonItemSlots: 1,
   supplies: supplies({ brew: 2, restore: 2, other: 1 }),
   raidSupplied: [],
@@ -102,7 +103,7 @@ export const COX_PLAN_DEFAULTS: RaidPlanDefaults = {
  * Lightbearer isn't in the Strategies inventories: not pinned.
  */
 export const TOB_PLAN_DEFAULTS: RaidPlanDefaults = {
-  pinned: ['Elder maul', SATURATED_HEART],
+  pinned: [SATURATED_HEART],
   nonItemSlots: 1,
   supplies: supplies({ brew: 4, restore: 3 }),
   raidSupplied: ['Dawnbringer'],

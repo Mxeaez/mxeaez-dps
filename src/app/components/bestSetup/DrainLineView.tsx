@@ -1,10 +1,11 @@
 import React from 'react';
-import { DrainLine } from '@/lib/fracturedArchive/drainLine';
+import { countText, DrainLine, neededText } from '@/lib/fracturedArchive/drainLine';
 import { equipmentImageUrl } from '@/lib/fracturedArchive/loadoutIcons';
 import { ItemIcon } from '@/app/components/bestSetup/ItemIcons';
 
 // Phase 23: a drain plan as "[icon] ×N" per weapon with the per-spec hit chance under each icon, then
 // "→ Def 156 · Magic def 91". The full plan text is the tooltip. Data: src/lib/fracturedArchive/drainLine.ts.
+// Phase 29: Tonalztics shows its hits ("×2 (4 hits)"); a Team line shows "needed ×2 (4 hits) · team brings ×4".
 
 const pct = (p: number) => `${Math.round(p * 100)}%`;
 
@@ -41,7 +42,7 @@ const DrainLineView: React.FC<{
         >
           <span className="inline-flex items-center gap-0.5">
             <ItemIcon name={it.label} src={equipmentImageUrl(it.image)} size={size} title={it.title} />
-            <span className="font-mono font-semibold" data-testid="drain-line-count">{it.unit === 'dmg' ? `${it.count} dmg` : `×${it.count}`}</span>
+            <span className="font-mono font-semibold" data-testid="drain-line-count">{it.unit === 'dmg' ? `${it.count} dmg` : (neededText(it) ?? countText(it.count, it.hits))}</span>
             {it.count === 0 && it.short ? <span className="text-gray-500 dark:text-gray-400" data-testid="drain-line-no-energy">(no energy)</span> : null}
           </span>
           {it.hitChance !== undefined && it.count > 0 && (

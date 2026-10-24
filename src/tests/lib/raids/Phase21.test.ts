@@ -54,7 +54,8 @@ describe('per-raid plan defaults', () => {
 
   test('the Fractured Archive keeps the user\'s list; the phase 17 names point at it', () => {
     expect(FRACTURED_ARCHIVE_RAID.planDefaults.pinned).toEqual([
-      'Lightbearer', 'Elder maul', 'Zaryte crossbow', 'Kodai wand', 'Ancestral robe top', 'Elidinis\' ward (f)', 'Saturated heart',
+      // phase 29: no spec weapons (the planner picks them)
+      'Lightbearer', 'Zaryte crossbow', 'Kodai wand', 'Ancestral robe top', 'Elidinis\' ward (f)', 'Saturated heart',
     ]);
     // phase 27: comfort supplies only (the combat potions come from the kit)
     expect(FRACTURED_ARCHIVE_RAID.defaultSupplies).toEqual({
@@ -68,9 +69,9 @@ describe('per-raid plan defaults', () => {
   test('ToA / CoX / ToB defaults (Strategies pages)', () => {
     expect(TOMBS_OF_AMASCUT_RAID.planDefaults.pinned).toEqual(['Lightbearer', 'Zaryte crossbow']);
     expect(TOMBS_OF_AMASCUT_RAID.defaultSupplies).toMatchObject({ brew: 0, restore: 6, other: 2 });
-    expect(CHAMBERS_OF_XERIC_RAID.planDefaults.pinned).toEqual(['Dragon pickaxe', 'Elder maul']);
+    expect(CHAMBERS_OF_XERIC_RAID.planDefaults.pinned).toEqual(['Dragon pickaxe']); // phase 29: Elder maul left to the planner
     expect(CHAMBERS_OF_XERIC_RAID.defaultSupplies).toMatchObject({ brew: 2, restore: 2, other: 1 });
-    expect(THEATRE_OF_BLOOD_RAID.planDefaults.pinned).toEqual(['Elder maul', 'Saturated heart']);
+    expect(THEATRE_OF_BLOOD_RAID.planDefaults.pinned).toEqual(['Saturated heart']); // phase 29: Elder maul left to the planner
     expect(THEATRE_OF_BLOOD_RAID.defaultSupplies).toEqual({
       brew: 4, restore: 3, ranging: 0, superCombat: 0, food: 0, other: 0,
     });

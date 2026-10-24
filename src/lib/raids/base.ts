@@ -83,11 +83,12 @@ const toaOf = (a: BestSetupAssumptions) => a.toa || DEFAULT_TOA_INPUTS;
 export const FRACTURED_ARCHIVE_BASE: RaidBase = {
   id: 'fractured-archive',
   targets: BEST_SETUP_TARGETS,
-  partySize: { min: 2, max: 8 },
+  // phase 29: 1 = solo (launch guides: "2–8 players, solo = 2-scale"; the hp table clamps to 2): Solo drains in the Plan
+  partySize: { min: 1, max: 8 },
   // the party-size hp table is an identity table today (UNVERIFIED C1)
   hpScalesWithParty: false,
   monsterInputs: () => ({}),
-  scalingInputs: [partyInput(2, 8, 'Team spec planner party size; also the HP scaling party size (identity table, unverified)')],
+  scalingInputs: [partyInput(1, 8, 'Team spec planner party size (1 = solo: Solo drains); also the HP scaling party size (identity table, unverified; solo scales as 2)')],
   defaultAssumptions: DEFAULT_ASSUMPTIONS,
   presets: PRESETS,
   searchPool: SEARCH_POOL,

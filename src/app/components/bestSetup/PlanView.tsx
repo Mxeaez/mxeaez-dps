@@ -15,6 +15,7 @@ import {
 import {
   COMFORT_SUPPLY_TYPES,
   DEFAULT_RING_POLICY,
+  DEFAULT_SPEC_MODE,
   equipmentById,
   equipmentItemIds,
   HEART_ITEMS,
@@ -33,6 +34,8 @@ import {
   RING_POLICIES,
   ringAssumptions,
   RingPolicy,
+  SPEC_MODES,
+  SpecMode,
   SUPPLY_TYPES,
   SupplyCounts,
   SupplyType,
@@ -65,6 +68,8 @@ import handsSlot from '@/public/img/slots/hands.png';
 import feetSlot from '@/public/img/slots/feet.png';
 import ringSlot from '@/public/img/slots/ring.png';
 import { isOwned, unownedLabel } from '@/lib/fracturedArchive/ownership';
+import { describeNeed, specWeaponLabel, weaponDeltaText } from '@/lib/fracturedArchive/specChoice';
+import { PlannerWeapon, SPEC_WEAPONS } from '@/lib/fracturedArchive/specs';
 
 // "Plan" tab of /best-setup (phase 17): the kit (worn set + switch items) that minimises the route time within 28
 // inventory slots (src/lib/fracturedArchive/planner.ts), run in the search worker (RAID_PLAN). The per-phase search rows
@@ -76,6 +81,9 @@ import { isOwned, unownedLabel } from '@/lib/fracturedArchive/ownership';
 // Phase 26: the plan always honours "Items I don't own": the list is part of the search-row cache key, unowned pinned
 // items are dropped (shown struck through). "Best possible with everything" = the same plan with no list, from
 // `maxTotals` (filled by every plan run without a list) or on demand ("compare with max", a second plan run).
+// Phase 29: "Spec weapons" (planner decides / Specs I bring) and "Mages in party" (Advanced (plan)); the results show
+// "Bring: …" (Solo: what each weapon saves) or the team briefing + your share (Team). The ring policy reports the
+// Lightbearer flag it implies to the page (the Assumptions box's "I wear a Lightbearer" follows it).
 
 const searchCache = new Map<string, SearchRow[]>();
 const cachePrefix = (a: BestSetupAssumptions, drain: DrainStateId, notOwned: string[] = []) => `${JSON.stringify(a)}|${drain}|${notOwned.length ? `${JSON.stringify([...notOwned].sort())}|` : ''}`;
@@ -256,10 +264,107 @@ const PhaseRows: React.FC<{ phases: PhaseTime[], encounter: string }> = ({ phase
   </>
 );
 
+/** Phase 29: the Lightbearer flag the Plan tab's ring policy sets (shown in the Assumptions box). */
+export interface LightbearerLock {
+  on: boolean;
+  reason: string;
+}
+
+const specIcon = (w: PlannerWeapon) => {
+  try {
+    return equipmentImageUrl(equipmentById(planItemByName(SPEC_WEAPONS[w].item).id)?.image);
+  } catch {
+    return null;
+  }
+};
+
+const shareText = (specs: PlanResult['specs']) => {
+  if (!specs.share) return '';
+  if (specs.share.manual) return specs.text.replace('Bring: ', '');
+  return specs.share.carry ? `carry ${specs.share.reason}` : specs.share.reason;
+};
+
+/** Phase 29: the spec weapons of the plan: "Bring: …" + what each saves (Solo) or the team briefing + your share (Team). */
+const SpecsBox: React.FC<{ specs: PlanResult['specs'] }> = ({ specs }) => (
+  <div className="text-xs flex flex-col gap-1 border border-body-400 dark:border-dark-200 rounded p-2" data-testid="plan-specs" data-mode={specs.mode} data-bring={specs.bring.join(',')}>
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="font-semibold" data-testid="plan-bring">{specs.text}</span>
+      {specs.bring.map((w) => <ItemIcon key={w} name={specWeaponLabel(w)} src={specIcon(w)} size={20} />)}
+      <span className="text-gray-500 dark:text-gray-400">
+        {specs.mode === 'auto' ? '(spec weapons picked by the planner)' : '(from "Specs I bring")'}
+      </span>
+    </div>
+    {specs.solo && (
+      <ul className="list-disc ml-5" data-testid="plan-spec-weapons" title="Route time with / without each weapon (the kit re-optimised each time; drains planned at each encounter's fight length)">
+        {specs.solo.perWeapon.filter((d) => d.chosen).map((d) => (
+          <li key={d.weapon} data-testid="plan-spec-weapon" data-weapon={d.weapon} data-delta={d.deltaSeconds.toFixed(1)} data-slots={d.deltaSlots}>{weaponDeltaText(d)}</li>
+        ))}
+        {specs.solo.bestRejected && (
+          <li data-testid="plan-spec-rejected" data-weapon={specs.solo.bestRejected.weapon} data-delta={specs.solo.bestRejected.deltaSeconds.toFixed(1)}>
+            {`Not brought: ${weaponDeltaText(specs.solo.bestRejected)}`}
+          </li>
+        )}
+        <li className="text-gray-500 dark:text-gray-400 list-none -ml-5">
+          {`${specs.solo.signatures} distinct drain states among the ${2 ** specs.solo.perWeapon.length} weapon sets; ${specs.solo.evaluated} timed, ${specs.solo.pruned} skipped (no DPS gain for their slots)`}
+        </li>
+      </ul>
+    )}
+    {specs.team && (
+      <div className="flex flex-col gap-1" data-testid="plan-team-roles">
+        <div className="font-semibold" title="Per boss / phase: the fewest carriers whose first-round specs reach the Defence floor with the confidence in Advanced; per weapon the most any boss needs. Eye of Ayak only if someone mages">
+          {`Team briefing (${specs.team.text})`}
+        </div>
+        {specs.team.rows.length > 0 ? (
+          <table className="w-fit" data-testid="plan-team-briefing">
+            <thead>
+              <tr className="text-left">
+                <th className="pr-3">Weapon</th>
+                <th className="pr-3 text-right">Carriers</th>
+                <th>Needed most on</th>
+              </tr>
+            </thead>
+            <tbody>
+              {specs.team.rows.map((r) => (
+                <tr key={r.weapon} data-testid="plan-team-row" data-weapon={r.weapon} data-carriers={r.carriers}>
+                  <td className="pr-3">
+                    <span className="flex items-center gap-1">
+                      <ItemIcon name={specWeaponLabel(r.weapon)} src={specIcon(r.weapon)} size={18} />
+                      {specWeaponLabel(r.weapon)}
+                    </span>
+                  </td>
+                  <td className="pr-3 text-right font-mono">{r.carriers}</td>
+                  <td>{r.drivers.join(', ')}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : <div>No spec carriers needed on this route.</div>}
+        <details>
+          <summary className="cursor-pointer">Per boss / phase</summary>
+          <ul className="list-disc ml-5" data-testid="plan-team-per-target">
+            {specs.team.perTarget.map((n) => (
+              <li key={n.key}>{`${n.label}: ${describeNeed(n)}${n.ayak ? ` · ${n.ayak} Eye of Ayak` : ''}`}</li>
+            ))}
+          </ul>
+        </details>
+        {specs.share && (
+          <div data-testid="plan-share" data-weapon={specs.share.weapon ?? ''} data-carry={specs.share.carry ? 'true' : 'false'} data-manual={specs.share.manual ? 'true' : 'false'}>
+            <span className="font-semibold">{specs.share.manual ? 'Your share (Specs I bring): ' : 'Your share (assign me): '}</span>
+            {shareText(specs)}
+          </div>
+        )}
+      </div>
+    )}
+    {specs.notes.map((n) => <div key={n} className="text-orange-700 dark:text-orange-300" data-testid="plan-spec-note">{n}</div>)}
+  </div>
+);
+
 const PlanView: React.FC<{
   assumptions: BestSetupAssumptions, drain: DrainStateId, raid: RaidConfig, timeSettings?: TimeSettings, notOwned?: string[],
+  /** Phase 29: the Lightbearer flag the ring policy sets (null = the user's toggle). */
+  onLightbearer?: (lock: LightbearerLock | null) => void,
 }> = ({
-  assumptions, drain, raid, timeSettings, notOwned: notOwnedProp,
+  assumptions, drain, raid, timeSettings, notOwned: notOwnedProp, onLightbearer,
 }) => {
   const notOwnedKey = JSON.stringify(notOwnedProp ?? []);
   const notOwned = useMemo(() => JSON.parse(notOwnedKey) as string[], [notOwnedKey]);
@@ -277,6 +382,9 @@ const PlanView: React.FC<{
   // phase 27: comfort supplies only (the kit's potions are derived by the planner); the ring policy (Advanced)
   const [supplies, setSupplies] = useState<SupplyCounts>(raid.defaultSupplies);
   const [ringPolicy, setRingPolicy] = useState<RingPolicy>(DEFAULT_RING_POLICY);
+  // phase 29: who picks the spec weapons; mages in the party (undefined = auto: 1 if the kit has a magic loadout)
+  const [specMode, setSpecMode] = useState<SpecMode>(DEFAULT_SPEC_MODE);
+  const [mages, setMages] = useState<number | undefined>(undefined);
   const [nonItem, setNonItem] = useState(raid.planDefaults.nonItemSlots);
   const [pinned, setPinned] = useState<number[]>(defaultPinned);
   // a new Heart in the Assumptions box replaces the pinned one (or removes it); the first render keeps the defaults
@@ -298,7 +406,7 @@ const PlanView: React.FC<{
   const job = useRef<PlanJob | null>(null);
   // phase 26: the pinned items the plan keeps (unowned ones are dropped); "compare with max"
   const keptPinned = useMemo(() => ownedPinned(pinned, notOwned).kept, [pinned, notOwned]);
-  const maxKey = `${raid.id}|${JSON.stringify(assumptions)}|${drain}|${route}|${JSON.stringify(supplies)}|${ringPolicy}|${nonItem}|${JSON.stringify(pinned)}|${JSON.stringify(settings)}`;
+  const maxKey = `${raid.id}|${JSON.stringify(assumptions)}|${drain}|${route}|${JSON.stringify(supplies)}|${ringPolicy}|${specMode}|${mages ?? 'auto'}|${nonItem}|${JSON.stringify(pinned)}|${JSON.stringify(settings)}`;
   const [maxSeconds, setMaxSeconds] = useState<number | undefined>(undefined);
   const [comparing, setComparing] = useState(false);
   const compareJob = useRef<PlanJob | null>(null);
@@ -328,6 +436,8 @@ const PlanView: React.FC<{
         nonItemSlots: nonItem,
         supplies,
         ringPolicy,
+        specMode,
+        ...(mages !== undefined ? { magesInParty: mages } : {}),
         searchRows,
         ...(list.length ? { notOwned: list } : {}),
       },
@@ -400,7 +510,18 @@ const PlanView: React.FC<{
       clearTimeout(timer);
       cancel();
     };
-  }, [assumptions, drain, route, supplies, ringPolicy, nonItem, pinned, runId, cancel, settings, notOwned, maxKey]);
+  }, [assumptions, drain, route, supplies, ringPolicy, specMode, mages, nonItem, pinned, runId, cancel, settings, notOwned, maxKey]);
+
+  // phase 29: the ring policy decides the Lightbearer flag (camp Lightbearer: on; camp one ring: the planned ring)
+  const planRing = result && !running && result.ring.policy === 'camp-one' ? result.ring.ring : null;
+  useEffect(() => {
+    if (!onLightbearer) return;
+    if (ringPolicy === 'camp-lightbearer') onLightbearer({ on: true, reason: 'ring policy: Camp Lightbearer' });
+    else if (ringPolicy === 'camp-one') {
+      onLightbearer(planRing ? { on: planRing === 'Lightbearer', reason: `ring policy: Camp one ring → ${planRing}` } : { on: false, reason: 'ring policy: Camp one ring (planning…)' });
+    } else onLightbearer(null);
+  }, [ringPolicy, planRing, onLightbearer]);
+  useEffect(() => () => onLightbearer?.(null), [onLightbearer]);
 
   const planned = result && result.comparison && result.planned >= 0 ? result.comparison.routes[result.planned] : null;
   const firstPhase = planned?.encounters[0]?.phases[0];
@@ -460,11 +581,17 @@ const PlanView: React.FC<{
         <div>
           Finds the worn set + switch items with the lowest route time (time model: see Advanced above) that fit in
           {` ${INVENTORY_SLOTS} `}
-          inventory slots. Party size, drains and spec weapons (&quot;My specs&quot;) come from the boxes above; spec weapons
-          and the items below take a slot unless a loadout wears them.
+          inventory slots. Party size and drains come from the boxes above; the planner picks the spec weapons (or uses
+          &quot;Specs I bring&quot;); spec weapons and the items below take a slot unless a loadout wears them.
           {raid.planNote && ` ${raid.planNote}`}
         </div>
         <div className="flex flex-wrap gap-x-4 gap-y-2 items-center">
+          <label htmlFor="plan-spec-mode" className="flex items-center gap-1" title={SPEC_MODES.find((m) => m.id === specMode)?.title}>
+            Spec weapons
+            <select id="plan-spec-mode" className="form-control text-xs py-0.5" value={specMode} onChange={(e) => setSpecMode(e.target.value as SpecMode)} data-testid="plan-spec-mode">
+              {SPEC_MODES.map((m) => <option key={m.id} value={m.id} title={m.title}>{m.label}</option>)}
+            </select>
+          </label>
           <label htmlFor="plan-route" className="flex items-center gap-1">
             Route
             <select id="plan-route" className="form-control text-xs py-0.5" value={route} onChange={(e) => setRoute(e.target.value)} data-testid="plan-route">
@@ -519,6 +646,19 @@ const PlanView: React.FC<{
               Ring policy
               <select id="plan-ring-policy" className="form-control text-xs py-0.5" value={ringPolicy} onChange={(e) => setRingPolicy(e.target.value as RingPolicy)} data-testid="plan-ring-policy">
                 {RING_POLICIES.map((p) => <option key={p.id} value={p.id} title={p.title}>{p.label}</option>)}
+              </select>
+            </label>
+            <label htmlFor="plan-mages" className="flex items-center gap-1" title="Team drains: Eye of Ayak carriers are planned only if someone in the party attacks with magic">
+              Mages in party
+              <select
+                id="plan-mages"
+                className="form-control text-xs py-0.5"
+                value={mages === undefined ? 'auto' : String(mages)}
+                onChange={(e) => setMages(e.target.value === 'auto' ? undefined : Number(e.target.value))}
+                data-testid="plan-mages"
+              >
+                <option value="auto">auto (1 if your kit has a magic loadout, else 0)</option>
+                {Array.from({ length: raid.partySize.max + 1 }, (_, i) => <option key={i} value={i}>{i}</option>)}
               </select>
             </label>
             <div className="text-gray-500 dark:text-gray-400">
@@ -651,7 +791,9 @@ const PlanView: React.FC<{
               <div className="text-xs font-semibold">Inventory</div>
               <InventoryGrid cells={result.inventory} />
               <div className="text-[10px] text-gray-500 dark:text-gray-400 max-w-[190px]" data-testid="spec-note">
-                {`Spec weapons come from "My specs" above${result.specItems.length ? ` (${result.specItems.map((x) => x.name).join(', ')})` : ''}; each takes a slot. Untick a weapon or set Ayak × 0 to free it.`}
+                {result.specs.mode === 'auto'
+                  ? `Spec weapons picked by the planner${result.specItems.length ? ` (${result.specItems.map((x) => x.name).join(', ')})` : ': none'}; each takes a slot.`
+                  : `Spec weapons from "Specs I bring"${result.specItems.length ? ` (${result.specItems.map((x) => x.name).join(', ')})` : ''}; each takes a slot. Untick a weapon or set Ayak × 0 to free it.`}
               </div>
             </div>
             <div className="flex flex-col gap-1 text-xs min-w-[300px] flex-1" data-testid="kit-loadouts">
@@ -687,6 +829,7 @@ const PlanView: React.FC<{
                   </span>
                 )}
               </div>
+              {result.specs && <SpecsBox specs={result.specs} />}
               {result.unusedCarried.length > 0 && (
                 <div className="mt-1 px-2 py-1 rounded border border-orange-400 bg-orange-50 dark:bg-orange-900/30 flex flex-wrap items-center gap-2" data-testid="unused-carried">
                   <span>{`Always brought but in no kit loadout: ${result.unusedCarried.map((x) => x.name).join(', ')}.`}</span>

@@ -26,7 +26,7 @@ import { resolveItem } from '@/lib/fracturedArchive/loadout';
 import SpecPlanPanel from '@/app/components/bestSetup/SpecPlanPanel';
 import SearchView from '@/app/components/bestSetup/SearchView';
 import SummaryView from '@/app/components/bestSetup/SummaryView';
-import PlanView from '@/app/components/bestSetup/PlanView';
+import PlanView, { LightbearerLock } from '@/app/components/bestSetup/PlanView';
 import TimeSettingsBox from '@/app/components/bestSetup/TimeSettingsBox';
 import { equipmentImageUrl, targetImageUrl } from '@/lib/fracturedArchive/loadoutIcons';
 import { ItemIcon } from '@/app/components/bestSetup/ItemIcons';
@@ -44,6 +44,8 @@ import {
 // Phase 23: simple view + Advanced expander; the Routes / Encounters tab is merged into Plan (tabs: Search, Plan,
 // Summary); no fight-length input (computed per boss, bestSetup.ts autoFightSeconds).
 // Phase 26: "Items I don't own" (NotOwnedBox.tsx, global for every raid tab, kept in localStorage).
+// Phase 29: "My specs" → "Specs I bring" (Search / Summary Solo drains; the Plan tab's manual override); Lightbearer is
+// an "I wear a Lightbearer" ring toggle, which the Plan tab's ring policy sets while the Plan tab is open.
 // Docs: docs/BEST_SETUP.md.
 
 const POTION_OPTIONS = (Object.keys(PotionMap) as unknown as string[])
@@ -71,7 +73,8 @@ const LIGHTBEARER = 'Lightbearer';
 
 /** Phase 23: the "?" glossary (plain-language meaning of the terms on this page). */
 export const GLOSSARY: [string, string][] = [
-  ['Drains', 'None: no Defence / Magic defence drains. Solo: only your own specs ("My specs"), within the spec energy you have in that fight. Team: the team\'s spec carriers (Advanced) each spec twice at the start.'],
+  ['Drains', 'None: no Defence / Magic defence drains. Solo: only your own specs ("Specs I bring"; in the Plan tab the planner picks them), within the spec energy you have in that fight. Team: the team\'s spec carriers (Advanced) each spec twice at the start.'],
+  ['Needed / team brings', 'Team drain line: "needed ×2 (4 hits)" = the specs that reach the floor if every one lands; "team brings ×4" = the specs the carriers do in the first round (2 each).'],
   ['Floor', 'The lowest Defence a boss can be drained to (e.g. Archive Guardian 156). The Defence floor is used when its chance is at least the % set in Advanced (95%).'],
   ['First round', 'The specs everyone does at the start of the fight with full (100%) energy: 2 specs each for 50% weapons.'],
   ['Hit chance', 'The "77% land" under each drain icon: the chance one spec lands its drain (from the calculator, against the undrained boss). "×0 (no energy)": specs you asked for that your spec energy doesn\'t cover.'],
@@ -192,7 +195,7 @@ const ScalingInputs: React.FC<{
 );
 
 /**
- * Phase 23: the assumptions box. Simple view: raid scaling, potions / heart, Zeal, fragments, "My specs" as icon
+ * Phase 23: the assumptions box. Simple view: raid scaling, potions / heart, Zeal, fragments, "Specs I bring" (phase 29; was "My specs") as icon
  * toggles + Lightbearer. Everything else under "Advanced" (team carriers, floor confidence, team-DPS multiplier,
  * energy priority, the Plan tab's time model).
  */
@@ -206,8 +209,10 @@ const AssumptionsBox: React.FC<{
   onTimeSettings: (s: TimeSettings) => void,
   notOwned: string[],
   onNotOwned: (names: string[]) => void,
+  /** Phase 29: set while the Plan tab's ring policy decides the ring (camp Lightbearer / camp one ring). */
+  lightbearerLock?: LightbearerLock | null,
 }> = ({
-  raid, value, onChange, ayakHint, timeSettings, onTimeSettings, notOwned, onNotOwned,
+  raid, value, onChange, ayakHint, timeSettings, onTimeSettings, notOwned, onNotOwned, lightbearerLock,
 }) => {
   const set = (patch: Partial<BestSetupAssumptions>) => onChange({ ...value, ...patch });
   const carrierTotal = Object.values(value.team.carriers).reduce((t, n) => t + n, 0);
@@ -269,7 +274,7 @@ const AssumptionsBox: React.FC<{
         )}
       </div>
       <div className="flex flex-wrap gap-x-2 gap-y-2 items-center" data-testid="my-specs">
-        <span className="font-semibold" title="The drain weapons you bring yourself: the Solo drain state uses only these, within your own spec energy; the Plan tab gives each one an inventory slot">My specs:</span>
+        <span className="font-semibold" title="The drain weapons you bring yourself: the Solo drain state (Search, Summary) uses only these, within your own spec energy. The Plan tab picks the spec weapons itself unless its &quot;Spec weapons&quot; is set to &quot;Specs I bring&quot;">Specs I bring:</span>
         {MY_SPEC_WEAPONS.map((k) => (
           <IconToggle
             key={k}
@@ -298,15 +303,32 @@ const AssumptionsBox: React.FC<{
             onChange={(e) => set({ mySpecs: { ...value.mySpecs, ayak: Math.min(10, Math.max(0, Math.floor(Number(e.target.value) || 0))) } })}
           />
         </label>
-        <IconToggle
-          id="bs-my-lightbearer"
-          label="Lightbearer"
-          src={itemImage(LIGHTBEARER)}
-          on={value.mySpecs.lightbearer}
-          title="I wear Lightbearer: spec energy comes back twice as fast (10% per 15 s)"
-          onChange={(on) => set({ mySpecs: { ...value.mySpecs, lightbearer: on } })}
-        />
         {ayakHint && <span className="text-gray-500 dark:text-gray-400" data-testid="ayak-hint">{ayakHint}</span>}
+      </div>
+      <div className="flex flex-wrap gap-x-2 gap-y-2 items-center" data-testid="ring-toggle">
+        <span className="font-semibold" title="Your ring (Solo spec energy): Lightbearer makes spec energy come back twice as fast">Ring:</span>
+        {lightbearerLock ? (
+          <span
+            className={`flex items-center gap-1 px-1.5 py-0.5 rounded border border-dashed ${lightbearerLock.on ? 'border-orange-500 bg-orange-100 dark:bg-orange-900/40' : 'border-body-400 dark:border-dark-200 opacity-60 grayscale'}`}
+            data-testid="bs-my-lightbearer"
+            aria-pressed={lightbearerLock.on}
+            data-locked="true"
+            title={`Set by the Plan tab's ring policy: ${lightbearerLock.reason}`}
+          >
+            <ItemIcon name="Lightbearer" src={itemImage(LIGHTBEARER)} size={20} />
+            {`I wear a Lightbearer: ${lightbearerLock.on ? 'yes' : 'no'}`}
+            <span className="text-gray-500 dark:text-gray-400" data-testid="lightbearer-lock">{`(${lightbearerLock.reason})`}</span>
+          </span>
+        ) : (
+          <IconToggle
+            id="bs-my-lightbearer"
+            label="I wear a Lightbearer"
+            src={itemImage(LIGHTBEARER)}
+            on={value.mySpecs.lightbearer}
+            title="I wear Lightbearer: spec energy comes back twice as fast (10% per 15 s) for the Solo drains"
+            onChange={(on) => set({ mySpecs: { ...value.mySpecs, lightbearer: on } })}
+          />
+        )}
       </div>
       <NotOwnedBox value={notOwned} onChange={onNotOwned} />
       <details data-testid="advanced">
@@ -424,7 +446,12 @@ const RaidBestSetup: React.FC<{
   const [timeSettings, setTimeSettings] = useState<TimeSettings>(raid.defaultTimeSettings);
   const [chosenKey, setTargetKey] = useState(raid.targets[0].key);
   const [phase, setPhase] = useState<string | undefined>(undefined);
-  const [drain, setDrain] = useState<DrainStateId>('team');
+  const [chosenDrain, setDrain] = useState<DrainStateId>('team');
+  // phase 29: a party of 1 has no team: Team drains become Solo (your own specs)
+  const soloParty = assumptions.partySize <= 1;
+  const drain: DrainStateId = soloParty && chosenDrain === 'team' ? 'solo' : chosenDrain;
+  // phase 29: the Plan tab's ring policy sets the Lightbearer flag while the Plan tab is open
+  const [planLightbearer, setPlanLightbearer] = useState<LightbearerLock | null>(null);
 
   // phase 21: the boss list follows the raid inputs (ToB: Prinkipas only in Hard Mode); a hidden pick falls back to the first
   const bossList = useMemo(() => visibleTargets(raid, assumptions), [raid, assumptions]);
@@ -459,14 +486,16 @@ const RaidBestSetup: React.FC<{
         <button
           key={s.id}
           type="button"
-          className={tabClass(drain === s.id)}
-          title={s.description}
+          className={`${tabClass(drain === s.id)} disabled:opacity-40`}
+          title={soloParty && s.id === 'team' ? 'A party of 1 has no team: Solo drains (your own specs)' : s.description}
           data-testid={`drain-${s.id}`}
+          disabled={soloParty && s.id === 'team'}
           onClick={() => setDrain(s.id)}
         >
           {s.label}
         </button>
       ))}
+      {soloParty && chosenDrain === 'team' && <span className="text-xs text-gray-500 dark:text-gray-400" data-testid="drain-solo-party">(party of 1: Solo)</span>}
     </div>
   );
 
@@ -492,6 +521,7 @@ const RaidBestSetup: React.FC<{
             onTimeSettings={setTimeSettings}
             notOwned={notOwned}
             onNotOwned={setNotOwned}
+            lightbearerLock={mode === 'plan' ? planLightbearer : null}
           />
 
           {mode === 'search' && (
@@ -570,7 +600,7 @@ const RaidBestSetup: React.FC<{
             />
           )}
           {mode === 'plan' && drainButtons}
-          {mode === 'plan' && <PlanView assumptions={assumptions} drain={drain} raid={raid} timeSettings={timeSettings} notOwned={notOwned} />}
+          {mode === 'plan' && <PlanView assumptions={assumptions} drain={drain} raid={raid} timeSettings={timeSettings} notOwned={notOwned} onLightbearer={setPlanLightbearer} />}
 
           <div className="text-[11px] text-gray-500 dark:text-gray-400">
             {`Same calculation as the main calculator. ${raid.hpNote} ${teamTimeLabel(teamDpsMultiplier(assumptions))}. Prayers: ${Object.values(GROUP_PRAYER).join(' / ')}. See docs/BEST_SETUP.md for caveats.`}

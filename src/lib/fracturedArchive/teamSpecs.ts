@@ -288,7 +288,28 @@ export interface SoloSpecInput {
   /** What the energy goes to first when it doesn't cover everything. */
   priority?: 'defence' | 'ayak';
   threshold?: number;
+  /**
+   * Phase 29 (the planner's spec choice): use only as many of the `ayakSpecs` as reach P(magic def 0) ≥ threshold
+   * ({@link ayakSpecsToThreshold}); all of them when none does.
+   */
+  ayakUntilZero?: boolean;
 }
+
+/**
+ * Phase 29: fewest Eye of Ayak specs (≤ `max`) whose P(magic def 0) ≥ threshold; `max` when none does, 0 when the
+ * bonus is already ≤ 0 or Ayak can't hit.
+ */
+export const ayakSpecsToThreshold = (
+  model: Pick<DrainModel, 'magicDef' | 'outcomes' | 'expectedDamage' | 'canHit'>,
+  max: number,
+  threshold = DEFAULT_FLOOR_THRESHOLD,
+): number => {
+  if (!model.canHit.ayak || model.magicDef <= 0) return 0;
+  for (let n = 1; n <= max; n++) {
+    if (ayakOutcome(model, n, threshold).pZero >= threshold) return n;
+  }
+  return Math.max(0, max);
+};
 
 export interface SoloSpecPlan {
   /** Energy available (energyBudget) and spent. */
@@ -356,7 +377,8 @@ export const soloSpecPlan = (model: DrainModel, input: SoloSpecInput): SoloSpecP
   const threshold = input.threshold ?? DEFAULT_FLOOR_THRESHOLD;
   const budget = energyBudget({ seconds: input.fightSeconds, lightbearer: input.lightbearer });
   const weapons = DEFENCE_DRAIN_ORDER.filter((w) => input.carried[w] && model.canHit[w]);
-  const ayakUsable = model.canHit.ayak && model.magicDef > 0 ? Math.max(0, Math.floor(input.ayakSpecs)) : 0;
+  let ayakUsable = model.canHit.ayak && model.magicDef > 0 ? Math.max(0, Math.floor(input.ayakSpecs)) : 0;
+  if (input.ayakUntilZero) ayakUsable = ayakSpecsToThreshold(model, ayakUsable, threshold);
   const specCost = Math.max(...DEFENCE_DRAIN_ORDER.map((w) => model.energy[w]), model.energy.ayak);
   const total = specAttempts(budget, specCost);
 
@@ -434,6 +456,63 @@ export const soloSpecPlan = (model: DrainModel, input: SoloSpecInput): SoloSpecP
     reductions: countsToReductions(chosen.outcome.rankedCounts, ayak.rankedDrain),
     text: parts.join('; '),
   };
+};
+
+// --- specs needed if every one lands (phase 29 drain line) -----------------------------------------------------------
+
+/**
+ * Phase 29: the specs of each weapon needed to reach the Defence floor if every spec lands its best case (maul / DWH
+ * one landed hit, Tonalztics two damaging hits, BGS its expected damage on a hit), drawn from `available` (e.g. the
+ * team's first round): the fewest specs in total (ties: more of the earlier weapon in upstream order). Weapons that
+ * can't hit count as unavailable. `defence` is null when even every available spec landing doesn't reach the floor;
+ * Eye of Ayak: specs of average damage on a hit to take the magic defence bonus to 0 (null if it can't hit).
+ */
+export const neededSpecs = (
+  model: Pick<DrainModel, 'def' | 'floor' | 'magicLevel' | 'magicDef' | 'canHit' | 'hitChance' | 'expectedDamage'>,
+  available: Partial<Record<PlannerWeapon, number>>,
+): { defence: Partial<Record<DefenceDrainWeapon, number>> | null, ayak: number | null } => {
+  const weapons = DEFENCE_DRAIN_ORDER.filter((w) => (available[w] ?? 0) > 0 && model.canHit[w]);
+  const landed = (w: DefenceDrainWeapon): SpecOutcome => {
+    if (w === 'tonalztics') return { p: 1, hits: 2, damage: 0 };
+    if (w === 'bgs') {
+      const onHit = model.hitChance.bgs > 0 ? model.expectedDamage.bgs / model.hitChance.bgs : 0;
+      return { p: 1, hits: 1, damage: Math.round(onHit) };
+    }
+    return { p: 1, hits: 1, damage: 0 };
+  };
+  let defence: Partial<Record<DefenceDrainWeapon, number>> | null = null;
+  if (model.def <= model.floor) {
+    defence = {};
+  } else {
+    let best: { counts: Partial<Record<DefenceDrainWeapon, number>>, total: number, key: number[] } | null = null;
+    const walk = (i: number, counts: Partial<Record<DefenceDrainWeapon, number>>) => {
+      if (i === weapons.length) {
+        let d = model.def;
+        weapons.forEach((w) => {
+          for (let k = 0; k < (counts[w] ?? 0); k++) d = applyOutcome(model, w, d, landed(w));
+        });
+        const total = weapons.reduce((t, w) => t + (counts[w] ?? 0), 0);
+        const key = weapons.map((w) => -(counts[w] ?? 0));
+        const lexLess = (a: number[], b: number[]) => {
+          for (let j = 0; j < a.length; j++) if (a[j] !== b[j]) return a[j] < b[j];
+          return false;
+        };
+        if (total > 0 && d <= model.floor && (!best || total < best.total || (total === best.total && lexLess(key, best.key)))) {
+          best = { counts: { ...counts }, total, key };
+        }
+        return;
+      }
+      for (let k = 0; k <= (available[weapons[i]] ?? 0); k++) walk(i + 1, { ...counts, [weapons[i]]: k });
+    };
+    walk(0, {});
+    defence = best ? (best as { counts: Partial<Record<DefenceDrainWeapon, number>> }).counts : null;
+  }
+  let ayak: number | null = null;
+  if (model.magicDef <= 0) ayak = 0;
+  else if (model.canHit.ayak && model.hitChance.ayak > 0 && model.expectedDamage.ayak > 0) {
+    ayak = Math.ceil(model.magicDef / (model.expectedDamage.ayak / model.hitChance.ayak));
+  }
+  return { defence, ayak };
 };
 
 // --- team ----------------------------------------------------------------------------------------------------------

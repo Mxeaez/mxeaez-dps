@@ -21,7 +21,8 @@ import openInCalculator from '@/app/components/bestSetup/loadIntoCalculator';
 import { searchRowIcons, searchRowWeaponParts } from '@/lib/fracturedArchive/loadoutIcons';
 import { LoadoutIconRow, WeaponLine } from '@/app/components/bestSetup/ItemIcons';
 import DPS_TEXT_CLASS from '@/app/components/bestSetup/styles';
-import DrainLineView from '@/app/components/bestSetup/DrainLineView';
+import DefenceIcon from '@/public/img/bonuses/defence.png';
+import MagicIcon from '@/public/img/bonuses/magic.png';
 import { teamDpsMultiplier, teamTimeLabel } from '@/lib/raids';
 import { loadoutUsesUnowned, unownedLabel } from '@/lib/fracturedArchive/ownership';
 
@@ -221,11 +222,15 @@ const SearchView: React.FC<{
         <>
           <div className="text-xs flex flex-col gap-0.5" data-testid="search-summary">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span className="flex items-center gap-1" title={result.drain.plan}>
-                <span className="font-semibold">Drains:</span>
-                {result.drain.line
-                  ? <DrainLineView line={result.drain.line} showBudget />
-                  : `none → Def ${result.drain.defAfter} · Magic def ${result.drain.magicDefAfter}`}
+              {/* phase 29: the drain plan itself is in the box above (SpecPlanPanel); only what the ranking used here */}
+              <span className="flex items-center gap-1" title={result.drain.plan} data-testid="search-ranked-at">
+                ranked at
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={DefenceIcon.src} alt="" width={14} height={14} className="inline" />
+                {`Def ${result.drain.defAfter} ·`}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={MagicIcon.src} alt="" width={14} height={14} className="inline" />
+                {`Magic def ${result.drain.magicDefAfter}`}
               </span>
               <span data-testid="search-best-preset" title="Gain column = DPS over this preset (same boss and drains)">
                 {result.bestPreset

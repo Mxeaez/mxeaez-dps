@@ -2,7 +2,7 @@
  * Phase 23 UI check (not part of the Jest run): the best-setup UI cleanup.
  *
  * Usage (dev server running): node scripts/verifyPhase23.mjs [baseUrl]
- * - Simple view: the assumptions box shows ≤ 10 form inputs (+ the "My specs" icon toggles); Advanced is closed and
+ * - Simple view: the assumptions box shows ≤ 10 form inputs (+ the "Specs I bring" icon toggles); Advanced is closed and
  *   holds the team carriers, one "carriers use Lightbearer" toggle (no per-weapon LB boxes), the floor confidence, the
  *   team-DPS multiplier, the energy priority and the time-model settings; no Fight length input anywhere; the "?"
  *   glossary opens.
@@ -59,7 +59,9 @@ const main = async () => {
   const visibleInputs = await box.locator('input, select').evaluateAll((els) => els.filter((e) => e.checkVisibility()).length);
   const toggles = await box.locator('[data-testid="my-specs"] button[aria-pressed]').count();
   check(visibleInputs <= 10, `simple view: ${visibleInputs} visible inputs / selects (≤ 10), + ${toggles} icon toggles`);
-  check(toggles === 5, `My specs: ${toggles} icon toggles (Elder maul, DWH, BGS, Tonalztics, Lightbearer)`);
+  // phase 29: "Specs I bring" (4 weapons); Lightbearer is the "I wear a Lightbearer" ring toggle on its own row
+  check(toggles === 4, `Specs I bring: ${toggles} icon toggles (Elder maul, DWH, BGS, Tonalztics)`);
+  check(await box.locator('[data-testid="ring-toggle"] button[aria-pressed]').count() === 1, 'Ring: one "I wear a Lightbearer" toggle');
   const advancedOpen = await page.locator('[data-testid="advanced"]').evaluate((e) => e.open);
   check(!advancedOpen, 'Advanced closed by default');
   check(!(await page.locator('#bs-team-elderMaul').isVisible()), 'carriers hidden in the simple view');
@@ -99,11 +101,15 @@ const main = async () => {
   await page.locator('[data-testid="boss-select"]').selectOption('xarth');
   await waitSearch(page);
   const team = await lineItems(page, '[data-testid="spec-plan"]');
-  check(JSON.stringify(team.map((i) => [i.weapon, i.count])) === JSON.stringify([['elderMaul', '×4'], ['tonalztics', '×4'], ['ayak', '×2']]), `Team drain line: ${team.map((i) => `${i.weapon} ${i.count}`).join(', ')}`);
+  // phase 29: the Team line reads "needed ×N · team brings ×M" (Tonalztics: "needed ×N (2N hits)")
+  check(JSON.stringify(team.map((i) => [i.weapon, i.count.replace(/^.* · /, '')])) === JSON.stringify([['elderMaul', 'team brings ×4'], ['tonalztics', 'team brings ×4'], ['ayak', 'team brings ×2']]), `Team drain line: ${team.map((i) => `${i.weapon} ${i.count}`).join(', ')}`);
+  check(team.every((i) => /^(needed ×\d+( \(\d+ hits?\))?|not needed|floor not reachable|magic def 0 not reachable) · team brings ×\d+$/.test(i.count)), 'every Team item starts with "needed ×N"');
   check(team.every((i) => /^\d+% land$/.test(i.hit || '') && i.icon), `hit chance under each icon: ${team.map((i) => i.hit).join(', ')}`);
   const result = await page.locator('[data-testid="spec-plan"] [data-testid="drain-line-result"]').innerText();
   check(/→ Def \d+ · Magic def \d+/.test(result), `drain line result "${result}"`);
-  check(await page.locator('[data-testid="search-summary"] [data-testid="drain-line"]').count() === 1, 'Search header shows the drain line');
+  // phase 29: the Search header no longer repeats the drain line ("ranked at Def … · Magic def …" only)
+  check(await page.locator('[data-testid="search-summary"] [data-testid="drain-line"]').count() === 0, 'Search header: no duplicate drain line');
+  check(await page.locator('[data-testid="search-ranked-at"]').count() === 1, 'Search header: "ranked at Def … · Magic def …"');
   await shot(page, 'search-xarth-team');
 
   await page.locator('[data-testid="drain-solo"]').click();
@@ -134,7 +140,7 @@ const main = async () => {
   const planLines = await page.locator('[data-testid="plan-phase-drains"] [data-testid="drain-line-item"]').count();
   check(planLines > 0, `Plan per-phase drain lines: ${planLines} icons`);
   const faTotal = (await page.locator('[data-testid="plan-total"]').innerText()).trim();
-  check(faTotal === '22:47.9', `FA plan total ${faTotal} (phase 27: 22:47.9, camp one ring)`);
+  check(faTotal === '21:53.0', `FA plan total ${faTotal} (phase 29: 21:53.0; phase 27: 22:47.9, camp one ring)`);
   await shot(page, 'plan-fa');
 
   await page.locator('[data-testid="raid-tab-toa"]').click();
@@ -143,7 +149,7 @@ const main = async () => {
   const toaRoutes = await page.locator('[data-testid="plan-route-row"]').count();
   check(toaRoutes === 1, `ToA Plan: ${toaRoutes} route row (single route)`);
   const toaTotal = (await page.locator('[data-testid="plan-total"]').innerText()).trim();
-  check(toaTotal === '14:22.3', `ToA plan total ${toaTotal} (phase 27: 14:22.3, camp Magus ring)`);
+  check(toaTotal === '14:10.5', `ToA plan total ${toaTotal} (phase 29: 14:10.5; phase 27: 14:22.3, camp Magus ring)`);
   await shot(page, 'plan-toa');
 
   // --- calculator Max-drain buttons

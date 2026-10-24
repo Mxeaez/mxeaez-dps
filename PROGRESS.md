@@ -3,6 +3,48 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 29 — Planner decides spec weapons (2026-10-24)
+
+- New `specChoice.ts` (pure): `searchSpecSubsets` (Solo subset search: one candidate per distinct drain state = the
+  cheapest subset, dominance pruning, quick optimiser for all, full for the best 3, per-weapon Δ and the best rejected
+  weapon), `teamRoles` (team briefing: per boss / phase `recommendCarriers`' minimum, max per weapon over the planned
+  route, the bosses driving it; Eye of Ayak only with mages), `assignMe` (your share: the most-needed weapon only if
+  carried anyway / a free slot / its slot worth < 1 s of gear), `mySpecsForSubset` (Ayak until P(magic def 0) ≥ 95%:
+  `ayakSpecsToThreshold`, `SoloSpecInput.ayakUntilZero`, `MySpecs.ayakAuto`).
+- `planner.ts`: `SpecMode` (`DEFAULT_SPEC_MODE` = 'auto' in the Plan tab; `plan()` default 'manual' = "Specs I bring"),
+  `PlanInputs.specMode` / `magesInParty`, `PlanResult.specs` (bring, text, solo per-weapon Δ, team briefing, share,
+  notes). Solo: the subset search inside the kit optimiser per ring run (shared DPS columns per distinct drain state —
+  the DPS cache key is now the monster's reductions; `SOLO_DRAIN_CACHE` by phase / subset / energy-budget bucket; ring
+  screens after the first reuse its subset). Team: briefing on the matrix-fastest route, share, then the briefing on
+  the final route. Spec weapons left the pinned defaults (FA / CoX / ToB Elder maul).
+- Drain line: Team items read "needed ×2 (4 hits) · team brings ×4" (`neededSpecs`: specs reaching the floor if every
+  one lands); Tonalztics shows its hits inline ("×2 (4 hits)"). Search header: the duplicate "Drains:" line is gone
+  ("ranked at [Def icon] Def … · [Magic icon] Magic def …").
+- UI: "My specs" → "Specs I bring"; "Ring: I wear a Lightbearer" toggle (locked to the Plan's ring policy while the
+  Plan tab is open); Plan "Spec weapons: Planner decides / Specs I bring", "Mages in party" (Advanced (plan)), results
+  box (Bring, per-weapon Δ, team briefing table, your share, Ayak hint). FA party size 1 allowed (solo = 2-scale hp);
+  a party of 1 disables Team (Solo drains).
+- Headlines (Team, camp one ring, planner decides) before → after: FA 22:47.9 → **21:53.0** (Tonalztics in a free
+  slot), ToA 14:22.3 → **14:10.5** (no spec weapon: slot worth 6.2 s), CoX 6:40.3 → **6:36.3** (none: 3.4 s), ToB
+  7:31.7 → **7:30.6** (Tonalztics: slot worth 0.5 s); FA without Obligator + Ascension crossbows 25:24.5 → **24:53.8**.
+  "Specs I bring" reproduces the phase 28 FA total (22:47.9).
+- Solo (FA defaults, party 1, Ultor): **22:42.7, Bring: Elder maul (saves 104.4 s), Eye of Ayak (69.2 s)**; not
+  brought: DWH −7.7 s, BGS −11.1 s, Tonalztics −49.6 s; 22 drain states / 32 sets, 10 dominated, 13 timed; Jest 53 s
+  (123 s before the drain cache / pruning / screen reuse), browser 19.9 s (searches cached).
+- Playwright `verifyPhase29.mjs` all OK (Bring / briefing / assign me, AG Flying "needed ×2 (4 hits) · team brings ×4",
+  Lightbearer toggle follows the ring policy, Search header without the duplicate line, party 1 → Solo);
+  screenshots `phase29-search-header`, `-team`, `-camp-lightbearer`, `-solo`.
+  Re-ran verifyPhase21 / 23 / 26 / 27 (re-pinned to the phase 29 totals; 23: "Specs I bring" toggles, Team line "needed
+  … · team brings ×N", no Search-header drain line): all OK; tracked screenshots restored.
+- Tests: `Phase29.test.ts` (21: toy subset search incl. finalists / signatures / dominance, Ayak threshold, team roles =
+  carriers table for AG Flying (2 Tonalztics) and Bork (2 Elder maul), mages, assign-me rule, drain line texts, reduced
+  plans: modes, Team share, Solo without magic never brings Ayak, magic-only kit values it, Ayak hint); Phase21 / 23 /
+  Ownership updated (pinned lists, drain-line title, "Specs I bring"); CrossRaid headlines re-pinned. `yarn test` 1347
+  (1337 pass / 10 skipped); `RUN_SLOW_TESTS=1` CrossRaid + Phase27 + Phase28 50 / 50 (headlines recomputed outside the
+  planner equal the new totals); lint, tsc clean.
+- Docs: BEST_SETUP *Spec weapons (phase 29)*, UNVERIFIED D21 (assign-me rule), D22 (mages in party), D17; ROADMAP 29 in
+  review + decisions; README.
+
 ## Phase 28 — Final review, round 3 (2026-10-24)
 
 - Fresh pass over phases 23-27 (d5c43798..1d819af3), focused on what changes numbers.

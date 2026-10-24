@@ -174,14 +174,20 @@ phase; phase 29 changes numbers, so it gets the full independent review.
 
 | # | Phase | Done when | Status |
 |---|---|---|---|
-| 29 | Planner decides spec weapons | **Solo:** spec weapons (Elder maul, DWH, BGS, Tonalztics, Ayak) are planner candidates — each costs a slot and buys the drain it can land on the bosses it can hit; the planner tries the subsets with the kit and reports "Bring: …" with what each saves (or "maul alone is enough: Tonalztics would save 4 s for 1 slot"). **Team (party ≥ 2):** (1) *team roles* — for the chosen kit and party size, the minimum carriers per weapon per boss to reach the floor from the first round at ≥ 95% (e.g. "6-man: 2 Elder maul, 2 Tonalztics (Guardian flying, Moia), 1 Ayak only if someone mages"), shown as a team briefing; (2) *your share* — "assign me" (default: the weapon whose carrier count is hardest to fill, or none if your slots are worth more as gear) or a manual pick; only what you carry costs slots. Ayak gets value only if a magic loadout is in your kit (Solo) or "mages in party" > 0 (Team, new Advanced input). "Specs I bring" stays as a manual override. Plus the four tweaks: drain line shows "needed ×2 (4 hits) · team brings ×4"; remove the duplicate "Drains:" line from the Search header (keep "ranked at Def · Magic def"); rename "My specs" → "Specs I bring"; Lightbearer becomes an "I wear a Lightbearer" ring toggle (set automatically by the Camp Lightbearer policy), not a spec weapon; hint when Ayak is carried but no magic loadout uses it. Tests (subset search finds the hand-computed optimum on a toy; team roles match the carriers table; your-share costing), Playwright, docs | planned |
+| 29 | Planner decides spec weapons | **Solo:** spec weapons (Elder maul, DWH, BGS, Tonalztics, Ayak) are planner candidates — each costs a slot and buys the drain it can land on the bosses it can hit; the planner tries the subsets with the kit and reports "Bring: …" with what each saves (or "maul alone is enough: Tonalztics would save 4 s for 1 slot"). **Team (party ≥ 2):** (1) *team roles* — for the chosen kit and party size, the minimum carriers per weapon per boss to reach the floor from the first round at ≥ 95% (e.g. "6-man: 2 Elder maul, 2 Tonalztics (Guardian flying, Moia), 1 Ayak only if someone mages"), shown as a team briefing; (2) *your share* — "assign me" (default: the weapon whose carrier count is hardest to fill, or none if your slots are worth more as gear) or a manual pick; only what you carry costs slots. Ayak gets value only if a magic loadout is in your kit (Solo) or "mages in party" > 0 (Team, new Advanced input). "Specs I bring" stays as a manual override. Plus the four tweaks: drain line shows "needed ×2 (4 hits) · team brings ×4"; remove the duplicate "Drains:" line from the Search header (keep "ranked at Def · Magic def"); rename "My specs" → "Specs I bring"; Lightbearer becomes an "I wear a Lightbearer" ring toggle (set automatically by the Camp Lightbearer policy), not a spec weapon; hint when Ayak is carried but no magic loadout uses it. Tests (subset search finds the hand-computed optimum on a toy; team roles match the carriers table; your-share costing), Playwright, docs | in review |
 | 30 | Final review (round 4) | Fresh pass; UNVERIFIED updated | planned |
 
 ### Decisions (round 4)
 
 - Spec weapons are an *output* of the planner, not an input; the manual "Specs I bring" override remains.
 - Team drains stay computed from carriers (floor when P(floor) ≥ 95%, else the nearest reachable Defence to the expected value).
-- Tonalztics counts are shown in specs (one charged spec = two hits); hits go in the tooltip.
+- Tonalztics counts are shown in specs (one charged spec = two hits); phase 29 also shows the hits inline ("×2 (4 hits)").
+- Phase 29 (builder's decisions): the Plan tab defaults to "Spec weapons: Planner decides" (`plan()` keeps "Specs I
+  bring" as its API default, like the ring policy); spec weapons left the pinned defaults (FA / CoX / ToB Elder maul);
+  the Team drain state keeps using the configured carriers ("team brings ×4"), the team briefing is the recommendation;
+  "assign me" carries the most-needed weapon only if it is free or its slot is worth < 1 s of gear (UNVERIFIED D21);
+  Eye of Ayak carriers need "Mages in party" > 0 (default 1 if your kit has a magic loadout; D22); FA allows party size 1
+  (solo; hp still scales as 2), and a party of 1 uses Solo drains.
 
 ### Future work (round 5)
 

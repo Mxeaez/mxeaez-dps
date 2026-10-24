@@ -10,7 +10,7 @@ import {
   compareRoutes, computeRouteComparison, createKitEvaluator, formatDuration, KitLoadout, raidTimeAssumptionsFrom,
 } from '@/lib/fracturedArchive/raidTime';
 import {
-  comfortSupplies, DEFAULT_RING_POLICY, plan, PlanResult, planAssumptions, planItemByName, ringAssumptions, toPlayerEquipment,
+  comfortSupplies, DEFAULT_RING_POLICY, DEFAULT_SPEC_MODE, plan, PlanResult, planAssumptions, planItemByName, ringAssumptions, toPlayerEquipment,
 } from '@/lib/fracturedArchive/planner';
 import { applyLoadoutToPlayer } from '@/lib/fracturedArchive/loadout';
 import {
@@ -177,7 +177,8 @@ describe.each(RAIDS.map((r) => [r.name, r] as const))('%s: every target', (_, ra
 const planFor = (raid: RaidConfig, reduced: boolean, notOwned: string[] = []): PlanResult => plan({
   ...(notOwned.length ? { notOwned } : {}),
   // phase 27: the full (headline) plan uses the Plan tab's default ring policy (camp one ring); the reduced one switches
-  ...(reduced ? {} : { ringPolicy: DEFAULT_RING_POLICY }),
+  // phase 29: and the Plan tab's default spec mode (the planner decides: Team = your share of the team's carriers)
+  ...(reduced ? {} : { ringPolicy: DEFAULT_RING_POLICY, specMode: DEFAULT_SPEC_MODE }),
   basePlayer: generateEmptyPlayer(),
   assumptions: raid.defaultAssumptions,
   drain: 'team',
@@ -221,18 +222,23 @@ describe('every raid\'s plan runs (reduced pool)', () => {
 // 1 Ranging potion instead of 2 ranging + 1 super combat frees a slot; allow switches would be 22:47.7); ToA 14:20.2 →
 // 14:22.3 (camp Magus ring; switches 14:20.2); CoX 6:39.9 → 6:40.3 (camp Ultor ring; switches 6:39.9); ToB 7:32.4 →
 // 7:31.7 (camp Ultor ring: no ring switch items, the freed slots buy a better kit; switches 7:32.4).
+// Phase 29 (the planner decides the spec weapons; no Elder maul in the pinned defaults; Team = your share of the
+// team's carriers, "assign me"): FA 22:47.9 → 21:53.0 (the default "My specs" Elder maul + Eye of Ayak no longer take
+// two slots; Tonalztics, the most-needed weapon, goes in a free slot); ToA 14:22.3 → 14:10.5 (no spec weapon: the slot is
+// worth 6.2 s of gear); CoX 6:40.3 → 6:36.3 (none: 3.4 s); ToB 7:31.7 → 7:30.6 (Tonalztics: its slot was worth 0.5 s).
 const HEADLINES: [string, string, number][] = [
-  ['fractured-archive', '22:47.9', 1367.9],
-  ['toa', '14:22.3', 862.3],
-  ['cox', '6:40.3', 400.3],
-  ['tob', '7:31.7', 451.7],
+  ['fractured-archive', '21:53.0', 1313.0],
+  ['toa', '14:10.5', 850.5],
+  ['cox', '6:36.3', 396.3],
+  ['tob', '7:30.6', 450.6],
 ];
 
 // Phase 28: the FA plan without Obligator and Ascension crossbows ("Items I don't own"; phase 26 pinned 25:46.8 with
 // switches and the old potions, before phase 27). Phase 28 (camp one ring, potions from the kit): 25:24.5, camping
 // Lightbearer (the pinned Lightbearer is worn, which frees its slot; Magus / Ultor screens ≥ 36 s slower); kit Twisted
 // bow (Masori) worn + Inquisitor's + Scythe (slash).
-const ONLY_OWNED_HEADLINE: [string, number] = ['25:24.5', 1524.5];
+// Phase 29 (planner decides the spec weapons): 25:24.5 → 24:53.8, camping Ultor ring; Tonalztics in a free slot.
+const ONLY_OWNED_HEADLINE: [string, number] = ['24:53.8', 1493.8];
 const FA_NOT_OWNED = ['Obligator', 'Ascension crossbows'];
 
 /**

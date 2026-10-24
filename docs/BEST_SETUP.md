@@ -16,8 +16,9 @@ presentation only; the numbers are unchanged except the Solo fight length (below
 
 - **Tabs**: Search · Plan · Summary.
 - **Assumptions, simple view** (≤ 10 inputs): raid scaling (party size; ToA raid / path levels; CoX Challenge Mode;
-  ToB mode), the potion per style and the Heart (FA / ToB), Zeal and Elemental fragments (FA), and **My specs** as icon
-  toggles (Elder maul, DWH, BGS, Tonalztics, Ayak × N, Lightbearer). Every input has a plain-language tooltip; Reset
+  ToB mode), the potion per style and the Heart (FA / ToB), Zeal and Elemental fragments (FA), and **Specs I bring**
+  (phase 29; was "My specs") as icon toggles (Elder maul, DWH, BGS, Tonalztics, Ayak × N), and **Ring: I wear a
+  Lightbearer** (phase 29: a ring toggle, not a spec weapon; the Plan tab's ring policy sets it while that tab is open). Every input has a plain-language tooltip; Reset
   and a **"?" glossary** are top right.
 - **Advanced** (closed by default): team carriers per weapon (the party size above is shared) with **one "carriers use
   Lightbearer" toggle** for all carriers (`withCarrierLightbearer` in presets.ts; the per-weapon flags stay in the data);
@@ -54,7 +55,7 @@ presentation only; the numbers are unchanged except the Solo fight length (below
 
 **Glossary** (the "?" popover, `GLOSSARY` in BestSetup.tsx):
 
-- *Drains*: None = no Defence / Magic defence drains. Solo = only your own specs ("My specs"), within the spec energy
+- *Drains*: None = no Defence / Magic defence drains. Solo = only your own specs ("Specs I bring"; the Plan tab's planner picks them), within the spec energy
   you have in that fight. Team = the team's spec carriers (Advanced) each spec twice at the start.
 - *Floor*: the lowest Defence a boss can be drained to (e.g. Archive Guardian 156). The Defence floor is used when its
   chance is at least the % set in Advanced (95%).
@@ -273,8 +274,9 @@ progress bar + **Cancel** (terminates the worker). Runs on opening the tab and a
 "Run again" re-runs. The per-phase search rows are cached in memory for the session (per assumptions + drain + phase),
 so a change of supplies / items / route skips the searches.
 
-**Inputs.** From the boxes above the tabs: party size (default 6), drain state (default Team), spec weapons ("My
-specs": Elder maul, DWH, BGS, Tonalztics when ticked, Eye of Ayak when its count > 0 — each takes a slot). In the tab's
+**Inputs.** From the boxes above the tabs: party size (default 6), drain state (default Team), spec weapons (phase 29:
+picked by the planner by default — *Spec weapons (phase 29)* below; or "Specs I bring": Elder maul, DWH, BGS,
+Tonalztics when ticked, Eye of Ayak when its count > 0 — each takes a slot). In the tab's
 "Assumptions (plan)" box: **Route** — one of the 8, or *Compare all* (default: plan for the fastest route; the route
 table then shows the other routes' times with the same kit); **Comfort supplies (your call)** as slot counts — brew,
 restore, food, other (phase 27; Fractured Archive default Saradomin brew 6, Super restore 4; phase 21: each raid has its
@@ -349,7 +351,7 @@ their names. Rules:
 **Output.** Free-slot badge; worn set (laid out like the calculator's equipment grid); 4×7 inventory (supplies, switch
 items grouped by style with a coloured border — melee red, ranged green, magic blue —, spec weapons, pinned items, rune
 pouch / other, swap space, free; icons + tooltips; brews / restores / food get a generic potion icon, Ranging / Super
-combat / Saturated heart upstream's images; a note that spec weapons come from "My specs"); kit loadouts with icon
+combat / Saturated heart upstream's images; a note on where the spec weapons come from: the planner or "Specs I bring"); kit loadouts with icon
 rows and where each came from; "Potions (from the kit)" and "Ring" lines (phase 27; the old "unused potion supplies"
 warning is gone: the kit never brings a potion it doesn't use); a warning with a one-click fix for always-brought items
 no loadout wears ("Remove these to free N slots"), which re-plans; the
@@ -391,8 +393,8 @@ Elidinis' ward (f)); removing them (one click) gives Ascension crossbows worn + 
 ### Per-raid defaults, raid items and the dedupe rule (phase 21)
 
 **Defaults per raid** (`RaidBase.planDefaults`, `src/lib/raids/planDefaults.ts`; the Plan inputs load them when the
-raid tab opens, "reset" restores the pinned list). Spec weapons still come from "My specs" (default Elder maul + Eye of
-Ayak) and are counted once with the pinned items. Every raid has 1 non-item slot (the rune pouch: every Strategies
+raid tab opens, "reset" restores the pinned list). Spec weapons come from the planner (phase 29; Elder maul left the FA / CoX / ToB
+pinned lists) or "Specs I bring", and are counted once with the pinned items. Every raid has 1 non-item slot (the rune pouch: every Strategies
 example inventory has one).
 
 | Raid | Items always brought | Supplies (slots) | Raid items (0 slots) | Source |
@@ -552,6 +554,70 @@ within the guard), re-plan after a supplies change 7.7 s (incl. ~1.7 s of deboun
   end-game item in every slot …" (was a file name), "search started from: …" (was "seed (start of the ascent)"), the
   Ayak hint "each spec lands 73% of the time and drains ≈ 27.0 when it does" (was "73% × 27.0 per spec").
 
+### Spec weapons: the planner decides (phase 29)
+
+User question (round 3 review): "how do I know if I should mark that I'm bringing Ayak specs before the plan is made?
+… should the plan decide which spec weapons to bring, based on party size too?" Code: `src/lib/fracturedArchive/specChoice.ts`
+(pure), `planner.ts` (`SpecMode`, `PlanInputs.specMode` / `magesInParty`, `PlanResult.specs`), `PlanView.tsx` (`SpecsBox`).
+
+**Spec weapons** (Plan inputs; `DEFAULT_SPEC_MODE` = *Planner decides*; `plan()` without it = *Specs I bring*, the
+phase 17-28 behaviour, like the ring policy). *Specs I bring* uses the Assumptions box's toggles (renamed from "My
+specs") and carries them. Spec weapons are no longer in the pinned defaults (FA / CoX / ToB had Elder maul).
+
+**Solo** (drain Solo, or a party of 1: FA now allows party size 1, solo = 2-scale hp; Team is disabled then).
+`searchSpecSubsets`: every subset of the owned Elder maul / DWH / BGS / Tonalztics / Eye of Ayak (32) is a candidate.
+A subset's drains per phase = the Solo plan of those weapons (`mySpecsForSubset`: Defence drains first, then Eye of Ayak
+until P(magic def 0) ≥ the threshold, `ayakSpecsToThreshold`) within your energy at each encounter's fight length;
+it costs one slot per weapon not carried anyway. Subsets with the same reductions on every phase (same *signature*)
+are one candidate — the one with the fewest slots (DWH next to a maul that already floors everything adds nothing);
+a candidate whose every DPS is ≤ another's with no more slots is skipped (*dominated*). Each candidate gets a quick
+optimiser run (4 seeds; inside the kit optimiser, so gear and specs trade slots), the best 3 the full one; the fastest
+wins (ties: fewer slots, fewer weapons). The DPS matrix is shared: one column per distinct drain state (the DPS cache
+key is now the monster's reductions, not the drain-state name), and the Solo reductions are cached by (phase, subset,
+energy-budget bucket) across ring screens and re-plans (`SOLO_DRAIN_CACHE`); ring screens after the first reuse its
+subset. Reported: "Bring: …", per brought weapon the route time it saves (the kit re-optimised without it) and its
+slot, and the best weapon not brought with what it would save (negative = it costs time: its slot is worth more as
+gear). Eye of Ayak's drain only helps magic, so it is valued only through the kit's magic loadouts.
+
+**Team** (party ≥ 2). *Team briefing* (`teamRoles`): per boss / phase of the planned route, the fewest carriers whose
+first round (2 specs each) reaches P(floor) ≥ the threshold (`recommendCarriers`: one weapon or a hammer + finisher
+pair), then per weapon the most any boss needs, with the bosses that drive it ("Bork" when all its phases do, else the
+phases). Eye of Ayak carriers (P(magic def 0) ≥ threshold) only when **Mages in party** (Advanced (plan); default 1
+if your kit has a magic loadout, else 0) is > 0 (UNVERIFIED D22). *Your share* (`assignMe`, default "assign me"): the
+Team drain state counts every carrier whoever carries it, so carrying gains *you* nothing; you get the most-needed
+weapon (most carriers; ties Elder maul, Tonalztics, DWH, BGS, Ayak) only if it is carried anyway, fits in a free
+slot, or the slot it takes is worth < 1 s of route time as gear (`SHARE_MAX_SLOT_SECONDS`; the kit is re-optimised
+with the weapon carried to measure it); else "none: your last slot is worth X s as gear — let a teammate carry …"
+(UNVERIFIED D21). *Specs I bring* is the manual override ("I'll bring: …"). The Team drain state itself still uses
+the carriers in Advanced; the drain line shows both: **"needed ×2 (4 hits) · team brings ×4"** = the specs that reach
+the floor if every one lands (`neededSpecs`) vs the specs the carriers do (Solo lines show Tonalztics as "×2 (4 hits)").
+
+**Ring toggle.** "I wear a Lightbearer" (the Solo regen flag) is a ring toggle now, not a spec weapon; on the Plan tab
+the ring policy sets it (Camp Lightbearer: on; Camp one ring: on only if the planned ring is Lightbearer; Allow ring
+switches: your toggle). Ayak hint in the results when it is carried but no kit loadout is magic (Solo) or Mages in
+party is 0 (Team). The Search header no longer repeats the drain line: "ranked at Def … · Magic def …" only.
+
+**Numbers** (defaults, Team, compare all, camp one ring; slow `CrossRaid` pins):
+
+| Raid | Phase 28 | **Phase 29** | Your share |
+|---|---|---|---|
+| FA | 22:47.9 | **21:53.0** | Tonalztics (5 carriers: The Smorks, floor 0) in a free slot |
+| ToA | 14:22.3 | **14:10.5** | none: the slot is worth 6.2 s (Tonalztics, 3) |
+| CoX | 6:40.3 | **6:36.3** | none: 3.4 s (Eye of Ayak, 6: Lizardman shaman) |
+| ToB | 7:31.7 | **7:30.6** | Tonalztics (3): its slot was worth 0.5 s |
+| FA without Obligator + Ascension crossbows | 25:24.5 | **24:53.8** (Ultor) | Tonalztics in a free slot |
+
+The gains are the slots the old "My specs" default (Elder maul + Eye of Ayak) and the pinned Elder maul took. FA 6-man
+briefing: 5 Tonalztics (The Smorks: floor 0, the % drains stall), 2 Elder maul (Bork, Ocellus P3).
+
+**Solo** (FA defaults at party size 1, camp one ring → Ultor; `verifyPhase29`): **22:42.7, "Bring: Elder maul, Eye of
+Ayak"** — Elder maul saves 104.4 s and Eye of Ayak 69.2 s for 1 slot each; not brought: DWH would cost 7.7 s, BGS
+11.1 s, Tonalztics 49.6 s (its specs take the energy Ayak would use — Defence drains go first — and its slot is worth
+more as gear). Kit: Tumeken's shadow (Ancestral) worn + Inquisitor's + Obligator + Harmonised Nightmare staff. 22
+distinct drain states among the 32 sets, 10 skipped as dominated, 13 timed. Timings: Jest first Solo plan 123 s → 53 s
+(the reductions cache, dominance pruning and the screen reuse; searches included), browser 19.9 s with the searches
+cached; Team plans are as fast as before (FA 11-12 s in Jest).
+
 ## Routes tab (phase 16: raid time model)
 
 **Phase 23: the tab is gone.** Its route table is now part of the Plan tab's results (the *planned* kit timed on every
@@ -656,6 +722,7 @@ skipped by the deploy).
 | `src/lib/fracturedArchive/drainLine.ts`, `src/app/components/bestSetup/DrainLineView.tsx` | Phase 23: drain plans as "[icon] ×N" with hit chances. |
 | `src/lib/fracturedArchive/ownership.ts`, `src/app/components/bestSetup/NotOwnedBox.tsx`, `Ownership.test.ts`, `scripts/verifyPhase26.mjs` | Phase 26: "Items I don't own" (storage, matching, pool / preset filtering, row marking) and its checks. |
 | `src/lib/fracturedArchive/planner.ts`, `src/app/components/bestSetup/PlanView.tsx` | Phase 17: raid kit planner (candidates, partial switches, DPS matrix, slot accounting, optimiser, inventory grid) and the Plan tab. |
+| `src/lib/fracturedArchive/specChoice.ts` | Phase 29: the planner's spec weapons — Solo subset search, team briefing (`teamRoles`), your share (`assignMe`); tests `Phase29.test.ts`, UI check `scripts/verifyPhase29.mjs`. |
 | `src/tests/lib/fracturedArchive/Planner.test.ts`, `scripts/verifyPhase17.mjs` | Phase 17 tests (slot accounting, toy optima vs brute force, partial switches, reduced-pool plans, determinism, cancellation) and the Playwright check (`docs/screenshots/phase17-*.png`). |
 | `src/tests/lib/fracturedArchive/RaidTime.test.ts`, `scripts/verifyPhase16.mjs` | Phase 16 tests (hand-computed times with toy kits, drains per encounter, argmin, monotonicity) and the Playwright check (`docs/screenshots/phase16-*.png`). |
 | `src/tests/lib/fracturedArchive/Presets.test.ts` | Item names resolve, players are valid, the view's numbers equal a direct `PlayerVsNPCCalc`, ranking order, drain spec counts. |
@@ -682,7 +749,8 @@ The view tries every listed style (and spell) per preset and shows the one with 
 - **Fight length**: no input since phase 23 — computed per boss / phase (see *Layout and glossary*); it was 90 s for
   every boss (phase 14). The Plan tab uses each encounter's own undrained time. **Floor confidence** 95% (Advanced;
   was "Floor at P ≥"): when a drain plan counts as reaching the floor.
-- **My specs** (phase 14, the Solo drain state; phase 23: icon toggles): Elder maul on, DWH / BGS / Tonalztics off,
+- **Specs I bring** (phase 14 "My specs", the Solo drain state; phase 23: icon toggles; phase 29: renamed, Lightbearer
+  moved to its own "Ring: I wear a Lightbearer" toggle): Elder maul on, DWH / BGS / Tonalztics off,
   `Ayak × 2` (with "≈ X magic def drained on <boss>" next to it = specs × hit chance × expected damage on a hit, from
   the calculator), Lightbearer off; "Spec energy goes first to: Defence drains / Ayak" (Advanced).
 - **Team carriers** (phase 14, the Team drain state; Advanced): party size 6 (the raid input, also the HP-scaling party

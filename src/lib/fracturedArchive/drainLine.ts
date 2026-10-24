@@ -31,6 +31,14 @@ export interface DrainLineItem {
   hitChance?: number;
   /** Tooltip, e.g. "2 Tonalztics specs (4 hits); 81% of specs land at least one damaging hit". */
   title: string;
+  /** Phase 29: Tonalztics hits of `count` charged specs (shown inline: "×2 (4 hits)"). */
+  hits?: number;
+  /**
+   * Phase 29 (Team): specs of this weapon needed to reach the floor if every one lands ({@link neededSpecs}); `count`
+   * is then what the team brings ("needed ×2 (4 hits) · team brings ×4"). null = the floor isn't reachable even if every
+   * spec the team brings lands; undefined = not a Team line.
+   */
+  needed?: number | null;
 }
 
 export interface DrainLine {
@@ -82,9 +90,35 @@ export const drainLineItem = (
   if (short) what += count === 0 ? ` (you asked for ${extra!.wanted}: no spec energy left for them)` : ` (${short} of ${extra!.wanted} don't fit in your spec energy)`;
   const landed = weapon === 'tonalztics' ? 'land at least one damaging hit' : 'land';
   const chance = hitChance === undefined ? '' : `; ${pctText(hitChance)} of specs ${landed}`;
+  const hits = weapon === 'tonalztics' && unit === 'spec' ? extra?.hits ?? count * 2 : undefined;
   return {
-    weapon, label, image: imageOf(weapon), count, unit, specs, hitChance, title: `${what}${chance}`, ...(short ? { short } : {}),
+    weapon,
+    label,
+    image: imageOf(weapon),
+    count,
+    unit,
+    specs,
+    hitChance,
+    title: `${what}${chance}`,
+    ...(short ? { short } : {}),
+    ...(hits !== undefined ? { hits } : {}),
   };
+};
+
+/** Phase 29: "×2 (4 hits)" (Tonalztics) or "×2". */
+export const countText = (count: number, hits?: number): string => `×${count}${hits !== undefined ? ` (${hits} hit${hits === 1 ? '' : 's'})` : ''}`;
+
+/**
+ * Phase 29: the Team text of an item: "needed ×2 (4 hits) · team brings ×4" (or "floor not reachable · team brings ×4");
+ * the hits are shown for the specs needed (Tonalztics), the team's count is specs.
+ */
+export const neededText = (it: Pick<DrainLineItem, 'weapon' | 'count' | 'hits' | 'needed'>): string | undefined => {
+  if (it.needed === undefined) return undefined;
+  const brings = `team brings ${countText(it.count)}`;
+  if (it.needed === null) return `${it.weapon === 'ayak' ? 'magic def 0 not reachable' : 'floor not reachable'} · ${brings}`;
+  // 0 = the other weapons' specs already reach the floor if they all land
+  if (it.needed === 0) return `not needed · ${brings}`;
+  return `needed ${countText(it.needed, it.weapon === 'tonalztics' ? it.needed * 2 : undefined)} · ${brings}`;
 };
 
 /**
@@ -98,15 +132,21 @@ export const drainLineFromAttempts = (
   text: string,
   budget?: DrainLine['budget'],
   wanted: Partial<Record<PlannerWeapon, number>> = {},
+  needed?: Partial<Record<PlannerWeapon, number | null>>,
 ): DrainLine => {
   const counts = new Map<PlannerWeapon, number>();
   attempts.forEach((w) => counts.set(w, (counts.get(w) || 0) + 1));
   const shown = (w: SpecWeapon) => counts.has(w as PlannerWeapon) || (wanted[w as PlannerWeapon] ?? 0) > 0;
   return {
     items: ORDER.filter(shown)
-      .map((w) => drainLineItem(w, counts.get(w as PlannerWeapon) ?? 0, hitChance[w as PlannerWeapon], undefined, {
-        wanted: wanted[w as PlannerWeapon],
-      })),
+      .map((w) => {
+        const it = drainLineItem(w, counts.get(w as PlannerWeapon) ?? 0, hitChance[w as PlannerWeapon], undefined, {
+          wanted: wanted[w as PlannerWeapon],
+        });
+        if (!needed || !(w in needed)) return it;
+        const withNeeded = { ...it, needed: needed[w as PlannerWeapon] };
+        return { ...withNeeded, title: `${neededText(withNeeded)}; ${it.title}` };
+      }),
     ...after,
     ...(budget ? { budget } : {}),
     text,

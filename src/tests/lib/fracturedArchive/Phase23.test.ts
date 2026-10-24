@@ -153,7 +153,9 @@ describe('drain line data', () => {
       ['ayak', 2, 'spec', 2],
     ]);
     items.forEach((i) => expect(i.hitChance).toBe(model.hitChance[i.weapon as keyof typeof model.hitChance]));
-    expect(items[1].title).toMatch(/^4 Tonalztics specs \(8 hits\); \d+% of specs land at least one damaging hit$/);
+    // phase 29: the Team line starts with "needed ×N (H hits) · team brings ×4"
+    expect(items[1].title).toMatch(/^needed ×\d+ \(\d+ hits?\) · team brings ×4; 4 Tonalztics specs \(8 hits\); \d+% of specs land at least one damaging hit$/);
+    expect(items[1].hits).toBe(8);
     expect(items.every((i) => i.image)).toBe(true);
     expect(d.line!.defAfter).toBe(d.defAfter);
     expect(d.line!.magicDefAfter).toBe(d.magicDefAfter);

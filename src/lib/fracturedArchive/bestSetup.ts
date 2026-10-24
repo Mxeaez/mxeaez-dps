@@ -10,10 +10,10 @@ import { MONSTER_PHASES_BY_ID } from '@/lib/constants';
 import { getCombatStylesForCategory } from '@/utils';
 import { DefenceReductions } from '@/lib/fracturedArchive/drains';
 import {
-  DEFAULT_FIGHT_SECONDS, drainModel, PlanLabel, planLabelText, specAttempts,
+  DEFAULT_FIGHT_SECONDS, drainModel, PlanLabel, planLabelText, PlannerWeapon, specAttempts,
 } from '@/lib/fracturedArchive/specs';
 import {
-  carriersFromCounts, describeAttempts, formatProbability, soloSpecPlan, teamSpecPlan,
+  ayakSpecsToThreshold, carriersFromCounts, describeAttempts, formatProbability, neededSpecs, soloSpecPlan, teamSpecPlan,
 } from '@/lib/fracturedArchive/teamSpecs';
 import { DrainLine, drainLineFromAttempts, drainLineNote } from '@/lib/fracturedArchive/drainLine';
 import { minimalPlayer } from '@/lib/fracturedArchive/hittable';
@@ -85,9 +85,9 @@ export const DRAIN_STATES: { id: DrainStateId, label: string, description: strin
   {
     id: 'solo',
     label: 'Solo',
-    description: 'My specs within my own spec energy (100% + 10% per 30 s of the fight, 15 s with Lightbearer; the fight '
+    description: 'Specs I bring, within my own spec energy (100% + 10% per 30 s of the fight, 15 s with Lightbearer; the fight '
       + 'length is the undrained time to kill of the boss, computed), '
-      + 'with the weapons ticked under "My specs"; hit chances from the calculator. Ranked at the Defence floor if '
+      + 'with the weapons ticked under "Specs I bring" (the Plan tab: the planner picks them); hit chances from the calculator. Ranked at the Defence floor if '
       + 'P(floor) ≥ the threshold, else at the nearest reachable Defence to the expected value; Ayak = specs × expected damage',
   },
   {
@@ -181,6 +181,7 @@ export const drainStateFor = (m: Monster, id: DrainStateId, assumptions: BestSet
   let attemptsMade: Parameters<typeof drainLineFromAttempts>[0] = [];
   let budget: DrainLine['budget'];
   let wanted: Parameters<typeof drainLineFromAttempts>[5] = {};
+  let needed: Parameters<typeof drainLineFromAttempts>[6];
   const fightComputed = id !== 'none' ? assumptions.fightSeconds === undefined : undefined;
   if (id !== 'none') {
     const model = drainModel(m, assumptions);
@@ -197,6 +198,7 @@ export const drainStateFor = (m: Monster, id: DrainStateId, assumptions: BestSet
         fightSeconds,
         priority: mySpecs.priority,
         threshold,
+        ayakUntilZero: !!mySpecs.ayakAuto,
       });
       reductions = p.reductions;
       pFloor = p.defence.pFloor;
@@ -207,6 +209,8 @@ export const drainStateFor = (m: Monster, id: DrainStateId, assumptions: BestSet
       budget = { fightSeconds, computed: !!fightComputed, specs: specAttempts(p.budget, 50) };
       // review fix: show the Ayak specs asked for even when none fit ("Ayak ×0 (no energy)")
       wanted = { ayak: model.canHit.ayak && model.magicDef > 0 ? Math.max(0, Math.floor(mySpecs.ayak)) : 0 };
+      // phase 29: the planner's Ayak specs stop at P(magic def 0) ≥ threshold
+      if (mySpecs.ayakAuto) wanted = { ayak: ayakSpecsToThreshold(model, wanted.ayak ?? 0, threshold) };
     } else {
       const p = teamSpecPlan(model, {
         partySize: assumptions.partySize,
@@ -219,13 +223,23 @@ export const drainStateFor = (m: Monster, id: DrainStateId, assumptions: BestSet
       attemptsMade = p.firstRound.attempts;
       plan = `Team (${assumptions.partySize}): ${p.text}`;
       specs = `first round ${describeAttempts(p.firstRound.attempts)} (P floor ${formatProbability(pFloor)})`;
+      // phase 29: "needed ×2 (4 hits) · team brings ×4" (the specs needed if every one lands, from the team's first round)
+      const brings: Partial<Record<PlannerWeapon, number>> = {};
+      attemptsMade.forEach((w) => { brings[w] = (brings[w] ?? 0) + 1; });
+      const n = neededSpecs(model, brings);
+      const neededOf = (w: PlannerWeapon): number | null => {
+        if (w === 'ayak') return n.ayak;
+        return n.defence ? n.defence[w] ?? 0 : null;
+      };
+      needed = Object.fromEntries((Object.keys(brings) as PlannerWeapon[]).map((w) => [w, neededOf(w)])) as
+        Partial<Record<PlannerWeapon, number | null>>;
     }
   }
   const scaled = scaleMonster(withInputs(m, { defenceReductions: reductions }));
   const after = { defAfter: scaled.skills.def, magicDefAfter: scaled.defensive.magic };
   if (id !== 'none') {
     const model = drainModel(m, assumptions);
-    line = drainLineFromAttempts(attemptsMade, model.hitChance, after, plan, budget, wanted);
+    line = drainLineFromAttempts(attemptsMade, model.hitChance, after, plan, budget, wanted, needed);
     // phase 24: plain remark (low hit chance / one landed spec already reaches the floor)
     const note = drainLineNote(model, attemptsMade);
     if (note) line = { ...line, note };

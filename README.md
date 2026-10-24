@@ -22,6 +22,9 @@ What this fork adds on top of upstream:
   count with each spec's chance to land.
 * **Drain states** None / Solo / Team: Solo = your own spec weapons within your spec energy, Team = the carriers' first
   round of specs; both rank at the Defence floor when P(floor) ≥ 95%, else at the expected Defence.
+* **The planner picks the spec weapons** (Plan tab): Solo tries every set of Elder maul / DWH / BGS / Tonalztics / Eye
+  of Ayak with the kit ("Bring: …" with what each saves); Team shows a team briefing (carriers per weapon and the bosses
+  that need them) and your share ("assign me").
 * **Times assume N players at your DPS** (the "Players assumed at your DPS" input under Advanced; the page says "times assume N players at your DPS"):
   N defaults to the party size in ToA / CoX / ToB, where upstream scales boss hp with it, and to 1 in the Fractured
   Archive, whose hp scaling is unknown.
