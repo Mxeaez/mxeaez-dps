@@ -515,6 +515,38 @@ export const neededSpecs = (
   return { defence, ayak };
 };
 
+/**
+ * Phase 29 review: per weapon of a first round, the fewest of its specs (the other weapons' specs kept) that give the
+ * same ranked Defence (Eye of Ayak: the same ranked Magic defence drain) as all of them: "needed ×N · team brings ×M" on
+ * that boss under the plan's carriers. 0 = its specs change nothing there.
+ */
+export const specsNeeded = (
+  model: Pick<DrainModel, 'def' | 'floor' | 'magicLevel' | 'magicDef' | 'outcomes' | 'expectedDamage'>,
+  attempts: PlannerWeapon[],
+  threshold = DEFAULT_FLOOR_THRESHOLD,
+): Partial<Record<PlannerWeapon, number>> => {
+  const out: Partial<Record<PlannerWeapon, number>> = {};
+  const def = (xs: PlannerWeapon[]) => defenceOutcome(model, xs.filter((w): w is DefenceDrainWeapon => w !== 'ayak'), threshold).rankedDef;
+  const nAyak = attempts.filter((w) => w === 'ayak').length;
+  const fullDef = def(attempts);
+  const fullAyak = ayakOutcome(model, nAyak, threshold).rankedDrain;
+  Array.from(new Set(attempts)).forEach((w) => {
+    const brought = attempts.filter((x) => x === w).length;
+    const others = attempts.filter((x) => x !== w);
+    for (let n = 0; n <= brought; n++) {
+      const same = w === 'ayak'
+        ? ayakOutcome(model, n, threshold).rankedDrain === fullAyak
+        : def([...others, ...Array(n).fill(w)]) === fullDef;
+      if (same) {
+        out[w] = n;
+        return;
+      }
+    }
+    out[w] = brought;
+  });
+  return out;
+};
+
 // --- team ----------------------------------------------------------------------------------------------------------
 
 export interface Carrier {

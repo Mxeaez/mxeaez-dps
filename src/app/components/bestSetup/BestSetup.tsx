@@ -338,6 +338,17 @@ const AssumptionsBox: React.FC<{
             <span className="font-semibold" title="Team drain state: teammates who bring a drain weapon spec twice each at the start of every fight">
               {`Team carriers (party of ${value.partySize}, set above):`}
             </span>
+            <select
+              id="bs-team-mode"
+              className="form-control text-xs py-0.5"
+              value={value.team.manual ? 'manual' : 'auto'}
+              data-testid="team-carrier-mode"
+              title="Planner decides: the Plan tab picks the carriers (the ones that save the most route time) and its Team drains use them; Search and Summary use the counts here. Set manually: every tab uses the counts here"
+              onChange={(e) => set({ team: { ...value.team, manual: e.target.value === 'manual' } })}
+            >
+              <option value="auto">Planner decides (Plan tab)</option>
+              <option value="manual">Set manually</option>
+            </select>
             {TEAM_WEAPONS.map((k) => (
               <label key={k} htmlFor={`bs-team-${k}`} className="flex items-center gap-1" title={`How many teammates bring ${SPEC_WEAPONS[k].label} and spec it at the start`}>
                 <ItemIcon name={SPEC_WEAPONS[k].label} src={itemImage(SPEC_WEAPONS[k].item)} size={18} />
@@ -345,7 +356,8 @@ const AssumptionsBox: React.FC<{
                 <input
                   id={`bs-team-${k}`}
                   type="number"
-                  className="form-control text-xs py-0.5 w-12"
+                  disabled={!value.team.manual}
+                  className="form-control text-xs py-0.5 w-12 disabled:opacity-50"
                   min={0}
                   max={8}
                   value={value.team.carriers[k]}
@@ -367,7 +379,10 @@ const AssumptionsBox: React.FC<{
               />
               carriers use Lightbearer
             </label>
-            {carrierTotal > value.partySize && (
+            {!value.team.manual && (
+              <span className="text-gray-500 dark:text-gray-400" data-testid="team-carriers-note">(the Plan tab picks its own; Search / Summary use these)</span>
+            )}
+            {value.team.manual && carrierTotal > value.partySize && (
               <span className="text-red-600" data-testid="team-too-many">{`${carrierTotal} carriers > party size: only the first ${value.partySize} count`}</span>
             )}
           </div>

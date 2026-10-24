@@ -10,7 +10,7 @@ import {
   compareRoutes, computeRouteComparison, createKitEvaluator, formatDuration, KitLoadout, raidTimeAssumptionsFrom,
 } from '@/lib/fracturedArchive/raidTime';
 import {
-  comfortSupplies, DEFAULT_RING_POLICY, DEFAULT_SPEC_MODE, plan, PlanResult, planAssumptions, planItemByName, ringAssumptions, toPlayerEquipment,
+  comfortSupplies, DEFAULT_CARRIER_MODE, DEFAULT_RING_POLICY, DEFAULT_SPEC_MODE, plan, PlanResult, planAssumptions, planItemByName, ringAssumptions, toPlayerEquipment,
 } from '@/lib/fracturedArchive/planner';
 import { applyLoadoutToPlayer } from '@/lib/fracturedArchive/loadout';
 import {
@@ -178,7 +178,8 @@ const planFor = (raid: RaidConfig, reduced: boolean, notOwned: string[] = []): P
   ...(notOwned.length ? { notOwned } : {}),
   // phase 27: the full (headline) plan uses the Plan tab's default ring policy (camp one ring); the reduced one switches
   // phase 29: and the Plan tab's default spec mode (the planner decides: Team = your share of the team's carriers)
-  ...(reduced ? {} : { ringPolicy: DEFAULT_RING_POLICY, specMode: DEFAULT_SPEC_MODE }),
+  // phase 29 review: and the planner's team carriers (the Plan tab's default)
+  ...(reduced ? {} : { ringPolicy: DEFAULT_RING_POLICY, specMode: DEFAULT_SPEC_MODE, carrierMode: DEFAULT_CARRIER_MODE }),
   basePlayer: generateEmptyPlayer(),
   assumptions: raid.defaultAssumptions,
   drain: 'team',
@@ -226,11 +227,15 @@ describe('every raid\'s plan runs (reduced pool)', () => {
 // team's carriers, "assign me"): FA 22:47.9 → 21:53.0 (the default "My specs" Elder maul + Eye of Ayak no longer take
 // two slots; Tonalztics, the most-needed weapon, goes in a free slot); ToA 14:22.3 → 14:10.5 (no spec weapon: the slot is
 // worth 6.2 s of gear); CoX 6:40.3 → 6:36.3 (none: 3.4 s); ToB 7:31.7 → 7:30.6 (Tonalztics: its slot was worth 0.5 s).
+// Phase 29 review (the planner picks the team's carriers: greedy on route time, the Team drains use them): FA 21:53.0
+// (2 Elder maul + 2 Tonalztics = the Advanced counts minus the Ayak carrier, which saves nothing without a magic kit);
+// ToA 14:10.5 → 13:19.6 (1 Elder maul + 5 Eye of Ayak, camp Magus ring); CoX 6:36.3 (2 maul, 2 Tonalztics, 1 BGS,
+// 1 Ayak); ToB 7:30.6 → 7:30.0 (2 Tonalztics, 1 maul).
 const HEADLINES: [string, string, number][] = [
   ['fractured-archive', '21:53.0', 1313.0],
-  ['toa', '14:10.5', 850.5],
+  ['toa', '13:19.6', 799.6],
   ['cox', '6:36.3', 396.3],
-  ['tob', '7:30.6', 450.6],
+  ['tob', '7:30.0', 450.0],
 ];
 
 // Phase 28: the FA plan without Obligator and Ascension crossbows ("Items I don't own"; phase 26 pinned 25:46.8 with
@@ -247,7 +252,9 @@ const FA_NOT_OWNED = ['Obligator', 'Ascension crossbows'];
  */
 const recomputed = (raid: RaidConfig, res: PlanResult): number => {
   const pinned = raid.planDefaults.pinned.map((n) => planItemByName(n).id);
-  const planA = ringAssumptions(planAssumptions(raid.defaultAssumptions, comfortSupplies(raid.defaultSupplies), pinned), DEFAULT_RING_POLICY, res.ring.ring ? { name: res.ring.ring } : null);
+  const ringA = ringAssumptions(planAssumptions(raid.defaultAssumptions, comfortSupplies(raid.defaultSupplies), pinned), DEFAULT_RING_POLICY, res.ring.ring ? { name: res.ring.ring } : null);
+  // phase 29 review: the Team drains use the planner's carriers
+  const planA = res.specs.team?.carriers ? { ...ringA, team: { ...ringA.team, carriers: res.specs.team.carriers } } : ringA;
   const base = generateEmptyPlayer();
   const loadouts: KitLoadout[] = res.kit.map((c) => {
     const eq = toPlayerEquipment(c.equipment);

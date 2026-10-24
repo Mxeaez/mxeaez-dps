@@ -10,10 +10,10 @@ import { MONSTER_PHASES_BY_ID } from '@/lib/constants';
 import { getCombatStylesForCategory } from '@/utils';
 import { DefenceReductions } from '@/lib/fracturedArchive/drains';
 import {
-  DEFAULT_FIGHT_SECONDS, drainModel, PlanLabel, planLabelText, PlannerWeapon, specAttempts,
+  DEFAULT_FIGHT_SECONDS, drainModel, PlanLabel, planLabelText, specAttempts,
 } from '@/lib/fracturedArchive/specs';
 import {
-  ayakSpecsToThreshold, carriersFromCounts, describeAttempts, formatProbability, neededSpecs, soloSpecPlan, teamSpecPlan,
+  ayakSpecsToThreshold, carriersFromCounts, describeAttempts, formatProbability, soloSpecPlan, specsNeeded, teamSpecPlan,
 } from '@/lib/fracturedArchive/teamSpecs';
 import { DrainLine, drainLineFromAttempts, drainLineNote } from '@/lib/fracturedArchive/drainLine';
 import { minimalPlayer } from '@/lib/fracturedArchive/hittable';
@@ -223,16 +223,9 @@ export const drainStateFor = (m: Monster, id: DrainStateId, assumptions: BestSet
       attemptsMade = p.firstRound.attempts;
       plan = `Team (${assumptions.partySize}): ${p.text}`;
       specs = `first round ${describeAttempts(p.firstRound.attempts)} (P floor ${formatProbability(pFloor)})`;
-      // phase 29: "needed ×2 (4 hits) · team brings ×4" (the specs needed if every one lands, from the team's first round)
-      const brings: Partial<Record<PlannerWeapon, number>> = {};
-      attemptsMade.forEach((w) => { brings[w] = (brings[w] ?? 0) + 1; });
-      const n = neededSpecs(model, brings);
-      const neededOf = (w: PlannerWeapon): number | null => {
-        if (w === 'ayak') return n.ayak;
-        return n.defence ? n.defence[w] ?? 0 : null;
-      };
-      needed = Object.fromEntries((Object.keys(brings) as PlannerWeapon[]).map((w) => [w, neededOf(w)])) as
-        Partial<Record<PlannerWeapon, number | null>>;
+      // phase 29: "needed ×2 (4 hits) · team brings ×4" (review fix: the fewest of each weapon's first-round specs that
+      // give the same ranked drain on this boss, the others kept)
+      needed = specsNeeded(model, attemptsMade, threshold);
     }
   }
   const scaled = scaleMonster(withInputs(m, { defenceReductions: reductions }));

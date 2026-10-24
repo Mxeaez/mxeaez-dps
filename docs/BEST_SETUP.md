@@ -571,52 +571,79 @@ until P(magic def 0) ≥ the threshold, `ayakSpecsToThreshold`) within your ener
 it costs one slot per weapon not carried anyway. Subsets with the same reductions on every phase (same *signature*)
 are one candidate — the one with the fewest slots (DWH next to a maul that already floors everything adds nothing);
 a candidate whose every DPS is ≤ another's with no more slots is skipped (*dominated*). Each candidate gets a quick
-optimiser run (4 seeds; inside the kit optimiser, so gear and specs trade slots), the best 3 the full one; the fastest
-wins (ties: fewer slots, fewer weapons). The DPS matrix is shared: one column per distinct drain state (the DPS cache
-key is now the monster's reductions, not the drain-state name), and the Solo reductions are cached by (phase, subset,
-energy-budget bucket) across ring screens and re-plans (`SOLO_DRAIN_CACHE`); ring screens after the first reuse its
-subset. Reported: "Bring: …", per brought weapon the route time it saves (the kit re-optimised without it) and its
-slot, and the best weapon not brought with what it would save (negative = it costs time: its slot is worth more as
-gear). Eye of Ayak's drain only helps magic, so it is valued only through the kit's magic loadouts.
+optimiser run (4 seeds) inside the kit optimiser, so gear and specs trade slots. **Review fixes**: (1) every subset's
+seeds are ranked under *its own* drain table, and the best single loadout of every style group is always a seed
+(`pickSeeds`; the quick runs used to take the first 4 seeds of a list ranked under the all-weapons table, which
+favoured magic through Ayak's drain and pushed the group bests to the end, so {Tonalztics} never got a fair run);
+(2) a guard like the ring guard: g = the best-by-quick subset's quick − full time; the best 3 by quick and every
+subset whose quick time is within 2 g (`SUBSET_GUARD_FACTOR`) of the best full time get the full run; the fastest
+full time wins (ties: fewer slots, fewer weapons). The DPS matrix is shared: one column per distinct drain state (the
+DPS cache key is the monster's reductions), and the Solo reductions are cached by (phase, subset, energy-budget
+bucket) across ring screens and re-plans (`SOLO_DRAIN_CACHE`).
 
-**Team** (party ≥ 2). *Team briefing* (`teamRoles`): per boss / phase of the planned route, the fewest carriers whose
-first round (2 specs each) reaches P(floor) ≥ the threshold (`recommendCarriers`: one weapon or a hammer + finisher
-pair), then per weapon the most any boss needs, with the bosses that drive it ("Bork" when all its phases do, else the
-phases). Eye of Ayak carriers (P(magic def 0) ≥ threshold) only when **Mages in party** (Advanced (plan); default 1
-if your kit has a magic loadout, else 0) is > 0 (UNVERIFIED D22). *Your share* (`assignMe`, default "assign me"): the
-Team drain state counts every carrier whoever carries it, so carrying gains *you* nothing; you get the most-needed
-weapon (most carriers; ties Elder maul, Tonalztics, DWH, BGS, Ayak) only if it is carried anyway, fits in a free
-slot, or the slot it takes is worth < 1 s of route time as gear (`SHARE_MAX_SLOT_SECONDS`; the kit is re-optimised
-with the weapon carried to measure it); else "none: your last slot is worth X s as gear — let a teammate carry …"
-(UNVERIFIED D21). *Specs I bring* is the manual override ("I'll bring: …"). The Team drain state itself still uses
-the carriers in Advanced; the drain line shows both: **"needed ×2 (4 hits) · team brings ×4"** = the specs that reach
-the floor if every one lands (`neededSpecs`) vs the specs the carriers do (Solo lines show Tonalztics as "×2 (4 hits)").
+**Ring and subset together** (camp one ring, review fix): the first ring screen searches the subsets, the other screens
+time that subset; the best screened ring is planned in full (its own subset search). If that picks another subset,
+the rings are screened again with it and the new best ring is planned in full if it changed (at most two rounds), so
+the ring screens rank the rings with the subset that is actually brought (`specs.solo.screenedWith`, `ringRounds`).
+
+**Reported**: "Bring: …"; per brought weapon "dropping X from this plan: +N s (frees 1 slot)" and **"best without X:
+…, time"** (the fastest set timed without it); per weapon not brought "adding X to this plan: ±N s (1 slot)" (review
+fix: these are one-change moves from the chosen set, not what a weapon is worth alone). Eye of Ayak's drain only helps
+magic, so it is valued only through the kit's magic loadouts.
+
+**Team** (party ≥ 2). **Carriers are planner output** (review fix; the user: "the plan runs and sets this
+automatically, like 2 people need elder, 3 need ralos"). *Team carriers* (Advanced): **Planner decides** (default)
+or *Set manually* (the counts, phase 28's behaviour; the only mode where the counts are editable and the
+"N carriers > party size" warning shows). Planner decides (`greedyCarriers`, `PlanInputs.carrierMode`): the kit is
+optimised under the Advanced counts, then from no carriers the planner adds one carrier at a time — the one (any
+weapon) that lowers that kit's route time most — while it saves ≥ 1 s (`SHARE_MAX_SLOT_SECONDS`), at most the party
+size in all; Eye of Ayak is a candidate only when **Mages in party** (Advanced (plan); default 1 if your kit has a
+magic loadout, else 0) is > 0 (UNVERIFIED D22). Then the kit is re-optimised under those carriers (and if it changed,
+the greedy runs once more on it). The Team drain state is `teamSpecPlan` with exactly these carriers (the 95 %-floor
+ranking rule unchanged), so the briefing and "team brings ×N" agree by construction; Search / Summary keep using the
+Advanced counts. *Team briefing*: per weapon the carriers, what the last one saves (route time without it) and the
+encounters it saves the most on, plus the order they were added; the per-boss 95 % minimum (`recommendCarriers`) is
+listed for reference. The drain line: **"needed ×N · team brings ×M"**, N = the fewest of that weapon's first-round
+specs that give the same ranked drain on this boss with the other carriers' specs (`specsNeeded`; "not needed" when 0;
+Tonalztics also shows hits: "needed ×2 (4 hits)"; Solo lines: "×2 (4 hits)").
+
+*Your share* (`assignMe`, default "assign me"): the Team drain state counts every carrier whoever carries it, so
+carrying gains *you* nothing; you get the most-needed weapon of the planner's carriers (most carriers; ties Elder maul,
+Tonalztics, DWH, BGS, Ayak) only if it is carried anyway, fits in a free slot, or the slot it takes is worth < 1 s of
+route time as gear (the kit is re-optimised with the weapon carried to measure it); else "none: your last slot is worth
+X s as gear — let a teammate carry …" (UNVERIFIED D21). *Specs I bring* is the manual override ("I'll bring: …").
 
 **Ring toggle.** "I wear a Lightbearer" (the Solo regen flag) is a ring toggle now, not a spec weapon; on the Plan tab
 the ring policy sets it (Camp Lightbearer: on; Camp one ring: on only if the planned ring is Lightbearer; Allow ring
 switches: your toggle). Ayak hint in the results when it is carried but no kit loadout is magic (Solo) or Mages in
-party is 0 (Team). The Search header no longer repeats the drain line: "ranked at Def … · Magic def …" only.
+party is 0 (Team). The Search header no longer repeats the drain line: "ranked at Def … · Magic def …" only; at
+party 1 the Search drain box has no team carrier table.
 
 **Numbers** (defaults, Team, compare all, camp one ring; slow `CrossRaid` pins):
 
-| Raid | Phase 28 | **Phase 29** | Your share |
-|---|---|---|---|
-| FA | 22:47.9 | **21:53.0** | Tonalztics (5 carriers: The Smorks, floor 0) in a free slot |
-| ToA | 14:22.3 | **14:10.5** | none: the slot is worth 6.2 s (Tonalztics, 3) |
-| CoX | 6:40.3 | **6:36.3** | none: 3.4 s (Eye of Ayak, 6: Lizardman shaman) |
-| ToB | 7:31.7 | **7:30.6** | Tonalztics (3): its slot was worth 0.5 s |
-| FA without Obligator + Ascension crossbows | 25:24.5 | **24:53.8** (Ultor) | Tonalztics in a free slot |
+| Raid | Phase 28 | Phase 29 | **Review fix (planner carriers)** | Carriers picked | Your share |
+|---|---|---|---|---|---|
+| FA | 22:47.9 | 21:53.0 | **21:53.0** | 2 Elder maul, 2 Tonalztics | Elder maul, in a free slot |
+| ToA | 14:22.3 | 14:10.5 | **13:19.6** (Magus) | 1 Elder maul, 5 Eye of Ayak | none: slot worth 5.1 s |
+| CoX | 6:40.3 | 6:36.3 | **6:36.3** | 2 Elder maul, 2 Tonalztics, 1 BGS, 1 Ayak | none: 3.4 s |
+| ToB | 7:31.7 | 7:30.6 | **7:30.0** | 2 Tonalztics, 1 Elder maul | Tonalztics: slot worth 0.5 s |
+| FA without Obligator + Ascension crossbows | 25:24.5 | 24:53.8 | **24:53.8** (Ultor) | 2 Tonalztics | Tonalztics, free slot |
 
-The gains are the slots the old "My specs" default (Elder maul + Eye of Ayak) and the pinned Elder maul took. FA 6-man
-briefing: 5 Tonalztics (The Smorks: floor 0, the % drains stall), 2 Elder maul (Bork, Ocellus P3).
+FA 6-man, in the order added: Tonalztics −230.0 s, Tonalztics −35.2 s, Elder maul −13.3 s, Elder maul −3.6 s; the next
+best (a third Tonalztics, an Ayak carrier without a magic kit) saves < 1 s. In the final kit the last Tonalztics
+carrier saves 27.0 s (Ocellus 19.3, Bork + Smorks 4.2, AG 3.5) and the last Elder maul 3.6 s (Bork + Smorks). The old
+briefing's "5 Tonalztics for The Smorks" (Def 0 at 95 % from the first round) is gone: carriers 3-5 save 0.58 s
+together (reviewer's sweep). "Team carriers: Set manually" at 2 / 2 / 1 gives the same 21:53.0.
 
-**Solo** (FA defaults at party size 1, camp one ring → Ultor; `verifyPhase29`): **22:42.7, "Bring: Elder maul, Eye of
-Ayak"** — Elder maul saves 104.4 s and Eye of Ayak 69.2 s for 1 slot each; not brought: DWH would cost 7.7 s, BGS
-11.1 s, Tonalztics 49.6 s (its specs take the energy Ayak would use — Defence drains go first — and its slot is worth
-more as gear). Kit: Tumeken's shadow (Ancestral) worn + Inquisitor's + Obligator + Harmonised Nightmare staff. 22
-distinct drain states among the 32 sets, 10 skipped as dominated, 13 timed. Timings: Jest first Solo plan 123 s → 53 s
-(the reductions cache, dominance pruning and the screen reuse; searches included), browser 19.9 s with the searches
-cached; Team plans are as fast as before (FA 11-12 s in Jest).
+**Solo** (FA defaults at party size 1, camp one ring → Ultor; `verifyPhase29`): **22:10.5, "Bring: Tonalztics"** —
+the reviewer's brute force over all 32 sets (each planned with "Specs I bring", re-timed with `compareRoutes`) has
+{Tonalztics} 1330.53 s fastest, then {Elder maul, Eye of Ayak} 22:42.7 (the phase 29 pick) and {DWH, Ayak} 22:46.1.
+Dropping Tonalztics: +228.2 s; best without it: Elder maul + Eye of Ayak, 22:42.7; adding Elder maul +52.0 s, DWH
++52.0, Eye of Ayak +52.6, BGS +52.9 (each a slot worth more as gear). Kit: Twisted bow (Masori) worn + Inquisitor's +
+Obligator. 22 distinct drain states, 10 dominated, 14 timed; the ring screens timed {Tonalztics} (one round).
+Timings: Jest first Solo plan 44 s (searches included; 53 s before the fix, 123 s before the phase 29 caches); browser
+20.5 s with the searches cached; a Team plan with planner carriers 21 s in Jest (first, searches included), 4 s with
+manual carriers once cached.
 
 ## Routes tab (phase 16: raid time model)
 

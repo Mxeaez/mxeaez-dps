@@ -71,8 +71,14 @@ export interface SubsetProblem<W extends string> {
   quick: (s: W[]) => number;
   /** Route time with the subset (the full optimiser run). Default: `quick`. */
   full?: (s: W[]) => number;
-  /** Candidates (by quick time) timed with `full` (default 3). */
+  /** Candidates (by quick time) timed with `full` at least (default 3). */
   finalists?: number;
+  /**
+   * Phase 29 review: the quick-run guard. g = the best-by-quick subset's quick − full time (what the full run finds on
+   * top of the quick one); every subset whose quick time is within `guard` × g of the best full time gets the full run
+   * too (default {@link SUBSET_GUARD_FACTOR}; Infinity = every subset in full).
+   */
+  guard?: number;
   /**
    * Optional pruning: true when subset `s` can't be faster than `by` (e.g. every DPS of `s` ≤ the same DPS of `by`);
    * only asked for a `by` taking no more slots. A pruned subset is not timed (unless it neighbours the best).
@@ -96,9 +102,18 @@ export interface WeaponDelta<W> {
   deltaSlots: number;
 }
 
+/** Phase 29 review: per brought weapon, the fastest set timed that leaves it out. */
+export interface BestWithout<W> {
+  weapon: W;
+  weapons: W[];
+  seconds: number;
+}
+
 export interface SubsetSearchResult<W> {
   best: W[];
   seconds: number;
+  /** Per brought weapon, the fastest set without it (full times). */
+  bestWithout: BestWithout<W>[];
   /** Every subset timed (one per signature, plus the neighbours of the best), fastest first. */
   evaluated: SubsetEvaluation<W>[];
   /** Distinct drain states among the 2^n subsets. */
@@ -111,6 +126,9 @@ export interface SubsetSearchResult<W> {
 }
 
 const EPS = 1e-9;
+
+/** Phase 29 review: the subset search's quick-run guard factor (see `SubsetProblem.guard`). */
+export const SUBSET_GUARD_FACTOR = 2;
 
 const subsetKey = <W extends string>(weapons: W[], s: W[]) => weapons.filter((w) => s.includes(w)).join('+');
 
@@ -152,11 +170,30 @@ export const searchSpecSubsets = <W extends string>(p: SubsetProblem<W>): Subset
     weapons: s, seconds: p.quick(s), slots: p.slots(s), full: false,
   }));
   quickEvals.sort((a, b) => (betterEval(a, b, order) ? -1 : Number(betterEval(b, a, order))));
-  const finalists = quickEvals.slice(0, Math.max(1, p.finalists ?? 3));
-  const fullEvals = finalists.map((e) => ({ ...e, seconds: fullOf(e.weapons), full: true }));
-  let best = fullEvals[0];
-  fullEvals.slice(1).forEach((e) => {
-    if (betterEval(e, best, order)) best = e;
+  // full runs: the best `finalists` by quick time, then every subset within the guard (review fix: a subset whose quick
+  // run was unlucky can still win)
+  const nFinal = Math.max(1, p.finalists ?? 3);
+  const asFull = (e: SubsetEvaluation<W>) => ({ ...e, seconds: fullOf(e.weapons), full: true });
+  let best = asFull(quickEvals[0]);
+  const gap = Number.isFinite(quickEvals[0].seconds) && Number.isFinite(best.seconds) ? Math.max(0, quickEvals[0].seconds - best.seconds) : 0;
+  const margin = (p.guard ?? SUBSET_GUARD_FACTOR) * gap;
+  quickEvals.slice(1).forEach((e, i) => {
+    if (i + 1 >= nFinal && !(p.guard === Infinity) && !(e.seconds <= best.seconds + margin + EPS)) return;
+    const f = asFull(e);
+    if (betterEval(f, best, order)) best = f;
+  });
+  // the fastest set without each brought weapon (the best quick one without it gets a full run)
+  const bestWithout: BestWithout<W>[] = best.weapons.map((w) => {
+    const top = quickEvals.find((e) => !e.weapons.includes(w));
+    if (top) fullOf(top.weapons);
+    let pick: { weapons: W[], seconds: number } | null = null;
+    fullMemo.forEach((seconds, k) => {
+      const weapons = (k ? k.split('+') : []) as W[];
+      if (weapons.includes(w)) return;
+      if (!pick || seconds < pick.seconds - EPS) pick = { weapons, seconds };
+    });
+    const found = pick as { weapons: W[], seconds: number } | null;
+    return { weapon: w, weapons: found?.weapons ?? [], seconds: found?.seconds ?? Infinity };
   });
 
   // neighbours of the best: each weapon dropped / added (same signature and slots = the same problem)
@@ -192,6 +229,7 @@ export const searchSpecSubsets = <W extends string>(p: SubsetProblem<W>): Subset
   return {
     best: best.weapons,
     seconds: best.seconds,
+    bestWithout,
     evaluated: Array.from(evaluated.values()).sort((a, b) => (betterEval(a, b, order) ? -1 : Number(betterEval(b, a, order)))),
     signatures: reps.size,
     pruned: reps.size - kept.length,
@@ -207,16 +245,109 @@ export const bringText = (weapons: PlannerWeapon[]): string => (weapons.length
 
 const fmtSeconds = (s: number) => (Number.isFinite(s) ? `${Math.abs(s).toFixed(1)} s` : '∞');
 
-/** One weapon's line, e.g. "Elder maul saves 35.2 s for 1 slot" / "Tonalztics would save 4.0 s for 1 slot". */
+const signed = (s: number) => {
+  if (!Number.isFinite(s)) return s > 0 ? '+∞' : '−∞';
+  if (Math.abs(s) < 0.05) return '±0.0 s';
+  return `${s > 0 ? '+' : '−'}${fmtSeconds(s)}`;
+};
+
+/**
+ * One weapon's line, relative to this plan (review fix: the deltas are one-weapon changes of the chosen set, not what
+ * the weapon is worth on its own): "dropping Elder maul from this plan: +104.4 s (frees 1 slot)" / "adding Tonalztics to
+ * this plan: +49.6 s (1 slot)".
+ */
 export const weaponDeltaText = (d: WeaponDelta<PlannerWeapon>): string => {
   const slots = `${d.deltaSlots} slot${d.deltaSlots === 1 ? '' : 's'}`;
   const label = specWeaponLabel(d.weapon);
-  if (d.chosen) {
-    return d.deltaSeconds > 0.05 ? `${label} saves ${fmtSeconds(d.deltaSeconds)} for ${slots}` : `${label}: no time without it (${slots})`;
+  // deltaSeconds = seconds saved by having the weapon; the route-time change of the move is its negative (or itself)
+  if (d.chosen) return `dropping ${label} from this plan: ${signed(d.deltaSeconds)} (frees ${slots})`;
+  return `adding ${label} to this plan: ${signed(-d.deltaSeconds)} (${slots})`;
+};
+
+/** "best without Elder maul: Tonalztics, 22:10.5" (`fmt` formats the route time). */
+export const bestWithoutText = (b: BestWithout<PlannerWeapon>, fmt: (s: number) => string): string => (
+  `best without ${specWeaponLabel(b.weapon)}: ${b.weapons.length ? SPEC_CANDIDATES.filter((w) => b.weapons.includes(w)).map(specWeaponLabel).join(' + ') : 'no spec weapons'}, ${fmt(b.seconds)}`
+);
+
+// --- seeds (phase 29 review) ---------------------------------------------------------------------------------------
+
+export interface SeedSingle {
+  /** Candidate index. */
+  i: number;
+  /** Its route time alone (Infinity allowed). */
+  t: number;
+  /** Tie-break score (higher first). */
+  s: number;
+  group: string;
+}
+
+/**
+ * Optimiser seeds: the `n` fastest single loadouts plus the fastest of every style group (always kept, also when `n`
+ * is small: review fix — a quick run used to take the first `n` of a list whose group bests were appended at the end).
+ * Rank the singles under the drain state being optimised (each spec subset / carrier set its own).
+ */
+export const pickSeeds = (singles: SeedSingle[], groups: string[], n: number): number[] => {
+  const sorted = [...singles].sort((a, b) => ((a.t === b.t ? 0 : a.t - b.t) || (b.s - a.s) || (a.i - b.i)));
+  const out = sorted.slice(0, Math.max(0, n)).map((x) => x.i);
+  groups.forEach((g) => {
+    const top = sorted.find((x) => x.group === g);
+    if (top && !out.includes(top.i)) out.push(top.i);
+  });
+  return out;
+};
+
+// --- Team: carriers as planner output (phase 29 review) ------------------------------------------------------------
+
+export type CarrierCounts = Record<PlannerWeapon, number>;
+
+export const NO_CARRIERS: CarrierCounts = {
+  elderMaul: 0, dwh: 0, bgs: 0, tonalztics: 0, ayak: 0,
+};
+
+export interface CarrierStep {
+  weapon: PlannerWeapon;
+  /** Route seconds this carrier saved (vs the carriers before it). */
+  saved: number;
+  /** Route time after it. */
+  seconds: number;
+}
+
+/**
+ * The team's carriers, greedy: from no carriers, repeatedly add the one carrier (of any weapon) that lowers the route
+ * time most, while that saves ≥ `minSaving` (default {@link SHARE_MAX_SLOT_SECONDS}); at most `perWeapon` of a weapon
+ * and `total` in all (the party size). Deterministic (ties: the order of `weapons`).
+ */
+export const greedyCarriers = (p: {
+  weapons: PlannerWeapon[],
+  total: number,
+  perWeapon?: number,
+  time: (c: CarrierCounts) => number,
+  minSaving?: number,
+  start?: CarrierCounts,
+}): { carriers: CarrierCounts, steps: CarrierStep[], seconds: number } => {
+  // eslint-disable-next-line @typescript-eslint/no-use-before-define
+  const minSaving = p.minSaving ?? SHARE_MAX_SLOT_SECONDS;
+  let cur: CarrierCounts = { ...NO_CARRIERS, ...(p.start || {}) };
+  let t = p.time(cur);
+  const steps: CarrierStep[] = [];
+  const count = (c: CarrierCounts) => Object.values(c).reduce((a, v) => a + v, 0);
+  for (;;) {
+    if (count(cur) >= p.total) break;
+    let pick: { w: PlannerWeapon, c: CarrierCounts, t: number } | null = null;
+    for (const w of p.weapons) {
+      if (cur[w] >= (p.perWeapon ?? p.total)) continue;
+      const c = { ...cur, [w]: cur[w] + 1 };
+      const tc = p.time(c);
+      if (!pick || tc < pick.t - EPS) pick = { w, c, t: tc };
+    }
+    if (!pick) break;
+    const saved = pick.t === t ? 0 : t - pick.t;
+    if (!(saved >= minSaving - EPS)) break;
+    cur = pick.c;
+    t = pick.t;
+    steps.push({ weapon: pick.w, saved, seconds: t });
   }
-  if (d.deltaSeconds > 0.05) return `${label} would save ${fmtSeconds(d.deltaSeconds)} for ${slots}`;
-  if (d.deltaSeconds < -0.05) return `${label} would cost ${fmtSeconds(d.deltaSeconds)} (${slots})`;
-  return `${label} would save nothing (${slots})`;
+  return { carriers: cur, steps, seconds: t };
 };
 
 // --- Team: roles and your share ------------------------------------------------------------------------------------
@@ -248,6 +379,8 @@ export interface TeamRoleRow {
   carriers: number;
   /** The bosses / phases that need this many (the ones driving the count). */
   drivers: string[];
+  /** Phase 29 review (planner carriers): route seconds the last carrier of this weapon saves (vs one fewer). */
+  lastSaved?: number;
 }
 
 export interface TeamRoles {
@@ -259,7 +392,33 @@ export interface TeamRoles {
   perTarget: RoleTargetNeed[];
   /** e.g. "6-man: 2 Elder maul, 2 Tonalztics, 1 Eye of Ayak". */
   text: string;
+  /**
+   * Phase 29 review: the carriers the Team drain state uses (rows = these): 'auto' = picked by the planner
+   * (`greedyCarriers`, `steps` = what each carrier saved in the order added), 'manual' = Advanced's counts.
+   */
+  carriers?: CarrierCounts;
+  mode?: 'auto' | 'manual';
+  steps?: CarrierStep[];
 }
+
+/**
+ * Phase 29 review: the briefing rows of a carrier set: per weapon its carriers, what the last one saves and the
+ * encounters it saves the most on (`marginal`: weapon → { saved, drivers }), most carriers first (ties: ROLE_ORDER).
+ */
+export const rowsFromCarriers = (
+  carriers: CarrierCounts,
+  marginal: (w: PlannerWeapon) => { saved: number, drivers: string[] },
+): TeamRoleRow[] => ROLE_ORDER.filter((w) => carriers[w] > 0).map((w) => {
+  const m = marginal(w);
+  return {
+    weapon: w, carriers: carriers[w], drivers: m.drivers, lastSaved: m.saved,
+  };
+}).sort((a, b) => (b.carriers - a.carriers) || (ROLE_ORDER.indexOf(a.weapon) - ROLE_ORDER.indexOf(b.weapon)));
+
+/** "6-man: 2 Elder maul, 2 Tonalztics" / "6-man: no spec carriers". */
+export const carriersText = (partySize: number, rows: TeamRoleRow[]): string => (rows.length
+  ? `${partySize}-man: ${rows.map((r) => `${r.carriers} ${specWeaponLabel(r.weapon)}`).join(', ')}`
+  : `${partySize}-man: no spec carriers`);
 
 /** Eye of Ayak carriers (2 specs each from 100%) for P(magic def 0) ≥ threshold; null if none within the party. */
 const ayakCarriers = (model: DrainModel, partySize: number, threshold: number): number | null => {

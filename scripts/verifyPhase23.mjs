@@ -149,7 +149,7 @@ const main = async () => {
   const toaRoutes = await page.locator('[data-testid="plan-route-row"]').count();
   check(toaRoutes === 1, `ToA Plan: ${toaRoutes} route row (single route)`);
   const toaTotal = (await page.locator('[data-testid="plan-total"]').innerText()).trim();
-  check(toaTotal === '14:10.5', `ToA plan total ${toaTotal} (phase 29: 14:10.5; phase 27: 14:22.3, camp Magus ring)`);
+  check(toaTotal === '13:19.6', `ToA plan total ${toaTotal} (phase 29 review, planner carriers: 13:19.6; phase 29: 14:10.5; phase 27: 14:22.3)`);
   await shot(page, 'plan-toa');
 
   // --- calculator Max-drain buttons

@@ -7,7 +7,7 @@
  *   runs in ≤ 150 s (phase 27: camp one ring screens six rings), 28 inventory cells, every kit loadout obeys the dedupe
  *   rule (saves ≥ max(1, slots) s).
  * - FA: total 21:53.0 (phase 29: the planner picks the spec weapons; phase 27: 22:47.9; was 23:30.4).
- * - ToB: 7:30.6 at 28/28 (phase 29; phase 27, camp Ultor ring: 7:31.7; was 7:32.4 with 1 free slot), a Dawnbringer loadout (the staff
+ * - ToB: 7:30.0 at 28/28 (phase 29 review: planner carriers; phase 29: 7:30.6; phase 27, camp Ultor ring: 7:31.7; was 7:32.4 with 1 free slot), a Dawnbringer loadout (the staff
  *   free), no Dawnbringer inventory cell, a "Lighter kit" alternative, the "Raid items (0 slots)" note; Search: the
  *   Prinkipas only in Hard Mode. The Scythe loadouts are printed (with one ring camped, single-piece swaps of the Scythe
  *   set merge into the preset names; the dedupe rule is what keeps them).
@@ -136,8 +136,9 @@ const run = async () => {
   const alts = await page.locator('[data-testid="plan-alternatives"] li').allInnerTexts();
   alts.slice(0, 2).forEach((a) => console.log(`     alt: ${a.slice(0, 200)}`));
   // phase 25: 7:32.2 → 7:32.4; phase 27 (camp Ultor ring, potions from the kit): 7:31.7 at 28/28 (CrossRaid HEADLINES)
-  // phase 29 (the planner picks the spec weapons: Tonalztics, its slot worth 0.5 s): 7:30.6
-  check(tob.free === 0 && tob.total === '7:30.6', `ToB main plan 7:30.6, 28/28 (${tob.total}, ${tob.free} free)`);
+  // phase 29 (the planner picks the spec weapons: Tonalztics, its slot worth 0.5 s): 7:30.6; review: the planner's
+  // carriers (2 Tonalztics + 1 Elder maul): 7:30.0
+  check(tob.free === 0 && tob.total === '7:30.0', `ToB main plan 7:30.0, 28/28 (${tob.total}, ${tob.free} free)`);
   check(alts.some((a) => /^Lighter kit: .*−\d+ slots? for \+\d+\.\d s/.test(a)), 'ToB: "Lighter kit" alternative (−N slots for +X.X s)');
   const dawnCell = await page.locator('[data-testid="inventory-cell"][data-label="Dawnbringer"]').count();
   check(dawnCell === 0, 'ToB: no Dawnbringer inventory cell');

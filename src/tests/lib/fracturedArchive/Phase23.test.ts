@@ -154,7 +154,8 @@ describe('drain line data', () => {
     ]);
     items.forEach((i) => expect(i.hitChance).toBe(model.hitChance[i.weapon as keyof typeof model.hitChance]));
     // phase 29: the Team line starts with "needed ×N (H hits) · team brings ×4"
-    expect(items[1].title).toMatch(/^needed ×\d+ \(\d+ hits?\) · team brings ×4; 4 Tonalztics specs \(8 hits\); \d+% of specs land at least one damaging hit$/);
+    // (phase 29 review: "not needed" when the maul specs already give the same ranked Defence on Xarth)
+    expect(items[1].title).toMatch(/^(needed ×\d+ \(\d+ hits?\)|not needed) · team brings ×4; 4 Tonalztics specs \(8 hits\); \d+% of specs land at least one damaging hit$/);
     expect(items[1].hits).toBe(8);
     expect(items.every((i) => i.image)).toBe(true);
     expect(d.line!.defAfter).toBe(d.defAfter);

@@ -61,6 +61,8 @@ const SpecPlanPanel: React.FC<{
           {`Chance of the Defence floor (${floor}): ${formatProbability(state.pFloor)}${state.label ? ` · full plan: ${planLabelText(state.label)}` : ''}`}
         </div>
       )}
+      {/* phase 29 review: a party of 1 has no team (Solo only) */}
+      {assumptions.partySize > 1 && (
       <details data-testid="team-table">
         <summary className="cursor-pointer">
           {`Team carriers: ${rec.text}`}
@@ -89,6 +91,7 @@ const SpecPlanPanel: React.FC<{
           {`Each carrier specs twice at the start (100% energy). Exact binomial / convolution over the calculator's spec hit distributions; bold ≥ ${formatProbability(rec.threshold)}.`}
         </div>
       </details>
+      )}
     </div>
   );
 };

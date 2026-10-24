@@ -3,6 +3,45 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 29 fixes — review follow-ups (2026-10-24)
+
+- **Blocker: the Solo subset search missed the optimum** (reviewer's brute force over all 32 sets: {Tonalztics}
+  22:10.5 = 1330.53 s, not {Elder maul, Ayak} 22:42.7). Cause: the quick runs took `seeds.slice(0, 4)` of a list ranked
+  under the all-weapons drain table (favours magic through Ayak) with the group bests appended at the end. Fix:
+  `pickSeeds` (the n best singles + every style group's best, always) ranked under each subset's own table; a guard
+  (`SUBSET_GUARD_FACTOR` 2: every subset whose quick time is within 2 × the best's quick − full gap of the best full
+  time gets the full run). FA Solo party 1 now: **Bring Tonalztics, 22:10.5** (= the brute force).
+- **Ring and subset together** (camp one ring): the screens time the first screen's subset; if the best ring's full run
+  picks another subset, the rings are screened again with it and the new best ring is planned in full (≤ 2 rounds;
+  `specs.solo.screenedWith`, `ringRounds`). FA Solo: one round (fixed point {Tonalztics}, Ultor).
+- **Wording**: "dropping X from this plan: +N s (frees 1 slot)", "adding X to this plan: ±N s (1 slot)", and "best
+  without X: …, time" (`bestWithout`, `bestWithoutText`). FA Solo: dropping Tonalztics +228.2 s; best without it Elder
+  maul + Eye of Ayak 22:42.7; adding Elder maul +52.0, DWH +52.0, Ayak +52.6, BGS +52.9 s.
+- **Team carriers are planner output** (the user's decision): `greedyCarriers` adds one carrier at a time (any weapon,
+  the one that lowers the kit's route time most) while it saves ≥ 1 s, party-size cap, Ayak only with mages; the kit is
+  re-optimised under them (and the greedy re-run once if the kit changed); the Team drain state uses exactly these
+  carriers (`PlanInputs.carrierMode`, `DEFAULT_CARRIER_MODE` 'auto'; `plan()` default 'manual'). Advanced "Team carriers:
+  Planner decides / Set manually" (counts editable and the party-size warning only when manual; Search / Summary use
+  the counts). Briefing: carriers, what the last one saves, the encounters it saves on, the order added; the drain
+  line's "needed ×N" = the fewest of that weapon's first-round specs giving the same ranked drain on that boss
+  (`specsNeeded`; "not needed" when 0). FA 6-man: **2 Elder maul + 2 Tonalztics** (added: Tonalztics −230.0 s,
+  Tonalztics −35.2, Elder maul −13.3, Elder maul −3.6; the next < 1 s); "Set manually" at 2 / 2 / 1 gives the same
+  21:53.0.
+- Headlines (Team, camp one ring) phase 29 → fixes: FA 21:53.0 → **21:53.0**, ToA 14:10.5 → **13:19.6** (1 maul + 5
+  Ayak, Magus), CoX 6:36.3 → **6:36.3** (2 maul, 2 Tonalztics, 1 BGS, 1 Ayak), ToB 7:30.6 → **7:30.0** (2 Tonalztics, 1
+  maul); FA without Obligator + Ascension crossbows 24:53.8 → **24:53.8** (2 Tonalztics). Your share: FA Elder maul
+  (free slot), ToA none (5.1 s), CoX none (3.4 s), ToB Tonalztics (0.5 s).
+- Nits: no team carrier table in the Search drain box at party 1; UNVERIFIED D21 (new criterion), D17.
+- Tests: Phase29 (+ guard toy, seed toy, greedy toy, Smorks stall, briefing rows, specsNeeded, carriers = drain-state
+  carriers on a reduced plan; slow: FA Solo party 1 → Tonalztics ≤ 22:10.5 + fixed point, FA 6-man carriers and the
+  manual 21:53.0); Phase23 drain-line regex; CrossRaid headlines + recompute with the planner's carriers.
+  `yarn test` 1355 (1343 pass / 12 skipped); `RUN_SLOW_TESTS=1` CrossRaid + Phase27 + Phase28 + Phase29 79 / 79; lint,
+  tsc clean.
+- Playwright: `verifyPhase29` all OK (carriers 2 maul + 2 Tonalztics "picked by the planner", the order added, AG
+  Flying "needed ×3 (6 hits) · team brings ×4", Solo party 1 Bring Tonalztics 22:10.5 in 20.5 s, "dropping / adding …
+  this plan", "best without Tonalztics: Elder maul + Eye of Ayak, 22:42.7", no carrier table at party 1); re-pinned and
+  re-ran verifyPhase21 (ToB 7:30.0) / 23 (ToA 13:19.6) / 26 / 27: all OK; tracked screenshots restored.
+
 ## Phase 29 — Planner decides spec weapons (2026-10-24)
 
 - New `specChoice.ts` (pure): `searchSpecSubsets` (Solo subset search: one candidate per distinct drain state = the

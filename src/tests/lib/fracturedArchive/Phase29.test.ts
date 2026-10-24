@@ -3,15 +3,23 @@ import { generateEmptyPlayer } from '@/state';
 import { buildTargetMonster, drainStateFor, findTarget } from '@/lib/fracturedArchive/bestSetup';
 import { countText, neededText } from '@/lib/fracturedArchive/drainLine';
 import {
-  DEFAULT_SPEC_MODE, plan, planItemByName, PlanInputs, PlanResult, PlanTuning, SPEC_MODES,
+  DEFAULT_RING_POLICY, DEFAULT_SPEC_MODE, plan, planItemByName, PlanInputs, PlanResult, PlanTuning, SPEC_MODES,
 } from '@/lib/fracturedArchive/planner';
+import { formatDuration } from '@/lib/fracturedArchive/raidTime';
 import { DEFAULT_ASSUMPTIONS, PresetDef } from '@/lib/fracturedArchive/presets';
 import {
   allSubsets,
   assignMe,
   AUTO_AYAK_SPECS,
+  bestWithoutText,
   bringText,
+  CarrierCounts,
+  carriersText,
+  greedyCarriers,
   mostNeededWeapon,
+  NO_CARRIERS,
+  pickSeeds,
+  rowsFromCarriers,
   mySpecsForSubset,
   RoleTarget,
   searchSpecSubsets,
@@ -22,7 +30,7 @@ import {
 } from '@/lib/fracturedArchive/specChoice';
 import { drainModel } from '@/lib/fracturedArchive/specs';
 import {
-  ayakOutcome, ayakSpecsToThreshold, neededSpecs, recommendCarriers, soloSpecPlan,
+  ayakOutcome, ayakSpecsToThreshold, defenceOutcome, neededSpecs, recommendCarriers, soloSpecPlan, specsNeeded,
 } from '@/lib/fracturedArchive/teamSpecs';
 import { FRACTURED_ARCHIVE_RAID } from '@/lib/raids';
 
@@ -110,12 +118,34 @@ describe('Solo subset search (toy)', () => {
   test('texts', () => {
     expect(bringText(['tonalztics', 'elderMaul'])).toBe('Bring: Elder maul, Tonalztics');
     expect(bringText([])).toBe('Bring: no spec weapons');
+    // review fix: one change to this plan, as a route-time change
+    expect(weaponDeltaText({
+      weapon: 'tonalztics', chosen: false, deltaSeconds: -49.6, deltaSlots: 1,
+    })).toBe('adding Tonalztics to this plan: +49.6 s (1 slot)');
     expect(weaponDeltaText({
       weapon: 'tonalztics', chosen: false, deltaSeconds: 4, deltaSlots: 1,
-    })).toBe('Tonalztics would save 4.0 s for 1 slot');
+    })).toBe('adding Tonalztics to this plan: −4.0 s (1 slot)');
     expect(weaponDeltaText({
-      weapon: 'elderMaul', chosen: true, deltaSeconds: 35.24, deltaSlots: 1,
-    })).toBe('Elder maul saves 35.2 s for 1 slot');
+      weapon: 'elderMaul', chosen: true, deltaSeconds: 104.44, deltaSlots: 1,
+    })).toBe('dropping Elder maul from this plan: +104.4 s (frees 1 slot)');
+    expect(bestWithoutText({ weapon: 'tonalztics', weapons: ['ayak', 'elderMaul'], seconds: 1362.66 }, (x) => `${x.toFixed(1)}`))
+      .toBe('best without Tonalztics: Elder maul + Eye of Ayak, 1362.7');
+  });
+
+  test('guard: a subset whose quick run was unlucky still gets the full run when within 2 × the best\'s quick − full gap', () => {
+    // quick overstates every set by 10 s; {B} (true 180) by 40 s more. Best by quick: {A} (180 → full 170, gap 10).
+    // Guard 2 × 10 = 20: {B} quick 230 > 170 + 20 → not timed in full; with a lucky full time it would win
+    const quick = (s: W[]) => time(s) + 10 + (s.join('') === 'B' ? 40 : 0);
+    const full = (s: W[]) => (s.join('') === 'B' ? 160 : time(s));
+    expect(toy({ quick, full, finalists: 1 }).best).toEqual(['A']);
+    expect(toy({
+      quick, full, finalists: 1, guard: Infinity,
+    }).best).toEqual(['B']);
+    // {B} not unlucky beyond the gap: quick 190 ≤ 170 + 20 → full run → wins at 160 (it ranks 4th by quick)
+    const quick2 = (s: W[]) => time(s) + 10;
+    const r = toy({ quick: quick2, full, finalists: 1 });
+    expect(r.best).toEqual(['B']);
+    expect(r.bestWithout).toEqual([{ weapon: 'B', weapons: ['A'], seconds: 170 }]);
   });
 
   test('a subset as "Specs I bring": Ayak until magic def 0, Defence drains first, the Lightbearer flag kept', () => {
@@ -125,6 +155,53 @@ describe('Solo subset search (toy)', () => {
     });
     expect(subsetOfMySpecs(m)).toEqual(['elderMaul', 'ayak']);
     expect(subsetOfMySpecs(A.mySpecs)).toEqual(['elderMaul', 'ayak']);
+  });
+});
+
+describe('seeds (review fix)', () => {
+  test('the best of every style group is kept however few seeds are asked for; ranked by the given times', () => {
+    // under the all-weapons table magic looks best (seeds 0, 1); under a Tonalztics-only table ranged is (seed 3)
+    const singles = (t: number[]) => t.map((x, i) => ({
+      i, t: x, s: 0, group: ['magic', 'magic', 'melee', 'ranged', 'ranged'][i],
+    }));
+    const allWeapons = [100, 101, 120, 130, 131];
+    expect(pickSeeds(singles(allWeapons), ['melee', 'ranged', 'magic'], 2)).toEqual([0, 1, 2, 3]);
+    // the old quick run took the first 2 of the list (0, 1): magic only
+    const tonaOnly = [140, 141, 125, 110, 111];
+    expect(pickSeeds(singles(tonaOnly), ['melee', 'ranged', 'magic'], 2)).toEqual([3, 4, 2, 0]);
+    expect(pickSeeds(singles(tonaOnly), ['melee', 'ranged', 'magic'], 0)).toEqual([2, 3, 0]);
+  });
+});
+
+describe('team carriers: greedy on route time (review fix)', () => {
+  // toy: route 1000 s; 1st Tonalztics carrier −200 s, 2nd −1.5 s, 3rd −0.4 s; 1st maul −20 s, 2nd −0.8 s
+  const time = (c: CarrierCounts) => 1000
+    - [0, 200, 201.5, 201.9, 201.9, 201.9, 201.9][c.tonalztics]
+    - [0, 20, 20.8, 20.8, 20.8, 20.8, 20.8][c.elderMaul];
+  test('adds a carrier only while it saves ≥ 1 s (a second Tonalztics: 1.5 s yes; a second maul: 0.8 s no)', () => {
+    const g = greedyCarriers({ weapons: ['elderMaul', 'tonalztics'], total: 6, time });
+    expect(g.carriers).toEqual({ ...NO_CARRIERS, tonalztics: 2, elderMaul: 1 });
+    expect(g.steps.map((x) => [x.weapon, Number(x.saved.toFixed(1))])).toEqual([['tonalztics', 200], ['elderMaul', 20], ['tonalztics', 1.5]]);
+    expect(g.seconds).toBeCloseTo(778.5, 6);
+    // a 2 s bar stops before the second Tonalztics; the party size caps the total
+    expect(greedyCarriers({
+      weapons: ['elderMaul', 'tonalztics'], total: 6, time, minSaving: 2,
+    }).carriers).toEqual({ ...NO_CARRIERS, tonalztics: 1, elderMaul: 1 });
+    expect(greedyCarriers({ weapons: ['elderMaul', 'tonalztics'], total: 1, time }).carriers).toEqual({ ...NO_CARRIERS, tonalztics: 1 });
+  });
+
+  test('The Smorks (floor 0): % drains stall above 0, so only Tonalztics reach the floor', () => {
+    const smorks = drainModel(undrained('smorks'), A);
+    expect(smorks.floor).toBe(0);
+    expect(defenceOutcome(smorks, Array(12).fill('elderMaul')).pFloor).toBe(0);
+    expect(defenceOutcome(smorks, Array(12).fill('dwh')).pFloor).toBe(0);
+    expect(defenceOutcome(smorks, Array(10).fill('tonalztics')).pFloor).toBeGreaterThan(0.95);
+  });
+
+  test('briefing rows from a carrier set: most carriers first, what the last one saves', () => {
+    const rows = rowsFromCarriers({ ...NO_CARRIERS, elderMaul: 2, tonalztics: 2 }, (w) => ({ saved: w === 'elderMaul' ? 3.6 : 27, drivers: [w] }));
+    expect(rows.map((r) => [r.weapon, r.carriers, r.lastSaved])).toEqual([['elderMaul', 2, 3.6], ['tonalztics', 2, 27]]);
+    expect(carriersText(6, rows)).toBe('6-man: 2 Elder maul, 2 Tonalztics');
   });
 });
 
@@ -218,19 +295,26 @@ describe('your share ("assign me")', () => {
   });
 });
 
-describe('Team drain line: "needed ×2 (4 hits) · team brings ×4"', () => {
-  test('AG Flying (2 Elder maul + 2 Tonalztics + 1 Ayak carriers; melee can\'t hit): Tonalztics needed 2 specs, team brings 4', () => {
-    const d = drainStateFor(undrained('ag-flying'), 'team', A);
+describe('Team drain line: "needed ×N · team brings ×M"', () => {
+  test('needed = the fewest of a weapon\'s first-round specs that give the same ranked drain on this boss', () => {
+    const m = undrained('ag-flying');
+    const model = drainModel(m, A);
+    const d = drainStateFor(m, 'team', A);
     const tona = d.line!.items.find((i) => i.weapon === 'tonalztics')!;
     expect(tona.count).toBe(4);
     expect(tona.hits).toBe(8);
-    expect(tona.needed).toBe(2);
-    expect(neededText(tona)).toBe('needed ×2 (4 hits) · team brings ×4');
+    const n = tona.needed!;
+    const ranked = (k: number) => defenceOutcome(model, Array(k).fill('tonalztics')).rankedDef;
+    expect(ranked(n)).toBe(ranked(4));
+    expect(n === 0 || ranked(n - 1) !== ranked(4)).toBe(true);
+    expect(neededText(tona)).toBe(n ? `needed ×${n} (${2 * n} hits) · team brings ×4` : 'not needed · team brings ×4');
+    expect(neededText({ ...tona, needed: 2 })).toBe('needed ×2 (4 hits) · team brings ×4');
     expect(neededText({ ...tona, needed: 0 })).toBe('not needed · team brings ×4');
-    expect(neededText({ ...tona, needed: null })).toBe('floor not reachable · team brings ×4');
-    expect(tona.title.startsWith('needed ×2 (4 hits) · team brings ×4; ')).toBe(true);
-    // the same as the deterministic Max-drain plan ("4 Tonalztics of Ralos" hits = 2 specs → Def 156)
-    expect(neededSpecs(drainModel(undrained('ag-flying'), A), { tonalztics: 4 }).defence).toEqual({ tonalztics: 2 });
+    expect(tona.title.startsWith(`${neededText(tona)}; `)).toBe(true);
+    // the Max-drain plan's deterministic count ("4 Tonalztics of Ralos" hits = 2 specs → Def 156)
+    expect(neededSpecs(model, { tonalztics: 4 }).defence).toEqual({ tonalztics: 2 });
+    // specsNeeded directly: a weapon whose specs change nothing on this boss needs 0
+    expect(specsNeeded(model, ['tonalztics', 'tonalztics', 'tonalztics', 'tonalztics', 'elderMaul'])).toMatchObject({ elderMaul: 0, tonalztics: n });
   });
 
   test('Solo shows Tonalztics as "×2 (4 hits)"', () => {
@@ -309,7 +393,6 @@ describe('planner: spec modes', () => {
     const roles = r.specs.team!;
     expect(roles.partySize).toBe(6);
     expect(roles.mages).toBe(0); // no magic loadout in the kit (auto)
-    expect(roles.rows.some((x) => x.weapon === 'ayak')).toBe(false);
     expect(roles.rows.length).toBeGreaterThan(0);
     const share = r.specs.share!;
     expect(share.manual).toBe(false);
@@ -318,10 +401,31 @@ describe('planner: spec modes', () => {
     expect(r.specItems.length).toBe(r.specs.bring.length);
     if (share.carry) expect(r.inventory.some((c) => c.kind === 'spec')).toBe(true);
     expect(r.slots!.used).toBeLessThanOrEqual(28);
-    // mages in party > 0 adds the Ayak carriers to the briefing
-    const m = plan(inputs({ specMode: 'auto', magesInParty: 2 }), MELEE_RANGED);
+    // manual carriers (plan()'s default): the briefing = the Advanced counts (2 maul, 2 Tonalztics, 1 Ayak)
+    expect(roles.mode).toBe('manual');
+    expect(roles.carriers).toEqual(A.team.carriers);
+    // mages in party > 0 makes Eye of Ayak a candidate; it is only added if it saves ≥ 1 s (no magic kit: never)
+    const m = plan(inputs({ specMode: 'auto', carrierMode: 'auto', magesInParty: 2 }), MELEE_RANGED);
     expect(m.specs.team!.mages).toBe(2);
-    expect(m.specs.team!.rows.some((x) => x.weapon === 'ayak')).toBe(true);
+    expect(m.specs.team!.rows.some((x) => x.weapon === 'ayak')).toBe(false);
+  }, 300000);
+
+  test('Team, planner picks the carriers: the drain state uses exactly the briefing\'s carriers', () => {
+    const r = plan(inputs({ specMode: 'auto', carrierMode: 'auto' }), MELEE_RANGED);
+    const team = r.specs.team!;
+    expect(team.mode).toBe('auto');
+    expect(Object.values(team.carriers!).reduce((a, v) => a + v, 0)).toBeLessThanOrEqual(6);
+    expect(team.rows.map((x) => [x.weapon, x.carriers]).sort()).toEqual(
+      (Object.entries(team.carriers!) as [string, number][]).filter(([, v]) => v > 0).sort(),
+    );
+    expect(team.steps!.every((x) => x.saved >= 1 - 1e-9)).toBe(true);
+    expect(team.steps!.length).toBe(Object.values(team.carriers!).reduce((a, v) => a + v, 0));
+    // every phase's Team line brings 2 specs per carrier of each weapon it shows (weapons that can hit)
+    const phases = r.comparison!.routes[r.planned].encounters.flatMap((e) => e.phases);
+    phases.forEach((ph) => (ph.choice?.drainLine?.items ?? []).forEach((it) => {
+      expect(it.count).toBe(2 * team.carriers![it.weapon as keyof CarrierCounts]);
+    }));
+    expect(team.rows.every((x) => typeof x.lastSaved === 'number')).toBe(true);
   }, 300000);
 
   test('Solo, planner decides: no magic loadout → Eye of Ayak is never brought (it costs a slot for nothing)', () => {
@@ -363,4 +467,39 @@ describe('planner: spec modes', () => {
     expect(r.specs.bring).toContain('ayak');
     expect(r.specs.notes.some((n) => n.startsWith('Eye of Ayak is carried but no magic loadout'))).toBe(true);
   }, 300000);
+});
+
+/**
+ * Review regressions on the full FA defaults (slow: `RUN_SLOW_TESTS=1`). The reviewer's brute force (each of the 32
+ * subsets planned with "Specs I bring", re-timed with compareRoutes) found {Tonalztics} at 22:10.5 (1330.53 s) the
+ * fastest Solo set at party 1; the phase 29 search picked {Elder maul, Eye of Ayak} (22:42.7) because the quick runs'
+ * seeds came from the all-weapons table.
+ */
+(process.env.RUN_SLOW_TESTS ? describe : describe.skip)('FA defaults (slow)', () => {
+  const full = (patch: Partial<PlanInputs>) => plan(inputs({ ringPolicy: DEFAULT_RING_POLICY, specMode: 'auto', ...patch }), { model: FA.time });
+
+  test('Solo, party 1, planner decides: Bring Tonalztics, ≤ 22:10.5; the ring and the subset are a fixed point', () => {
+    const r = full({ drain: 'solo', assumptions: { ...FA.defaultAssumptions, partySize: 1 } });
+    expect(r.specs.bring).toEqual(['tonalztics']);
+    expect(total(r)).toBeLessThanOrEqual(1330.53 + 0.05);
+    expect(r.ring.ring).toBe('Ultor ring');
+    // the ring screens timed the chosen subset (no second round needed here, or it converged)
+    expect(r.specs.solo!.screenedWith).toEqual(r.specs.bring);
+    // the per-weapon deltas are one-change moves from the optimum: none of them is faster
+    r.specs.solo!.perWeapon.forEach((d) => expect(d.chosen ? d.deltaSeconds : -d.deltaSeconds).toBeGreaterThan(0));
+    expect(r.specs.solo!.bestWithout[0]).toMatchObject({ weapon: 'tonalztics' });
+    expect(r.specs.solo!.bestWithout[0].seconds).toBeGreaterThan(total(r));
+  }, 900000);
+
+  test('Team, 6-man: the planner picks 2 Elder maul + 2 Tonalztics; the Advanced 2 / 2 / 1 by hand gives the same 21:53.0', () => {
+    const auto = full({ carrierMode: 'auto' });
+    expect(auto.specs.team!.carriers).toEqual({
+      elderMaul: 2, dwh: 0, bgs: 0, tonalztics: 2, ayak: 0,
+    });
+    expect(auto.specs.team!.steps!.map((x) => x.weapon)).toEqual(['tonalztics', 'tonalztics', 'elderMaul', 'elderMaul']);
+    const manual = full({ carrierMode: 'manual' });
+    expect(manual.specs.team!.carriers).toEqual(A.team.carriers);
+    expect(formatDuration(total(manual))).toBe('21:53.0');
+    expect(formatDuration(total(auto))).toBe('21:53.0');
+  }, 900000);
 });

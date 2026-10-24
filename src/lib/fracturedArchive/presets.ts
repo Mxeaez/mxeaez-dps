@@ -261,6 +261,11 @@ export interface MySpecs {
 /** Team spec carriers (phase 14): carriers per weapon, and whether that weapon's carriers wear Lightbearer. */
 export interface TeamSpecAssumptions {
   carriers: { elderMaul: number, dwh: number, bgs: number, tonalztics: number, ayak: number };
+  /**
+   * Phase 29 review: true = "Team carriers: Set manually" (the Plan tab's Team drains use `carriers`); false / undefined
+   * = the Plan tab's planner picks the carriers. Search / Summary always use `carriers`.
+   */
+  manual?: boolean;
   lightbearer: { elderMaul: boolean, dwh: boolean, bgs: boolean, tonalztics: boolean, ayak: boolean };
 }
 

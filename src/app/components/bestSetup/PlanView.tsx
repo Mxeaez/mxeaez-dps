@@ -68,7 +68,9 @@ import handsSlot from '@/public/img/slots/hands.png';
 import feetSlot from '@/public/img/slots/feet.png';
 import ringSlot from '@/public/img/slots/ring.png';
 import { isOwned, unownedLabel } from '@/lib/fracturedArchive/ownership';
-import { describeNeed, specWeaponLabel, weaponDeltaText } from '@/lib/fracturedArchive/specChoice';
+import {
+  bestWithoutText, describeNeed, specWeaponLabel, weaponDeltaText,
+} from '@/lib/fracturedArchive/specChoice';
 import { PlannerWeapon, SPEC_WEAPONS } from '@/lib/fracturedArchive/specs';
 
 // "Plan" tab of /best-setup (phase 17): the kit (worn set + switch items) that minimises the route time within 28
@@ -295,15 +297,18 @@ const SpecsBox: React.FC<{ specs: PlanResult['specs'] }> = ({ specs }) => (
       </span>
     </div>
     {specs.solo && (
-      <ul className="list-disc ml-5" data-testid="plan-spec-weapons" title="Route time with / without each weapon (the kit re-optimised each time; drains planned at each encounter's fight length)">
+      <ul className="list-disc ml-5" data-testid="plan-spec-weapons" title="Route-time change of one change to this plan (the kit re-optimised each time; drains planned at each encounter's fight length), and the fastest set timed without each brought weapon">
         {specs.solo.perWeapon.filter((d) => d.chosen).map((d) => (
           <li key={d.weapon} data-testid="plan-spec-weapon" data-weapon={d.weapon} data-delta={d.deltaSeconds.toFixed(1)} data-slots={d.deltaSlots}>{weaponDeltaText(d)}</li>
         ))}
-        {specs.solo.bestRejected && (
-          <li data-testid="plan-spec-rejected" data-weapon={specs.solo.bestRejected.weapon} data-delta={specs.solo.bestRejected.deltaSeconds.toFixed(1)}>
-            {`Not brought: ${weaponDeltaText(specs.solo.bestRejected)}`}
+        {(specs.solo.bestWithout ?? []).map((b) => (
+          <li key={`without-${b.weapon}`} data-testid="plan-spec-without" data-weapon={b.weapon} data-seconds={b.seconds.toFixed(2)}>{bestWithoutText(b, (x) => formatDuration(x))}</li>
+        ))}
+        {specs.solo.perWeapon.filter((d) => !d.chosen).sort((a, b) => b.deltaSeconds - a.deltaSeconds).map((d) => (
+          <li key={d.weapon} data-testid={specs.solo!.bestRejected?.weapon === d.weapon ? 'plan-spec-rejected' : 'plan-spec-other'} data-weapon={d.weapon} data-delta={d.deltaSeconds.toFixed(1)}>
+            {weaponDeltaText(d)}
           </li>
-        )}
+        ))}
         <li className="text-gray-500 dark:text-gray-400 list-none -ml-5">
           {`${specs.solo.signatures} distinct drain states among the ${2 ** specs.solo.perWeapon.length} weapon sets; ${specs.solo.evaluated} timed, ${specs.solo.pruned} skipped (no DPS gain for their slots)`}
         </li>
@@ -311,8 +316,8 @@ const SpecsBox: React.FC<{ specs: PlanResult['specs'] }> = ({ specs }) => (
     )}
     {specs.team && (
       <div className="flex flex-col gap-1" data-testid="plan-team-roles">
-        <div className="font-semibold" title="Per boss / phase: the fewest carriers whose first-round specs reach the Defence floor with the confidence in Advanced; per weapon the most any boss needs. Eye of Ayak only if someone mages">
-          {`Team briefing (${specs.team.text})`}
+        <div className="font-semibold" title={specs.team.mode === 'auto' ? 'The carriers the planner picked: one carrier at a time, the one that saves the most route time with this kit, while it saves ≥ 1 s (at most the party size). The Team drains use exactly these carriers. Eye of Ayak only if someone mages' : 'The carriers set in Advanced (Team carriers: Set manually); the Team drains use them'}>
+          {`Team briefing (${specs.team.text}; ${specs.team.mode === 'auto' ? 'picked by the planner' : 'set manually'})`}
         </div>
         {specs.team.rows.length > 0 ? (
           <table className="w-fit" data-testid="plan-team-briefing">
@@ -320,7 +325,8 @@ const SpecsBox: React.FC<{ specs: PlanResult['specs'] }> = ({ specs }) => (
               <tr className="text-left">
                 <th className="pr-3">Weapon</th>
                 <th className="pr-3 text-right">Carriers</th>
-                <th>Needed most on</th>
+                <th className="pr-3 text-right" title="Route time the kit loses without the last carrier of this weapon">Last carrier saves</th>
+                <th title="Encounters the last carrier saves the most time on">Saves time on</th>
               </tr>
             </thead>
             <tbody>
@@ -333,14 +339,20 @@ const SpecsBox: React.FC<{ specs: PlanResult['specs'] }> = ({ specs }) => (
                     </span>
                   </td>
                   <td className="pr-3 text-right font-mono">{r.carriers}</td>
-                  <td>{r.drivers.join(', ')}</td>
+                  <td className="pr-3 text-right font-mono" data-testid="plan-team-last-saved">{r.lastSaved === undefined ? '' : `${r.lastSaved.toFixed(1)} s`}</td>
+                  <td>{r.drivers.join(', ') || '—'}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         ) : <div>No spec carriers needed on this route.</div>}
+        {specs.team.steps && specs.team.steps.length > 0 && (
+          <div className="text-gray-500 dark:text-gray-400" data-testid="plan-team-steps">
+            {`Added in this order: ${specs.team.steps.map((st) => `${specWeaponLabel(st.weapon)} −${st.saved.toFixed(1)} s`).join(', ')} (next one < 1 s)`}
+          </div>
+        )}
         <details>
-          <summary className="cursor-pointer">Per boss / phase</summary>
+          <summary className="cursor-pointer">Per boss / phase (fewest carriers for the floor at the confidence in Advanced, for reference)</summary>
           <ul className="list-disc ml-5" data-testid="plan-team-per-target">
             {specs.team.perTarget.map((n) => (
               <li key={n.key}>{`${n.label}: ${describeNeed(n)}${n.ayak ? ` · ${n.ayak} Eye of Ayak` : ''}`}</li>
@@ -437,6 +449,7 @@ const PlanView: React.FC<{
         supplies,
         ringPolicy,
         specMode,
+        carrierMode: assumptions.team.manual ? 'manual' as const : 'auto' as const,
         ...(mages !== undefined ? { magesInParty: mages } : {}),
         searchRows,
         ...(list.length ? { notOwned: list } : {}),
