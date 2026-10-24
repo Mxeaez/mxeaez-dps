@@ -33,6 +33,8 @@ import {
   OCELLUS_P3_PHASES,
 } from '@/lib/fracturedArchive/constants';
 import { dagonhaiEncounterDamage } from '@/lib/fracturedArchive/dagonhai';
+import { DEFAULT_FIGHT_SECONDS } from '@/lib/fracturedArchive/specs';
+import { DrainLine } from '@/lib/fracturedArchive/drainLine';
 import {
   FRACTURED_ARCHIVE_HP_SCALING,
   FRACTURED_ARCHIVE_MAX_PARTY_SIZE,
@@ -173,6 +175,8 @@ export interface KitChoice {
   dps: number;
   /** Drain plan used (short form), e.g. "first round 4× Elder maul (P floor 99%)". */
   drain?: string;
+  /** Phase 23: the same plan as "[icon] ×N" data (DrainLineView). */
+  drainLine?: DrainLine;
 }
 
 /**
@@ -389,7 +393,7 @@ export const raidTimeAssumptionsFrom = (
   partySize: best.partySize,
   drain,
   settings,
-  fallbackFightSeconds: best.fightSeconds,
+  fallbackFightSeconds: best.fightSeconds ?? DEFAULT_FIGHT_SECONDS,
   dpsMultiplier: teamDpsMultiplier(best),
   ...(model ? { model } : {}),
   ...(best.toa ? { toa: best.toa } : {}),
@@ -693,7 +697,12 @@ export const createKitEvaluator = (loadouts: KitLoadout[], assumptions: BestSetu
           }
           if (!best || dps > best.dps) {
             best = {
-              loadout: l.name, style: styleLabel(o.style, o.spell), group: l.group, dps, drain: q.drain === 'none' ? undefined : drain.specs,
+              loadout: l.name,
+              style: styleLabel(o.style, o.spell),
+              group: l.group,
+              dps,
+              drain: q.drain === 'none' ? undefined : drain.specs,
+              drainLine: q.drain === 'none' ? undefined : drain.line,
             };
           }
         }

@@ -48,9 +48,11 @@ const main = async () => {
   let summary = (await page.locator('[data-testid="search-summary"]').innerText()).replace(/\s+/g, ' ');
   console.log(`     ${summary.slice(0, 140)}`);
   // phase 14: Solo only uses the user's carried weapons (default Elder maul + Ayak) → no Defence drain while flying
-  check(summary.includes('Defence 260'), 'AG Flying Solo (phase 14): carried Elder maul can\'t hit → Defence 260');
-  const drainLine = summary.match(/Drains: [^]*?Magic def bonus \d+/)?.[0] || '';
-  check(drainLine && !drainLine.includes('Elder maul'), `AG Flying Solo: no "Elder maul" in the drain line (${drainLine})`);
+  // phase 23: the drain line is "[icon] ×N" items (data-weapon) + "→ Def N · Magic def M"
+  const weapons = () => page.locator('[data-testid="search-summary"] [data-testid="drain-line-item"]').evaluateAll((els) => els.map((e) => `${e.getAttribute('data-weapon')}×${e.getAttribute('data-count')}`));
+  check(summary.includes('Def 260'), 'AG Flying Solo (phase 14): carried Elder maul can\'t hit → Defence 260');
+  const drainLine = await weapons();
+  check(!drainLine.some((w) => w.startsWith('elderMaul')), `AG Flying Solo: no Elder maul in the drain line (${drainLine.join(', ')})`);
   const cls = await page.locator('[data-testid="search-row"] [data-testid="dps"]').first().getAttribute('class');
   check(cls.includes(ORANGE) && cls.includes('font-semibold'), `Search DPS cell class: ${cls}`);
   await page.mouse.move(0, 0);
@@ -62,14 +64,15 @@ const main = async () => {
   await page.waitForTimeout(500);
   summary = (await page.locator('[data-testid="search-summary"]').innerText()).replace(/\s+/g, ' ');
   console.log(`     ${summary.slice(0, 140)}`);
-  check(summary.includes('2× Elder maul'), 'AG Grounded Solo: Elder maul plan');
+  check((await weapons()).includes('elderMaul×2'), 'AG Grounded Solo: Elder maul ×2 plan');
 
   // 2b. Team: Ayak spec count visible
   await page.locator('[data-testid="drain-team"]').click();
   await waitRows(page, 'search-row');
   summary = (await page.locator('[data-testid="search-summary"]').innerText()).replace(/\s+/g, ' ');
   // phase 14: Team = the carriers' first round (probabilities: scripts/verifyPhase14.mjs)
-  check(/first round .*× Ayak/.test(summary), `Team shows the first-round specs incl. Ayak: ${summary.match(/first round[^)]*\)/)?.[0]}`);
+  const teamLine = await weapons();
+  check(teamLine.some((w) => w.startsWith('ayak')), `Team shows the first-round specs incl. Ayak: ${teamLine.join(', ')}`);
 
   // 3. The Per boss tab is gone; the search-based Summary is checked by scripts/verifyBestSetup.mjs
   check(await page.locator('[data-testid="boss-tab"]').count() === 0, 'no "Per boss" tab');

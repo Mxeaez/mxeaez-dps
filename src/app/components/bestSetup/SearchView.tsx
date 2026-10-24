@@ -21,6 +21,7 @@ import openInCalculator from '@/app/components/bestSetup/loadIntoCalculator';
 import { searchRowIcons, searchRowWeaponParts } from '@/lib/fracturedArchive/loadoutIcons';
 import { LoadoutIconRow, WeaponLine } from '@/app/components/bestSetup/ItemIcons';
 import DPS_TEXT_CLASS from '@/app/components/bestSetup/styles';
+import DrainLineView from '@/app/components/bestSetup/DrainLineView';
 import { teamDpsMultiplier, teamTimeLabel } from '@/lib/raids';
 
 // "Search" tab of /best-setup (phase 9): full gear search over the pool in src/lib/fracturedArchive/searchCandidates.ts,
@@ -193,18 +194,34 @@ const SearchView: React.FC<{
 
       {result && (
         <>
-          <div className="text-xs" data-testid="search-summary">
-            <div>
-              {`Drains: ${result.drain.specs} → Defence ${result.drain.defAfter}, Magic def bonus ${result.drain.magicDefAfter}. `}
-              {result.bestPreset
-                ? `Best preset: ${result.bestPreset.preset} ${fmt(result.bestPreset.dps)} DPS (${result.bestPreset.styleLabel}).`
-                : 'No preset for these styles.'}
+          <div className="text-xs flex flex-col gap-0.5" data-testid="search-summary">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span className="flex items-center gap-1" title={result.drain.plan}>
+                <span className="font-semibold">Drains:</span>
+                {result.drain.line
+                  ? <DrainLineView line={result.drain.line} showBudget />
+                  : `none → Def ${result.drain.defAfter} · Magic def ${result.drain.magicDefAfter}`}
+              </span>
+              <span data-testid="search-best-preset" title="Gain column = DPS over this preset (same boss and drains)">
+                {result.bestPreset
+                  ? `Best preset: ${result.bestPreset.preset} ${fmt(result.bestPreset.dps)} DPS (${result.bestPreset.styleLabel})`
+                  : 'No preset for these styles'}
+              </span>
             </div>
-            <div className="text-gray-500 dark:text-gray-400" data-testid="search-stats">
-              {`${result.evaluations} evaluations over ${result.variants} weapon variants in ${(result.elapsedMs / 1000).toFixed(1)}s`}
-              {wallMs !== null && ` (wall ${(wallMs / 1000).toFixed(1)}s)`}
-              {` · TTK: ${teamTimeLabel(teamMult)}`}
-              {Array.from(new Set(result.cantHit.map((c) => c.reason))).map((reason) => ` · can't hit (${reason}): ${result.cantHit.filter((c) => c.reason === reason).map((c) => c.weapon).join(', ')}`)}
+            <div className="text-gray-500 dark:text-gray-400 flex flex-wrap items-center gap-x-1" data-testid="search-stats">
+              <span title={`${result.evaluations} evaluations over ${result.variants} weapon variants`}>
+                {`${result.evaluations} evaluations · ${(result.elapsedMs / 1000).toFixed(1)}s${wallMs !== null ? ` (wall ${(wallMs / 1000).toFixed(1)}s)` : ''} · TTK: ${teamTimeLabel(teamMult)}`}
+              </span>
+              {result.cantHit.length > 0 && (
+                <details className="inline" data-testid="cant-hit">
+                  <summary className="cursor-pointer underline inline">{`· ${result.cantHit.length} weapon${result.cantHit.length === 1 ? '' : 's'} can't hit (show)`}</summary>
+                  <ul className="list-disc ml-5" data-testid="cant-hit-list">
+                    {Array.from(new Set(result.cantHit.map((c) => c.reason))).map((reason) => (
+                      <li key={reason}>{`${reason}: ${result.cantHit.filter((c) => c.reason === reason).map((c) => c.weapon).join(', ')}`}</li>
+                    ))}
+                  </ul>
+                </details>
+              )}
             </div>
             {target.note && <div className="text-orange-700 dark:text-orange-300">{target.note}</div>}
           </div>

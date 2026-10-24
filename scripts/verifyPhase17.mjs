@@ -49,7 +49,7 @@ const main = async () => {
   const page = await browser.newPage({ viewport: { width: 1500, height: 1600 } });
   await page.goto(`${BASE}best-setup`, { waitUntil: 'load', timeout: 120000 });
   const tabs = await page.locator('[data-testid$="-tab"]').evaluateAll((els) => els.map((e) => e.textContent.trim()));
-  check(tabs.join(',') === 'Search,Plan,Routes,Summary', `tab order Search, Plan, Routes, Summary (${tabs.join(', ')})`);
+  check(tabs.join(',') === 'Search,Plan,Summary', `tab order Search, Plan, Summary (phase 23: Routes merged into Plan) (${tabs.join(', ')})`);
   await page.locator('[data-testid="plan-tab"]').click();
   await page.locator('[data-testid="plan-view"]').waitFor({ timeout: 60000 });
   check(await page.locator('[data-testid="drain-team"]').count() === 1, 'drain selector on the Plan tab');

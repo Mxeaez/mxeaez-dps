@@ -32,11 +32,14 @@ import {
 } from '@/lib/fracturedArchive/planner';
 import { SearchRow } from '@/lib/fracturedArchive/search';
 import { PlanJob, startRaidPlan } from '@/worker/searchWorkerClient';
-import { RaidConfig, teamDpsMultiplier, teamTimeLabel } from '@/lib/raids';
+import {
+  RaidConfig, teamDpsMultiplier, teamTimeLabel, TimeSettings,
+} from '@/lib/raids';
 import {
   equipmentImageUrl, LOADOUT_SLOT_ORDER, searchItemIcon, targetImageUrl,
 } from '@/lib/fracturedArchive/loadoutIcons';
 import { ItemIcon, LoadoutIconRow } from '@/app/components/bestSetup/ItemIcons';
+import DrainLineView from '@/app/components/bestSetup/DrainLineView';
 import openInCalculator, { openLoadoutsInCalculator } from '@/app/components/bestSetup/loadIntoCalculator';
 import DPS_TEXT_CLASS from '@/app/components/bestSetup/styles';
 import RangingImg from '@/public/img/potions/Ranging.png';
@@ -59,6 +62,8 @@ import ringSlot from '@/public/img/slots/ring.png';
 // inventory slots (src/lib/fracturedArchive/planner.ts), run in the search worker (RAID_PLAN). The per-phase search rows
 // are cached in memory for the session per assumptions + drain + phase, so a change of supplies / items / route only
 // rebuilds the matrix and re-optimises. Docs: docs/BEST_SETUP.md (Plan tab).
+// Phase 23: the Routes / Encounters tab is merged in: the route comparison table (every route, or the raid's single
+// route, with per-encounter times) is under the per-encounter table; the time-model settings come from Advanced.
 
 const searchCache = new Map<string, SearchRow[]>();
 const cachePrefix = (a: BestSetupAssumptions, drain: DrainStateId) => `${JSON.stringify(a)}|${drain}|`;
@@ -209,13 +214,19 @@ const RejectionList: React.FC<{ rows: PlanRejection[], testId: string }> = ({ ro
   </ul>
 );
 
-const PhaseRows: React.FC<{ phases: PhaseTime[] }> = ({ phases }) => (
+const PhaseRows: React.FC<{ phases: PhaseTime[], encounter: string }> = ({ phases, encounter }) => (
   <>
     {phases.map((p) => (
-      <tr key={p.key} className="text-[11px] text-gray-600 dark:text-gray-400" data-testid="plan-phase-row" data-target={p.targetKey} data-phase={p.phase ?? ''}>
-        <td className="px-2 pl-6">{p.label}</td>
+      <tr key={p.key} className="text-[11px] text-gray-600 dark:text-gray-400" data-testid="plan-phase-row" data-encounter={encounter} data-target={p.targetKey} data-phase={p.phase ?? ''}>
+        <td className="px-2 pl-6">
+          {p.label}
+          {p.note && <span className="text-gray-500 dark:text-gray-400">{` · ${p.note}`}</span>}
+        </td>
         <td className="px-2">{p.choice?.loadout ?? 'nothing in the kit'}</td>
         <td className="px-2">{p.choice?.style ?? ''}</td>
+        <td className="px-2" data-testid="plan-phase-drains">
+          {p.choice?.drainLine ? <DrainLineView line={p.choice.drainLine} compact /> : ''}
+        </td>
         <td className="px-2 text-right font-mono" data-testid="plan-phase-dps">{p.dps.toFixed(3)}</td>
         <td className="px-2 text-right font-mono">{fmtS(p.seconds)}</td>
       </tr>
@@ -223,7 +234,12 @@ const PhaseRows: React.FC<{ phases: PhaseTime[] }> = ({ phases }) => (
   </>
 );
 
-const PlanView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStateId, raid: RaidConfig }> = ({ assumptions, drain, raid }) => {
+const PlanView: React.FC<{
+  assumptions: BestSetupAssumptions, drain: DrainStateId, raid: RaidConfig, timeSettings?: TimeSettings,
+}> = ({
+  assumptions, drain, raid, timeSettings,
+}) => {
+  const settings = timeSettings ?? raid.defaultTimeSettings;
   const routes = useMemo(() => enumerateRoutes(raid.time.routeSlots, raid.time.labels), [raid]);
   // phase 21: per-raid defaults (src/lib/raids/planDefaults.ts); the view is remounted on a raid change
   // the pinned heart (magic boost) follows the Assumptions box's Heart; another magic potion there = no heart pinned
@@ -276,7 +292,7 @@ const PlanView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStateI
         basePlayer: generateEmptyPlayer(),
         assumptions,
         drain,
-        settings: raid.defaultTimeSettings,
+        settings,
         route,
         pinned,
         nonItemSlots: nonItem,
@@ -302,7 +318,7 @@ const PlanView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStateI
       clearTimeout(timer);
       cancel();
     };
-  }, [assumptions, drain, route, supplies, nonItem, pinned, runId, cancel, raid]);
+  }, [assumptions, drain, route, supplies, nonItem, pinned, runId, cancel, settings]);
 
   const planned = result && result.comparison && result.planned >= 0 ? result.comparison.routes[result.planned] : null;
   const firstPhase = planned?.encounters[0]?.phases[0];
@@ -346,7 +362,7 @@ const PlanView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStateI
       <div className="text-xs bg-body-100 dark:bg-dark-400 border border-body-400 dark:border-dark-200 rounded p-3 flex flex-col gap-2" data-testid="plan-inputs">
         <div className="font-bold text-sm">Assumptions (plan)</div>
         <div>
-          Finds the worn set + switch items with the lowest route time (Routes-tab time model, default settings) that fit in
+          Finds the worn set + switch items with the lowest route time (time model: see Advanced above) that fit in
           {` ${INVENTORY_SLOTS} `}
           inventory slots. Party size, drains and spec weapons (&quot;My specs&quot;) come from the boxes above; spec weapons
           and the items below take a slot unless a loadout wears them.
@@ -546,6 +562,7 @@ const PlanView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStateI
                 <th className="px-2 text-left">Encounter</th>
                 <th className="px-2 text-left">Loadout used</th>
                 <th className="px-2 text-left">Style</th>
+                <th className="px-2 text-left" title="The drain plan of each phase: icon × specs (Tonalztics: × hits), the chance per spec under each icon, then the Defence the DPS uses">Drains</th>
                 <th className="px-2 text-right" title="Damage ÷ seconds over the encounter's phases (phase rows: that phase's DPS)">avg DPS (time-weighted)</th>
                 <th className="px-2 text-right">Seconds</th>
               </tr>
@@ -567,38 +584,61 @@ const PlanView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStateI
                       </td>
                       <td className="px-2 py-1">{loadouts.join(' / ') || '—'}</td>
                       <td className="px-2 py-1 capitalize">{styles.join(' / ')}</td>
+                      <td className="px-2 py-1 text-[11px] text-gray-500 dark:text-gray-400" data-testid="plan-encounter-fight">
+                        {e.drainFightSeconds !== undefined ? `drains planned for a ${e.drainFightSeconds} s fight` : ''}
+                      </td>
                       <td className={`px-2 py-1 text-right font-mono ${DPS_TEXT_CLASS}`}>{Number.isFinite(time) && time > 0 ? (damage / time).toFixed(3) : '0'}</td>
                       <td className="px-2 py-1 text-right font-mono" data-testid="plan-encounter-seconds">{fmtS(e.seconds)}</td>
                     </tr>
-                    <PhaseRows phases={e.phases} />
+                    <PhaseRows phases={e.phases} encounter={e.id} />
                   </React.Fragment>
                 );
               })}
             </tbody>
           </table>
 
-          {result.comparison && result.comparison.routes.length > 1 && (
-            <table className="w-full text-sm" data-testid="plan-routes">
-              <thead>
-                <tr className="bg-btns-400 dark:bg-dark-500 text-white">
-                  <th className="px-2 text-left">Route (same kit)</th>
-                  <th className="px-2 text-right">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {result.comparison.routes.map((r, i) => (
-                  <tr
-                    key={r.route.id}
-                    data-testid="plan-route-row"
-                    data-fastest={i === result.planned ? 'true' : 'false'}
-                    className={`border-t border-body-300 dark:border-dark-400 ${i === result.planned ? 'bg-orange-100 dark:bg-orange-900/40 font-semibold' : ''}`}
-                  >
-                    <td className="px-2 py-0.5">{r.route.label}</td>
-                    <td className="px-2 py-0.5 text-right font-mono">{formatDuration(secs(r.seconds))}</td>
+          {result.comparison && (
+            <div className="overflow-x-auto max-w-[100vw]">
+              <table className="w-full text-sm" data-testid="plan-routes">
+                <thead>
+                  <tr className="bg-btns-400 dark:bg-dark-500 text-white">
+                    <th className="px-2 text-left" title="The same kit timed on every route (the Fractured Archive's middle bosses vary; other raids have one fixed route)">
+                      {result.comparison.routes.length > 1 ? 'Route (same kit)' : 'Route'}
+                    </th>
+                    <th className="px-2 text-right">Total</th>
+                    {raid.time.routeSlots.map((sl) => <th key={sl.order} className="px-2 text-right">{`${sl.order}.`}</th>)}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {result.comparison.routes.map((r, i) => (
+                    <tr
+                      key={r.route.id}
+                      data-testid="plan-route-row"
+                      data-route={r.route.id}
+                      data-fastest={i === result.planned ? 'true' : 'false'}
+                      className={`border-t border-body-300 dark:border-dark-400 ${i === result.planned ? 'bg-orange-100 dark:bg-orange-900/40 font-semibold' : ''}`}
+                    >
+                      <td className="px-2 py-0.5">
+                        {r.route.label}
+                        {i === result.planned && result.comparison!.routes.length > 1 && (
+                          <span className="ml-2 text-[10px] px-1 rounded bg-orange-400 text-white" data-testid="fastest-badge">{route === 'all' ? 'fastest' : 'planned'}</span>
+                        )}
+                      </td>
+                      <td className={`px-2 py-0.5 text-right font-mono ${DPS_TEXT_CLASS}`} data-testid="plan-route-total" title={fmtS(r.seconds)}>{formatDuration(secs(r.seconds))}</td>
+                      {r.encounters.map((e) => (
+                        <td key={e.id} className="px-2 py-0.5 text-right whitespace-nowrap font-normal" data-testid={`plan-enc-${e.id}`} data-seconds={secs(e.seconds)}>
+                          <div className="flex items-center justify-end gap-1 text-xs">
+                            <ItemIcon name={e.label} src={targetImageUrl(findTarget(raid.encounterTarget[e.id]))} size={18} />
+                            <span>{e.label}</span>
+                          </div>
+                          <div className="font-mono text-xs">{e.phases.length ? fmtS(e.seconds) : '—'}</div>
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
 
           <div className="text-xs flex flex-col gap-1" data-testid="plan-why">
@@ -619,7 +659,7 @@ const PlanView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStateI
 
           <div className="text-[11px] text-gray-500 dark:text-gray-400" data-testid="plan-stats">
             {`${result.stats.phases} phases, ${result.stats.searches} new searches; ${result.stats.candidates.total} candidate loadouts (${result.stats.candidates.preset} presets, ${result.stats.candidates.search} search rows, ${result.stats.candidates.partial} partial switches${result.stats.candidates.capped ? `, ${result.stats.candidates.capped} capped` : ''}); ${result.stats.evaluations} DPS evaluations, ${result.stats.kitsEvaluated} kits timed; ${(result.stats.ms.total / 1000).toFixed(1)} s (search ${(result.stats.ms.search / 1000).toFixed(1)}, matrix ${(result.stats.ms.matrix / 1000).toFixed(1)}, optimiser ${(result.stats.ms.optimise / 1000).toFixed(1)}).`}
-            {' Times: DPS only (Routes-tab model); switching is free and instant.'}
+            {' Times: DPS only (Σ HP ÷ DPS per phase); switching is free and instant.'}
           </div>
         </div>
       )}

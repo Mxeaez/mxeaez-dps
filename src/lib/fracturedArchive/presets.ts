@@ -205,8 +205,11 @@ export interface BestSetupAssumptions {
   mySpecs: MySpecs;
   /** Phase 14: the team's spec carriers (the "Team" drain state). */
   team: TeamSpecAssumptions;
-  /** Fight length in seconds for the spec-energy budget (rough default until the phase 16 time model). */
-  fightSeconds: number;
+  /**
+   * Fight length in seconds for the spec-energy budget. Phase 23: undefined (the default) = computed per boss / phase
+   * from its undrained time to kill (`autoFightSeconds` in bestSetup.ts); Plan / the time model set it per encounter.
+   */
+  fightSeconds?: number;
   /** P(floor) at or above which a drain plan counts as reaching the floor (default 0.95). */
   floorThreshold: number;
   /**
@@ -272,6 +275,17 @@ export const DEFAULT_ASSUMPTIONS: BestSetupAssumptions = {
       elderMaul: false, dwh: false, bgs: false, tonalztics: false, ayak: false,
     },
   },
-  fightSeconds: 90,
   floorThreshold: 0.95,
 };
+
+/**
+ * Phase 23: the single "carriers use Lightbearer" toggle of the Advanced box — sets every carrier weapon's Lightbearer
+ * flag at once (the per-weapon flags stay in the data, for the planners and old saved assumptions).
+ */
+export const withCarrierLightbearer = (team: TeamSpecAssumptions, on: boolean): TeamSpecAssumptions => ({
+  ...team,
+  lightbearer: Object.fromEntries(Object.keys(team.lightbearer).map((k) => [k, on])) as TeamSpecAssumptions['lightbearer'],
+});
+
+/** Phase 23: whether every carrier wears Lightbearer (the Advanced box's toggle is ticked only then). */
+export const carriersUseLightbearer = (team: TeamSpecAssumptions): boolean => Object.values(team.lightbearer).every(Boolean);

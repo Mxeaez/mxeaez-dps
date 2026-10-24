@@ -9,13 +9,17 @@ import PlayerVsNPCCalc from '@/lib/PlayerVsNPCCalc';
 import { MONSTER_PHASES_BY_ID } from '@/lib/constants';
 import { getCombatStylesForCategory } from '@/utils';
 import { DefenceReductions } from '@/lib/fracturedArchive/drains';
-import { drainModel, PlanLabel } from '@/lib/fracturedArchive/specs';
+import {
+  DEFAULT_FIGHT_SECONDS, drainModel, PlanLabel, specAttempts,
+} from '@/lib/fracturedArchive/specs';
 import {
   carriersFromCounts, describeAttempts, formatProbability, soloSpecPlan, teamSpecPlan,
 } from '@/lib/fracturedArchive/teamSpecs';
+import { DrainLine, drainLineFromAttempts } from '@/lib/fracturedArchive/drainLine';
+import { minimalPlayer } from '@/lib/fracturedArchive/hittable';
 import { isOutOfMeleeReach } from '@/lib/fracturedArchive/immunities';
 import { BestSetupTarget } from '@/lib/raids/types';
-import { ALL_RAID_TARGETS, raidBase } from '@/lib/raids/base';
+import { ALL_RAID_TARGETS, raidBase, teamDpsMultiplier } from '@/lib/raids/base';
 import { BEST_SETUP_TARGETS } from '@/lib/fracturedArchive/targets';
 import {
   BestSetupAssumptions, PRESETS, PresetDef, StyleGroup,
@@ -81,7 +85,8 @@ export const DRAIN_STATES: { id: DrainStateId, label: string, description: strin
   {
     id: 'solo',
     label: 'Solo',
-    description: 'My specs within my own spec energy (100% + 10% per 30 s of the fight length, 15 s with Lightbearer), '
+    description: 'My specs within my own spec energy (100% + 10% per 30 s of the fight, 15 s with Lightbearer; the fight '
+      + 'length is the undrained time to kill of the boss, computed), '
       + 'with the weapons ticked under "My specs"; hit chances from the calculator. Ranked at the Defence floor if '
       + 'P(floor) ≥ the threshold, else at the nearest reachable Defence to the expected value; Ayak = specs × expected damage',
   },
@@ -107,12 +112,53 @@ export interface DrainState {
   label?: PlanLabel;
   defAfter: number;
   magicDefAfter: number;
+  /** Phase 23: the plan as "[icon] ×N" data (DrainLineView); undefined for None. */
+  line?: DrainLine;
+  /** Phase 23: fight length the spec-energy budget used (Solo / Team), and whether it was computed. */
+  fightSeconds?: number;
+  fightComputed?: boolean;
 }
 
 const withInputs = (m: Monster, inputs: Partial<Monster['inputs']>): Monster => ({
   ...m,
   inputs: { ...m.inputs, ...inputs },
 });
+
+/** Phase 23: range of the computed fight length (seconds). */
+export const AUTO_FIGHT_SECONDS_RANGE = { min: 15, max: 600 };
+
+const autoFightCache = new Map<string, number>();
+const NO_STYLE = { name: '', type: null, stance: null } as Player['style'];
+
+/**
+ * Phase 23: the fight length for the spec-energy budget when the assumptions don't give one (Search, Summary, the
+ * calculator panels): the boss / phase's undrained time to kill = hp ÷ (best preset DPS × team-DPS multiplier), the
+ * best preset of the raid's presets (every style) against the undrained monster; one untimed pass, like the time
+ * model's first pass. Rounded, clamped to {@link AUTO_FIGHT_SECONDS_RANGE}; {@link DEFAULT_FIGHT_SECONDS} when no
+ * preset deals damage.
+ */
+export const autoFightSeconds = (m: Monster, assumptions: BestSetupAssumptions): number => {
+  const undrainedM = withInputs(m, { defenceReductions: { ...INITIAL_MONSTER_INPUTS.defenceReductions } });
+  const mult = teamDpsMultiplier(assumptions);
+  const key = JSON.stringify([
+    m.id, m.name, m.version, undrainedM.inputs, mult, assumptions.raid, assumptions.potions, assumptions.useZeal,
+    assumptions.elementalFragments, assumptions.withoutPotion,
+  ]);
+  const cached = autoFightCache.get(key);
+  if (cached !== undefined) return cached;
+  const hp = scaleMonster(undrainedM).skills.hp;
+  let best = 0;
+  for (const p of raidBase(assumptions.raid).presets) {
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    const r = safeEvaluatePreset(minimalPlayer(null, NO_STYLE), p, undrainedM, assumptions, true, false);
+    if (r.dps > best) best = r.dps;
+  }
+  const t = best > 0 && hp > 0
+    ? Math.min(AUTO_FIGHT_SECONDS_RANGE.max, Math.max(AUTO_FIGHT_SECONDS_RANGE.min, Math.round(hp / (best * mult))))
+    : DEFAULT_FIGHT_SECONDS;
+  autoFightCache.set(key, t);
+  return t;
+};
 
 /**
  * Phase 14: Solo = `soloSpecPlan` (the user's carried weapons within their own energy budget), Team =
@@ -126,9 +172,15 @@ export const drainStateFor = (m: Monster, id: DrainStateId, assumptions: BestSet
   let plan = 'No drains';
   let pFloor: number | undefined;
   let label: PlanLabel | undefined;
+  let fightSeconds: number | undefined;
+  let line: DrainLine | undefined;
+  let attemptsMade: Parameters<typeof drainLineFromAttempts>[0] = [];
+  let budget: DrainLine['budget'];
+  const fightComputed = id !== 'none' ? assumptions.fightSeconds === undefined : undefined;
   if (id !== 'none') {
     const model = drainModel(m, assumptions);
     const threshold = assumptions.floorThreshold;
+    fightSeconds = assumptions.fightSeconds ?? autoFightSeconds(m, assumptions);
     if (id === 'solo') {
       const { mySpecs } = assumptions;
       const p = soloSpecPlan(model, {
@@ -137,29 +189,37 @@ export const drainStateFor = (m: Monster, id: DrainStateId, assumptions: BestSet
         },
         ayakSpecs: mySpecs.ayak,
         lightbearer: mySpecs.lightbearer,
-        fightSeconds: assumptions.fightSeconds,
+        fightSeconds,
         priority: mySpecs.priority,
         threshold,
       });
       reductions = p.reductions;
       pFloor = p.defence.pFloor;
       label = p.needed.label;
-      plan = `Solo: ${p.text}`;
-      specs = `${describeAttempts([...p.attempts, ...Array(p.ayakAttempts).fill('ayak')])} (P floor ${formatProbability(pFloor)}, ${label})`;
+      plan = `Solo: ${fightComputed ? `fight ≈ ${fightSeconds} s (computed); ` : ''}${p.text}`;
+      attemptsMade = [...p.attempts, ...Array(p.ayakAttempts).fill('ayak')];
+      specs = `${describeAttempts(attemptsMade)} (P floor ${formatProbability(pFloor)}, ${label})`;
+      budget = { fightSeconds, computed: !!fightComputed, specs: specAttempts(p.budget, 50) };
     } else {
       const p = teamSpecPlan(model, {
         partySize: assumptions.partySize,
         carriers: carriersFromCounts(assumptions.team.carriers, assumptions.team.lightbearer),
-        fightSeconds: assumptions.fightSeconds,
+        fightSeconds,
         threshold,
       });
       reductions = p.reductions;
       pFloor = p.firstRound.defence.pFloor;
+      attemptsMade = p.firstRound.attempts;
       plan = `Team (${assumptions.partySize}): ${p.text}`;
       specs = `first round ${describeAttempts(p.firstRound.attempts)} (P floor ${formatProbability(pFloor)})`;
     }
   }
   const scaled = scaleMonster(withInputs(m, { defenceReductions: reductions }));
+  const after = { defAfter: scaled.skills.def, magicDefAfter: scaled.defensive.magic };
+  if (id !== 'none') {
+    const model = drainModel(m, assumptions);
+    line = drainLineFromAttempts(attemptsMade, model.hitChance, after, plan, budget);
+  }
   return {
     id,
     reductions,
@@ -167,8 +227,8 @@ export const drainStateFor = (m: Monster, id: DrainStateId, assumptions: BestSet
     plan,
     pFloor,
     label,
-    defAfter: scaled.skills.def,
-    magicDefAfter: scaled.defensive.magic,
+    ...after,
+    ...(line ? { line, fightSeconds, fightComputed } : {}),
   };
 };
 

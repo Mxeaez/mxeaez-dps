@@ -3,6 +3,48 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 23 — Best-setup UI cleanup (2026-10-23)
+
+- User feedback: too much on screen; "Fight length", "Floor at P", "Team DPS × 1 at party 6", the "LB" boxes and the
+  Encounters tab unclear; drains should read like "[Elder maul icon] ×2, [Tonalztics icon] ×4". ROADMAP: *Round 3*
+  (phases 23-28) + *Decisions (round 3)*.
+- **Simple view** (BestSetup.tsx): raid scaling inputs, potions / Heart, Zeal + fragments (FA), "My specs" as icon
+  toggles (Elder maul, DWH, BGS, Tonalztics, Ayak × N, Lightbearer) — 7 inputs + 5 toggles (was ~29 inputs). Reset and
+  a "?" glossary (drains, floor, first round, hit chance, fight length, Team DPS ×, carriers). Every input has a tooltip.
+- **Advanced** expander: team carriers (party size shared) with one "carriers use Lightbearer" toggle
+  (`withCarrierLightbearer` / `carriersUseLightbearer`, presets.ts) instead of the per-weapon LB boxes; "Count the floor
+  as reached when the first round's chance is ≥ 95%"; "Players assumed at your DPS when converting HP to time" (tooltip:
+  FA 1 because its HP scaling is unknown, others = party size); "Spec energy goes first to"; the raid's time-model
+  settings (new TimeSettingsBox.tsx, now driving the Plan tab).
+- **Fight length input removed**: `BestSetupAssumptions.fightSeconds` is optional; undefined = `autoFightSeconds`
+  (bestSetup.ts) = hp ÷ (best raid-preset DPS × team-DPS multiplier) on the undrained boss, rounded, clamped 15–600 s
+  (90 s if nothing hits). Plan / time model pass their own lengths; the planner's fallback stays 90 s (headlines
+  unchanged: FA 23:30.4, ToA 14:20.2 re-checked in the UI). **Solo numbers change** where the fight isn't ~90 s: FA
+  Bork 168 s → 3 maul specs, Def 195 → 180, Solo top 10.327 → 10.524; Xarth 203 s (top unchanged 13.917); Ocellus
+  P3 474 s → 4 specs; short fights (AG, Smorks, Moia, Dagon'hai) unchanged. Drain line shows "(fight ≈ N s → M specs)".
+- **Drain line** (new drainLine.ts + DrainLineView.tsx; `DrainState.line`, `KitChoice.drainLine`): `[icon] ×N` per
+  weapon (Tonalztics in hits, specs in the tooltip), hit % per spec under each icon, "→ Def · Magic def", long text as
+  tooltip. In the Search plan panel + header, Summary cells, Plan per-phase rows (new Drains column) and the
+  calculator's Max-drain buttons (FracturedArchiveDrainPresets.tsx; hit chances from the spec model).
+- **Routes / Encounters tab merged into Plan**: Plan results show the route table for the planned kit (FA 8 routes,
+  others 1) with per-encounter cells; RoutesView.tsx deleted (library `computeRouteComparison` kept). Tabs: Search ·
+  Plan · Summary.
+- **Search header**: two lines (drains + best preset; evaluations · time · TTK), "N weapons can't hit (show)" collapsed;
+  carrier table collapsed.
+- Tests: new `Phase23.test.ts` (11: computed fight length formula / override / Search uses it / Solo spec count
+  follows TTK; Lightbearer toggle sets every carrier and the Team plan uses it; drain-line data for Team and Max-drain);
+  `Presets.test.ts` updated (Solo plan at the computed length). `yarn test` 1232 pass / 8 skipped; lint, tsc clean.
+- Playwright: new `scripts/verifyPhase23.mjs` all OK (7 inputs in the simple view; Advanced; no Fight length; tabs;
+  Team line maul ×4 / Tonalztics ×8 / Ayak ×2 with hit %; Solo "fight ≈ 203 s → 3 specs"; Xarth None 12.839; FA Plan
+  8 routes 23:30.4, ToA 1 route 14:20.2; Max-drain button icons); screenshots `docs/screenshots/phase23-*.png`.
+  Ported to the new layout and re-run OK: verifyPhase13, 14, 16 (route table / settings via Plan + Advanced), 17, 18,
+  19, 20 (Encounters via Plan), and the other existing scripts. verifyPhase17 / 21 fail only their "plan ≤ 30 s"
+  timing checks (45-65 s today): the machine is slower right now — the slow CrossRaid FA headline takes 76 s on the
+  pre-phase-23 code and 75 s with it (documented 25-32 s), so not a regression; all four headline totals still pass
+  with `RUN_SLOW_TESTS=1`.
+- Docs: BEST_SETUP *Layout and glossary (phase 23)*, assumptions / drain-state / Routes sections updated; README tabs;
+  UNVERIFIED B10 (fight length).
+
 ## Fix: Saturated heart as pinned item (2026-10-23)
 
 - User correction: "Nobody uses magic potions, they use Saturated heart instead." The magic boost is now a pinned item

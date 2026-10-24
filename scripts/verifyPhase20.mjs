@@ -62,13 +62,14 @@ const setMode = async (page, label) => {
   await page.waitForTimeout(400);
 };
 const runEncounters = async (page) => {
-  await page.locator('[data-testid="routes-tab"]').click();
-  await page.locator('[data-testid="routes-view"]').waitFor({ timeout: 30000 });
+  // phase 23: the Encounters tab is merged into the Plan tab's results
+  await page.locator('[data-testid="plan-tab"]').click();
+  await page.locator('[data-testid="plan-view"]').waitFor({ timeout: 30000 });
   await page.waitForTimeout(900);
-  await page.locator('[data-testid="routes-progress"]').waitFor({ state: 'detached', timeout: 600000 });
-  await page.locator('[data-testid="route-row"]').first().waitFor({ timeout: 600000 });
-  const total = (await page.locator('[data-testid="route-total"]').innerText()).trim();
-  const encs = await page.locator('[data-testid="route-row"] [data-testid^="enc-"]').evaluateAll((els) => els.map((e) => `${e.getAttribute('data-testid').slice(4)}=${Number(e.getAttribute('data-seconds')).toFixed(1)}`));
+  await page.locator('[data-testid="plan-progress"]').waitFor({ state: 'detached', timeout: 600000 });
+  await page.locator('[data-testid="plan-route-row"]').first().waitFor({ timeout: 600000 });
+  const total = (await page.locator('[data-testid="plan-route-total"]').innerText()).trim();
+  const encs = await page.locator('[data-testid="plan-route-row"] [data-testid^="plan-enc-"]').evaluateAll((els) => els.map((e) => `${e.getAttribute('data-testid').slice(9)}=${Number(e.getAttribute('data-seconds')).toFixed(1)}`));
   return { total, encs };
 };
 const faXarth = async (page, label) => {
@@ -93,7 +94,7 @@ const main = async () => {
   // 2. ToB tab
   await page.locator('[data-testid="raid-tab-tob"]').click();
   await page.locator('h2', { hasText: 'Theatre of Blood' }).waitFor({ timeout: 30000 });
-  check((await page.locator('[data-testid="routes-tab"]').innerText()).trim() === 'Encounters', 'ToB routes tab = Encounters');
+  check(await page.locator('[data-testid="routes-tab"]').count() === 0, 'ToB: no Encounters tab (phase 23: merged into Plan)');
   check(await page.locator('#bs-party').inputValue() === '4', 'party size 4');
   const mode = page.locator('#bs-scale-tobMode');
   check(await mode.count() === 1 && (await mode.evaluate((e) => e.tagName)) === 'SELECT', 'mode is a select');
@@ -162,7 +163,7 @@ const main = async () => {
 
   // 6. Vasilias magic form
   const nm = await search(page, 'tob-nylo-boss-magic', 'none');
-  const nStats = (await page.locator('[data-testid="search-stats"]').innerText()).replace(/\s+/g, ' ');
+  const nStats = (await page.locator('[data-testid="search-stats"]').textContent()).replace(/\s+/g, ' ');
   console.log(`     Vasilias magic form: ${nm.weapon} ${nm.dps} DPS`);
   check(/Tumeken|staff|Kodai|Ayak|sceptre|wand|Harmonised/i.test(nm.weapon), 'Vasilias magic form: a magic weapon on top');
   check(nStats.includes('can\'t hit') && nStats.includes('Scythe of Vitur') && nStats.includes('Twisted bow'), 'Vasilias magic form: Scythe / Twisted bow listed as can\'t hit');
@@ -179,11 +180,11 @@ const main = async () => {
   // 8. Encounters
   const tr = Date.now();
   const enc = await runEncounters(page);
-  console.log(`     Encounters (best search result per style, Team): ${enc.total} — ${enc.encs.join(', ')} (${((Date.now() - tr) / 1000).toFixed(1)} s)`);
-  check(await page.locator('[data-testid="route-row"]').count() === 1, 'one route');
+  console.log(`     Encounters (planned kit, Team): ${enc.total} — ${enc.encs.join(', ')} (${((Date.now() - tr) / 1000).toFixed(1)} s)`);
+  check(await page.locator('[data-testid="plan-route-row"]').count() === 1, 'one route');
   check(enc.encs.length === 6, `6 encounters (${enc.encs.length})`);
-  const maidenRows = await page.locator('[data-testid="phase-row"][data-encounter="tob-maiden"]').allInnerTexts();
-  const verzikRows = await page.locator('[data-testid="phase-row"][data-encounter="tob-verzik"]').allInnerTexts();
+  const maidenRows = await page.locator('[data-testid="plan-phase-row"][data-encounter="tob-maiden"]').allInnerTexts();
+  const verzikRows = await page.locator('[data-testid="plan-phase-row"][data-encounter="tob-verzik"]').allInnerTexts();
   [...maidenRows, ...verzikRows].forEach((r) => console.log(`     row: ${r.replace(/\s+/g, ' ').slice(0, 170)}`));
   check(maidenRows.length === 4, 'Maiden: 4 segments (100/70/50/30%)');
   check(verzikRows.length === 4 && verzikRows[0].includes('Dawnbringer'), 'Verzik: Dawnbringer specs, P1, P2, P3');

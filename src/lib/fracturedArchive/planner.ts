@@ -40,7 +40,7 @@ import {
 } from '@/lib/fracturedArchive/raidTime';
 import { raidBase } from '@/lib/raids/base';
 import { TimeSettings } from '@/lib/raids/types';
-import { SPEC_WEAPONS, SpecWeapon } from '@/lib/fracturedArchive/specs';
+import { DEFAULT_FIGHT_SECONDS, SPEC_WEAPONS, SpecWeapon } from '@/lib/fracturedArchive/specs';
 import { FA_PLAN_DEFAULTS } from '@/lib/raids/planDefaults';
 
 /**
@@ -873,8 +873,10 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
   const allRoutes = routesFor(exactA);
   const routes = inputs.route === 'all' ? allRoutes : allRoutes.filter((r) => r.id === inputs.route);
   if (!routes.length) throw new Error(`Planner: unknown route '${inputs.route}'`);
+  // phase 23: the assumptions no longer carry a fight length by default; the planner's fallback stays 90 s
+  const fallbackFight = assumptions.fightSeconds ?? DEFAULT_FIGHT_SECONDS;
   // Team / None: drains don't depend on the fight length, any fixed length is exact. Solo: set per encounter below.
-  const fastA: RaidTimeAssumptions = { ...exactA, fixedFightSeconds: drain === 'none' ? undefined : assumptions.fightSeconds };
+  const fastA: RaidTimeAssumptions = { ...exactA, fixedFightSeconds: drain === 'none' ? undefined : fallbackFight };
 
   const specItems = carriedSpecWeaponNames(assumptions.mySpecs).map(planItemByName);
   // equipment + hearts (a heart is never worn: always one inventory slot, counted once)
@@ -1009,7 +1011,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     d,
     { ...assumptions, fightSeconds: fightOf(col) },
   ).monster);
-  let monsters = monstersAt(drain, () => assumptions.fightSeconds);
+  let monsters = monstersAt(drain, () => fallbackFight);
   const dpsOn = (
     c: Pick<PlanCandidate, 'group' | 'options' | 'label'>,
     eq: PlanEquipment,
@@ -1056,7 +1058,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
   let soloFight: Partial<Record<EncounterId, number>> | undefined;
   if (drain === 'solo') {
     try {
-      const noneMonsters = monstersAt('none', () => assumptions.fightSeconds);
+      const noneMonsters = monstersAt('none', () => fallbackFight);
       const noneDps: number[][] = candidates.map((c, i) => {
         if (cancelled()) throw new PlanCancelled();
         if (i % 5 === 0) {
@@ -1074,14 +1076,14 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
           const t = encounterTime(e, matrixKit([i], noneDps), noneA).seconds;
           if (t < bestT) bestT = t;
         });
-        soloFight[e] = Number.isFinite(bestT) && bestT > 0 ? Math.round(bestT) : assumptions.fightSeconds;
+        soloFight[e] = Number.isFinite(bestT) && bestT > 0 ? Math.round(bestT) : fallbackFight;
       }
     } catch (e) {
       if (e instanceof PlanCancelled) return emptyResult(searchRows);
       throw e;
     }
     fastA.fixedFightSeconds = soloFight;
-    monsters = monstersAt(drain, (col) => soloFight![encounterOfCol[col]] ?? assumptions.fightSeconds);
+    monsters = monstersAt(drain, (col) => soloFight![encounterOfCol[col]] ?? fallbackFight);
   }
   const fillMatrix = (from: number, stage: PlanProgress['stage']) => {
     for (let i = from; i < candidates.length; i++) {

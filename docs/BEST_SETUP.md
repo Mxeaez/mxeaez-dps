@@ -1,12 +1,62 @@
-# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14; Routes tab phase 16; Plan tab phase 17; raid tabs + ToA phase 18; CoX phase 19; ToB phase 20; per-raid Plan defaults + dedupe phase 21)
+# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14; Routes tab phase 16; Plan tab phase 17; raid tabs + ToA phase 18; CoX phase 19; ToB phase 20; per-raid Plan defaults + dedupe phase 21; UI cleanup phase 23)
 
 `/best-setup` (dev: http://localhost:3001/osrs-dps/best-setup; "Best setup" button in the top bar, "Calculator" leads
 back). Tabs, in order: **Search** (the default, phase 9/12, see the end of this file) searches a pool of end-game items
 per slot for setups no preset has and runs automatically; **Plan** (phase 17, see *Plan tab* below) finds the worn set
-+ switch items that minimise the route time within 28 inventory slots; **Routes** (phase 16, see *Routes tab* below)
-compares the DPS-only clear time of the 8 raid routes for a kit; **Summary** (phase 13) shows the top search result for
-every boss/phase. Search, Plan and Routes take the drain state (None / Solo / Team). The page always opens on Search (the last-used tab is deliberately not
-remembered).
++ switch items that minimise the route time within 28 inventory slots, then shows that kit's per-encounter times and the
+route comparison (phase 23: the former **Routes / Encounters** tab, see *Routes tab* below, is merged into it);
+**Summary** (phase 13) shows the top search result for every boss/phase. Search and Plan take the drain state
+(None / Solo / Team). The page always opens on Search (the last-used tab is deliberately not remembered).
+
+## Layout and glossary (phase 23)
+
+User feedback after round 2: too many inputs, unclear terms ("Fight length", "Floor at P", "Team DPS × 1 at party
+size 6", the per-weapon "LB" boxes), drains as long text, an "Encounters" tab nobody understood. Phase 23 changed the
+presentation only; the numbers are unchanged except the Solo fight length (below).
+
+- **Tabs**: Search · Plan · Summary.
+- **Assumptions, simple view** (≤ 10 inputs): raid scaling (party size; ToA raid / path levels; CoX Challenge Mode;
+  ToB mode), the potion per style and the Heart (FA / ToB), Zeal and Elemental fragments (FA), and **My specs** as icon
+  toggles (Elder maul, DWH, BGS, Tonalztics, Ayak × N, Lightbearer). Every input has a plain-language tooltip; Reset
+  and a **"?" glossary** are top right.
+- **Advanced** (closed by default): team carriers per weapon (the party size above is shared) with **one "carriers use
+  Lightbearer" toggle** for all carriers (`withCarrierLightbearer` in presets.ts; the per-weapon flags stay in the data);
+  "Count the floor as reached when the first round's chance is ≥ 95%" (was "Floor at P ≥"); "Players assumed at your
+  DPS when converting HP to time" (was "Team DPS ×"); "Spec energy goes first to"; the raid's time-model settings (AG
+  shield, Bork stun uptime, …; they were on the Routes tab and now drive the Plan tab).
+- **No Fight length input.** The Solo spec-energy budget (Search, Summary, the calculator panels) uses the boss /
+  phase's **undrained time to kill**: hp ÷ (best preset DPS × the team-DPS multiplier), the best of the raid's presets
+  against the undrained monster — one untimed pass, like the time model's first pass — rounded and clamped to 15–600 s
+  (90 s when no preset deals damage). `autoFightSeconds` in bestSetup.ts; `BestSetupAssumptions.fightSeconds` is now
+  optional (undefined = computed; the Plan tab / time model still pass each encounter's own length, and the planner's
+  fallback stays 90 s). The drain line shows the value: "(fight ≈ 203 s → 3 specs)".
+  **Effect on Solo numbers** (default assumptions, FA; was 90 s everywhere): AG grounded 48 s, AG flying 61 s, Smorks
+  79 s, Moia 83 s, Dagon'hai 55 s (still 2 specs, unchanged); Bork 168 s, Dreadnoth 151 s, Xarth 203 s, Ezekiel 229 s,
+  Ocellus P1 240 s → 3 specs; Ocellus P2 435 s, P3 474 s → 4 specs. E.g. Bork Solo: 2 → 3 Elder maul specs, ranked
+  Def 195 → 180, top search row 10.327 → 10.524 DPS; Xarth Solo top row unchanged (13.917, the floor 102 was already
+  the ranked Defence). Team and None are unchanged (the Team ranking uses the first round only).
+- **Drain line** (`drainLine.ts` data, `DrainLineView.tsx`): `[icon] ×N` per weapon — spec attempts, except Tonalztics
+  shown in *hits* (2 per charged spec; specs in the tooltip) and the BGS in the Max-drain buttons shown as damage — with
+  the chance per spec to land under each icon, then "→ Def 156 · Magic def 91". The full plan text is the tooltip. Used
+  in the Search plan panel and header, Summary cells, the Plan tab's per-phase rows, and the calculator's Max-drain
+  buttons (hit chances from the same spec model, against the undrained monster).
+- **Search header**: two lines (drains + best preset; evaluations · time · TTK label), the can't-hit weapons collapsed
+  behind "N weapons can't hit (show)". The carrier table under the plan is collapsed.
+
+**Glossary** (the "?" popover, `GLOSSARY` in BestSetup.tsx):
+
+- *Drains*: None = no Defence / Magic defence drains. Solo = only your own specs ("My specs"), within the spec energy
+  you have in that fight. Team = the team's spec carriers (Advanced) each spec twice at the start.
+- *Floor*: the lowest Defence a boss can be drained to (e.g. Archive Guardian 156). A plan "reaches the floor" when the
+  chance of getting there is at least the confidence set in Advanced (95%).
+- *First round*: the specs everyone does at the start of the fight with full (100%) energy: 2 specs each for 50% weapons.
+- *Hit chance*: the % under each drain icon: the chance one spec lands its drain (from the calculator, against the
+  undrained boss).
+- *Fight length*: not an input any more (see above).
+- *Team DPS ×*: how many players are assumed to deal your DPS when HP is turned into time. Fractured Archive: 1 (how its
+  HP scales with party size is unknown, so times are you alone); ToA / CoX / ToB: the party size (their HP scales with it).
+- *Carriers*: teammates who bring a drain weapon and spec it at the start (Team drains). The party size is shared;
+  carriers beyond it don't count.
 
 **Phase 13: "Per boss" removed.** The phase 8 preset ranking tab is gone (UI code, the calc-worker `BEST_SETUP`
 request and its handler deleted). The presets stay: they seed the search and give the "vs best preset" column / the
@@ -195,7 +245,7 @@ Super restore 4, Ranging potion 2, Super combat 1, food 0, other 0; no magic pot
 other non-items** (default 1);
 **Items I always bring** (default Lightbearer, Elder maul, Zaryte crossbow, Kodai wand, Ancestral robe top, Elidinis'
 ward (f), Saturated heart; editable with the calculator's item search; each takes a slot unless a kit loadout wears it, and any loadout
-may use them for free). Time-model settings are the raid's Routes / Encounters tab defaults (`raid.defaultTimeSettings`;
+may use them for free). Time-model settings come from the Advanced box (phase 23; defaults `raid.defaultTimeSettings`;
 FA: `RAID_TIME_DEFAULTS`). Phase 22: `plan()` and `computeRouteComparison()` throw if the time model passed isn't the
 assumptions' raid's (`assertTimeModelForRaid`), since both default to the Fractured Archive's.
 
@@ -351,6 +401,12 @@ drop rule (Torva + Obligator: 0.2 s for its slot).
 
 ## Routes tab (phase 16: raid time model)
 
+**Phase 23: the tab is gone.** Its route table is now part of the Plan tab's results (the *planned* kit timed on every
+route; FA 8 routes, the other raids their single route, with per-encounter cells), and its time-model settings are in
+the Advanced box. The "kit" choices of the old tab (best search result per style per phase = an upper bound, presets,
+the calculator's loadouts) are no longer in the UI; `computeRouteComparison` / `RAID_ROUTES` stay as tested library
+code. The rest of this section describes the time model, which is unchanged.
+
 Code: `src/lib/fracturedArchive/raidTime.ts` (pure, tested in `src/tests/lib/fracturedArchive/RaidTime.test.ts`); UI
 `src/app/components/bestSetup/RoutesView.tsx`; runs in the search worker (`WorkerRequestType.RAID_ROUTES`,
 `computeRouteComparison`). It is the objective function for the phase 17 planner.
@@ -442,7 +498,8 @@ skipped by the deploy).
 | `src/lib/fracturedArchive/specs.ts`, `teamSpecs.ts` | Phase 14: spec mechanics / hit chances per weapon and energy budget; exact solo / team planners and the carrier recommendation (pure). `loadout.ts`: player assembly split out of bestSetup.ts (re-exported). |
 | `src/app/components/bestSetup/SpecPlanPanel.tsx` | Phase 14: plan text, P(floor) and carrier table under the selectors. |
 | `src/app/components/bestSetup/SummaryView.tsx` | Summary tab (phase 13): sequential searches, session cache, Cancel / Continue. |
-| `src/lib/fracturedArchive/raidTime.ts`, `src/app/components/bestSetup/RoutesView.tsx` | Phase 16: raid time model (routes, encounters, kit evaluator, `RAID_TIME_DEFAULTS`) and the Routes tab. |
+| `src/lib/fracturedArchive/raidTime.ts`, `src/app/components/bestSetup/TimeSettingsBox.tsx` | Phase 16: raid time model (routes, encounters, kit evaluator, `RAID_TIME_DEFAULTS`); phase 23: its settings in the Advanced box (the Routes tab, RoutesView.tsx, was removed). |
+| `src/lib/fracturedArchive/drainLine.ts`, `src/app/components/bestSetup/DrainLineView.tsx` | Phase 23: drain plans as "[icon] ×N" with hit chances. |
 | `src/lib/fracturedArchive/planner.ts`, `src/app/components/bestSetup/PlanView.tsx` | Phase 17: raid kit planner (candidates, partial switches, DPS matrix, slot accounting, optimiser, inventory grid) and the Plan tab. |
 | `src/tests/lib/fracturedArchive/Planner.test.ts`, `scripts/verifyPhase17.mjs` | Phase 17 tests (slot accounting, toy optima vs brute force, partial switches, reduced-pool plans, determinism, cancellation) and the Playwright check (`docs/screenshots/phase17-*.png`). |
 | `src/tests/lib/fracturedArchive/RaidTime.test.ts`, `scripts/verifyPhase16.mjs` | Phase 16 tests (hand-computed times with toy kits, drains per encounter, argmin, monotonicity) and the Playwright check (`docs/screenshots/phase16-*.png`). |
@@ -467,14 +524,15 @@ The view tries every listed style (and spell) per preset and shows the one with 
 - Prayers: Piety / Rigour / Augury; "Zeal instead of Piety" switches melee to the raid prayer.
 - Elemental fragments: on for magic presets (all four elements, +2 base max hit to elemental spells). Only the Kodai
   preset casts spells, so only it is affected.
-- **Fight length** 90 s (phase 14): the spec-energy budget's fight length for Search / Summary (one rough value for
-  every boss). The Routes tab (phase 16) uses each encounter's own undrained time instead (90 s only when it can't kill). **Floor at P ≥** 95%: when a drain plan counts as reaching the floor.
-- **My specs** (phase 14, the Solo drain state): `[x] Elder maul [ ] DWH [ ] BGS [ ] Tonalztics`, `Ayak × 2` (with
-  "≈ X magic def drained on <boss>" next to it = specs × hit chance × expected damage on a hit, from the calculator),
-  `[ ] Lightbearer`, "Energy first to: Defence drains / Ayak".
-- **Team** (phase 14, the Team drain state): party size 6 (also the HP-scaling party size, an identity table), carriers
-  per weapon (default maul 2, DWH 0, BGS 0, Tonalztics 2, Ayak 1), "LB" = that weapon's carriers wear Lightbearer. Carriers beyond the
-  party size are ignored (warned in red).
+- **Fight length**: no input since phase 23 — computed per boss / phase (see *Layout and glossary*); it was 90 s for
+  every boss (phase 14). The Plan tab uses each encounter's own undrained time. **Floor confidence** 95% (Advanced;
+  was "Floor at P ≥"): when a drain plan counts as reaching the floor.
+- **My specs** (phase 14, the Solo drain state; phase 23: icon toggles): Elder maul on, DWH / BGS / Tonalztics off,
+  `Ayak × 2` (with "≈ X magic def drained on <boss>" next to it = specs × hit chance × expected damage on a hit, from
+  the calculator), Lightbearer off; "Spec energy goes first to: Defence drains / Ayak" (Advanced).
+- **Team carriers** (phase 14, the Team drain state; Advanced): party size 6 (the raid input, also the HP-scaling party
+  size, an identity table), carriers per weapon (default maul 2, DWH 0, BGS 0, Tonalztics 2, Ayak 1), one "carriers use
+  Lightbearer" toggle (phase 23; was a box per weapon). Carriers beyond the party size are ignored (warned in red).
 
 The assumptions are kept in page state only (reset on reload). Change the defaults in `presets.ts`.
 
@@ -504,8 +562,10 @@ form (e.g. "first round 4× Elder maul + 4× Tonalztics + 2× Ayak (P floor 99.5
 - **Solo** (`soloSpecPlan`): Defence first (default): the fewest attempts whose best combination of the carried
   weapons reaches P(floor) ≥ 95%, else every attempt the budget pays for; leftover energy goes to Ayak (up to the
   count). It never spends more than the budget (tested). The plan's label is that of the *full* plan (attempts for
-  95% + Ayak count): `solo` (fits 100% + regen), `solo+lightbearer` or `team-only`. With the defaults (maul + 2 Ayak,
-  90 s) every boss is `team-only`: 2 maul attempts use the 130% and the Ayak specs don't fit — the line says so. A floor
+  95% + Ayak count): `solo` (fits 100% + regen), `solo+lightbearer` or `team-only`. With the defaults (maul + 2 Ayak)
+  and the old 90 s every boss was `team-only`: 2 maul attempts use the 130% and the Ayak specs don't fit — the line
+  says so. Since phase 23 the fight length is computed, so long fights get more specs (e.g. Ezekiel 229 s → 3 maul
+  specs, `solo+lightbearer`). A floor
   the carried weapons can't reach is shown as a partial drain, e.g. The Smorks: "2× Elder maul → expected Def 145
   (floor 0 not reachable; best case Def 93) → ranked at Def 143".
 - **Team** (`teamSpecPlan`): exact P(floor from the first round), expected Defence, Ayak P(0). When the first round
@@ -524,7 +584,7 @@ form (e.g. "first round 4× Elder maul + 4× Tonalztics + 2× Ayak (P floor 99.5
 Phase 13 rule kept: weapons that can't hit the boss in the selected version / phase have hit chance 0 (via upstream's
 `isImmune`, `hittable.ts`), e.g. Archive Guardian (Flying) Solo with the default specs has no Defence drain ("Elder maul
 can't hit here"), Team uses the Tonalztics carriers. The calculator's **Max drain** buttons (`drains.ts`) are unchanged
-(all specs landing).
+(all specs landing); phase 23 shows each button's plan as icons ×N with the per-spec hit chance.
 
 ## How the numbers are computed
 
@@ -586,7 +646,7 @@ the ones that could change a winner.
 - **Zorya's tome**: base max hit 18 flat; the spec and its three empowered follow-up attacks are not modelled, so the
   tome is undervalued.
 - Ascension (e) bolts use the normal diamond/onyx proc numbers (unverified).
-- Phase 14: spec misses are modelled (exact probabilities); there is still no fight simulation (spec timing, boss healing), and the fight length is one rough setting.
+- Phase 14: spec misses are modelled (exact probabilities); there is still no fight simulation (spec timing, boss healing), and the fight length is the boss's undrained time to kill with the best preset (phase 23; was one 90 s setting).
 
 # Search tab (phase 9)
 

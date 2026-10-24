@@ -4,8 +4,11 @@ import { toJS } from 'mobx';
 import { useStore } from '@/state';
 import { FRACTURED_ARCHIVE_MONSTER_IDS } from '@/lib/fracturedArchive/constants';
 import {
-  DRAIN_PRESETS, DrainPreset, drainPresetReductions, maxDrainReductions,
+  ayakSpecsToZero, DRAIN_PRESETS, DrainPlan, DrainPreset, drainPresetReductions, maxDrainReductions,
 } from '@/lib/fracturedArchive/drains';
+import { drainModel, specProfile } from '@/lib/fracturedArchive/specs';
+import { DrainLine, drainLineFromReductions } from '@/lib/fracturedArchive/drainLine';
+import DrainLineView from '@/app/components/bestSetup/DrainLineView';
 
 const WEAPON_PRESETS = DRAIN_PRESETS.filter((p) => p.options);
 const RESET_PRESET = DRAIN_PRESETS.find((p) => !p.options)!;
@@ -13,6 +16,8 @@ const RESET_PRESET = DRAIN_PRESETS.find((p) => !p.options)!;
 /**
  * "Max drain" buttons in the Defensive Reductions panel, Fractured Archive monsters only. Each button writes the
  * spec counts from src/lib/fracturedArchive/drains.ts into the normal inputs below, so they can still be tweaked.
+ * Phase 23: each button shows its plan as "[icon] ×N" with the chance per spec to land (DrainLineView); the full text
+ * stays the tooltip.
  */
 const FracturedArchiveDrainPresets: React.FC = observer(() => {
   const store = useStore();
@@ -30,6 +35,24 @@ const FracturedArchiveDrainPresets: React.FC = observer(() => {
   // Phase 13: the plan only uses weapons that can hit in the selected version / phase (e.g. no melee while AG flies).
   const plans = new Map(WEAPON_PRESETS.map((p) => [p.id, maxDrainReductions(m, p.options!)]));
   const fallback = WEAPON_PRESETS.map((p) => plans.get(p.id)!).find((plan) => !plan.weaponCanHit);
+
+  // per-spec hit chances (the calculator's spec distributions vs the undrained monster; cached per monster)
+  let hit: Parameters<typeof drainLineFromReductions>[1] = {};
+  let ayakSpecs: number | undefined;
+  try {
+    const model = drainModel(m);
+    hit = { ...model.hitChance, accursed: specProfile(m, 'accursed').hitChance };
+    ayakSpecs = ayakSpecsToZero(m, model.expectedDamage.ayak);
+  } catch {
+    // no hit chances (e.g. a monster the spec model can't build): the icons still show
+  }
+  const lineOf = (plan: DrainPlan, text: string): DrainLine => drainLineFromReductions(
+    plan.reductions,
+    hit,
+    { defAfter: plan.defAfter, magicDefAfter: plan.magicDefAfter },
+    text,
+    ayakSpecs,
+  );
 
   const button = (p: DrainPreset, text: string) => {
     const plan = plans.get(p.id);
@@ -51,7 +74,9 @@ const FracturedArchiveDrainPresets: React.FC = observer(() => {
         data-tooltip-content={tooltip}
         onClick={() => apply(p)}
       >
-        {text}
+        {p.options && plan && !blocked
+          ? <DrainLineView line={lineOf(plan, tooltip)} compact />
+          : text}
       </button>
     );
   };
@@ -71,7 +96,8 @@ const FracturedArchiveDrainPresets: React.FC = observer(() => {
       ))}
       {fallback && (
         <div className="text-[11px] text-gray-400" data-testid="drain-fallback">
-          {`Melee can't hit here — buttons apply: ${fallback.summary}`}
+          {'Melee can\'t hit here — buttons apply: '}
+          <DrainLineView line={lineOf(fallback, fallback.summary)} compact />
         </div>
       )}
     </div>

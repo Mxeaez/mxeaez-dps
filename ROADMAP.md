@@ -133,3 +133,25 @@ Found in the phase 22 review; larger than a review fix, so not done:
 - **Upstream PRs**: the fixes listed in docs/UPSTREAM_MERGE.md (*Fixes worth sending upstream*), plus the two
   spell / staff typos in `BaseCalc.ts` found in phase 22.
 - **FA hp / Defence scaling** once recorded in-game (UNVERIFIED C1, A11).
+
+## Round 3
+
+Requested after round 2 (2026-10-23): the best-setup page had too much on screen ("Not sure what Fight length means",
+"What is Floor at P?", "What is Team DPS × 1 when party size is 6?", "What do the LB checkboxes do?", "Drain per boss
+should be clearly marked like [Elder maul icon] ×2", "What is the Encounters tab for?"). Same workflow per phase.
+
+| # | Phase | Done when | Status |
+|---|---|---|---|
+| 23 | UI cleanup | Simple/Advanced split; drain line as icons ×N with hit chances; fight-length input removed (computed); one Lightbearer toggle for carriers; Encounters/Routes merged into Plan results; tooltips/glossary; no behaviour change to the numbers | In review |
+| 24 | Spec-accuracy audit | ToA/CoX/ToB spec hit chances include invocation/CM/party multipliers on the defence roll; Kephri maul case explained; hit chance shown per spec in the drain line; tests | Planned |
+| 25 | Item data refresh | Amulet of rupture, Seeking dragon arrows and every item added since the pool was written (audit equipment.json vs pool/presets); effects modelled or documented | Planned |
+| 26 | "I don't own" list | Cross off items (persisted in the browser); Plan excludes them; Search marks rows that use them but still shows them | Planned |
+| 27 | Planner supplies & rings | Potions chosen from the kit (super combat / ranging / heart by style present); comfort supplies (brews/restores/food) per raid, editable; ring policy: camp one ring / camp Lightbearer / allow switches | Planned |
+| 28 | Final review (round 3) | Fresh pass; UNVERIFIED updated | Planned |
+
+### Decisions (round 3)
+
+- Fewer visible inputs: a simple view by default, everything else behind an **Advanced** expander.
+- Drain plans are displayed as item icons × count, with the per-spec hit chance under each icon (long text in a tooltip).
+- The Encounters / Routes tab is merged into the Plan tab's results (tabs: Search · Plan · Summary).
+- The Saturated heart is a pinned item, not a supply (done in the fix commit d5c4379).

@@ -6,7 +6,8 @@
  * - ToA tab: raid scaling inputs (party 6, raid level 500, 4 path levels 0), no FA-only boosts, routes tab = "Encounters".
  * - ToA Search on Zebak completes; the boss hp shown is the raid-level-500 hp (8000); raid level 300 → 5870 hp and a
  *   different TTK.
- * - Encounters tab: one route, the per-encounter breakdown open. Plan runs for ToA (28-cell grid).
+ * - Encounters (phase 23: merged into the Plan tab's results): one route, the per-encounter breakdown. Plan runs for
+ *   ToA (28-cell grid).
  * - ToA Summary: one row per summary target, all cells filled, scaled hp per row, raid level / party in the header.
  * - Team-DPS multiplier: 1 on FA ("your DPS alone"), 6 on ToA (= party size); the time displays carry the label.
  * - Back to FA: Xarth 12.839 again. Screenshots docs/screenshots/phase18-*.png.
@@ -59,17 +60,17 @@ const main = async () => {
   check(raids.slice(0, 2).join(',') === 'Fractured Archive,Tombs of Amascut', `raid tabs: ${raids.join(', ')}`); // phase 19: + Chambers of Xeric
   const h = (await page.locator('h2').first().innerText()).trim();
   check(h === 'Best setup · The Fractured Archive', `FA is the default raid (${h})`);
-  check((await page.locator('[data-testid="routes-tab"]').innerText()).trim() === 'Routes', 'FA routes tab = Routes');
+  check(await page.locator('[data-testid="routes-tab"]').count() === 0, 'FA: no Routes tab (phase 23: merged into Plan)');
   check(await page.locator('#bs-zeal').count() === 1, 'FA keeps Zeal / fragments');
   check(await page.locator('#bs-team-mult').inputValue() === '1'
-    && (await page.locator('[data-testid="team-time-label"]').innerText()).includes('your DPS alone'), 'FA team-DPS multiplier 1 (your DPS alone)');
+    && (await page.locator('[data-testid="team-time-label"]').textContent()).includes('your DPS alone'), 'FA team-DPS multiplier 1 (your DPS alone)');
   await faXarth(page, 'before');
   await shot(page, 'fa-xarth');
 
   // 2. ToA tab
   await page.locator('[data-testid="raid-tab-toa"]').click();
   await page.locator('h2', { hasText: 'Tombs of Amascut' }).waitFor({ timeout: 30000 });
-  check((await page.locator('[data-testid="routes-tab"]').innerText()).trim() === 'Encounters', 'ToA routes tab = Encounters');
+  check(await page.locator('[data-testid="routes-tab"]').count() === 0, 'ToA: no Encounters tab (phase 23: merged into Plan)');
   const scaling = await page.locator('[data-testid="scaling-inputs"] input').evaluateAll((els) => els.map((e) => `${e.id}=${e.value}`));
   console.log(`     scaling: ${scaling.join(', ')}`);
   check(scaling.join(',') === 'bs-party=6,bs-scale-toaInvocationLevel=500,bs-scale-toaPath-akkha=0,bs-scale-toaPath-baba=0,bs-scale-toaPath-kephri=0,bs-scale-toaPath-zebak=0',
@@ -78,7 +79,7 @@ const main = async () => {
   const potions = await page.locator('select[id^="bs-potion-"]').evaluateAll((els) => els.map((e) => e.selectedOptions[0].textContent));
   check(potions.every((p) => p === 'Smelling salts'), `potions: ${potions.join(', ')}`);
   check(await page.locator('#bs-team-mult').inputValue() === '6'
-    && (await page.locator('[data-testid="team-time-label"]').innerText()).includes('6 players at your DPS'), 'ToA team-DPS multiplier 6 (= party size)');
+    && (await page.locator('[data-testid="team-time-label"]').textContent()).includes('6 players at your DPS'), 'ToA team-DPS multiplier 6 (= party size)');
   const bosses = await page.locator('[data-testid="boss-select"] option').allInnerTexts();
   console.log(`     bosses: ${bosses.join(', ')}`);
   check(bosses.length === 15 && bosses.includes('Zebak') && bosses.includes('Akkha'), `${bosses.length} ToA targets`);
@@ -108,20 +109,20 @@ const main = async () => {
   await page.locator('#bs-scale-toaInvocationLevel').fill('500');
 
   // 4. Encounters
-  await page.locator('[data-testid="routes-tab"]').click();
-  await page.locator('[data-testid="routes-view"]').waitFor({ timeout: 30000 });
+  await page.locator('[data-testid="plan-tab"]').click();
+  await page.locator('[data-testid="plan-view"]').waitFor({ timeout: 30000 });
   const tr = Date.now();
   await page.waitForTimeout(900);
-  await page.locator('[data-testid="routes-progress"]').waitFor({ state: 'detached', timeout: 600000 });
-  await page.locator('[data-testid="route-row"]').first().waitFor({ timeout: 600000 });
-  const rows = await page.locator('[data-testid="route-row"]').count();
+  await page.locator('[data-testid="plan-progress"]').waitFor({ state: 'detached', timeout: 600000 });
+  await page.locator('[data-testid="plan-route-row"]').first().waitFor({ timeout: 600000 });
+  const rows = await page.locator('[data-testid="plan-route-row"]').count();
   check(rows === 1, `one route (${rows})`);
-  check((await page.locator('[data-testid="routes-team-label"]').innerText()).includes('6 players'), 'Encounters labelled with the team multiplier');
-  const total = (await page.locator('[data-testid="route-total"]').innerText()).trim();
-  const encs = await page.locator('[data-testid="route-row"] [data-testid^="enc-"]').evaluateAll((els) => els.map((e) => `${e.getAttribute('data-testid').slice(4)}=${Number(e.getAttribute('data-seconds')).toFixed(1)}`));
-  console.log(`     Encounters (best search result per style, Team): ${total} — ${encs.join(', ')} (${((Date.now() - tr) / 1000).toFixed(1)} s)`);
+  check((await page.locator('[data-testid="plan-team-label"]').innerText()).includes('6 players'), 'Encounters labelled with the team multiplier');
+  const total = (await page.locator('[data-testid="plan-route-total"]').innerText()).trim();
+  const encs = await page.locator('[data-testid="plan-route-row"] [data-testid^="plan-enc-"]').evaluateAll((els) => els.map((e) => `${e.getAttribute('data-testid').slice(9)}=${Number(e.getAttribute('data-seconds')).toFixed(1)}`));
+  console.log(`     Encounters (planned kit, Team): ${total} — ${encs.join(', ')} (${((Date.now() - tr) / 1000).toFixed(1)} s)`);
   check(encs.length === 5, '5 encounters');
-  const phaseRows = await page.locator('[data-testid="phase-row"]').count();
+  const phaseRows = await page.locator('[data-testid="plan-phase-row"]').count();
   check(phaseRows >= 12, `per-encounter breakdown open (${phaseRows} phase rows)`);
   await shot(page, 'toa-encounters');
 

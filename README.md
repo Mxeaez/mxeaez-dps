@@ -9,15 +9,15 @@ What this fork adds on top of upstream:
   Moia, Xarth, the Dagon'hai Elder + Monks and Ocellus (all phases), with party size, defence floors and boss-specific
   rules, plus the raid's reward items (Obligator, Zorya's tome, Ascension crossbows, Zeal, elemental fragments).
 * **Best setup** (`/best-setup`) with four raid tabs — **Fractured Archive, Tombs of Amascut, Chambers of Xeric,
-  Theatre of Blood** — each with the same four tabs, run in a web worker:
+  Theatre of Blood** — each with the same three tabs, run in a web worker:
   * **Search**: a gear search per boss / phase over a pool of end-game items (the presets seed it);
   * **Plan**: the worn set + switch items that minimise the raid's DPS time within 28 inventory slots (per-raid
-    supplies and items always brought);
-  * **Routes** (Fractured Archive; "Encounters" in the other raids): DPS-only clear time per encounter / route for a kit;
+    supplies and items always brought), with its per-encounter times and the route comparison (Fractured Archive: 8
+    routes; the old Routes / Encounters tab was merged into it in phase 23);
   * **Summary**: the top search result for every boss / phase.
 * **Drain states** None / Solo / Team: Solo = your own spec weapons within your spec energy, Team = the carriers' first
   round of specs; both rank at the Defence floor when P(floor) ≥ 95%, else at the expected Defence.
-* **Times assume N players at your DPS** (the "Team DPS ×" input; the page says "times assume N players at your DPS"):
+* **Times assume N players at your DPS** (the "Players assumed at your DPS" input under Advanced; the page says "times assume N players at your DPS"):
   N defaults to the party size in ToA / CoX / ToB, where upstream scales boss hp with it, and to 1 in the Fractured
   Archive, whose hp scaling is unknown.
 * Images served from this repo's `cdn/` folder, so new monsters have images.

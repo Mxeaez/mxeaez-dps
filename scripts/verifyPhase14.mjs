@@ -43,10 +43,12 @@ const main = async () => {
   const box = await text(page, 'assumptions');
   check(!box.includes('Solo Ayak damage'), 'no "Solo Ayak damage" input');
   for (const id of ['bs-my-elderMaul', 'bs-my-dwh', 'bs-my-bgs', 'bs-my-tonalztics', 'bs-ayak', 'bs-my-lightbearer', 'bs-party',
-    'bs-team-elderMaul', 'bs-team-tonalztics', 'bs-team-ayak', 'bs-fight', 'bs-threshold']) {
+    'bs-team-elderMaul', 'bs-team-tonalztics', 'bs-team-ayak', 'bs-threshold']) {
     check(await page.locator(`#${id}`).count() === 1, `input #${id} rendered`);
   }
-  check(await page.locator('#bs-my-elderMaul').isChecked() && !(await page.locator('#bs-my-dwh').isChecked()), 'defaults: Elder maul ticked, DWH not');
+  // phase 23: My specs are icon toggles (aria-pressed); no fight-length input
+  check(await page.locator('#bs-fight').count() === 0, 'no fight-length input (phase 23: computed)');
+  check(await page.locator('#bs-my-elderMaul').getAttribute('aria-pressed') === 'true' && await page.locator('#bs-my-dwh').getAttribute('aria-pressed') === 'false', 'defaults: Elder maul on, DWH off');
   check(await page.locator('#bs-ayak').inputValue() === '2' && await page.locator('#bs-party').inputValue() === '6'
     && await page.locator('#bs-team-elderMaul').inputValue() === '2', 'defaults: Ayak ×2, party 6, 2 maul carriers');
   const hint = await text(page, 'ayak-hint');
@@ -60,10 +62,10 @@ const main = async () => {
   const soloPlan = await text(page, 'drain-plan');
   console.log(`     ${soloPlan}`);
   check(soloPlan.includes('2× Elder maul') && soloPlan.includes('floor 0 not reachable'), 'Smorks Solo: partial Elder maul drain, floor 0 not reachable');
-  const soloDef = Number((await text(page, 'drain-pfloor')).match(/ranked at Defence (\d+)/)?.[1]);
+  const soloDef = Number((await page.locator('[data-testid="spec-plan"] [data-testid="drain-line-result"]').innerText()).match(/Def (\d+)/)?.[1]);
   check(soloDef > 0 && soloDef < 220, `Smorks Solo ranked Defence ${soloDef} (between floor 0 and 220)`);
   const summary = await text(page, 'search-summary');
-  check(summary.includes(`Defence ${soloDef}`), 'search summary uses the same Defence');
+  check(summary.includes(`Def ${soloDef}`), 'search summary uses the same Defence');
   await page.mouse.move(0, 0);
   await page.screenshot({ path: 'docs/screenshots/phase14-smorks-solo.png', fullPage: true });
 
@@ -75,18 +77,19 @@ const main = async () => {
   const teamP = await text(page, 'drain-pfloor');
   console.log(`     ${await text(page, 'drain-plan')}`);
   console.log(`     ${teamP}`);
-  check(/P\(Defence floor 180\) \d+(\.\d)?%/.test(teamP), `Bork Team shows P(floor): ${teamP.slice(0, 40)}`);
+  check(/Chance of the Defence floor \(180\): \d+(\.\d)?%/.test(teamP), `Bork Team shows P(floor): ${teamP.slice(0, 50)}`);
   const table = await text(page, 'team-table');
   check(/6-man Bork: 1 Elder maul → \d+%, 2 Elder maul → \d+%/.test(table), `recommendation: ${table.match(/6-man Bork[^(]*/)?.[0]}`);
   await page.screenshot({ path: 'docs/screenshots/phase14-bork-team.png', fullPage: true });
 
   // 3b. a change of an input re-plans: 0 maul carriers, 1 Tonalztics → lower probability
+  await page.locator('[data-testid="advanced-toggle"]').click(); // phase 23: carriers are under Advanced
   await page.locator('#bs-team-elderMaul').fill('0');
   await page.locator('#bs-team-tonalztics').fill('1');
   await page.waitForTimeout(800);
   const teamP2 = await text(page, 'drain-pfloor');
-  const p1 = Number(teamP.match(/\) ([\d.]+)%/)?.[1] ?? 100);
-  const p2 = Number(teamP2.match(/\) ([\d.<>]+)%/)?.[1]?.replace(/[<>]/g, '') ?? 100);
+  const p1 = Number(teamP.match(/\): ([\d.]+)%/)?.[1] ?? 100);
+  const p2 = Number(teamP2.match(/\): ([\d.<>]+)%/)?.[1]?.replace(/[<>]/g, '') ?? 100);
   check(p2 < p1, `fewer carriers → lower P(floor): ${p1}% → ${p2}%`);
   await page.locator('#bs-team-elderMaul').fill('2');
   await page.locator('#bs-team-tonalztics').fill('2');

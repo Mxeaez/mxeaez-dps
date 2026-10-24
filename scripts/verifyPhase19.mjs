@@ -75,7 +75,7 @@ const main = async () => {
   // 2. CoX tab
   await page.locator('[data-testid="raid-tab-cox"]').click();
   await page.locator('h2', { hasText: 'Chambers of Xeric' }).waitFor({ timeout: 30000 });
-  check((await page.locator('[data-testid="routes-tab"]').innerText()).trim() === 'Encounters', 'CoX routes tab = Encounters');
+  check(await page.locator('[data-testid="routes-tab"]').count() === 0, 'CoX: no Encounters tab (phase 23: merged into Plan)');
   check(await page.locator('#bs-party').inputValue() === '6', 'party size 6');
   const cm = page.locator('#bs-scale-coxChallengeMode');
   check(await cm.count() === 1 && await cm.getAttribute('type') === 'checkbox' && !(await cm.isChecked()), 'Challenge Mode checkbox, off');
@@ -91,7 +91,7 @@ const main = async () => {
   const tek = await stats(page);
   const summary = (await page.locator('[data-testid="search-summary"]').innerText()).replace(/\s+/g, ' ');
   check(tek.hp === '1200 hp' && tek.def === 'Def 215', `Tekton normal, 6 players: ${tek.hp}, ${tek.def} (upstream 1200 / 215)`);
-  check(summary.includes('Defence 215'), 'search summary: Defence 215 without drains');
+  check(summary.includes('Def 215'), 'search summary: Defence 215 without drains');
   console.log(`     Tekton None: ${tekNone.weapon} ${tekNone.dps} DPS, TTK ${tekNone.ttk}`);
   await shot(page, 'tekton');
   await cm.check();
@@ -109,7 +109,7 @@ const main = async () => {
 
   // 4. Guardians
   const g = await search(page, 'cox-guardian', 'none');
-  const gStats = (await page.locator('[data-testid="search-stats"]').innerText()).replace(/\s+/g, ' ');
+  const gStats = (await page.locator('[data-testid="search-stats"]').textContent()).replace(/\s+/g, ' ');
   console.log(`     Guardians: ${g.weapon} ${g.dps} DPS, TTK ${g.ttk}`);
   check(/pickaxe/i.test(g.weapon), 'Guardians: a pickaxe on top');
   check(gStats.includes('can\'t hit') && gStats.includes('Scythe of Vitur') && gStats.includes('Twisted bow'), 'Guardians: Scythe / Twisted bow listed as can\'t hit');
@@ -124,18 +124,19 @@ const main = async () => {
   }
 
   // 6. Encounters
-  await page.locator('[data-testid="routes-tab"]').click();
-  await page.locator('[data-testid="routes-view"]').waitFor({ timeout: 30000 });
+  // phase 23: the Encounters tab is merged into the Plan tab's results
+  await page.locator('[data-testid="plan-tab"]').click();
+  await page.locator('[data-testid="plan-view"]').waitFor({ timeout: 30000 });
   const tr = Date.now();
   await page.waitForTimeout(900);
-  await page.locator('[data-testid="routes-progress"]').waitFor({ state: 'detached', timeout: 600000 });
-  await page.locator('[data-testid="route-row"]').first().waitFor({ timeout: 600000 });
-  check(await page.locator('[data-testid="route-row"]').count() === 1, 'one route');
-  const total = (await page.locator('[data-testid="route-total"]').innerText()).trim();
-  const encs = await page.locator('[data-testid="route-row"] [data-testid^="enc-"]').evaluateAll((els) => els.map((e) => `${e.getAttribute('data-testid').slice(4)}=${Number(e.getAttribute('data-seconds')).toFixed(1)}`));
-  console.log(`     Encounters (best search result per style, Team): ${total} — ${encs.join(', ')} (${((Date.now() - tr) / 1000).toFixed(1)} s)`);
+  await page.locator('[data-testid="plan-progress"]').waitFor({ state: 'detached', timeout: 600000 });
+  await page.locator('[data-testid="plan-route-row"]').first().waitFor({ timeout: 600000 });
+  check(await page.locator('[data-testid="plan-route-row"]').count() === 1, 'one route');
+  const total = (await page.locator('[data-testid="plan-route-total"]').innerText()).trim();
+  const encs = await page.locator('[data-testid="plan-route-row"] [data-testid^="plan-enc-"]').evaluateAll((els) => els.map((e) => `${e.getAttribute('data-testid').slice(9)}=${Number(e.getAttribute('data-seconds')).toFixed(1)}`));
+  console.log(`     Encounters (planned kit, Team): ${total} — ${encs.join(', ')} (${((Date.now() - tr) / 1000).toFixed(1)} s)`);
   check(encs.length === 10, `10 encounters (${encs.length})`);
-  const olmRows = await page.locator('[data-testid="phase-row"][data-encounter="cox-olm"]').allInnerTexts();
+  const olmRows = await page.locator('[data-testid="plan-phase-row"][data-encounter="cox-olm"]').allInnerTexts();
   olmRows.forEach((r) => console.log(`     olm: ${r.replace(/\s+/g, ' ').slice(0, 160)}`));
   check(olmRows.length === 7 && olmRows[0].includes('Phase 1 of 3') && olmRows[6].includes('Final phase: head'), 'Olm breakdown: 3 phases × 2 claws + head');
   await shot(page, 'encounters');

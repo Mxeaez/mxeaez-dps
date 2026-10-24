@@ -16,6 +16,7 @@ import {
   BEST_SETUP_TARGETS,
   buildTargetMonster,
   computeBestSetup,
+  autoFightSeconds,
   drainStateFor,
   evaluateLoadout,
   evaluatePreset,
@@ -172,14 +173,17 @@ describe('targets and drain states', () => {
       },
       ayakSpecs: 2,
       lightbearer: false,
-      fightSeconds: 90,
+      // phase 23: no fight length in the assumptions = the boss's computed undrained time to kill
+      fightSeconds: autoFightSeconds(none.monster, A),
       priority: 'defence',
     });
     const teamPlan = teamSpecPlan(model, {
       partySize: 6,
       carriers: carriersFromCounts({ elderMaul: 2, tonalztics: 2, ayak: 1 }),
-      fightSeconds: 90,
+      fightSeconds: autoFightSeconds(none.monster, A),
     });
+    expect(solo.drain.fightSeconds).toBe(autoFightSeconds(none.monster, A));
+    expect(solo.drain.fightComputed).toBe(true);
 
     expect(none.drain.reductions.elderMaul).toBe(0);
     expect(none.drain.specs).toBe('no specs');

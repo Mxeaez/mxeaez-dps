@@ -11,19 +11,22 @@ import {
   targetPhases,
 } from '@/lib/fracturedArchive/bestSetup';
 import {
-  BestSetupAssumptions, MySpecs, StyleGroup, TeamSpecAssumptions,
+  BestSetupAssumptions, carriersUseLightbearer, ItemRef, MySpecs, StyleGroup, TeamSpecAssumptions, withCarrierLightbearer,
 } from '@/lib/fracturedArchive/presets';
 import { scaleMonster } from '@/lib/MonsterScaling';
 import {
-  RaidConfig, RaidId, RAIDS, raidConfig, teamDpsMultiplier, teamTimeLabel, visibleTargets, withScalingInput,
+  RaidConfig, RaidId, RAIDS, raidConfig, teamDpsMultiplier, teamTimeLabel, TimeSettings, visibleTargets, withScalingInput,
 } from '@/lib/raids';
-import { ayakExpectedDrain, drainModel, specProfile } from '@/lib/fracturedArchive/specs';
+import {
+  ayakExpectedDrain, drainModel, SPEC_WEAPONS, specProfile,
+} from '@/lib/fracturedArchive/specs';
+import { resolveItem } from '@/lib/fracturedArchive/loadout';
 import SpecPlanPanel from '@/app/components/bestSetup/SpecPlanPanel';
 import SearchView from '@/app/components/bestSetup/SearchView';
 import SummaryView from '@/app/components/bestSetup/SummaryView';
-import RoutesView from '@/app/components/bestSetup/RoutesView';
 import PlanView from '@/app/components/bestSetup/PlanView';
-import { targetImageUrl } from '@/lib/fracturedArchive/loadoutIcons';
+import TimeSettingsBox from '@/app/components/bestSetup/TimeSettingsBox';
+import { equipmentImageUrl, targetImageUrl } from '@/lib/fracturedArchive/loadoutIcons';
 import { ItemIcon } from '@/app/components/bestSetup/ItemIcons';
 
 // Fractured Archive "Best setup" view (phase 8; "Search" tab phase 9). Phase 12: Search is the default tab; item icons.
@@ -32,6 +35,8 @@ import { ItemIcon } from '@/app/components/bestSetup/ItemIcons';
 // Phase 17: "Plan" tab (PlanView.tsx, kit planner), second tab: Search, Plan, Routes, Summary.
 // Phase 18: raid tabs (Fractured Archive, Tombs of Amascut; src/lib/raids) at the top; each raid keeps its own
 // assumptions, and the four tabs below work from that raid's config (ToA's routes tab is "Encounters").
+// Phase 23: simple view + Advanced expander; the Routes / Encounters tab is merged into Plan (tabs: Search, Plan,
+// Summary); no fight-length input (computed per boss, bestSetup.ts autoFightSeconds).
 // Docs: docs/BEST_SETUP.md.
 
 const POTION_OPTIONS = (Object.keys(PotionMap) as unknown as string[])
@@ -43,9 +48,82 @@ const HEART_POTIONS = [Potion.SATURATED_HEART, Potion.IMBUED_HEART];
 const GROUP_PRAYER: Record<StyleGroup, string> = { melee: 'Piety', ranged: 'Rigour', magic: 'Augury' };
 
 type MyWeapon = 'elderMaul' | 'dwh' | 'bgs' | 'tonalztics';
-const MY_SPEC_WEAPONS: [MyWeapon, string][] = [['elderMaul', 'Elder maul'], ['dwh', 'DWH'], ['bgs', 'BGS'], ['tonalztics', 'Tonalztics']];
+const MY_SPEC_WEAPONS: MyWeapon[] = ['elderMaul', 'dwh', 'bgs', 'tonalztics'];
 type TeamWeapon = keyof TeamSpecAssumptions['carriers'];
-const TEAM_WEAPONS: [TeamWeapon, string][] = [['elderMaul', 'maul'], ['dwh', 'DWH'], ['bgs', 'BGS'], ['tonalztics', 'Tonalztics'], ['ayak', 'Ayak']];
+const TEAM_WEAPONS: TeamWeapon[] = ['elderMaul', 'dwh', 'bgs', 'tonalztics', 'ayak'];
+
+/** Icon of a spec weapon / Lightbearer (equipment.json image), or null. */
+const itemImage = (ref: ItemRef): string | null => {
+  try {
+    return equipmentImageUrl(resolveItem(ref).image);
+  } catch {
+    return null;
+  }
+};
+const LIGHTBEARER = 'Lightbearer';
+
+/** Phase 23: the "?" glossary (plain-language meaning of the terms on this page). */
+export const GLOSSARY: [string, string][] = [
+  ['Drains', 'None: no Defence / Magic defence drains. Solo: only your own specs ("My specs"), within the spec energy you have in that fight. Team: the team\'s spec carriers (Advanced) each spec twice at the start.'],
+  ['Floor', 'The lowest Defence a boss can be drained to (e.g. Archive Guardian 156). A plan "reaches the floor" when the chance of getting there is at least the confidence set in Advanced (95%).'],
+  ['First round', 'The specs everyone does at the start of the fight with full (100%) energy: 2 specs each for 50% weapons.'],
+  ['Hit chance', 'The % under each drain icon: the chance one spec lands its drain (from the calculator, against the undrained boss).'],
+  ['Fight length', 'Not an input any more: the Solo energy budget uses the boss\'s undrained time to kill with the best preset (shown as "fight ≈ N s → M specs"); the Plan tab uses each encounter\'s own time.'],
+  ['Team DPS ×', 'How many players are assumed to deal your DPS when HP is turned into time. Fractured Archive: 1 (how its HP scales with party size is unknown, so times are you alone); ToA / CoX / ToB: the party size (their HP scales with it).'],
+  ['Carriers', 'Teammates who bring a drain weapon and spec it at the start (Team drains). The party size above is shared; carriers beyond it don\'t count.'],
+];
+
+const Glossary: React.FC = () => {
+  const [open, setOpen] = useState(false);
+  return (
+    <span className="relative">
+      <button
+        type="button"
+        className="w-5 h-5 rounded-full border border-body-500 dark:border-dark-200 text-xs font-bold"
+        title="What do these terms mean?"
+        aria-expanded={open}
+        data-testid="glossary-button"
+        onClick={() => setOpen(!open)}
+      >
+        ?
+      </button>
+      {open && (
+        <div className="absolute z-20 right-0 mt-1 w-[340px] max-w-[90vw] p-2 rounded shadow-lg bg-white dark:bg-dark-500 border border-body-400 dark:border-dark-200 text-xs flex flex-col gap-1" data-testid="glossary">
+          {GLOSSARY.map(([term, text]) => (
+            <div key={term}>
+              <span className="font-semibold">{`${term}: `}</span>
+              {text}
+            </div>
+          ))}
+          <button type="button" className="underline self-end" onClick={() => setOpen(false)}>close</button>
+        </div>
+      )}
+    </span>
+  );
+};
+
+/** An icon toggle button (pressed = on). */
+const IconToggle: React.FC<{
+  id: string, label: string, src: string | null, on: boolean, onChange: (on: boolean) => void, title: string,
+}> = ({
+  id, label, src, on, onChange, title,
+}) => (
+  <button
+    type="button"
+    id={id}
+    aria-pressed={on}
+    aria-label={label}
+    title={`${title} (${on ? 'on' : 'off'}; click to toggle)`}
+    data-testid={id}
+    className={`flex items-center gap-1 px-1.5 py-0.5 rounded border ${on
+      ? 'border-orange-500 bg-orange-100 dark:bg-orange-900/40'
+      : 'border-body-400 dark:border-dark-200 opacity-50 grayscale'}`}
+    onClick={() => onChange(!on)}
+  >
+    <ItemIcon name={label} src={src} size={20} title={label} />
+    <span>{label}</span>
+  </button>
+);
 
 const ScalingInputs: React.FC<{
   raid: RaidConfig,
@@ -53,7 +131,7 @@ const ScalingInputs: React.FC<{
   onChange: (a: BestSetupAssumptions) => void,
 }> = ({ raid, value, onChange }) => (
   <div className="flex flex-wrap gap-x-4 gap-y-2 items-center" data-testid="scaling-inputs">
-    <span className="font-semibold">Raid scaling:</span>
+    <span className="font-semibold">Raid:</span>
     {raid.scalingInputs.map((d) => {
       const id = d.key === 'partySize' ? 'bs-party' : `bs-scale-${d.key}`;
       if (d.kind === 'bool') {
@@ -106,28 +184,37 @@ const ScalingInputs: React.FC<{
   </div>
 );
 
+/**
+ * Phase 23: the assumptions box. Simple view: raid scaling, potions / heart, Zeal, fragments, "My specs" as icon
+ * toggles + Lightbearer. Everything else under "Advanced" (team carriers, floor confidence, team-DPS multiplier,
+ * energy priority, the Plan tab's time model).
+ */
 const AssumptionsBox: React.FC<{
   raid: RaidConfig,
   value: BestSetupAssumptions,
   onChange: (a: BestSetupAssumptions) => void,
   /** e.g. "≈ 40 magic def drained on Bork" for the selected boss (phase 14). */
   ayakHint?: string,
+  timeSettings: TimeSettings,
+  onTimeSettings: (s: TimeSettings) => void,
 }> = ({
-  raid, value, onChange, ayakHint,
+  raid, value, onChange, ayakHint, timeSettings, onTimeSettings,
 }) => {
   const set = (patch: Partial<BestSetupAssumptions>) => onChange({ ...value, ...patch });
   const carrierTotal = Object.values(value.team.carriers).reduce((t, n) => t + n, 0);
-  // the Fractured Archive keeps party size in the Team row (phase 14 layout); raids with more inputs get their own row
-  const scalingRow = raid.scalingInputs.some((d) => d.key !== 'partySize');
+  const mult = teamDpsMultiplier(value);
   return (
     <div className="text-xs bg-body-100 dark:bg-dark-400 border border-body-400 dark:border-dark-200 rounded p-3 flex flex-col gap-2" data-testid="assumptions">
-      <div className="font-bold text-sm">Assumptions</div>
-      <div>
-        {raid.raidOnlyAssumptions
-          ? 'All skills 99. Prayers: Piety (or Zeal) / Rigour / Augury by style. Items per preset: src/lib/fracturedArchive/presets.ts.'
-          : `All skills 99. Prayers: Piety / Rigour / Augury by style. ${raid.presetsNote ?? ''}`}
+      <div className="flex items-center gap-2">
+        <span className="font-bold text-sm">Assumptions</span>
+        <span className="text-gray-500 dark:text-gray-400" title={raid.raidOnlyAssumptions ? 'Items per preset: src/lib/fracturedArchive/presets.ts' : raid.presetsNote}>
+          {`All skills 99 · ${raid.raidOnlyAssumptions ? 'Piety (or Zeal)' : 'Piety'} / Rigour / Augury by style`}
+        </span>
+        <span className="flex-1" />
+        <button type="button" className="underline" title="Back to this raid's defaults (every input, Advanced included)" onClick={() => onChange(raid.defaultAssumptions)}>Reset</button>
+        <Glossary />
       </div>
-      {scalingRow && <ScalingInputs raid={raid} value={value} onChange={onChange} />}
+      <ScalingInputs raid={raid} value={value} onChange={onChange} />
       <div className="flex flex-wrap gap-x-4 gap-y-2 items-center">
         {(['melee', 'ranged', 'magic'] as StyleGroup[]).map((g) => {
           // where the potions are brought (FA, ToB) the magic boost is a heart, a pinned item in the Plan tab
@@ -138,7 +225,9 @@ const AssumptionsBox: React.FC<{
               key={g}
               htmlFor={`bs-potion-${g}`}
               className="flex items-center gap-1"
-              title={heart ? 'Search and Summary assume this heart is brought; the Plan tab boosts magic only while a heart is in "Items I always bring" (it follows this choice)' : undefined}
+              title={heart
+                ? 'Magic boost. Search and Summary assume this heart is brought; the Plan tab boosts magic only while a heart is in "Items I always bring" (it follows this choice)'
+                : `Boost used by every ${g} setup`}
             >
               <span className={heart ? '' : 'capitalize'}>{heart ? 'Heart' : `${g} potion`}</span>
               <select
@@ -152,15 +241,13 @@ const AssumptionsBox: React.FC<{
             </label>
           );
         })}
-      </div>
-      <div className="flex flex-wrap gap-x-4 gap-y-2 items-center">
         {raid.raidOnlyAssumptions && (
           <>
-            <label htmlFor="bs-zeal" className="flex items-center gap-1">
+            <label htmlFor="bs-zeal" className="flex items-center gap-1" title="Melee setups pray Zeal (the Fractured Archive prayer) instead of Piety">
               <input id="bs-zeal" type="checkbox" checked={value.useZeal} onChange={(e) => set({ useZeal: e.target.checked })} />
-              Zeal instead of Piety (melee)
+              Zeal instead of Piety
             </label>
-            <label htmlFor="bs-fragments" className="flex items-center gap-1" title="+2 base max hit for elemental spells; only affects spell presets">
+            <label htmlFor="bs-fragments" className="flex items-center gap-1" title="All four elemental fragments unlocked: +2 base max hit for elemental spells (magic setups only)">
               <input
                 id="bs-fragments"
                 type="checkbox"
@@ -171,65 +258,26 @@ const AssumptionsBox: React.FC<{
             </label>
           </>
         )}
-        <label htmlFor="bs-team-mult" className="flex items-center gap-1" title="Players assumed to deal your DPS in every time shown (Search TTK, Routes / Encounters, Plan). Default: the party size where boss hp scales with it (ToA, CoX, ToB), else 1 (Fractured Archive: identity hp table)">
-          Team DPS ×
-          <input
-            id="bs-team-mult"
-            type="number"
-            className="form-control text-xs py-0.5 w-14"
-            min={1}
-            max={raid.partySize.max}
-            step={0.5}
-            value={teamDpsMultiplier(value)}
-            data-testid="team-dps-mult"
-            onChange={(e) => set({ teamDpsMultiplier: Math.min(raid.partySize.max, Math.max(1, Number(e.target.value) || 1)) })}
-          />
-          {value.teamDpsMultiplier !== undefined && (
-            <button type="button" className="underline" onClick={() => set({ teamDpsMultiplier: undefined })}>auto</button>
-          )}
-          <span className="text-gray-500 dark:text-gray-400" data-testid="team-time-label">{`(${teamTimeLabel(teamDpsMultiplier(value))})`}</span>
-        </label>
-        <label htmlFor="bs-fight" className="flex items-center gap-1" title="Fight length for the Search / Summary spec-energy budget: 100% + 10% per 30 s (15 s with Lightbearer). Routes / Plan use each encounter's own time.">
-          Fight length
-          <input
-            id="bs-fight"
-            type="number"
-            className="form-control text-xs py-0.5 w-16"
-            min={0}
-            value={value.fightSeconds}
-            onChange={(e) => set({ fightSeconds: Math.max(0, Number(e.target.value) || 0) })}
-          />
-          s
-        </label>
-        <label htmlFor="bs-threshold" className="flex items-center gap-1" title="A drain plan counts as reaching the Defence floor (and is ranked there) when P(floor) is at least this">
-          Floor at P ≥
-          <input
-            id="bs-threshold"
-            type="number"
-            className="form-control text-xs py-0.5 w-14"
-            min={1}
-            max={100}
-            value={Math.round(value.floorThreshold * 100)}
-            onChange={(e) => set({ floorThreshold: Math.min(100, Math.max(1, Number(e.target.value) || 95)) / 100 })}
-          />
-          %
-        </label>
-        <button type="button" className="underline" onClick={() => onChange(raid.defaultAssumptions)}>Reset</button>
       </div>
-      <div className="flex flex-wrap gap-x-3 gap-y-2 items-center" data-testid="my-specs">
-        <span className="font-semibold" title="Solo drain state: only these weapons, within your own spec energy">My specs:</span>
-        {MY_SPEC_WEAPONS.map(([k, label]) => (
-          <label key={k} htmlFor={`bs-my-${k}`} className="flex items-center gap-1">
-            <input
-              id={`bs-my-${k}`}
-              type="checkbox"
-              checked={value.mySpecs[k]}
-              onChange={(e) => set({ mySpecs: { ...value.mySpecs, [k]: e.target.checked } })}
-            />
-            {label}
-          </label>
+      <div className="flex flex-wrap gap-x-2 gap-y-2 items-center" data-testid="my-specs">
+        <span className="font-semibold" title="The drain weapons you bring yourself: the Solo drain state uses only these, within your own spec energy; the Plan tab gives each one an inventory slot">My specs:</span>
+        {MY_SPEC_WEAPONS.map((k) => (
+          <IconToggle
+            key={k}
+            id={`bs-my-${k}`}
+            label={SPEC_WEAPONS[k].label}
+            src={itemImage(SPEC_WEAPONS[k].item)}
+            on={value.mySpecs[k]}
+            title={`I bring ${SPEC_WEAPONS[k].label}`}
+            onChange={(on) => set({ mySpecs: { ...value.mySpecs, [k]: on } })}
+          />
         ))}
-        <label htmlFor="bs-ayak" className="flex items-center gap-1" title="Eye of Ayak specs (mine): drain = specs × hit chance × expected damage on a hit, from the calculator">
+        <label
+          htmlFor="bs-ayak"
+          className={`flex items-center gap-1 px-1.5 py-0.5 rounded border ${value.mySpecs.ayak > 0 ? 'border-orange-500 bg-orange-100 dark:bg-orange-900/40' : 'border-body-400 dark:border-dark-200'}`}
+          title="Eye of Ayak specs I do (0 = I don't bring it): each lowers the boss's Magic defence by the damage dealt"
+        >
+          <ItemIcon name="Eye of Ayak" src={itemImage(SPEC_WEAPONS.ayak.item)} size={20} />
           Ayak ×
           <input
             id="bs-ayak"
@@ -240,83 +288,103 @@ const AssumptionsBox: React.FC<{
             value={value.mySpecs.ayak}
             onChange={(e) => set({ mySpecs: { ...value.mySpecs, ayak: Math.min(10, Math.max(0, Math.floor(Number(e.target.value) || 0))) } })}
           />
-          {ayakHint && <span className="text-gray-500 dark:text-gray-400" data-testid="ayak-hint">{ayakHint}</span>}
         </label>
-        <label htmlFor="bs-my-lightbearer" className="flex items-center gap-1" title="Lightbearer doubles spec regeneration (10% per 15 s)">
-          <input
-            id="bs-my-lightbearer"
-            type="checkbox"
-            checked={value.mySpecs.lightbearer}
-            onChange={(e) => set({ mySpecs: { ...value.mySpecs, lightbearer: e.target.checked } })}
-          />
-          Lightbearer
-        </label>
-        <label htmlFor="bs-priority" className="flex items-center gap-1" title="When the energy doesn't cover every spec">
-          Energy first to
-          <select
-            id="bs-priority"
-            className="form-control text-xs py-0.5"
-            value={value.mySpecs.priority}
-            onChange={(e) => set({ mySpecs: { ...value.mySpecs, priority: e.target.value as MySpecs['priority'] } })}
-          >
-            <option value="defence">Defence drains</option>
-            <option value="ayak">Ayak</option>
-          </select>
-        </label>
+        <IconToggle
+          id="bs-my-lightbearer"
+          label="Lightbearer"
+          src={itemImage(LIGHTBEARER)}
+          on={value.mySpecs.lightbearer}
+          title="I wear Lightbearer: spec energy comes back twice as fast (10% per 15 s)"
+          onChange={(on) => set({ mySpecs: { ...value.mySpecs, lightbearer: on } })}
+        />
+        {ayakHint && <span className="text-gray-500 dark:text-gray-400" data-testid="ayak-hint">{ayakHint}</span>}
       </div>
-      <div className="flex flex-wrap gap-x-3 gap-y-2 items-center" data-testid="team-specs">
-        <span className="font-semibold" title="Team drain state: the carriers' first round of specs">Team:</span>
-        {!scalingRow && (
-          <label htmlFor="bs-party" className="flex items-center gap-1" title="Team spec planner party size; also the HP scaling party size (identity table, unverified)">
-            party size
+      <details data-testid="advanced">
+        <summary className="cursor-pointer font-semibold" data-testid="advanced-toggle">Advanced</summary>
+        <div className="flex flex-col gap-2 mt-2 pl-2 border-l-2 border-body-400 dark:border-dark-200">
+          <div className="flex flex-wrap gap-x-3 gap-y-2 items-center" data-testid="team-specs">
+            <span className="font-semibold" title="Team drain state: teammates who bring a drain weapon spec twice each at the start of every fight">
+              {`Team carriers (party of ${value.partySize}, set above):`}
+            </span>
+            {TEAM_WEAPONS.map((k) => (
+              <label key={k} htmlFor={`bs-team-${k}`} className="flex items-center gap-1" title={`How many teammates bring ${SPEC_WEAPONS[k].label} and spec it at the start`}>
+                <ItemIcon name={SPEC_WEAPONS[k].label} src={itemImage(SPEC_WEAPONS[k].item)} size={18} />
+                <span className="sr-only">{SPEC_WEAPONS[k].label}</span>
+                <input
+                  id={`bs-team-${k}`}
+                  type="number"
+                  className="form-control text-xs py-0.5 w-12"
+                  min={0}
+                  max={8}
+                  value={value.team.carriers[k]}
+                  onChange={(e) => set({
+                    team: {
+                      ...value.team,
+                      carriers: { ...value.team.carriers, [k]: Math.min(8, Math.max(0, Math.floor(Number(e.target.value) || 0))) },
+                    },
+                  })}
+                />
+              </label>
+            ))}
+            <label htmlFor="bs-team-lightbearer" className="flex items-center gap-1" title="Every carrier wears Lightbearer (spec energy back twice as fast). Only changes the whole-fight figures: the ranking uses the first round, done with full energy">
+              <input
+                id="bs-team-lightbearer"
+                type="checkbox"
+                checked={carriersUseLightbearer(value.team)}
+                onChange={(e) => set({ team: withCarrierLightbearer(value.team, e.target.checked) })}
+              />
+              carriers use Lightbearer
+            </label>
+            {carrierTotal > value.partySize && (
+              <span className="text-red-600" data-testid="team-too-many">{`${carrierTotal} carriers > party size: only the first ${value.partySize} count`}</span>
+            )}
+          </div>
+          <label htmlFor="bs-threshold" className="flex items-center gap-1" title="Drain plans are ranked at the Defence floor only when they are this likely to get there (Team: from the first round of specs; Solo: with your specs). Below it, the ranking uses the Defence you can expect on average">
+            Count the floor as reached when the first round&apos;s chance is ≥
             <input
-              id="bs-party"
+              id="bs-threshold"
               type="number"
               className="form-control text-xs py-0.5 w-14"
-              min={2}
-              max={8}
-              value={value.partySize}
-              onChange={(e) => set({ partySize: Math.min(8, Math.max(2, Number(e.target.value) || 2)) })}
+              min={1}
+              max={100}
+              value={Math.round(value.floorThreshold * 100)}
+              onChange={(e) => set({ floorThreshold: Math.min(100, Math.max(1, Number(e.target.value) || 95)) / 100 })}
             />
+            %
           </label>
-        )}
-        <span>carriers:</span>
-        {TEAM_WEAPONS.map(([k, label]) => (
-          <span key={k} className="flex items-center gap-1">
-            <label htmlFor={`bs-team-${k}`} className="flex items-center gap-1">
-              {label}
-              <input
-                id={`bs-team-${k}`}
-                type="number"
-                className="form-control text-xs py-0.5 w-12"
-                min={0}
-                max={8}
-                value={value.team.carriers[k]}
-                onChange={(e) => set({
-                  team: {
-                    ...value.team,
-                    carriers: { ...value.team.carriers, [k]: Math.min(8, Math.max(0, Math.floor(Number(e.target.value) || 0))) },
-                  },
-                })}
-              />
-            </label>
-            <label htmlFor={`bs-team-lb-${k}`} className="flex items-center" title={`${label} carriers wear Lightbearer`}>
-              <input
-                id={`bs-team-lb-${k}`}
-                type="checkbox"
-                checked={value.team.lightbearer[k]}
-                onChange={(e) => set({
-                  team: { ...value.team, lightbearer: { ...value.team.lightbearer, [k]: e.target.checked } },
-                })}
-              />
-              <span className="text-[10px]">LB</span>
-            </label>
-          </span>
-        ))}
-        {carrierTotal > value.partySize && (
-          <span className="text-red-600" data-testid="team-too-many">{`${carrierTotal} carriers > party size: only the first ${value.partySize} count`}</span>
-        )}
-      </div>
+          <label htmlFor="bs-team-mult" className="flex items-center gap-1" title="HP is turned into time as HP ÷ (this × your DPS). The Fractured Archive defaults to 1 because how its HP scales with party size is unknown (times are you alone); ToA / CoX / ToB default to the party size because their HP scales with it">
+            Players assumed at your DPS when converting HP to time
+            <input
+              id="bs-team-mult"
+              type="number"
+              className="form-control text-xs py-0.5 w-14"
+              min={1}
+              max={raid.partySize.max}
+              step={0.5}
+              value={mult}
+              data-testid="team-dps-mult"
+              onChange={(e) => set({ teamDpsMultiplier: Math.min(raid.partySize.max, Math.max(1, Number(e.target.value) || 1)) })}
+            />
+            {value.teamDpsMultiplier !== undefined && (
+              <button type="button" className="underline" onClick={() => set({ teamDpsMultiplier: undefined })}>auto</button>
+            )}
+            <span className="text-gray-500 dark:text-gray-400" data-testid="team-time-label">{`(${teamTimeLabel(mult)})`}</span>
+          </label>
+          <label htmlFor="bs-priority" className="flex items-center gap-1" title="Solo: when your spec energy doesn't cover every spec, which ones are done first">
+            Spec energy goes first to
+            <select
+              id="bs-priority"
+              className="form-control text-xs py-0.5"
+              value={value.mySpecs.priority}
+              onChange={(e) => set({ mySpecs: { ...value.mySpecs, priority: e.target.value as MySpecs['priority'] } })}
+            >
+              <option value="defence">Defence drains</option>
+              <option value="ayak">Ayak</option>
+            </select>
+          </label>
+          <TimeSettingsBox raid={raid} value={timeSettings} onChange={onTimeSettings} />
+        </div>
+      </details>
     </div>
   );
 };
@@ -337,7 +405,9 @@ const RaidBestSetup: React.FC<{
 }> = ({
   raid, assumptions, setAssumptions, raidTabs,
 }) => {
-  const [mode, setMode] = useState<'summary' | 'search' | 'routes' | 'plan'>('search');
+  const [mode, setMode] = useState<'summary' | 'search' | 'plan'>('search');
+  // phase 23: the time-model settings live in the Advanced box (they were the Routes tab's); the Plan tab uses them
+  const [timeSettings, setTimeSettings] = useState<TimeSettings>(raid.defaultTimeSettings);
   const [chosenKey, setTargetKey] = useState(raid.targets[0].key);
   const [phase, setPhase] = useState<string | undefined>(undefined);
   const [drain, setDrain] = useState<DrainStateId>('team');
@@ -390,12 +460,18 @@ const RaidBestSetup: React.FC<{
           <div className="flex gap-1">
             <button type="button" className={tabClass(mode === 'search')} onClick={() => setMode('search')} data-testid="search-tab">Search</button>
             <button type="button" className={tabClass(mode === 'plan')} onClick={() => setMode('plan')} data-testid="plan-tab">Plan</button>
-            <button type="button" className={tabClass(mode === 'routes')} onClick={() => setMode('routes')} data-testid="routes-tab">{raid.routesLabel}</button>
             <button type="button" className={tabClass(mode === 'summary')} onClick={() => setMode('summary')} data-testid="summary-tab">Summary</button>
           </div>
         </div>
         <div className="p-4 flex flex-col gap-3 dark:text-body-200">
-          <AssumptionsBox raid={raid} value={assumptions} onChange={setAssumptions} ayakHint={ayakHint} />
+          <AssumptionsBox
+            raid={raid}
+            value={assumptions}
+            onChange={setAssumptions}
+            ayakHint={ayakHint}
+            timeSettings={timeSettings}
+            onTimeSettings={setTimeSettings}
+          />
 
           {mode === 'search' && (
             <div className="flex flex-wrap gap-3 items-center">
@@ -462,9 +538,7 @@ const RaidBestSetup: React.FC<{
           )}
           {mode === 'summary' && <SummaryView assumptions={assumptions} targets={raid.targets} />}
           {mode === 'plan' && drainButtons}
-          {mode === 'plan' && <PlanView assumptions={assumptions} drain={drain} raid={raid} />}
-          {mode === 'routes' && drainButtons}
-          {mode === 'routes' && <RoutesView assumptions={assumptions} drain={drain} raid={raid} />}
+          {mode === 'plan' && <PlanView assumptions={assumptions} drain={drain} raid={raid} timeSettings={timeSettings} />}
 
           <div className="text-[11px] text-gray-500 dark:text-gray-400">
             {`Same calculation as the main calculator. ${raid.hpNote} ${teamTimeLabel(teamDpsMultiplier(assumptions))}. Prayers: ${Object.values(GROUP_PRAYER).join(' / ')}. See docs/BEST_SETUP.md for caveats.`}

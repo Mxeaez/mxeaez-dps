@@ -23,6 +23,7 @@ import openInCalculator from '@/app/components/bestSetup/loadIntoCalculator';
 import { searchRowIcons, searchRowWeaponParts, targetImageUrl } from '@/lib/fracturedArchive/loadoutIcons';
 import { ItemIcon, LoadoutIconRow, WeaponLine } from '@/app/components/bestSetup/ItemIcons';
 import DPS_TEXT_CLASS from '@/app/components/bestSetup/styles';
+import DrainLineView from '@/app/components/bestSetup/DrainLineView';
 import { scaleMonster } from '@/lib/MonsterScaling';
 import { raidOf, teamDpsMultiplier, teamTimeLabel } from '@/lib/raids';
 
@@ -216,7 +217,11 @@ const SummaryView: React.FC<{ assumptions: BestSetupAssumptions, targets?: BestS
                           {' · '}
                           <button type="button" className="underline" onClick={() => onLoad(q, cell)}>load</button>
                         </div>
-                        <div className="text-[10px] text-gray-500 dark:text-gray-400" title="Drains">{cell.drain.specs}</div>
+                        <div className="text-[10px] text-gray-500 dark:text-gray-400" data-testid="summary-drains">
+                          {cell.drain.line
+                            ? <DrainLineView line={cell.drain.line} compact showBudget />
+                            : <span title="Drains">{cell.drain.specs}</span>}
+                        </div>
                       </td>
                     );
                   })}

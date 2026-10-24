@@ -63,7 +63,10 @@ const main = async () => {
   check(icons.some((i) => i.size === 16) && icons.some((i) => i.size === 24), 'Summary has 16 px loadout strips and 24 px boss icons');
   const agRow = (await page.locator('[data-testid="summary-row"]', { hasText: 'Archive Guardian (Flying)' }).first().innerText()).replace(/\s+/g, ' ');
   console.log(`     ${agRow}`);
-  check(!agRow.includes('Elder maul') && agRow.includes('Tonalztics'), 'AG Flying Solo/Team drains use Tonalztics');
+  // phase 23: drains are "[icon] ×N" (data-weapon) in the Summary cells
+  const agWeapons = await page.locator('[data-testid="summary-row"]', { hasText: 'Archive Guardian (Flying)' }).first()
+    .locator('[data-testid="drain-line-item"]').evaluateAll((els) => els.map((e) => e.getAttribute('data-weapon')));
+  check(!agWeapons.includes('elderMaul') && agWeapons.includes('tonalztics'), `AG Flying Solo/Team drains use Tonalztics (${agWeapons.join(', ')})`);
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.mouse.move(0, 0);
   await page.screenshot({ path: 'docs/screenshots/phase13-summary.png', fullPage: true });
