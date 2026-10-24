@@ -15,7 +15,7 @@ import {
 import {
   carriersFromCounts, describeAttempts, formatProbability, soloSpecPlan, teamSpecPlan,
 } from '@/lib/fracturedArchive/teamSpecs';
-import { DrainLine, drainLineFromAttempts } from '@/lib/fracturedArchive/drainLine';
+import { DrainLine, drainLineFromAttempts, drainLineNote } from '@/lib/fracturedArchive/drainLine';
 import { minimalPlayer } from '@/lib/fracturedArchive/hittable';
 import { isOutOfMeleeReach } from '@/lib/fracturedArchive/immunities';
 import { BestSetupTarget } from '@/lib/raids/types';
@@ -226,6 +226,9 @@ export const drainStateFor = (m: Monster, id: DrainStateId, assumptions: BestSet
   if (id !== 'none') {
     const model = drainModel(m, assumptions);
     line = drainLineFromAttempts(attemptsMade, model.hitChance, after, plan, budget, wanted);
+    // phase 24: plain remark (low hit chance / one landed spec already reaches the floor)
+    const note = drainLineNote(model, attemptsMade);
+    if (note) line = { ...line, note };
   }
   return {
     id,

@@ -133,6 +133,11 @@ Found in the phase 22 review; larger than a review fix, so not done:
 - **Upstream PRs**: the fixes listed in docs/UPSTREAM_MERGE.md (*Fixes worth sending upstream*), plus the two
   spell / staff typos in `BaseCalc.ts` found in phase 22.
 - **FA hp / Defence scaling** once recorded in-game (UNVERIFIED C1, A11).
+- **Damage specs vs drain value** (from phase 24, Kephri): model Voidwaker (guaranteed magic-roll hit), Burning claws,
+  Dragon claws and the bone dagger (guaranteed first hit, ToA Strategies) as spec *damage*, and compare a player's
+  spec energy spent on damage with the same energy spent on drains (e.g. at Kephri one landed maul reaches the floor,
+  so the remaining specs are better spent on Voidwaker). Not implemented; the drain line only says when drains are
+  unlikely to land or when one landed spec is enough.
 
 ## Round 3
 
@@ -143,7 +148,7 @@ should be clearly marked like [Elder maul icon] ×2", "What is the Encounters ta
 | # | Phase | Done when | Status |
 |---|---|---|---|
 | 23 | UI cleanup | Simple/Advanced split; drain line as icons ×N with hit chances; fight-length input removed (computed); one Lightbearer toggle for carriers; Encounters/Routes merged into Plan results; tooltips/glossary; no behaviour change to the numbers | In review |
-| 24 | Spec-accuracy audit | ToA/CoX/ToB spec hit chances include invocation/CM/party multipliers on the defence roll; Kephri maul case explained; hit chance shown per spec in the drain line; tests | Planned |
+| 24 | Spec-accuracy audit | ToA/CoX/ToB spec hit chances include invocation/CM/party multipliers on the defence roll; Kephri maul case explained; hit chance shown per spec in the drain line; tests | In review |
 | 25 | Item data refresh | Amulet of rupture, Seeking dragon arrows and every item added since the pool was written (audit equipment.json vs pool/presets); effects modelled or documented | Planned |
 | 26 | "I don't own" list | Cross off items (persisted in the browser); Plan excludes them; Search marks rows that use them but still shows them | Planned |
 | 27 | Planner supplies & rings | Potions chosen from the kit (super combat / ranging / heart by style present); comfort supplies (brews/restores/food) per raid, editable; ring policy: camp one ring / camp Lightbearer / allow switches | Planned |

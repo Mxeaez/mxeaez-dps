@@ -59,6 +59,9 @@ const DrainLineView: React.FC<{
           {`(fight ≈ ${line.budget.fightSeconds} s → ${line.budget.specs} spec${line.budget.specs === 1 ? '' : 's'})`}
         </span>
       )}
+      {line.note && (
+        <span className="basis-full text-[11px] text-amber-700 dark:text-amber-400" data-testid="drain-line-note">{line.note}</span>
+      )}
     </span>
   );
 };

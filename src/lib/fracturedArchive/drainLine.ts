@@ -1,6 +1,11 @@
 import { DefenceReductions } from '@/lib/fracturedArchive/drains';
 import { resolveItem } from '@/lib/fracturedArchive/loadout';
-import { PlannerWeapon, SPEC_WEAPONS, SpecWeapon } from '@/lib/fracturedArchive/specs';
+import {
+  DrainModel, PlannerWeapon, SPEC_WEAPONS, SpecWeapon,
+} from '@/lib/fracturedArchive/specs';
+import {
+  applyOutcome, DefenceDrainWeapon, expectedAttemptsToFloor, inUpstreamOrder,
+} from '@/lib/fracturedArchive/teamSpecs';
 
 /**
  * Phase 23: a drain plan as data for the "[icon] ×N" drain line (DrainLineView.tsx). Pure and React-free: built in the
@@ -37,6 +42,8 @@ export interface DrainLine {
   budget?: { fightSeconds: number, computed: boolean, specs: number };
   /** The full plan text (the old one-line description). */
   text: string;
+  /** Phase 24: a plain remark shown under the line (low hit chance, or one landed spec already reaches the floor). */
+  note?: string;
 }
 
 const pctText = (p: number) => `${Math.round(p * 100)}%`;
@@ -130,4 +137,35 @@ export const drainLineFromReductions = (
     items.push(drainLineItem('ayak', specs, hitChance.ayak, { count: specs, unit: 'spec' }));
   }
   return { items, ...after, text };
+};
+
+/** Phase 24: below this per-spec hit chance the drain line warns that drains are unlikely to land. */
+export const LOW_SPEC_HIT_CHANCE = 0.4;
+
+/**
+ * Phase 24: the drain line's plain remark for a planned attempt sequence.
+ * - Any planned weapon landing < {@link LOW_SPEC_HIT_CHANCE} of its specs: "drains unlikely to land here: 31% per spec"
+ *   (several weapons: "Elder maul 31%, BGS 22% per spec").
+ * - Else, when one landed Elder maul / DWH spec already reaches the Defence floor (ToA's capped drains: Kephri 80 → 60,
+ *   Ba-Ba, Zebak): "1 landed spec reaches the floor (Def 60); ≈ 1.6 specs on average, later ones add nothing".
+ */
+export const drainLineNote = (
+  model: Pick<DrainModel, 'def' | 'floor' | 'magicLevel' | 'outcomes' | 'hitChance'>,
+  attempts: PlannerWeapon[],
+): string | undefined => {
+  const used = ORDER.filter((w) => attempts.includes(w as PlannerWeapon)) as PlannerWeapon[];
+  // compared as shown (rounded %), so a 39.9% spec isn't flagged as "40%"
+  const low = used.filter((w) => Math.round(model.hitChance[w] * 100) < LOW_SPEC_HIT_CHANCE * 100);
+  if (low.length) {
+    const what = low.length === 1 && used.length === 1
+      ? pctText(model.hitChance[low[0]])
+      : low.map((w) => `${LABELS[w]} ${pctText(model.hitChance[w])}`).join(', ');
+    return `drains unlikely to land here: ${what} per spec`;
+  }
+  const defAttempts = inUpstreamOrder(attempts.filter((w): w is DefenceDrainWeapon => w !== 'ayak'));
+  const first = defAttempts[0];
+  if (defAttempts.length < 2 || model.def <= model.floor || (first !== 'elderMaul' && first !== 'dwh')) return undefined;
+  if (applyOutcome(model, first, model.def, { p: 1, hits: 1, damage: 0 }) > model.floor) return undefined;
+  const { expected } = expectedAttemptsToFloor(model, defAttempts);
+  return `1 landed spec reaches the floor (Def ${model.floor}); ≈ ${expected.toFixed(1)} specs on average, later ones add nothing`;
 };

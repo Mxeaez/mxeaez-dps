@@ -3,6 +3,35 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 24 — Spec-accuracy audit for ToA / CoX / ToB (2026-10-23)
+
+- User report: "Kephri's Defence is insanely high; I never hit with Elder maul" while the drain line showed a high hit
+  chance at raid level 500. **The model was right**: `specProfile()` is upstream's `getSpecCalc()`, which scales the
+  monster and calls the same `getNPCDefenceRoll()` as a normal attack, so ToA's raid-level multiplier
+  ((250 + level) / 250 on the defence roll), CoX party / CM Defence and ToB's per-mode monsters are all included. No fix
+  needed. Table "Spec accuracy by raid" in docs/DATA_SOURCES.md.
+- **Kephri (Shielded), 500, party 6, path 0**: Defence 80 / crush +100 (low); roll 14596 × 3 = 43788. Elder maul spec
+  roll 59202 → **63.0%** per spec = `specProfile()` = calculator spec Accuracy 63.02%; normal maul attack 53.77%
+  (calculator, same loadout); 87.7% at raid level 0, 80.3% at 150. Wiki Kephri page: Defence "can be lowered by a
+  maximum of 20 ... minimum of 60, however ... reset for the final phase" → one landed maul reaches the floor (expected
+  1.6 attempts; 4 attempts → 98%). Strategies: Elder maul "More consistent against Kephri ... one special attack is
+  enough", bone dagger at high raid levels (guaranteed hit); it doesn't call drains a waste.
+- Spot checks: CoX Tekton DWH party 6: Def 215 → 56.7%, CM Def 290 → 43.2%. ToB Verzik P2: Hard Mode has the same
+  Defence 200 / bonuses as Normal (wiki) → 69.3% both (Entry Mode 88.0%); party size doesn't change it.
+- **Drain line note** (new `drainLineNote`, drainLine.ts; `DrainLine.note`, shown under the line in DrainLineView):
+  "drains unlikely to land here: 36% per spec" when a planned weapon lands < 40% (rounded), else "1 landed spec
+  reaches the floor (Def 60); ≈ 1.6 specs on average, later ones add nothing" when one maul / DWH landing is enough
+  (Kephri, Akkha, P3 Wardens). Ranking numbers unchanged (the Plan already uses the same drain states).
+- Hit chance per spec verified for ToA / CoX / ToB drain lines, varying with raid level / CM / mode.
+- ROADMAP: 24 → in review; future item "Damage specs vs drain value" (Voidwaker, Burning / Dragon claws, bone dagger).
+  UNVERIFIED E10.
+- Tests: new `src/tests/lib/raids/SpecAccuracy.test.ts` (13: Kephri hand computation at 0/150/500, normal vs spec,
+  floor 60 and the drain-line note; Tekton CM vs normal and party 1; Verzik HM = NM, EM lower, party-independent;
+  spec = normal roll × 1.25 consistency; note rules). `yarn test` 1248 pass / 8 skipped; lint, tsc clean.
+- Playwright: new `scripts/verifyPhase24.mjs` all OK (Kephri Team/Solo 63% + floor note at 500, 80% at 150; Ba-Ba
+  note; calculator 53.77% / 63.02%, rolls 47362 / 43788 via fixture `scripts/phase24-kephri-loadout.json`);
+  screenshots `docs/screenshots/phase24-*.png`.
+
 ## Phase 23 fixes — review follow-ups (2026-10-23)
 
 - **Fight length** for the Solo budget = hp ÷ (party size × best preset DPS) (was ÷ team-DPS multiplier: FA's ×1 timed

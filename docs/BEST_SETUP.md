@@ -590,6 +590,15 @@ form (e.g. "first round 4× Elder maul + 4× Tonalztics + 2× Ayak (P floor 99.5
   95%, e.g. "6-man Bork: 1 Elder maul → 59%, 2 Elder maul → 96%"; "6-man The Smorks: 4 Tonalztics → 84%, 5 Tonalztics
   → 98%" (hammers alone never reach floor 0).
 
+- **Raid scaling in the hit chance** (phase 24 audit): the spec calc scales the monster and builds the defence roll
+  exactly like a normal attack, so ToA's raid-level multiplier (defence roll × (250 + level) / 250), CoX party / CM
+  Defence and ToB's per-mode monsters are all in the "N% land" under each icon. Kephri at 500: Elder maul 63% per spec
+  (87.7% at raid level 0); table and hand computation in `docs/DATA_SOURCES.md`, *Spec accuracy by raid*.
+- **Drain line note** (phase 24, `drainLineNote`): a planned weapon with < 40% per spec → "drains unlikely to land
+  here: 39% per spec"; else, when one landed maul / DWH spec reaches the floor (Kephri, Akkha, P3 Wardens: ToA's capped
+  drains) → "1 landed spec reaches the floor (Def 60); ≈ 1.6 specs on average, later ones add nothing" — so the Team
+  line's "×4" (everyone's first round) isn't read as "4 needed". Shown under the line (`data-testid="drain-line-note"`).
+
 Phase 13 rule kept: weapons that can't hit the boss in the selected version / phase have hit chance 0 (via upstream's
 `isImmune`, `hittable.ts`), e.g. Archive Guardian (Flying) Solo with the default specs has no Defence drain ("Elder maul
 can't hit here"), Team uses the Tonalztics carriers. The calculator's **Max drain** buttons (`drains.ts`) are unchanged

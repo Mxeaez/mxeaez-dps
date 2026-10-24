@@ -751,6 +751,53 @@ chance from the standard formula (AG 0.7978, Bork 0.7678); Ayak roll ×2 against
 the Confliction gauntlets re-roll, E[damage] = acc × (1 + 1 + … + 54) / 55 on AG, and acc × Σ max(0, max(1, d) − 2) / 55
 on Bork. Planner maths (exact binomial / convolution): `TeamSpecs.test.ts`.
 
+## Spec accuracy by raid (phase 24, 2026-10-23)
+
+User report: "Kephri's Defence is insanely high; I never hit with Elder maul" while the drain line showed a high hit
+chance at raid level 500. Audit result: **the spec hit chances already include every raid's Defence scaling** — the
+spec profile (`specProfile`, specs.ts) is upstream's `getSpecCalc()`, which builds a new `PlayerVsNPCCalc` with the same
+monster (the constructor runs `scaleMonster`) and the same `getNPCDefenceRoll()` as a normal attack (only the defence
+*style* changes for slash / stab / crush / magic specs). No fix was needed. Tests: `src/tests/lib/raids/SpecAccuracy.test.ts`.
+
+| Raid | What scales the NPC's Defence | Where upstream applies it | In the spec hit chance? |
+|---|---|---|---|
+| ToA | Raid level: defence **roll** × (250 + level) / 250 (wiki: "+2% per 5 raid levels ... +200% defence at 500"); not the Defence level. Path level and party size: hp only. Kephri's overlords are excluded | `PlayerVsNPCCalc.getNPCDefenceRoll()` (`NPC_DEFENCE_ROLL_TOA`) | yes (same function; Kephri 500: roll 43788 in both the normal and the spec calc) |
+| CoX | Party size and Challenge Mode scale the Defence **level** (Tekton 205 → 215 at party 6, 290 in CM) | `scaleMonster` → `ChambersOfXeric.ts`, run by the calc's constructor | yes (the spec calc is built from the unscaled monster and scales it again; DWH on Tekton party 6: 56.7%, CM 43.2%) |
+| ToB | Party size: hp only (`TheatreOfBlood.ts`: "tob only scales hp"). Mode: separate monsters (Hard Mode / Entry Mode versions, `TOB_VERSIONS`) | monsters.json versions | yes; Verzik P2 Hard Mode has the **same** Defence 200 and bonuses as Normal (wiki infobox), so the same 69.3% Elder maul hit chance; Entry Mode (Def 120) 88.0%. Verzik's Defence can't be drained (upstream floor = Defence), so no Verzik drain line |
+| Fractured Archive | none known (UNVERIFIED A11) | — | — |
+
+**Kephri, raid level 500, party 6, path 0** (hand computation = `specProfile()` = calculator, `verifyPhase24.mjs`):
+
+- Kephri's own Defence is low: level 80, crush +100 (infobox, both versions). Defence roll (80 + 9) × (100 + 64) =
+  14596; × 750 / 250 at raid level 500 = **43788** (×3). It is the raid level, not her stats, that makes her hard to hit.
+- Spec player (Elder maul, Inquisitor's, Piety, Smelling salts, Pound/Accurate): 99 + 26 = 125 → ×1.2 = 150 → +11 =
+  161 → × (223 + 64) = 46207 → Inquisitor's +2.5% = 47362 (normal attack) → spec +25% = 59202.
+- Hit chance 1 − 43790 / (2 × 59203) = **63.0% per spec** (normal attack 53.8%). Raid level 0: 87.7%; 150: 80.3%; 300: 72.9%.
+- Kephri page (`Kephri?action=raw`, Mechanics): "Her base defence level can be lowered by a maximum of 20 damage,
+  reducing her base defence level down to a minimum of 60, however the defence level is reset for the final phase."
+  So **one** landed maul (or DWH) spec reaches the floor (80 − 28 → 60); further specs add nothing. Upstream's floor is
+  60 (`getDefenceFloor`). With 4 maul attempts P(floor) = 1 − 0.37⁴ = 98% (Team plan "P floor 99.9%" with Tonalztics);
+  expected attempts to the floor ≈ 1.6. The Team line's "×4" is everyone's first round, not "4 needed": since phase 24
+  the line says "1 landed spec reaches the floor (Def 60); ≈ 1.6 specs on average, later ones add nothing".
+- ToA Strategies (Recommended equipment, melee, special attacks): "Voidwaker and Bandos godsword / Elder maul" with the
+  note on the Elder maul: "More consistent against Kephri, P1 Warden Obelisk, and P3 Warden/Enrage Warden. Especially
+  useful when combined with Soulflame horn, as one special attack is enough to reduce the defence of Ba-ba, Kephri, and
+  Zebak fully. Without horn, using a hammer is worse than a bone dagger in Expert+." and on the bone dagger: "Taken in
+  high invocation raids with Overly Draining on over BGS, due to the bone dagger special attack having a guaranteed
+  hit". General: "Most bosses can have their defence drained by flat amount, so a Bandos godsword or sometimes the
+  Bone dagger are preferable to other defence draining weapons." The wiki does **not** call drains a waste on Kephri;
+  it recommends one landed hammer/maul spec (the floor is 20 levels away) or a guaranteed-hit bone dagger at high
+  raid levels. Bone dagger, Soulflame horn and Voidwaker damage specs are not modelled (ROADMAP future item).
+- Verdict: the model was right; 63% means about 1 in 3 maul specs miss at 500, and at 500 a normal maul attack misses
+  46% of the time, so streaks of misses are common. The planner ranks Kephri at Def 60 because one landing is enough.
+
+**Drain line note** (phase 24, `drainLineNote` in drainLine.ts): a planned weapon landing < 40% of its specs (as
+shown, rounded) → "drains unlikely to land here: 39% per spec" (several: "Elder maul 39%, BGS 36% per spec"); otherwise,
+when one landed Elder maul / DWH spec already reaches the floor → "1 landed spec reaches the floor (Def N); ≈ x specs on
+average". The numbers (ranked Defence, P(floor)) are unchanged. At the defaults the low-chance note shows for ToA Zebak
+(maul 39%) and Ba-Ba (36%) at 500, CoX Tekton (enraged, CM) / Shaman / Olm right hand, and Vasa's Ayak (27%); the
+floor-in-one note for Kephri, Akkha and the P3 Wardens.
+
 ## Equipment (phase 7b, 2026-10-22)
 
 Sources (all fetched 2026-10-22, wikitext via `?action=raw`): item pages
