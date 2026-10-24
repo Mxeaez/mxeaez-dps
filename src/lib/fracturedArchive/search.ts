@@ -33,6 +33,7 @@ import {
 } from '@/lib/fracturedArchive/searchCandidates';
 import { raidBase } from '@/lib/raids/base';
 import { BestSetupTarget } from '@/lib/raids/types';
+import { filterStylePool, isOwned } from '@/lib/fracturedArchive/ownership';
 
 /**
  * Full gear search (phase 9, "Search" tab of /best-setup). Pure and React-free: runs in its own web worker
@@ -138,6 +139,11 @@ export interface GearSearchOptions {
   progressEvery?: number;
   /** Checked before every evaluation; returning true stops the search (partial results, `cancelled: true`). */
   shouldCancel?: () => boolean;
+  /**
+   * Phase 26: "Items I don't own" (ownership.ts). Non-empty = search only owned items: the pool is filtered and the
+   * presets' unowned pieces are left out of the seeds. The "vs best preset" comparison still uses every preset.
+   */
+  notOwned?: string[];
 }
 
 export interface GearSearchResult {
@@ -356,6 +362,7 @@ const buildVariants = (
         for (const [slot, ref] of Object.entries(pieces) as [keyof PlayerEquipment, ItemRef][]) {
           if (slot === 'weapon' || slot === 'ammo') continue; // weapon-bound: from the variant / pool
           if (slot === 'shield' && weapon.isTwoHanded) continue;
+          if (options.notOwned?.length && !isOwned(refName(ref), options.notOwned)) continue; // phase 26
           st[slot] = resolve(ref);
         }
         return st;
@@ -429,7 +436,8 @@ export const runGearSearch = (
   const bestPreset = presetRows[0] ?? null;
 
   const variants = groups.flatMap((g) => {
-    const poolDef = options.pool ? options.pool[g] : raidBase(assumptions.raid).searchPool[g];
+    const raw = options.pool ? options.pool[g] : raidBase(assumptions.raid).searchPool[g];
+    const poolDef = raw && options.notOwned?.length ? filterStylePool(raw, options.notOwned) : raw;
     return poolDef ? buildVariants(poolDef, monster, resolve, presets, options) : [];
   });
 
@@ -600,7 +608,11 @@ export const summarySearchQueries = (targets?: BestSetupTarget[]): GearSearchQue
     targetKey: q.targetKey, phase: q.phase, drain: d.id, styles: 'all',
   })));
 
-/** Session cache key of one search: the query and every assumption (a changed assumption = a different key). */
-export const searchCacheKey = (q: GearSearchQuery, assumptions: BestSetupAssumptions): string => JSON.stringify([
+/**
+ * Session cache key of one search: the query and every assumption (a changed assumption = a different key). Phase 26:
+ * an "only items I own" search adds its (sorted) list; a full-pool search keeps the old key.
+ */
+export const searchCacheKey = (q: GearSearchQuery, assumptions: BestSetupAssumptions, notOwned: string[] = []): string => JSON.stringify([
   q.targetKey, q.phase ?? '', q.drain, q.styles ?? 'all', assumptions,
+  ...(notOwned.length ? [[...notOwned].sort()] : []),
 ]);

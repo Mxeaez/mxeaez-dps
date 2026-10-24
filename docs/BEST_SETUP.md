@@ -1,4 +1,4 @@
-# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14; Routes tab phase 16; Plan tab phase 17; raid tabs + ToA phase 18; CoX phase 19; ToB phase 20; per-raid Plan defaults + dedupe phase 21; UI cleanup phase 23)
+# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14; Routes tab phase 16; Plan tab phase 17; raid tabs + ToA phase 18; CoX phase 19; ToB phase 20; per-raid Plan defaults + dedupe phase 21; UI cleanup phase 23; "Items I don't own" phase 26)
 
 `/best-setup` (dev: http://localhost:3001/osrs-dps/best-setup; "Best setup" button in the top bar, "Calculator" leads
 back). Tabs, in order: **Search** (the default, phase 9/12, see the end of this file) searches a pool of end-game items
@@ -70,6 +70,33 @@ presentation only; the numbers are unchanged except the Solo fight length (below
 request and its handler deleted). The presets stay: they seed the search and give the "vs best preset" column / the
 Summary's "best preset" reference; `computeBestSetup` / `evaluatePreset` stay as tested library code
 (`Presets.test.ts`).
+
+## Items I don't own (phase 26)
+
+Everything assumes max gear. The **Items I don't own** row of the Assumptions box (simple view, every raid tab: the
+list is global) crosses items off: chips with ×, an equipment search box (the calculator's item search), quick-add
+buttons for the Fractured Archive rewards (Obligator, Ascension crossbows, Zorya's tome, Rondache) and *Clear*. Kept in
+this browser's localStorage under `mxeaez-dps:not-owned` (a JSON array of `equipment.json` names; the "Only items I
+own" flag under `mxeaez-dps:only-owned`); blocked storage just means it isn't remembered. Code:
+`src/lib/fracturedArchive/ownership.ts` (pure), `src/app/components/bestSetup/NotOwnedBox.tsx`.
+
+- **Matching** (`unownedBase`): an item is unowned when its name *is* a listed name (every version: Charged /
+  Uncharged / Restored share the name), *starts with* "listed name (" (upgrades / ornaments: "Avernic treads" covers
+  "Avernic treads (max)", "Necklace of anguish" covers "(or)"; not the other way round), or is in the same upstream
+  alias group (`src/lib/EquipmentAliases.ts`: locked / broken / cosmetic variants, e.g. Holy / Sanguine Scythe of
+  Vitur; symmetric).
+- **Search / Summary**: still search the full pool (the true best) and grey every row / cell whose loadout uses a listed
+  item, with a red "uses: Obligator" badge. Changing the list alone doesn't re-run anything. **Only items I own**
+  (checkbox in the Search and Summary headers, one shared setting, default off) searches `filterPool(pool)` instead:
+  weapons (and ammo options / blowpipe dart), slot candidates and sets with an unowned piece leave the pool; presets
+  still seed the search with their unowned pieces left out. *vs best preset* always uses every preset. Searches with a
+  list have their own cache key (`searchCacheKey(q, a, notOwned)`).
+- **Plan** always honours the list (`PlanInputs.notOwned`): the per-phase searches use the filtered pool, presets that
+  use a listed item are dropped, and listed pinned items are dropped (struck through in "Items I always bring", plus a
+  notice). A listed spec weapon that "My specs" still brings gets a notice only (the drain model follows My specs: untick
+  it there). Above the result: **Excluded: Obligator, Ascension crossbows** and **Best possible with everything: 23:30.4
+  (yours: …)**: the max total comes from the session cache of a plan run with an empty list and the same inputs, or a
+  *compare with max* button runs that plan (a second run, about as long, so it's on demand).
 
 ## Raid tabs and Tombs of Amascut (phase 18)
 
@@ -508,6 +535,7 @@ skipped by the deploy).
 | `src/app/components/bestSetup/SummaryView.tsx` | Summary tab (phase 13): sequential searches, session cache, Cancel / Continue. |
 | `src/lib/fracturedArchive/raidTime.ts`, `src/app/components/bestSetup/TimeSettingsBox.tsx` | Phase 16: raid time model (routes, encounters, kit evaluator, `RAID_TIME_DEFAULTS`); phase 23: its settings in the Advanced box (the Routes tab, RoutesView.tsx, was removed). |
 | `src/lib/fracturedArchive/drainLine.ts`, `src/app/components/bestSetup/DrainLineView.tsx` | Phase 23: drain plans as "[icon] ×N" with hit chances. |
+| `src/lib/fracturedArchive/ownership.ts`, `src/app/components/bestSetup/NotOwnedBox.tsx`, `Ownership.test.ts`, `scripts/verifyPhase26.mjs` | Phase 26: "Items I don't own" (storage, matching, pool / preset filtering, row marking) and its checks. |
 | `src/lib/fracturedArchive/planner.ts`, `src/app/components/bestSetup/PlanView.tsx` | Phase 17: raid kit planner (candidates, partial switches, DPS matrix, slot accounting, optimiser, inventory grid) and the Plan tab. |
 | `src/tests/lib/fracturedArchive/Planner.test.ts`, `scripts/verifyPhase17.mjs` | Phase 17 tests (slot accounting, toy optima vs brute force, partial switches, reduced-pool plans, determinism, cancellation) and the Playwright check (`docs/screenshots/phase17-*.png`). |
 | `src/tests/lib/fracturedArchive/RaidTime.test.ts`, `scripts/verifyPhase16.mjs` | Phase 16 tests (hand-computed times with toy kits, drains per encounter, argmin, monotonicity) and the Playwright check (`docs/screenshots/phase16-*.png`). |

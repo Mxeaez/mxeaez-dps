@@ -3,6 +3,37 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 26 — "Items I don't own" (2026-10-23)
+
+- User request: "Most best-in-slot setups have Obligator and Ascension crossbows, but I don't have those yet ... I
+  still want Search to show they're the BEST, but when planning my inventory I may not have the BEST."
+- **Model** (new pure `src/lib/fracturedArchive/ownership.ts`): a list of `equipment.json` names in localStorage
+  `mxeaez-dps:not-owned` (flag `mxeaez-dps:only-owned`), default empty (max gear). Matching: same name (all versions),
+  "Name (" variants of a listed base ((max), (or), (f); not the reverse), and upstream alias groups
+  (`EquipmentAliases.ts`, symmetric). Helpers `isOwned`, `unownedBase`, `filterPool` / `filterStylePool` (weapons, ammo
+  options, darts, slot candidates, extras, sets), `filterPresets`, `loadoutUsesUnowned`, `markUnowned`.
+- **UI**: "Items I don't own" row in the Assumptions box's simple view (new `NotOwnedBox.tsx`; global across raid tabs,
+  state in `BestSetup.tsx`): chips with ×, the calculator's equipment search, quick-add Obligator / Ascension crossbows /
+  Zorya's tome / Rondache, Clear.
+- **Search / Summary**: full pool by default; rows / cells using a listed item are greyed with a "uses: …" badge (no
+  re-run on a list change). "Only items I own" checkbox (shared, persisted, default off) runs with
+  `GearSearchOptions.notOwned` (filtered pool; presets' unowned pieces left out of the seeds); "vs best preset"
+  unchanged; `searchCacheKey(q, a, notOwned)` (full-pool keys unchanged).
+- **Plan** (`PlanInputs.notOwned`): always filtered pool, presets with a listed item dropped, listed pinned items
+  dropped (`droppedPinned`, struck through, notice); a listed My-specs weapon gets a notice. "Excluded: …" line and
+  "Best possible with everything: 23:30.4 (yours: …)" from the session cache or the on-demand "compare with max" run.
+- Numbers (FA defaults, Team): Xarth Search still tops with Obligator 13.917 (greyed); only owned → **Scythe of Vitur
+  12.105** (#2 Inquisitor's mace 10.781). FA plan without Obligator + Ascension crossbows: worn Inquisitor's mace (full
+  crush) with a 4-piece Twisted bow (Masori) switch + the Inquisitor's + Scythe (slash) preset, 0 free slots,
+  **25:46.8** vs 23:30.4 with everything.
+- Tests: new `Ownership.test.ts` (17: storage round trip / garbage / blocked, variant + alias matching,
+  `loadoutUsesUnowned`, pool / preset / pinned filtering, Xarth search marking + only-owned + cache key, planner
+  excludes items, drops pinned with notices, max plan never slower). `yarn test` 1298 (1290 pass / 8 skipped); lint, tsc
+  clean.
+- Playwright: new `scripts/verifyPhase26.mjs` all OK (add via quick-add + search box, greyed top row, only-owned,
+  plan Excluded + max line, reload persists, Clear); screenshots `docs/screenshots/phase26-*.png`. verifyPhase23 /
+  verifyPhase25 re-run OK, tracked screenshots restored.
+
 ## Phase 25 — Item data refresh: Maggot King items and the pool audit (2026-10-23)
 
 - User report: "the Amulet of rupture isn't being used ... Seeking dragon arrows either". The item is the **Necklace of

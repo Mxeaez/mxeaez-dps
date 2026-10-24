@@ -82,6 +82,8 @@ export interface BestSetupSearchRequest extends WorkerRequest<WorkerRequestType.
     basePlayer: Player,
     query: GearSearchQuery,
     assumptions: BestSetupAssumptions,
+    /** Phase 26: search only owned items (empty / missing = the full pool). */
+    notOwned?: string[],
   },
 }
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React, {
-  useCallback, useEffect, useRef, useState,
+  useCallback, useEffect, useMemo, useRef, useState,
 } from 'react';
 import { generateEmptyPlayer } from '@/state';
 import Spinner from '@/app/components/Spinner';
@@ -26,12 +26,16 @@ import DPS_TEXT_CLASS from '@/app/components/bestSetup/styles';
 import DrainLineView from '@/app/components/bestSetup/DrainLineView';
 import { scaleMonster } from '@/lib/MonsterScaling';
 import { raidOf, teamDpsMultiplier, teamTimeLabel } from '@/lib/raids';
+import { loadoutUsesUnowned, unownedLabel } from '@/lib/fracturedArchive/ownership';
+import { OnlyOwnedToggle } from '@/app/components/bestSetup/SearchView';
 
 // "Summary" tab of /best-setup (phase 13): the top gear-search result for every Summary boss / phase × drain state.
 // The 60 searches (20 rows × 3 drain states) run one after the other in the search worker when the tab opens;
 // results are cached in memory for the session (module scope, so switching tabs keeps them; phase 18: one cache per
 // raid, so switching raid tabs keeps both) and keyed by the assumptions, so changing an assumption re-runs (debounced by ASSUMPTION_DEBOUNCE_MS, so typing a multi-digit value
 // restarts once). Cancel terminates the current search and stops; "Continue" resumes with the uncached ones.
+// Phase 26: like Search, cells whose loadout uses an item on "Items I don't own" are greyed with a badge; "Only items
+// I own" (shared with Search) runs the searches without those items (their own cache keys).
 
 /** What the table needs of a search (the full result has 10+ rows per search). */
 type SummaryCell = Pick<GearSearchResult, 'drain' | 'bestPreset'> & { top: GearSearchResult['rows'][number] | null };
@@ -52,8 +56,20 @@ export const ASSUMPTION_DEBOUNCE_MS = 500;
 
 const fmt = (n: number) => (Number.isFinite(n) ? n.toFixed(3) : '-');
 
-const SummaryView: React.FC<{ assumptions: BestSetupAssumptions, targets?: BestSetupTarget[] }> = ({ assumptions, targets }) => {
+const SummaryView: React.FC<{
+  assumptions: BestSetupAssumptions,
+  targets?: BestSetupTarget[],
+  notOwned?: string[],
+  onlyOwned?: boolean,
+  setOnlyOwned?: (on: boolean) => void,
+}> = ({
+  assumptions, targets, notOwned = [], onlyOwned = false, setOnlyOwned,
+}) => {
   const queries = useRef<GearSearchQuery[]>(summarySearchQueries(targets)).current;
+  const searchNotOwnedKey = JSON.stringify(onlyOwned ? notOwned : []);
+  // stable between renders while the list is the same (the effects below depend on it)
+  const searchNotOwned = useMemo(() => JSON.parse(searchNotOwnedKey) as string[], [searchNotOwnedKey]);
+  const keyOf = useCallback((q: GearSearchQuery) => searchCacheKey(q, assumptions, searchNotOwned), [assumptions, searchNotOwned]);
   const cache = raidCache(assumptions).cells;
   const [cells, setCells] = useState<Record<string, SummaryCell>>({});
   const [running, setRunning] = useState(false);
@@ -63,8 +79,8 @@ const SummaryView: React.FC<{ assumptions: BestSetupAssumptions, targets?: BestS
   const runId = useRef(0);
 
   const cachedCells = useCallback(() => Object.fromEntries(queries
-    .map((q) => [searchCacheKey(q, assumptions), cache.get(searchCacheKey(q, assumptions))])
-    .filter(([, c]) => c)) as Record<string, SummaryCell>, [queries, assumptions, cache]);
+    .map((q) => [keyOf(q), cache.get(keyOf(q))])
+    .filter(([, c]) => c)) as Record<string, SummaryCell>, [queries, keyOf, cache]);
 
   const cancel = useCallback(() => {
     runId.current += 1;
@@ -81,11 +97,13 @@ const SummaryView: React.FC<{ assumptions: BestSetupAssumptions, targets?: BestS
     setRunning(true);
     for (let i = 0; i < queries.length; i++) {
       const q = queries[i];
-      const key = searchCacheKey(q, assumptions);
+      const key = keyOf(q);
       if (!cache.has(key)) {
         setCurrent({ index: i, progress: null });
         const j = startGearSearch(
-          { basePlayer: generateEmptyPlayer(), query: q, assumptions },
+          {
+            basePlayer: generateEmptyPlayer(), query: q, assumptions, ...(searchNotOwned.length ? { notOwned: searchNotOwned } : {}),
+          },
           (progress) => {
             if (runId.current === id) setCurrent({ index: i, progress });
           },
@@ -107,7 +125,7 @@ const SummaryView: React.FC<{ assumptions: BestSetupAssumptions, targets?: BestS
     job.current = null;
     setRunning(false);
     setCurrent(null);
-  }, [cancel, queries, assumptions, cachedCells, cache]);
+  }, [cancel, queries, assumptions, cachedCells, cache, keyOf, searchNotOwned]);
 
   // Open / assumptions changed: drop the cache if the assumptions differ (memory), show what's cached, run the rest.
   useEffect(() => {
@@ -148,6 +166,7 @@ const SummaryView: React.FC<{ assumptions: BestSetupAssumptions, targets?: BestS
             <button type="button" className="btn text-sm" onClick={run} data-testid="summary-continue">Continue</button>
           )
         )}
+        {setOnlyOwned && <OnlyOwnedToggle notOwned={notOwned} on={onlyOwned} onChange={setOnlyOwned} />}
         <span className="text-[11px] text-gray-500 dark:text-gray-400">
           Top gear-search result (all styles) per boss / phase and drain state; cached for this session until an assumption changes.
         </span>
@@ -197,16 +216,25 @@ const SummaryView: React.FC<{ assumptions: BestSetupAssumptions, targets?: BestS
                   </td>
                   {DRAIN_STATES.map((d) => {
                     const q = queries.find((x) => x.targetKey === row.targetKey && x.phase === row.phase && x.drain === d.id)!;
-                    const cell = cells[searchCacheKey(q, assumptions)];
+                    const cell = cells[keyOf(q)];
                     if (!cell) {
                       return <td key={d.id} className="px-2 py-1 align-top text-xs text-gray-500">…</td>;
                     }
                     if (!cell.top || cell.top.dps <= 0) {
                       return <td key={d.id} className="px-2 py-1 align-top text-xs text-gray-500">nothing can hit</td>;
                     }
+                    const unowned = loadoutUsesUnowned(cell.top.equipment, notOwned);
                     return (
-                      <td key={d.id} className="px-2 py-1 align-top" data-testid="summary-cell">
+                      <td
+                        key={d.id}
+                        className={`px-2 py-1 align-top ${unowned.length ? 'opacity-50 grayscale' : ''}`}
+                        data-testid="summary-cell"
+                        data-unowned={unowned.length ? unownedLabel(unowned) : undefined}
+                      >
                         <WeaponLine parts={searchRowWeaponParts(cell.top)} className="text-xs font-bold" iconSize={18} />
+                        {unowned.length > 0 && (
+                          <span className="inline-block text-[10px] px-1 rounded bg-red-600 text-white" data-testid="unowned-badge">{`uses: ${unownedLabel(unowned)}`}</span>
+                        )}
                         <LoadoutIconRow icons={searchRowIcons(cell.top)} size={16} />
                         <div className="text-[11px]" title={loadoutSummary(cell.top)}>
                           <span className={`font-mono ${DPS_TEXT_CLASS}`} data-testid="dps">{fmt(cell.top.dps)}</span>

@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, {
+  useCallback, useEffect, useMemo, useState,
+} from 'react';
 import { PotionMap } from '@/utils';
 import Potion from '@/enums/Potion';
 import {
@@ -28,6 +30,10 @@ import PlanView from '@/app/components/bestSetup/PlanView';
 import TimeSettingsBox from '@/app/components/bestSetup/TimeSettingsBox';
 import { equipmentImageUrl, targetImageUrl } from '@/lib/fracturedArchive/loadoutIcons';
 import { ItemIcon } from '@/app/components/bestSetup/ItemIcons';
+import NotOwnedBox from '@/app/components/bestSetup/NotOwnedBox';
+import {
+  loadNotOwned, loadOnlyOwned, saveNotOwned, saveOnlyOwned,
+} from '@/lib/fracturedArchive/ownership';
 
 // Fractured Archive "Best setup" view (phase 8; "Search" tab phase 9). Phase 12: Search is the default tab; item icons.
 // Phase 13: the "Per boss" preset table was removed (the presets still seed the search and give the "vs best preset"
@@ -37,6 +43,7 @@ import { ItemIcon } from '@/app/components/bestSetup/ItemIcons';
 // assumptions, and the tabs below work from that raid's config.
 // Phase 23: simple view + Advanced expander; the Routes / Encounters tab is merged into Plan (tabs: Search, Plan,
 // Summary); no fight-length input (computed per boss, bestSetup.ts autoFightSeconds).
+// Phase 26: "Items I don't own" (NotOwnedBox.tsx, global for every raid tab, kept in localStorage).
 // Docs: docs/BEST_SETUP.md.
 
 const POTION_OPTIONS = (Object.keys(PotionMap) as unknown as string[])
@@ -197,8 +204,10 @@ const AssumptionsBox: React.FC<{
   ayakHint?: string,
   timeSettings: TimeSettings,
   onTimeSettings: (s: TimeSettings) => void,
+  notOwned: string[],
+  onNotOwned: (names: string[]) => void,
 }> = ({
-  raid, value, onChange, ayakHint, timeSettings, onTimeSettings,
+  raid, value, onChange, ayakHint, timeSettings, onTimeSettings, notOwned, onNotOwned,
 }) => {
   const set = (patch: Partial<BestSetupAssumptions>) => onChange({ ...value, ...patch });
   const carrierTotal = Object.values(value.team.carriers).reduce((t, n) => t + n, 0);
@@ -299,6 +308,7 @@ const AssumptionsBox: React.FC<{
         />
         {ayakHint && <span className="text-gray-500 dark:text-gray-400" data-testid="ayak-hint">{ayakHint}</span>}
       </div>
+      <NotOwnedBox value={notOwned} onChange={onNotOwned} />
       <details data-testid="advanced">
         <summary className="cursor-pointer font-semibold" data-testid="advanced-toggle">Advanced</summary>
         <div className="flex flex-col gap-2 mt-2 pl-2 border-l-2 border-body-400 dark:border-dark-200">
@@ -402,8 +412,12 @@ const RaidBestSetup: React.FC<{
   assumptions: BestSetupAssumptions,
   setAssumptions: (a: BestSetupAssumptions) => void,
   raidTabs: React.ReactNode,
+  notOwned: string[],
+  setNotOwned: (names: string[]) => void,
+  onlyOwned: boolean,
+  setOnlyOwned: (on: boolean) => void,
 }> = ({
-  raid, assumptions, setAssumptions, raidTabs,
+  raid, assumptions, setAssumptions, raidTabs, notOwned, setNotOwned, onlyOwned, setOnlyOwned,
 }) => {
   const [mode, setMode] = useState<'summary' | 'search' | 'plan'>('search');
   // phase 23: the time-model settings live in the Advanced box (they were the Routes tab's); the Plan tab uses them
@@ -476,6 +490,8 @@ const RaidBestSetup: React.FC<{
             ayakHint={ayakHint}
             timeSettings={timeSettings}
             onTimeSettings={setTimeSettings}
+            notOwned={notOwned}
+            onNotOwned={setNotOwned}
           />
 
           {mode === 'search' && (
@@ -539,11 +555,22 @@ const RaidBestSetup: React.FC<{
               phase={phase ?? phases[0]}
               drain={drain}
               assumptions={assumptions}
+              notOwned={notOwned}
+              onlyOwned={onlyOwned}
+              setOnlyOwned={setOnlyOwned}
             />
           )}
-          {mode === 'summary' && <SummaryView assumptions={assumptions} targets={raid.targets} />}
+          {mode === 'summary' && (
+            <SummaryView
+              assumptions={assumptions}
+              targets={raid.targets}
+              notOwned={notOwned}
+              onlyOwned={onlyOwned}
+              setOnlyOwned={setOnlyOwned}
+            />
+          )}
           {mode === 'plan' && drainButtons}
-          {mode === 'plan' && <PlanView assumptions={assumptions} drain={drain} raid={raid} timeSettings={timeSettings} />}
+          {mode === 'plan' && <PlanView assumptions={assumptions} drain={drain} raid={raid} timeSettings={timeSettings} notOwned={notOwned} />}
 
           <div className="text-[11px] text-gray-500 dark:text-gray-400">
             {`Same calculation as the main calculator. ${raid.hpNote} ${teamTimeLabel(teamDpsMultiplier(assumptions))}. Prayers: ${Object.values(GROUP_PRAYER).join(' / ')}. See docs/BEST_SETUP.md for caveats.`}
@@ -560,6 +587,21 @@ const BestSetup: React.FC = () => {
   const [assumptionsBy, setAssumptionsBy] = useState<Record<string, BestSetupAssumptions>>(
     () => Object.fromEntries(RAIDS.map((r) => [r.id, r.defaultAssumptions])),
   );
+  // phase 26: global, kept in localStorage (read after mount: the page is a static export)
+  const [notOwned, setNotOwnedState] = useState<string[]>([]);
+  const [onlyOwned, setOnlyOwnedState] = useState(false);
+  useEffect(() => {
+    setNotOwnedState(loadNotOwned());
+    setOnlyOwnedState(loadOnlyOwned());
+  }, []);
+  const setNotOwned = useCallback((names: string[]) => {
+    setNotOwnedState(names);
+    saveNotOwned(names);
+  }, []);
+  const setOnlyOwned = useCallback((on: boolean) => {
+    setOnlyOwnedState(on);
+    saveOnlyOwned(on);
+  }, []);
   const raid = raidConfig(raidId);
   const raidTabs = (
     <div className="flex gap-1" data-testid="raid-tabs">
@@ -583,6 +625,10 @@ const BestSetup: React.FC = () => {
       assumptions={assumptionsBy[raid.id]}
       setAssumptions={(a) => setAssumptionsBy((m) => ({ ...m, [raid.id]: a }))}
       raidTabs={raidTabs}
+      notOwned={notOwned}
+      setNotOwned={setNotOwned}
+      onlyOwned={onlyOwned}
+      setOnlyOwned={setOnlyOwned}
     />
   );
 };

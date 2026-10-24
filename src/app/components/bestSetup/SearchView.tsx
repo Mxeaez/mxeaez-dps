@@ -23,10 +23,13 @@ import { LoadoutIconRow, WeaponLine } from '@/app/components/bestSetup/ItemIcons
 import DPS_TEXT_CLASS from '@/app/components/bestSetup/styles';
 import DrainLineView from '@/app/components/bestSetup/DrainLineView';
 import { teamDpsMultiplier, teamTimeLabel } from '@/lib/raids';
+import { loadoutUsesUnowned, unownedLabel } from '@/lib/fracturedArchive/ownership';
 
 // "Search" tab of /best-setup (phase 9): full gear search over the pool in src/lib/fracturedArchive/searchCandidates.ts,
 // run in its own worker (src/worker/searchWorker.ts). Docs: docs/BEST_SETUP.md.
 // Phase 12: the default tab; runs automatically (debounced) when the page opens and whenever the inputs change.
+// Phase 26: rows that use an item on the "Items I don't own" list are greyed with a "uses: …" badge; "Only items I
+// own" searches the pool without them instead (OnlyOwnedToggle, shared with the Summary tab).
 
 /** Delay between the last input change and the automatic search. */
 export const AUTO_RUN_DEBOUNCE_MS = 300;
@@ -42,14 +45,34 @@ const fmtGain = (dps: number, base: number | undefined) => {
   return `${sign}${d.toFixed(3)} (${sign}${((d / base) * 100).toFixed(1)}%)`;
 };
 
+/** Phase 26: the "Only items I own" checkbox of the Search and Summary tabs (one shared, persisted setting). */
+export const OnlyOwnedToggle: React.FC<{ notOwned: string[], on: boolean, onChange: (on: boolean) => void }> = ({ notOwned, on, onChange }) => (
+  <label
+    htmlFor="bs-only-owned"
+    className={`flex items-center gap-1 ${notOwned.length ? '' : 'opacity-60'}`}
+    title={notOwned.length
+      ? `Off: search everything (the true best) and mark rows that use ${unownedLabel(notOwned)}. On: search only items you own.`
+      : 'Add items to "Items I don’t own" above first'}
+  >
+    <input id="bs-only-owned" type="checkbox" checked={on} data-testid="only-owned" onChange={(e) => onChange(e.target.checked)} />
+    Only items I own
+  </label>
+);
+
 const SearchView: React.FC<{
   targetKey: string,
   phase: string | undefined,
   drain: DrainStateId,
   assumptions: BestSetupAssumptions,
+  notOwned?: string[],
+  onlyOwned?: boolean,
+  setOnlyOwned?: (on: boolean) => void,
 }> = ({
-  targetKey, phase, drain, assumptions,
+  targetKey, phase, drain, assumptions, notOwned = [], onlyOwned = false, setOnlyOwned,
 }) => {
+  // phase 26: the list only changes the search itself with "Only items I own"; otherwise it only marks rows
+  const searchNotOwned = onlyOwned ? notOwned : [];
+  const searchNotOwnedKey = JSON.stringify(searchNotOwned);
   const [styles, setStyles] = useState<StyleFilter>('all');
   // phase 18: the TTK shown assumes this many players at the user's DPS
   const teamMult = teamDpsMultiplier(assumptions);
@@ -90,6 +113,7 @@ const SearchView: React.FC<{
           targetKey, phase, drain, styles,
         },
         assumptions,
+        ...(searchNotOwned.length ? { notOwned: searchNotOwned } : {}),
       },
       setProgress,
     );
@@ -132,7 +156,7 @@ const SearchView: React.FC<{
       if (autoTimer.current) clearTimeout(autoTimer.current);
       autoTimer.current = null;
     };
-  }, [targetKey, phase, drain, assumptions, styles, cancel]);
+  }, [targetKey, phase, drain, assumptions, styles, cancel, searchNotOwnedKey]);
 
   const onLoad = (row: SearchRow) => {
     const { monster } = buildTargetMonster(findTarget(targetKey), phase, drain, assumptions);
@@ -170,6 +194,7 @@ const SearchView: React.FC<{
           <input id="bs-search-perweapon" type="checkbox" checked={perWeapon} onChange={(e) => setPerWeapon(e.target.checked)} />
           Best per weapon
         </label>
+        {setOnlyOwned && <OnlyOwnedToggle notOwned={notOwned} on={onlyOwned} onChange={setOnlyOwned} />}
         <span className="text-[11px] text-gray-500 dark:text-gray-400">
           Searches the end-game pool in searchCandidates.ts (all slots, every weapon/ammo/style/spell) for this boss and drain state.
         </span>
@@ -241,31 +266,43 @@ const SearchView: React.FC<{
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r, i) => (
-                  <tr key={`${r.weaponLabel}|${loadoutSummary(r)}|${r.styleLabel}`} data-testid="search-row">
-                    <td className="px-2 py-1">{i + 1}</td>
-                    <td className={`px-2 py-1 text-right font-mono ${DPS_TEXT_CLASS}`} data-testid="dps">{fmt(r.dps)}</td>
-                    <td className="px-2 py-1 text-right font-mono text-xs" data-testid="gain">{fmtGain(r.dps, baseDps)}</td>
-                    <td className="px-2 py-1 text-right font-mono" data-testid="ttk">{i === 0 ? fmtTtk(r.ttk === null ? null : r.ttk / teamMult) : ''}</td>
-                    <td className="px-2 py-1 text-right font-mono" data-testid="maxhit">{r.maxHit}</td>
-                    <td className="px-2 py-1 text-right font-mono">{fmtAcc(r.accuracy)}</td>
-                    <td className="px-2 py-1 text-xs">
-                      <div className="capitalize">{r.group}</div>
-                      <div>{r.styleLabel}</div>
-                    </td>
-                    <td className="px-2 py-1">
-                      <WeaponLine parts={searchRowWeaponParts(r)} className="font-bold text-sm" />
-                      <LoadoutIconRow icons={searchRowIcons(r)} />
-                      <div className="text-[11px] text-gray-500 dark:text-gray-400">{loadoutSummary(r)}</div>
-                      <div className="text-[10px] text-gray-400">{`seed (start of the ascent): ${r.seed}`}</div>
-                    </td>
-                    <td className="px-2 py-1">
-                      <button type="button" className="btn text-xs whitespace-nowrap" onClick={() => onLoad(r)}>
-                        Load into calculator
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {rows.map((r, i) => {
+                  const unowned = loadoutUsesUnowned(r.equipment, notOwned);
+                  return (
+                    <tr
+                      key={`${r.weaponLabel}|${loadoutSummary(r)}|${r.styleLabel}`}
+                      data-testid="search-row"
+                      data-unowned={unowned.length ? unownedLabel(unowned) : undefined}
+                      className={unowned.length ? 'opacity-50 grayscale' : undefined}
+                      title={unowned.length ? `Uses items you don't own: ${unownedLabel(unowned)}` : undefined}
+                    >
+                      <td className="px-2 py-1">{i + 1}</td>
+                      <td className={`px-2 py-1 text-right font-mono ${DPS_TEXT_CLASS}`} data-testid="dps">{fmt(r.dps)}</td>
+                      <td className="px-2 py-1 text-right font-mono text-xs" data-testid="gain">{fmtGain(r.dps, baseDps)}</td>
+                      <td className="px-2 py-1 text-right font-mono" data-testid="ttk">{i === 0 ? fmtTtk(r.ttk === null ? null : r.ttk / teamMult) : ''}</td>
+                      <td className="px-2 py-1 text-right font-mono" data-testid="maxhit">{r.maxHit}</td>
+                      <td className="px-2 py-1 text-right font-mono">{fmtAcc(r.accuracy)}</td>
+                      <td className="px-2 py-1 text-xs">
+                        <div className="capitalize">{r.group}</div>
+                        <div>{r.styleLabel}</div>
+                      </td>
+                      <td className="px-2 py-1">
+                        <WeaponLine parts={searchRowWeaponParts(r)} className="font-bold text-sm" />
+                        {unowned.length > 0 && (
+                        <span className="inline-block text-[10px] px-1 rounded bg-red-600 text-white" data-testid="unowned-badge">{`uses: ${unownedLabel(unowned)}`}</span>
+                        )}
+                        <LoadoutIconRow icons={searchRowIcons(r)} />
+                        <div className="text-[11px] text-gray-500 dark:text-gray-400">{loadoutSummary(r)}</div>
+                        <div className="text-[10px] text-gray-400">{`seed (start of the ascent): ${r.seed}`}</div>
+                      </td>
+                      <td className="px-2 py-1">
+                        <button type="button" className="btn text-xs whitespace-nowrap" onClick={() => onLoad(r)}>
+                          Load into calculator
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

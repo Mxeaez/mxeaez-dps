@@ -42,6 +42,9 @@ import { raidBase } from '@/lib/raids/base';
 import { TimeSettings } from '@/lib/raids/types';
 import { DEFAULT_FIGHT_SECONDS, SPEC_WEAPONS, SpecWeapon } from '@/lib/fracturedArchive/specs';
 import { FA_PLAN_DEFAULTS } from '@/lib/raids/planDefaults';
+import {
+  filterPresets, isOwned, normaliseNotOwned, unownedBase,
+} from '@/lib/fracturedArchive/ownership';
 
 /**
  * Phase 17: raid planner ("Plan" tab of /best-setup). Pure and React-free: runs in the search worker
@@ -693,7 +696,25 @@ export interface PlanInputs {
   totalSlots?: number;
   /** Search rows already known, by phase key (the UI's session cache); missing phases are searched. */
   searchRows?: Record<string, SearchRow[]>;
+  /**
+   * Phase 26: "Items I don't own" (ownership.ts). Always honoured: unowned items leave the search pool, presets that
+   * use one are dropped, unowned pinned items are dropped (with a notice). `searchRows` must come from searches with the
+   * same list.
+   */
+  notOwned?: string[];
 }
+
+/** Phase 26: the pinned ids without the unowned ones (and the dropped ones). Hearts are matched by their name too. */
+export const ownedPinned = (pinned: number[], notOwned: string[] = []): { kept: number[], dropped: number[] } => {
+  const kept: number[] = [];
+  const dropped: number[] = [];
+  for (const id of pinned) {
+    const name = heartById(id)?.name ?? equipmentById(id)?.name;
+    if (name && !isOwned(name, notOwned)) dropped.push(id);
+    else kept.push(id);
+  }
+  return { kept, dropped };
+};
 
 /** Candidate-pool sizes and test hooks. Defaults keep the default plan within ~30 s in the browser. */
 export interface PlanTuning {
@@ -785,6 +806,12 @@ export interface PlanResult {
    * listed only when no kit loadout is magic (it boosts magic loadouts; it is never worn).
    */
   unusedCarried: PlanItem[];
+  /** Phase 26: the "Items I don't own" list the plan honoured (empty = max gear). */
+  excluded: string[];
+  /** Phase 26: pinned items dropped because they're on the list. */
+  droppedPinned: PlanItem[];
+  /** Phase 26: what the list changed beyond the pool (dropped pinned items, unowned spec weapons in "My specs"). */
+  ownershipNotices: string[];
   /** Selected search rows per phase key (for the UI cache). */
   searchRows: Record<string, SearchRow[]>;
   stats: {
@@ -864,7 +891,10 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
   const t0 = Date.now();
   const cfg = { ...PLAN_DEFAULTS, ...tuning };
   const { drain, settings, basePlayer } = inputs;
-  const assumptions = planAssumptions(inputs.assumptions, inputs.supplies, inputs.pinned);
+  // phase 26: the "Items I don't own" list (pool, presets, pinned items)
+  const notOwned = normaliseNotOwned(inputs.notOwned);
+  const { kept: pinnedIds, dropped: droppedIds } = ownedPinned(inputs.pinned, notOwned);
+  const assumptions = planAssumptions(inputs.assumptions, inputs.supplies, pinnedIds);
   const total = inputs.totalSlots ?? INVENTORY_SLOTS;
   const cancelled = () => hooks.shouldCancel?.() === true;
   const progress = (p: PlanProgress) => hooks.onProgress?.(p);
@@ -880,7 +910,12 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
 
   const specItems = carriedSpecWeaponNames(assumptions.mySpecs).map(planItemByName);
   // equipment + hearts (a heart is never worn: always one inventory slot, counted once)
-  const pinnedItems = inputs.pinned.map(pinnedPlanItem).filter((p): p is PlanItem => !!p);
+  const pinnedItems = pinnedIds.map(pinnedPlanItem).filter((p): p is PlanItem => !!p);
+  const droppedPinned = droppedIds.map(pinnedPlanItem).filter((p): p is PlanItem => !!p);
+  const ownershipNotices = [
+    ...droppedPinned.map((it) => `Dropped ${it.name} from "Items I always bring": on your "Items I don't own" list.`),
+    ...specItems.filter((it) => !isOwned(it.name, notOwned)).map((it) => `${it.name} is in "My specs" but on your "Items I don't own" list (${unownedBase(it.name, notOwned)}): untick it in My specs.`),
+  ];
   // phase 21: the raid's own items (ToB: Dawnbringer) cost no slot and are free to put on any loadout
   const raidSupplied = raidSuppliedItemIds(assumptions);
   const raidSuppliedSet = new Set(raidSupplied);
@@ -902,6 +937,9 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     rejected: [],
     alternatives: [],
     unusedCarried: [],
+    excluded: notOwned,
+    droppedPinned,
+    ownershipNotices,
     unusedSupplies: [],
     matrixDps: {},
     searchRows,
@@ -942,6 +980,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       targetKey: t.targetKey, phase: t.phase, drain, styles: 'all',
     }, assumptions, {
       ...(tuning.search || {}),
+      notOwned,
       topN: SEARCH_TOP_N,
       shouldCancel: hooks.shouldCancel,
       onProgress: (search) => progress({
@@ -976,7 +1015,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
   };
   let nPreset = 0;
   let nSearch = 0;
-  for (const preset of tuning.presets || raidBase(assumptions.raid).presets) {
+  for (const preset of filterPresets(tuning.presets || raidBase(assumptions.raid).presets, notOwned)) {
     let equipment: PlanEquipment;
     try {
       equipment = presetEquipment(preset);
@@ -1478,6 +1517,9 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       .filter((it) => (heartById(it.id)
         ? !kit.some((c) => c.group === 'magic')
         : !kit.some((c) => equipmentItemIds(c.equipment).includes(it.id)))),
+    excluded: notOwned,
+    droppedPinned,
+    ownershipNotices,
     searchRows,
     stats: {
       searches: missing.length,

@@ -19,6 +19,7 @@ import {
   heartByPotion,
   INVENTORY_SLOTS,
   InventoryCell,
+  ownedPinned,
   PlanCandidate,
   planItemByName,
   planAssumptions,
@@ -57,6 +58,7 @@ import legsSlot from '@/public/img/slots/legs.png';
 import handsSlot from '@/public/img/slots/hands.png';
 import feetSlot from '@/public/img/slots/feet.png';
 import ringSlot from '@/public/img/slots/ring.png';
+import { isOwned, unownedLabel } from '@/lib/fracturedArchive/ownership';
 
 // "Plan" tab of /best-setup (phase 17): the kit (worn set + switch items) that minimises the route time within 28
 // inventory slots (src/lib/fracturedArchive/planner.ts), run in the search worker (RAID_PLAN). The per-phase search rows
@@ -65,8 +67,14 @@ import ringSlot from '@/public/img/slots/ring.png';
 // Phase 23: the Routes / Encounters tab is merged in: the route comparison table (every route, or the raid's single
 // route, with per-encounter times) is under the per-encounter table; the time-model settings come from Advanced.
 
+// Phase 26: the plan always honours "Items I don't own": the list is part of the search-row cache key, unowned pinned
+// items are dropped (shown struck through). "Best possible with everything" = the same plan with no list, from
+// `maxTotals` (filled by every plan run without a list) or on demand ("compare with max", a second plan run).
+
 const searchCache = new Map<string, SearchRow[]>();
-const cachePrefix = (a: BestSetupAssumptions, drain: DrainStateId) => `${JSON.stringify(a)}|${drain}|`;
+const cachePrefix = (a: BestSetupAssumptions, drain: DrainStateId, notOwned: string[] = []) => `${JSON.stringify(a)}|${drain}|${notOwned.length ? `${JSON.stringify([...notOwned].sort())}|` : ''}`;
+/** Route totals (s) of plans without an "Items I don't own" list, by everything else the plan depends on. */
+const maxTotals = new Map<string, number>();
 
 const DEBOUNCE_MS = 500;
 
@@ -235,10 +243,12 @@ const PhaseRows: React.FC<{ phases: PhaseTime[], encounter: string }> = ({ phase
 );
 
 const PlanView: React.FC<{
-  assumptions: BestSetupAssumptions, drain: DrainStateId, raid: RaidConfig, timeSettings?: TimeSettings,
+  assumptions: BestSetupAssumptions, drain: DrainStateId, raid: RaidConfig, timeSettings?: TimeSettings, notOwned?: string[],
 }> = ({
-  assumptions, drain, raid, timeSettings,
+  assumptions, drain, raid, timeSettings, notOwned: notOwnedProp,
 }) => {
+  const notOwnedKey = JSON.stringify(notOwnedProp ?? []);
+  const notOwned = useMemo(() => JSON.parse(notOwnedKey) as string[], [notOwnedKey]);
   const settings = timeSettings ?? raid.defaultTimeSettings;
   const routes = useMemo(() => enumerateRoutes(raid.time.routeSlots, raid.time.labels), [raid]);
   // phase 21: per-raid defaults (src/lib/raids/planDefaults.ts); the view is remounted on a raid change
@@ -270,6 +280,69 @@ const PlanView: React.FC<{
   const [error, setError] = useState<string | null>(null);
   const [runId, setRunId] = useState(0);
   const job = useRef<PlanJob | null>(null);
+  // phase 26: the pinned items the plan keeps (unowned ones are dropped); "compare with max"
+  const keptPinned = useMemo(() => ownedPinned(pinned, notOwned).kept, [pinned, notOwned]);
+  const maxKey = `${raid.id}|${JSON.stringify(assumptions)}|${drain}|${route}|${JSON.stringify(supplies)}|${nonItem}|${JSON.stringify(pinned)}|${JSON.stringify(settings)}`;
+  const [maxSeconds, setMaxSeconds] = useState<number | undefined>(undefined);
+  const [comparing, setComparing] = useState(false);
+  const compareJob = useRef<PlanJob | null>(null);
+  useEffect(() => {
+    compareJob.current?.cancel();
+    compareJob.current = null;
+    setComparing(false);
+    setMaxSeconds(maxTotals.get(maxKey));
+  }, [maxKey]);
+  useEffect(() => () => compareJob.current?.cancel(), []);
+
+  const planData = (list: string[]) => {
+    const prefix = cachePrefix(planAssumptions(assumptions, supplies, ownedPinned(pinned, list).kept), drain, list);
+    const searchRows: Record<string, SearchRow[]> = {};
+    searchCache.forEach((v, k) => {
+      if (k.startsWith(prefix)) searchRows[k.slice(prefix.length)] = v;
+    });
+    return {
+      prefix,
+      data: {
+        basePlayer: generateEmptyPlayer(),
+        assumptions,
+        drain,
+        settings,
+        route,
+        pinned,
+        nonItemSlots: nonItem,
+        supplies,
+        searchRows,
+        ...(list.length ? { notOwned: list } : {}),
+      },
+    };
+  };
+  const planDataRef = useRef(planData);
+  planDataRef.current = planData;
+
+  const compareWithMax = () => {
+    compareJob.current?.cancel();
+    const key = maxKey;
+    const { prefix, data } = planData([]);
+    setComparing(true);
+    const j = startRaidPlan(data, () => {});
+    compareJob.current = j;
+    j.promise.then((r) => {
+      if (compareJob.current !== j) return;
+      Object.entries(r.searchRows).forEach(([k, v]) => searchCache.set(prefix + k, v));
+      const best = r.comparison && r.planned >= 0 ? r.comparison.routes[r.planned].seconds : undefined;
+      if (typeof best === 'number') {
+        maxTotals.set(key, best);
+        setMaxSeconds(best);
+      }
+      setComparing(false);
+      compareJob.current = null;
+    }).catch(() => {
+      if (compareJob.current === j) {
+        setComparing(false);
+        compareJob.current = null;
+      }
+    });
+  };
 
   const cancel = useCallback(() => {
     job.current?.cancel();
@@ -282,26 +355,18 @@ const PlanView: React.FC<{
     cancel();
     setError(null);
     const timer = setTimeout(() => {
-      const prefix = cachePrefix(planAssumptions(assumptions, supplies, pinned), drain);
-      const searchRows: Record<string, SearchRow[]> = {};
-      searchCache.forEach((v, k) => {
-        if (k.startsWith(prefix)) searchRows[k.slice(prefix.length)] = v;
-      });
+      const { prefix, data } = planDataRef.current(notOwned);
+      const key = maxKey;
       setRunning(true);
-      const j = startRaidPlan({
-        basePlayer: generateEmptyPlayer(),
-        assumptions,
-        drain,
-        settings,
-        route,
-        pinned,
-        nonItemSlots: nonItem,
-        supplies,
-        searchRows,
-      }, setProgress);
+      const j = startRaidPlan(data, setProgress);
       job.current = j;
       j.promise.then((r) => {
         Object.entries(r.searchRows).forEach(([k, v]) => searchCache.set(prefix + k, v));
+        const total = r.comparison && r.planned >= 0 ? r.comparison.routes[r.planned].seconds : undefined;
+        if (!notOwned.length && !r.cancelled && typeof total === 'number') {
+          maxTotals.set(key, total);
+          setMaxSeconds(total);
+        }
         setResult(r.cancelled ? null : r);
         setRunning(false);
         setProgress(null);
@@ -318,7 +383,7 @@ const PlanView: React.FC<{
       clearTimeout(timer);
       cancel();
     };
-  }, [assumptions, drain, route, supplies, nonItem, pinned, runId, cancel, settings]);
+  }, [assumptions, drain, route, supplies, nonItem, pinned, runId, cancel, settings, notOwned, maxKey]);
 
   const planned = result && result.comparison && result.planned >= 0 ? result.comparison.routes[result.planned] : null;
   const firstPhase = planned?.encounters[0]?.phases[0];
@@ -327,19 +392,19 @@ const PlanView: React.FC<{
     if (!planned || !firstPhase) return null;
     const enc = planned.encounters[0];
     return buildTargetMonster(findTarget(firstPhase.targetKey), firstPhase.phase, drain, {
-      ...planAssumptions(assumptions, supplies, pinned), fightSeconds: enc.drainFightSeconds ?? assumptions.fightSeconds,
+      ...planAssumptions(assumptions, supplies, keptPinned), fightSeconds: enc.drainFightSeconds ?? assumptions.fightSeconds,
     }).monster;
   };
   const loadWorn = () => {
     const monster = monsterForFirstPhase();
     if (!result || !monster) return;
-    const player = planLoadoutToPlayer(generateEmptyPlayer(), result.kit[0], monster, planAssumptions(assumptions, supplies, pinned));
+    const player = planLoadoutToPlayer(generateEmptyPlayer(), result.kit[0], monster, planAssumptions(assumptions, supplies, keptPinned));
     openInCalculator(player, monster).catch(console.error);
   };
   const loadAll = () => {
     const monster = monsterForFirstPhase();
     if (!result || !monster) return;
-    const players = result.kit.map((c) => planLoadoutToPlayer(generateEmptyPlayer(), c, monster, planAssumptions(assumptions, supplies, pinned)));
+    const players = result.kit.map((c) => planLoadoutToPlayer(generateEmptyPlayer(), c, monster, planAssumptions(assumptions, supplies, keptPinned)));
     openLoadoutsInCalculator(players, monster).catch(console.error);
   };
 
@@ -412,13 +477,18 @@ const PlanView: React.FC<{
             <span className="font-semibold" title="Always in the inventory (or worn, if a loadout uses them); free to use in any loadout">Items I always bring:</span>
             {pinned.map((id) => {
               const name = pinnedName(id);
+              const unowned = !!name && !isOwned(name, notOwned);
+              let title: string | undefined;
+              if (unowned) title = 'On your "Items I don’t own" list: the plan leaves it out';
+              else if (heartById(id)) title = 'Magic boost for every magic loadout (reusable: one slot for the whole raid)';
               return (
                 <span
                   key={id}
-                  className="flex items-center gap-1 border border-body-400 dark:border-dark-200 rounded px-1"
+                  className={`flex items-center gap-1 border border-body-400 dark:border-dark-200 rounded px-1 ${unowned ? 'line-through opacity-50' : ''}`}
                   data-testid="pinned-item"
                   data-heart={heartById(id) ? 'true' : undefined}
-                  title={heartById(id) ? 'Magic boost for every magic loadout (reusable: one slot for the whole raid)' : undefined}
+                  data-unowned={unowned ? 'true' : undefined}
+                  title={title}
                 >
                   <ItemIcon name={name ?? String(id)} src={itemUrl(id)} size={18} />
                   {name ?? id}
@@ -469,6 +539,27 @@ const PlanView: React.FC<{
 
       {result && result.slots && planned && (
         <div className="flex flex-col gap-3" data-testid="plan-result">
+          {result.excluded.length > 0 && (
+            <div className="text-xs flex flex-col gap-0.5 px-2 py-1 rounded border border-red-300 bg-red-50 dark:bg-red-900/20" data-testid="plan-ownership">
+              <div data-testid="plan-excluded">
+                <span className="font-semibold">Excluded: </span>
+                {unownedLabel(result.excluded)}
+                <span className="text-gray-500 dark:text-gray-400"> (Items I don&apos;t own)</span>
+              </div>
+              <div data-testid="plan-max-compare">
+                {maxSeconds !== undefined ? (
+                  <span data-testid="plan-max-line">
+                    {`Best possible with everything: ${formatDuration(maxSeconds)} (yours: ${formatDuration(secs(planned.seconds))})`}
+                  </span>
+                ) : (
+                  <button type="button" className="underline" disabled={comparing} onClick={compareWithMax} data-testid="plan-compare-max" title="Runs the same plan again assuming max gear (about as long as this plan took)">
+                    {comparing ? 'Comparing with max gear…' : 'compare with max'}
+                  </button>
+                )}
+              </div>
+              {result.ownershipNotices.map((n) => <div key={n} className="text-orange-700 dark:text-orange-300" data-testid="plan-ownership-notice">{n}</div>)}
+            </div>
+          )}
           <div className="flex flex-wrap items-center gap-3">
             <div className="text-sm" data-testid="plan-headline">
               <span className="font-semibold">{planned.route.label}</span>

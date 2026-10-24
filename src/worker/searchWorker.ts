@@ -68,8 +68,11 @@ self.onmessage = (evt: MessageEvent<string>) => {
     if (req.type !== WorkerRequestType.BEST_SETUP_SEARCH) {
       throw new Error(`Unsupported request type ${req.type}`);
     }
-    const { basePlayer, query, assumptions } = req.data;
+    const {
+      basePlayer, query, assumptions, notOwned,
+    } = req.data;
     res.payload = runGearSearch(basePlayer, query, assumptions, {
+      notOwned,
       onProgress: (progress) => {
         const msg: BestSetupSearchProgressMessage = { type: WorkerRequestType.BEST_SETUP_SEARCH, sequenceId, progress };
         self.postMessage(JSON.stringify(msg, WORKER_JSON_REPLACER));
