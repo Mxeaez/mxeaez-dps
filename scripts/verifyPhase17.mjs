@@ -63,7 +63,8 @@ const main = async () => {
   await waitIdle(page);
   const runSeconds = (Date.now() - t0) / 1000;
   console.log(`     first run ${runSeconds.toFixed(1)} s (incl. 0.5 s debounce)`);
-  check(runSeconds <= 45, `first run within 45 s in headless dev (target ≤ 30 s): ${runSeconds.toFixed(1)} s`);
+  // phase 23 review: ≤ 60 s — the machine is shared (the same plan takes 25-76 s in Jest depending on load)
+  check(runSeconds <= 60, `first run within 60 s in headless dev (target ≤ 30 s on an idle machine): ${runSeconds.toFixed(1)} s`);
 
   const p = await readPlan(page);
   console.log(`     ${p.headline}\n     ${p.stats}`);

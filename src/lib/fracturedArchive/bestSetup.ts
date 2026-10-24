@@ -10,7 +10,7 @@ import { MONSTER_PHASES_BY_ID } from '@/lib/constants';
 import { getCombatStylesForCategory } from '@/utils';
 import { DefenceReductions } from '@/lib/fracturedArchive/drains';
 import {
-  DEFAULT_FIGHT_SECONDS, drainModel, PlanLabel, specAttempts,
+  DEFAULT_FIGHT_SECONDS, drainModel, PlanLabel, planLabelText, specAttempts,
 } from '@/lib/fracturedArchive/specs';
 import {
   carriersFromCounts, describeAttempts, formatProbability, soloSpecPlan, teamSpecPlan,
@@ -19,7 +19,7 @@ import { DrainLine, drainLineFromAttempts } from '@/lib/fracturedArchive/drainLi
 import { minimalPlayer } from '@/lib/fracturedArchive/hittable';
 import { isOutOfMeleeReach } from '@/lib/fracturedArchive/immunities';
 import { BestSetupTarget } from '@/lib/raids/types';
-import { ALL_RAID_TARGETS, raidBase, teamDpsMultiplier } from '@/lib/raids/base';
+import { ALL_RAID_TARGETS, raidBase } from '@/lib/raids/base';
 import { BEST_SETUP_TARGETS } from '@/lib/fracturedArchive/targets';
 import {
   BestSetupAssumptions, PRESETS, PresetDef, StyleGroup,
@@ -128,20 +128,26 @@ const withInputs = (m: Monster, inputs: Partial<Monster['inputs']>): Monster => 
 export const AUTO_FIGHT_SECONDS_RANGE = { min: 15, max: 600 };
 
 const autoFightCache = new Map<string, number>();
+
+/** hp ÷ (players × dps), rounded and clamped to {@link AUTO_FIGHT_SECONDS_RANGE}; 90 s when nothing deals damage. */
+export const fightSecondsFrom = (hp: number, dps: number, players: number): number => (dps > 0 && hp > 0
+  ? Math.min(AUTO_FIGHT_SECONDS_RANGE.max, Math.max(AUTO_FIGHT_SECONDS_RANGE.min, Math.round(hp / (dps * Math.max(1, players)))))
+  : DEFAULT_FIGHT_SECONDS);
 const NO_STYLE = { name: '', type: null, stance: null } as Player['style'];
 
 /**
  * Phase 23: the fight length for the spec-energy budget when the assumptions don't give one (Search, Summary, the
- * calculator panels): the boss / phase's undrained time to kill = hp ÷ (best preset DPS × team-DPS multiplier), the
- * best preset of the raid's presets (every style) against the undrained monster; one untimed pass, like the time
- * model's first pass. Rounded, clamped to {@link AUTO_FIGHT_SECONDS_RANGE}; {@link DEFAULT_FIGHT_SECONDS} when no
- * preset deals damage.
+ * calculator panels): the boss / phase's undrained time to kill with the whole party at your DPS = hp ÷ (party size ×
+ * best preset DPS), the best of the raid's presets (every style) against the undrained monster; one untimed pass, like
+ * the time model's first pass. Review fix: the party size, not the team-DPS multiplier (FA's ×1 timed a 6-player
+ * fight as you alone and inflated the budget). Per boss / phase (Search rows share it), not per encounter. Rounded,
+ * clamped to {@link AUTO_FIGHT_SECONDS_RANGE}; {@link DEFAULT_FIGHT_SECONDS} when no preset deals damage.
  */
 export const autoFightSeconds = (m: Monster, assumptions: BestSetupAssumptions): number => {
   const undrainedM = withInputs(m, { defenceReductions: { ...INITIAL_MONSTER_INPUTS.defenceReductions } });
-  const mult = teamDpsMultiplier(assumptions);
+  const players = Math.max(1, Math.trunc(m.inputs.partySize || assumptions.partySize || 1));
   const key = JSON.stringify([
-    m.id, m.name, m.version, undrainedM.inputs, mult, assumptions.raid, assumptions.potions, assumptions.useZeal,
+    m.id, m.name, m.version, undrainedM.inputs, players, assumptions.raid, assumptions.potions, assumptions.useZeal,
     assumptions.elementalFragments, assumptions.withoutPotion,
   ]);
   const cached = autoFightCache.get(key);
@@ -153,9 +159,7 @@ export const autoFightSeconds = (m: Monster, assumptions: BestSetupAssumptions):
     const r = safeEvaluatePreset(minimalPlayer(null, NO_STYLE), p, undrainedM, assumptions, true, false);
     if (r.dps > best) best = r.dps;
   }
-  const t = best > 0 && hp > 0
-    ? Math.min(AUTO_FIGHT_SECONDS_RANGE.max, Math.max(AUTO_FIGHT_SECONDS_RANGE.min, Math.round(hp / (best * mult))))
-    : DEFAULT_FIGHT_SECONDS;
+  const t = fightSecondsFrom(hp, best, players);
   autoFightCache.set(key, t);
   return t;
 };
@@ -176,6 +180,7 @@ export const drainStateFor = (m: Monster, id: DrainStateId, assumptions: BestSet
   let line: DrainLine | undefined;
   let attemptsMade: Parameters<typeof drainLineFromAttempts>[0] = [];
   let budget: DrainLine['budget'];
+  let wanted: Parameters<typeof drainLineFromAttempts>[5] = {};
   const fightComputed = id !== 'none' ? assumptions.fightSeconds === undefined : undefined;
   if (id !== 'none') {
     const model = drainModel(m, assumptions);
@@ -198,8 +203,10 @@ export const drainStateFor = (m: Monster, id: DrainStateId, assumptions: BestSet
       label = p.needed.label;
       plan = `Solo: ${fightComputed ? `fight ≈ ${fightSeconds} s (computed); ` : ''}${p.text}`;
       attemptsMade = [...p.attempts, ...Array(p.ayakAttempts).fill('ayak')];
-      specs = `${describeAttempts(attemptsMade)} (P floor ${formatProbability(pFloor)}, ${label})`;
+      specs = `${describeAttempts(attemptsMade)} (P floor ${formatProbability(pFloor)}, ${planLabelText(label!)})`;
       budget = { fightSeconds, computed: !!fightComputed, specs: specAttempts(p.budget, 50) };
+      // review fix: show the Ayak specs asked for even when none fit ("Ayak ×0 (no energy)")
+      wanted = { ayak: model.canHit.ayak && model.magicDef > 0 ? Math.max(0, Math.floor(mySpecs.ayak)) : 0 };
     } else {
       const p = teamSpecPlan(model, {
         partySize: assumptions.partySize,
@@ -218,7 +225,7 @@ export const drainStateFor = (m: Monster, id: DrainStateId, assumptions: BestSet
   const after = { defAfter: scaled.skills.def, magicDefAfter: scaled.defensive.magic };
   if (id !== 'none') {
     const model = drainModel(m, assumptions);
-    line = drainLineFromAttempts(attemptsMade, model.hitChance, after, plan, budget);
+    line = drainLineFromAttempts(attemptsMade, model.hitChance, after, plan, budget, wanted);
   }
   return {
     id,

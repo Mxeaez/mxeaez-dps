@@ -41,7 +41,9 @@ const FracturedArchiveDrainPresets: React.FC = observer(() => {
   let ayakSpecs: number | undefined;
   try {
     const model = drainModel(m);
-    hit = { ...model.hitChance, accursed: specProfile(m, 'accursed').hitChance };
+    // review fix: the accursed profile against the undrained monster too (drainModel resets the drains itself)
+    const undrained = { ...m, inputs: { ...m.inputs, defenceReductions: drainPresetReductions(m, 'none') } };
+    hit = { ...model.hitChance, accursed: specProfile(undrained, 'accursed').hitChance };
     ayakSpecs = ayakSpecsToZero(m, model.expectedDamage.ayak);
   } catch {
     // no hit chances (e.g. a monster the spec model can't build): the icons still show
@@ -75,7 +77,12 @@ const FracturedArchiveDrainPresets: React.FC = observer(() => {
         onClick={() => apply(p)}
       >
         {p.options && plan && !blocked
-          ? <DrainLineView line={lineOf(plan, tooltip)} compact />
+          ? (
+            <span className="inline-flex items-center gap-1">
+              <span>{`${text}:`}</span>
+              <DrainLineView line={lineOf(plan, tooltip)} compact />
+            </span>
+          )
           : text}
       </button>
     );

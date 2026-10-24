@@ -34,7 +34,7 @@ import { ItemIcon } from '@/app/components/bestSetup/ItemIcons';
 // column); Summary is search-based (SummaryView.tsx). Phase 16: "Routes" tab (RoutesView.tsx, raid time model).
 // Phase 17: "Plan" tab (PlanView.tsx, kit planner), second tab: Search, Plan, Routes, Summary.
 // Phase 18: raid tabs (Fractured Archive, Tombs of Amascut; src/lib/raids) at the top; each raid keeps its own
-// assumptions, and the four tabs below work from that raid's config (ToA's routes tab is "Encounters").
+// assumptions, and the tabs below work from that raid's config.
 // Phase 23: simple view + Advanced expander; the Routes / Encounters tab is merged into Plan (tabs: Search, Plan,
 // Summary); no fight-length input (computed per boss, bestSetup.ts autoFightSeconds).
 // Docs: docs/BEST_SETUP.md.
@@ -65,11 +65,11 @@ const LIGHTBEARER = 'Lightbearer';
 /** Phase 23: the "?" glossary (plain-language meaning of the terms on this page). */
 export const GLOSSARY: [string, string][] = [
   ['Drains', 'None: no Defence / Magic defence drains. Solo: only your own specs ("My specs"), within the spec energy you have in that fight. Team: the team\'s spec carriers (Advanced) each spec twice at the start.'],
-  ['Floor', 'The lowest Defence a boss can be drained to (e.g. Archive Guardian 156). A plan "reaches the floor" when the chance of getting there is at least the confidence set in Advanced (95%).'],
+  ['Floor', 'The lowest Defence a boss can be drained to (e.g. Archive Guardian 156). The Defence floor is used when its chance is at least the % set in Advanced (95%).'],
   ['First round', 'The specs everyone does at the start of the fight with full (100%) energy: 2 specs each for 50% weapons.'],
-  ['Hit chance', 'The % under each drain icon: the chance one spec lands its drain (from the calculator, against the undrained boss).'],
-  ['Fight length', 'Not an input any more: the Solo energy budget uses the boss\'s undrained time to kill with the best preset (shown as "fight ≈ N s → M specs"); the Plan tab uses each encounter\'s own time.'],
-  ['Team DPS ×', 'How many players are assumed to deal your DPS when HP is turned into time. Fractured Archive: 1 (how its HP scales with party size is unknown, so times are you alone); ToA / CoX / ToB: the party size (their HP scales with it).'],
+  ['Hit chance', 'The "77% land" under each drain icon: the chance one spec lands its drain (from the calculator, against the undrained boss). "×0 (no energy)": specs you asked for that your spec energy doesn\'t cover.'],
+  ['Fight length (computed)', 'The boss\'s time to kill without drains, using the best preset, with the whole party at your DPS. It sets your Solo spec energy (shown as "fight ≈ N s → M specs"); the Plan tab uses each encounter\'s own time.'],
+  ['Players assumed at your DPS', 'How many players are assumed to deal your DPS when HP is turned into time (Advanced). Fractured Archive: 1 (how its HP scales with party size is unknown, so times are you alone); ToA / CoX / ToB: the party size (their HP scales with it).'],
   ['Carriers', 'Teammates who bring a drain weapon and spec it at the start (Team drains). The party size above is shared; carriers beyond it don\'t count.'],
 ];
 
@@ -340,7 +340,7 @@ const AssumptionsBox: React.FC<{
             )}
           </div>
           <label htmlFor="bs-threshold" className="flex items-center gap-1" title="Drain plans are ranked at the Defence floor only when they are this likely to get there (Team: from the first round of specs; Solo: with your specs). Below it, the ranking uses the Defence you can expect on average">
-            Count the floor as reached when the first round&apos;s chance is ≥
+            Use the Defence floor when its chance is ≥
             <input
               id="bs-threshold"
               type="number"
@@ -423,8 +423,13 @@ const RaidBestSetup: React.FC<{
     const model = drainModel(monster, assumptions);
     const profile = specProfile(monster, 'ayak', undefined, assumptions);
     if (!profile.canHit) return `(can't hit ${target.label})`;
-    const drained = ayakExpectedDrain(profile, assumptions.mySpecs.ayak, model.magicDef);
-    return `≈ ${drained.toFixed(0)} magic def drained on ${target.label} (of ${model.magicDef}; ${(profile.hitChance * 100).toFixed(0)}% × ${profile.expectedDamageOnHit.toFixed(1)} per spec)`;
+    // review fix: the Ayak specs that fit in your Solo spec energy (the drain line shows "×0 (no energy)" otherwise)
+    const asked = assumptions.mySpecs.ayak;
+    const solo = buildTargetMonster(target, phase ?? phases[0], 'solo', assumptions).drain;
+    const fitted = solo.line?.items.find((i) => i.weapon === 'ayak')?.count ?? 0;
+    const drained = ayakExpectedDrain(profile, fitted, model.magicDef);
+    const fitText = fitted < asked ? `${fitted} of your ${asked} specs fit in your spec energy; ` : '';
+    return `Solo: ≈ ${drained.toFixed(0)} magic def drained on ${target.label} (${fitText}of ${model.magicDef}; ${(profile.hitChance * 100).toFixed(0)}% × ${profile.expectedDamageOnHit.toFixed(1)} per spec)`;
   }, [mode, target, phase, phases, assumptions]);
   // the boss's hp and (undrained) Defence as the calculator scales them (party size, ToA raid / path levels, CoX CM)
   const targetStats = useMemo(() => {

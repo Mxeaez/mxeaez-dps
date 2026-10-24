@@ -167,6 +167,13 @@ export const planLabel = (energy: number, seconds: number): PlanLabel => {
   return 'team-only';
 };
 
+/** Review fix (phase 23): the label as shown on the page ("team-only" read like jargon). */
+export const planLabelText = (label: PlanLabel): string => ({
+  solo: 'solo',
+  'solo+lightbearer': 'solo with Lightbearer',
+  'team-only': "needs teammates' specs",
+} as Record<PlanLabel, string>)[label];
+
 // --- profiles ------------------------------------------------------------------------------------------------------
 
 /** One outcome of a spec attempt: landed hits (Tonalztics 0–2, others 0/1) and damage dealt. */

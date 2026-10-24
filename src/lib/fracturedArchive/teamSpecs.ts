@@ -1,7 +1,7 @@
 import { INITIAL_MONSTER_INPUTS } from '@/lib/Monsters';
 import { DefenceReductions } from '@/lib/fracturedArchive/drains';
 import {
-  DrainModel, energyBudget, PlanLabel, planLabel, PlannerWeapon, SpecOutcome, specAttempts,
+  DrainModel, energyBudget, PlanLabel, planLabel, planLabelText, PlannerWeapon, SpecOutcome, specAttempts,
 } from '@/lib/fracturedArchive/specs';
 
 /**
@@ -421,7 +421,7 @@ export const soloSpecPlan = (model: DrainModel, input: SoloSpecInput): SoloSpecP
   if (needed.attempts === null) {
     neededText = weapons.length ? `floor needs > ${MAX_SOLO_ATTEMPTS} specs` : 'no carried Defence weapon can hit';
   }
-  parts.push(`${budget}% energy in ${input.fightSeconds} s${input.lightbearer ? ' (Lightbearer)' : ''}; ${neededText} → ${needed.label}`);
+  parts.push(`${budget}% energy in ${input.fightSeconds} s${input.lightbearer ? ' (Lightbearer)' : ''}; ${neededText} → ${planLabelText(needed.label)}`);
 
   return {
     budget,

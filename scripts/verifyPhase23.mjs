@@ -7,7 +7,7 @@
  *   team-DPS multiplier, the energy priority and the time-model settings; no Fight length input anywhere; the "?"
  *   glossary opens.
  * - Tabs are Search · Plan · Summary (no Routes / Encounters tab).
- * - Search (Xarth): the drain line shows icons with ×N and a hit % under each (Team: maul ×4, Tonalztics ×8,
+ * - Search (Xarth): the drain line shows icons with ×N and a hit % under each (Team: maul ×4, Tonalztics ×4,
  *   Ayak ×2), Solo shows "fight ≈ N s → M specs"; None: top DPS 12.839 (unchanged); the can't-hit list is collapsed.
  * - Plan: FA shows the 8-route table, ToA a single-route table, per-phase drain lines.
  * - Calculator: the Max-drain buttons show icons ×N with hit %.
@@ -76,7 +76,7 @@ const main = async () => {
   // glossary
   await page.locator('[data-testid="glossary-button"]').click();
   const glossary = await page.locator('[data-testid="glossary"]').innerText();
-  check(['Drains', 'Floor', 'First round', 'Team DPS ×', 'Carriers'].every((t) => glossary.includes(`${t}:`)), 'glossary lists drain states, floor, first round, Team DPS ×, carriers');
+  check(['Drains', 'Floor', 'First round', 'Fight length (computed)', 'Players assumed at your DPS', 'Carriers'].every((t) => glossary.includes(`${t}:`)), 'glossary lists drain states, floor, first round, fight length, players at your DPS, carriers');
   await shot(page, 'glossary');
   await page.locator('[data-testid="glossary-button"]').click();
 
@@ -86,7 +86,7 @@ const main = async () => {
   check(await page.locator('#bs-team-elderMaul').isVisible(), 'Advanced: carriers visible');
   check(await page.locator('#bs-team-lightbearer').isVisible(), 'Advanced: one "carriers use Lightbearer" toggle');
   const advText = await page.locator('[data-testid="advanced"]').innerText();
-  check(advText.includes('Count the floor as reached when the first round\'s chance is ≥'), 'Advanced: floor confidence label');
+  check(advText.includes('Use the Defence floor when its chance is ≥'), 'Advanced: floor confidence label');
   check(advText.includes('Players assumed at your DPS when converting HP to time'), 'Advanced: team-DPS multiplier label');
   check(await page.locator('[data-testid="time-settings"]').isVisible(), 'Advanced: time-model settings');
   const untitled = await page.locator('[data-testid="advanced"] input, [data-testid="advanced"] select').evaluateAll((els) => els
@@ -99,8 +99,8 @@ const main = async () => {
   await page.locator('[data-testid="boss-select"]').selectOption('xarth');
   await waitSearch(page);
   const team = await lineItems(page, '[data-testid="spec-plan"]');
-  check(JSON.stringify(team.map((i) => [i.weapon, i.count])) === JSON.stringify([['elderMaul', '×4'], ['tonalztics', '×8'], ['ayak', '×2']]), `Team drain line: ${team.map((i) => `${i.weapon} ${i.count}`).join(', ')}`);
-  check(team.every((i) => /^\d+%$/.test(i.hit || '') && i.icon), `hit chance under each icon: ${team.map((i) => i.hit).join(', ')}`);
+  check(JSON.stringify(team.map((i) => [i.weapon, i.count])) === JSON.stringify([['elderMaul', '×4'], ['tonalztics', '×4'], ['ayak', '×2']]), `Team drain line: ${team.map((i) => `${i.weapon} ${i.count}`).join(', ')}`);
+  check(team.every((i) => /^\d+% land$/.test(i.hit || '') && i.icon), `hit chance under each icon: ${team.map((i) => i.hit).join(', ')}`);
   const result = await page.locator('[data-testid="spec-plan"] [data-testid="drain-line-result"]').innerText();
   check(/→ Def \d+ · Magic def \d+/.test(result), `drain line result "${result}"`);
   check(await page.locator('[data-testid="search-summary"] [data-testid="drain-line"]').count() === 1, 'Search header shows the drain line');
@@ -165,7 +165,7 @@ const main = async () => {
     count: e.querySelector('[data-testid="drain-line-count"]')?.textContent,
     hit: e.querySelector('[data-testid="drain-line-hit"]')?.textContent,
   })));
-  check(btn.length > 0 && btn[0].weapon === 'elderMaul' && /^×\d+$/.test(btn[0].count || '') && /^\d+%$/.test(btn[0].hit || ''), `Max-drain Elder maul button: ${btn.map((b) => `${b.weapon} ${b.count} (${b.hit})`).join(', ')}`);
+  check(btn.length > 0 && btn[0].weapon === 'elderMaul' && /^×\d+$/.test(btn[0].count || '') && /^\d+% land$/.test(btn[0].hit || ''), `Max-drain Elder maul button: ${btn.map((b) => `${b.weapon} ${b.count} (${b.hit})`).join(', ')}`);
   await maul.scrollIntoViewIfNeeded();
   await shot(page, 'calc-maxdrain');
 

@@ -202,7 +202,7 @@ describe('targets and drain states', () => {
 
   test('AG: Solo with the default specs (maul + 2 Ayak, 130% energy); Flying: maul can\'t hit, Ayak gets the energy', () => {
     const g = buildTargetMonster(findTarget('ag-grounded'), undefined, 'solo', A).drain;
-    expect(g.specs).toMatch(/^2× Elder maul \(P floor \d+%, team-only\)$/);
+    expect(g.specs).toMatch(/^2× Elder maul \(P floor \d+%, needs teammates' specs\)$/);
     expect(g.plan).toContain('2 of 2 don\'t fit in the energy');
     const f = buildTargetMonster(findTarget('ag-flying'), undefined, 'solo', A).drain;
     expect(f.specs).toMatch(/^2× Ayak /);

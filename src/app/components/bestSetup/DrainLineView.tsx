@@ -30,13 +30,22 @@ const DrainLineView: React.FC<{
     >
       {line.items.length === 0 && <span className="text-gray-500 dark:text-gray-400">no specs</span>}
       {line.items.map((it) => (
-        <span key={it.weapon} className="inline-flex flex-col items-center leading-none" title={it.title} data-testid="drain-line-item" data-weapon={it.weapon} data-count={it.count}>
+        <span
+          key={it.weapon}
+          className={`inline-flex flex-col items-center leading-none ${it.count === 0 ? 'opacity-50' : ''}`}
+          title={it.title}
+          data-testid="drain-line-item"
+          data-weapon={it.weapon}
+          data-count={it.count}
+          data-short={it.short ?? 0}
+        >
           <span className="inline-flex items-center gap-0.5">
             <ItemIcon name={it.label} src={equipmentImageUrl(it.image)} size={size} title={it.title} />
             <span className="font-mono font-semibold" data-testid="drain-line-count">{it.unit === 'dmg' ? `${it.count} dmg` : `×${it.count}`}</span>
+            {it.count === 0 && it.short ? <span className="text-gray-500 dark:text-gray-400" data-testid="drain-line-no-energy">(no energy)</span> : null}
           </span>
-          {it.hitChance !== undefined && (
-            <span className={`${compact ? 'text-[9px]' : 'text-[10px]'} text-gray-500 dark:text-gray-400`} data-testid="drain-line-hit">{pct(it.hitChance)}</span>
+          {it.hitChance !== undefined && it.count > 0 && (
+            <span className="text-[11px] text-gray-500 dark:text-gray-400" data-testid="drain-line-hit">{`${pct(it.hitChance)} land`}</span>
           )}
         </span>
       ))}

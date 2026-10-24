@@ -21,23 +21,30 @@ presentation only; the numbers are unchanged except the Solo fight length (below
   and a **"?" glossary** are top right.
 - **Advanced** (closed by default): team carriers per weapon (the party size above is shared) with **one "carriers use
   Lightbearer" toggle** for all carriers (`withCarrierLightbearer` in presets.ts; the per-weapon flags stay in the data);
-  "Count the floor as reached when the first round's chance is ≥ 95%" (was "Floor at P ≥"); "Players assumed at your
+  "Use the Defence floor when its chance is ≥ 95%" (was "Floor at P ≥"); "Players assumed at your
   DPS when converting HP to time" (was "Team DPS ×"); "Spec energy goes first to"; the raid's time-model settings (AG
   shield, Bork stun uptime, …; they were on the Routes tab and now drive the Plan tab).
 - **No Fight length input.** The Solo spec-energy budget (Search, Summary, the calculator panels) uses the boss /
-  phase's **undrained time to kill**: hp ÷ (best preset DPS × the team-DPS multiplier), the best of the raid's presets
-  against the undrained monster — one untimed pass, like the time model's first pass — rounded and clamped to 15–600 s
-  (90 s when no preset deals damage). `autoFightSeconds` in bestSetup.ts; `BestSetupAssumptions.fightSeconds` is now
-  optional (undefined = computed; the Plan tab / time model still pass each encounter's own length, and the planner's
-  fallback stays 90 s). The drain line shows the value: "(fight ≈ 203 s → 3 specs)".
-  **Effect on Solo numbers** (default assumptions, FA; was 90 s everywhere): AG grounded 48 s, AG flying 61 s, Smorks
-  79 s, Moia 83 s, Dagon'hai 55 s (still 2 specs, unchanged); Bork 168 s, Dreadnoth 151 s, Xarth 203 s, Ezekiel 229 s,
-  Ocellus P1 240 s → 3 specs; Ocellus P2 435 s, P3 474 s → 4 specs. E.g. Bork Solo: 2 → 3 Elder maul specs, ranked
-  Def 195 → 180, top search row 10.327 → 10.524 DPS; Xarth Solo top row unchanged (13.917, the floor 102 was already
-  the ranked Defence). Team and None are unchanged (the Team ranking uses the first round only).
-- **Drain line** (`drainLine.ts` data, `DrainLineView.tsx`): `[icon] ×N` per weapon — spec attempts, except Tonalztics
-  shown in *hits* (2 per charged spec; specs in the tooltip) and the BGS in the Max-drain buttons shown as damage — with
-  the chance per spec to land under each icon, then "→ Def 156 · Magic def 91". The full plan text is the tooltip. Used
+  phase's **undrained time to kill with the whole party at your DPS**: hp ÷ (party size × best preset DPS), the best of
+  the raid's presets against the undrained monster — one untimed pass, like the time model's first pass — rounded and
+  clamped to 15–600 s (90 s when no preset deals damage). `autoFightSeconds` / `fightSecondsFrom` in bestSetup.ts.
+  It is per boss / phase (every row of a Search shares it), not per encounter (AG Flying and Grounded, Ocellus P1 / P3
+  each get their own). Review fix: the party size, not the team-DPS multiplier — FA's ×1 had timed a 6-player fight as
+  you alone and inflated the budget. `BestSetupAssumptions.fightSeconds` is optional (undefined = computed; the Plan
+  tab / time model still pass each encounter's own length, and the planner's fallback stays 90 s). The drain line shows
+  the value: "(fight ≈ 34 s → 2 specs)".
+  **Effect on Solo numbers** (default assumptions, 6-man FA; was 90 s everywhere = 130% = 2 specs): the computed
+  fights are 15-79 s, i.e. 100-120% = 2 specs, so the defaults give the same Solo plans as before (Bork 28 s → 2 maul
+  specs, Def 195, top 10.327; Xarth 34 s, top 13.917). Smaller parties get longer fights and more specs (2-man Ocellus
+  P3 237 s → 170% = 3 specs). Team and None are unchanged.
+- **Ayak ×0 (no energy)**: Ayak specs asked for under My specs that the energy doesn't cover stay on the Solo line,
+  greyed, with the count that fits; the Ayak hint next to the input uses the fitted count ("1 of your 2 specs fit").
+- **Labels**: the Solo label `team-only` reads "needs teammates' specs" (`solo+lightbearer`: "solo with Lightbearer";
+  `planLabelText` in specs.ts; the `PlanLabel` values are unchanged).
+- **Drain line** (`drainLine.ts` data, `DrainLineView.tsx`): `[icon] ×N` per weapon — spec attempts (Tonalztics too:
+  ×4 specs, "8 hits" in the tooltip; the BGS in the Max-drain buttons as damage) — with "77% land" (the chance per spec
+  to land) under each icon, then "→ Def 156 · Magic def 91". The Max-drain buttons are labelled (Elder maul / DWH /
+  BGS) and their hit chances come from the undrained monster. The full plan text is the tooltip. Used
   in the Search plan panel and header, Summary cells, the Plan tab's per-phase rows, and the calculator's Max-drain
   buttons (hit chances from the same spec model, against the undrained monster).
 - **Search header**: two lines (drains + best preset; evaluations · time · TTK label), the can't-hit weapons collapsed
@@ -47,13 +54,14 @@ presentation only; the numbers are unchanged except the Solo fight length (below
 
 - *Drains*: None = no Defence / Magic defence drains. Solo = only your own specs ("My specs"), within the spec energy
   you have in that fight. Team = the team's spec carriers (Advanced) each spec twice at the start.
-- *Floor*: the lowest Defence a boss can be drained to (e.g. Archive Guardian 156). A plan "reaches the floor" when the
-  chance of getting there is at least the confidence set in Advanced (95%).
+- *Floor*: the lowest Defence a boss can be drained to (e.g. Archive Guardian 156). The Defence floor is used when its
+  chance is at least the % set in Advanced (95%).
 - *First round*: the specs everyone does at the start of the fight with full (100%) energy: 2 specs each for 50% weapons.
-- *Hit chance*: the % under each drain icon: the chance one spec lands its drain (from the calculator, against the
-  undrained boss).
-- *Fight length*: not an input any more (see above).
-- *Team DPS ×*: how many players are assumed to deal your DPS when HP is turned into time. Fractured Archive: 1 (how its
+- *Hit chance*: the "77% land" under each drain icon: the chance one spec lands its drain (from the calculator, against
+  the undrained boss). "×0 (no energy)": specs you asked for that your spec energy doesn't cover.
+- *Fight length (computed)*: the boss's time to kill without drains, using the best preset, with the whole party at
+  your DPS; it sets your Solo spec energy (see above).
+- *Players assumed at your DPS* (Advanced): how many players are assumed to deal your DPS when HP is turned into time. Fractured Archive: 1 (how its
   HP scales with party size is unknown, so times are you alone); ToA / CoX / ToB: the party size (their HP scales with it).
 - *Carriers*: teammates who bring a drain weapon and spec it at the start (Team drains). The party size is shared;
   carriers beyond it don't count.
@@ -563,9 +571,10 @@ form (e.g. "first round 4× Elder maul + 4× Tonalztics + 2× Ayak (P floor 99.5
   weapons reaches P(floor) ≥ 95%, else every attempt the budget pays for; leftover energy goes to Ayak (up to the
   count). It never spends more than the budget (tested). The plan's label is that of the *full* plan (attempts for
   95% + Ayak count): `solo` (fits 100% + regen), `solo+lightbearer` or `team-only`. With the defaults (maul + 2 Ayak)
-  and the old 90 s every boss was `team-only`: 2 maul attempts use the 130% and the Ayak specs don't fit — the line
-  says so. Since phase 23 the fight length is computed, so long fights get more specs (e.g. Ezekiel 229 s → 3 maul
-  specs, `solo+lightbearer`). A floor
+  and the old 90 s every boss was `team-only` ("needs teammates' specs" on the page since phase 23): 2 maul attempts
+  use the 130% and the Ayak specs don't fit — the line shows "Ayak ×0 (no energy)". Since phase 23 the fight length is
+  computed with the whole party (6-man fights are 15-79 s, still 2 specs); smaller parties get longer fights and more
+  specs. A floor
   the carried weapons can't reach is shown as a partial drain, e.g. The Smorks: "2× Elder maul → expected Def 145
   (floor 0 not reachable; best case Def 93) → ranked at Def 143".
 - **Team** (`teamSpecPlan`): exact P(floor from the first round), expected Defence, Ayak P(0). When the first round
@@ -646,7 +655,7 @@ the ones that could change a winner.
 - **Zorya's tome**: base max hit 18 flat; the spec and its three empowered follow-up attacks are not modelled, so the
   tome is undervalued.
 - Ascension (e) bolts use the normal diamond/onyx proc numbers (unverified).
-- Phase 14: spec misses are modelled (exact probabilities); there is still no fight simulation (spec timing, boss healing), and the fight length is the boss's undrained time to kill with the best preset (phase 23; was one 90 s setting).
+- Phase 14: spec misses are modelled (exact probabilities); there is still no fight simulation (spec timing, boss healing), and the fight length is the boss's undrained time to kill with the best preset and the whole party (phase 23; was one 90 s setting).
 
 # Search tab (phase 9)
 

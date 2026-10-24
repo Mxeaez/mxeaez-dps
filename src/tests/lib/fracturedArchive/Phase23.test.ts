@@ -3,6 +3,7 @@ import { generateEmptyPlayer } from '@/state';
 import { scaleMonster } from '@/lib/MonsterScaling';
 import {
   AUTO_FIGHT_SECONDS_RANGE, autoFightSeconds, buildTargetMonster, drainStateFor, evaluatePreset, findTarget,
+  fightSecondsFrom,
 } from '@/lib/fracturedArchive/bestSetup';
 import {
   carriersUseLightbearer, DEFAULT_ASSUMPTIONS, PRESETS, withCarrierLightbearer,
@@ -31,19 +32,39 @@ describe('computed fight length (Solo spec-energy budget)', () => {
     expect(d.plan).toContain(`in ${d.fightSeconds} s`);
   });
 
-  test('= hp ÷ (best preset DPS × team-DPS multiplier), rounded and clamped', () => {
+  test('= hp ÷ (party size × best preset DPS), rounded and clamped; not the team-DPS multiplier', () => {
     for (const key of ['xarth', 'bork', 'ezekiel', 'ocellus-p3']) {
       const m = undrained(key);
       const hp = scaleMonster(m).skills.hp;
       const best = Math.max(...PRESETS.map((p) => evaluatePreset(generateEmptyPlayer(), p, m, A, true, false).dps));
-      const expected = Math.min(AUTO_FIGHT_SECONDS_RANGE.max, Math.max(AUTO_FIGHT_SECONDS_RANGE.min, hp / best));
+      const expected = Math.min(AUTO_FIGHT_SECONDS_RANGE.max, Math.max(AUTO_FIGHT_SECONDS_RANGE.min, hp / (6 * best)));
       expect(Math.abs(autoFightSeconds(m, A) - expected)).toBeLessThanOrEqual(1);
     }
-    // more players at your DPS = a shorter fight
     const m = undrained('xarth');
-    expect(autoFightSeconds(m, { ...A, teamDpsMultiplier: 4 })).toBeLessThan(autoFightSeconds(m, A));
-    expect(autoFightSeconds(m, { ...A, teamDpsMultiplier: 4 })).toBeGreaterThanOrEqual(AUTO_FIGHT_SECONDS_RANGE.min);
+    // review fix: FA's team-DPS multiplier 1 doesn't make the 6-player fight last as long as a solo kill
+    expect(autoFightSeconds(m, { ...A, teamDpsMultiplier: 4 })).toBe(autoFightSeconds(m, A));
+    // a smaller party = a longer fight
+    const m2 = buildTargetMonster(findTarget('xarth'), undefined, 'none', { ...A, partySize: 2 }).monster;
+    expect(autoFightSeconds(m2, { ...A, partySize: 2 })).toBeGreaterThan(autoFightSeconds(m, A));
   });
+
+  test('clamp bounds: Jelly at the 15 s minimum; the 600 s maximum; 90 s when nothing hits', () => {
+    expect(autoFightSeconds(undrained('jelly'), A)).toBe(AUTO_FIGHT_SECONDS_RANGE.min);
+    expect(fightSecondsFrom(10000, 1, 1)).toBe(AUTO_FIGHT_SECONDS_RANGE.max);
+    expect(fightSecondsFrom(10000, 1, 100)).toBe(100);
+    expect(fightSecondsFrom(1, 50, 6)).toBe(AUTO_FIGHT_SECONDS_RANGE.min);
+    expect(fightSecondsFrom(1000, 0, 6)).toBe(90);
+  });
+
+  test('Bork Solo (6-man, defaults): fight 28 s → 100% energy → 2 Elder maul specs, Def 195 (as with the old 90 s)', () => {
+    const d = buildTargetMonster(findTarget('bork'), undefined, 'solo', A).drain;
+    expect(d.fightSeconds).toBe(28);
+    expect(d.line?.budget).toEqual({ fightSeconds: 28, computed: true, specs: 2 });
+    expect(d.line?.items.map((i) => [i.weapon, i.count])).toEqual([['elderMaul', 2], ['ayak', 0]]);
+    expect(d.defAfter).toBe(195);
+    const r = runGearSearch(generateEmptyPlayer(), { targetKey: 'bork', drain: 'solo', styles: 'all' }, A, {});
+    expect(r.rows[0].dps).toBeCloseTo(10.327, 3);
+  }, 300000);
 
   test('an explicit fight length (Plan / time model) still wins', () => {
     const d = drainStateFor(undrained('xarth'), 'solo', { ...A, fightSeconds: 90 });
@@ -56,8 +77,8 @@ describe('computed fight length (Solo spec-energy budget)', () => {
   test('the Solo spec count follows the time to kill', () => {
     // Ayak × 10: the energy is the limit, so the specs done = what the computed fight's budget pays for
     const a = { ...A, mySpecs: { ...A.mySpecs, elderMaul: false, ayak: 10 } };
-    const m = undrained('xarth');
     const specsAt = (assumptions: typeof a) => {
+      const m = buildTargetMonster(findTarget('ocellus-p3'), undefined, 'none', assumptions).monster;
       const d = drainStateFor(m, 'solo', assumptions);
       const fight = autoFightSeconds(m, assumptions);
       const budgetSpecs = specAttempts(energyBudget({ seconds: fight, lightbearer: false }), 50);
@@ -66,8 +87,8 @@ describe('computed fight length (Solo spec-energy budget)', () => {
       expect(done).toBe(budgetSpecs);
       return done;
     };
-    const long = specsAt(a); // you alone: a long fight
-    const short = specsAt({ ...a, teamDpsMultiplier: 8 }); // 8 players at your DPS: a short one
+    const long = specsAt({ ...a, partySize: 2 }); // a duo: a long fight
+    const short = specsAt(a); // 6-man: a short one
     expect(long).toBeGreaterThan(short);
     expect(short).toBe(2); // only the starting 100%
   });
@@ -121,18 +142,18 @@ describe('one "carriers use Lightbearer" toggle', () => {
 });
 
 describe('drain line data', () => {
-  test('Team default (2 maul, 2 Tonalztics, 1 Ayak carriers): ×4 maul specs, ×8 Tonalztics hits (4 specs), ×2 Ayak', () => {
+  test('Team default (2 maul, 2 Tonalztics, 1 Ayak carriers): ×4 maul, ×4 Tonalztics specs (8 hits), ×2 Ayak', () => {
     const m = undrained('xarth');
     const d = drainStateFor(m, 'team', A);
     const model = drainModel(m, A);
     const items = d.line!.items;
     expect(items.map((i) => [i.weapon, i.count, i.unit, i.specs])).toEqual([
       ['elderMaul', 4, 'spec', 4],
-      ['tonalztics', 8, 'hit', 4],
+      ['tonalztics', 4, 'spec', 4],
       ['ayak', 2, 'spec', 2],
     ]);
     items.forEach((i) => expect(i.hitChance).toBe(model.hitChance[i.weapon as keyof typeof model.hitChance]));
-    expect(items[1].title).toMatch(/^8 Tonalztics hits \(4 specs\), \d+% chance per spec/);
+    expect(items[1].title).toMatch(/^4 Tonalztics specs \(8 hits\); \d+% of specs land at least one damaging hit$/);
     expect(items.every((i) => i.image)).toBe(true);
     expect(d.line!.defAfter).toBe(d.defAfter);
     expect(d.line!.magicDefAfter).toBe(d.magicDefAfter);
@@ -144,15 +165,24 @@ describe('drain line data', () => {
     expect(drainLineFromAttempts([], {}, { defAfter: 1, magicDefAfter: 2 }, 'x').items).toEqual([]);
   });
 
-  test('calculator Max-drain plan: AG flying → Tonalztics ×4 hits (2 specs) → Def 156', () => {
+  test('Solo: Ayak specs asked for but not covered by the energy stay on the line as ×0', () => {
+    const d = buildTargetMonster(findTarget('ag-grounded'), undefined, 'solo', A).drain; // 2 maul specs use the 100%
+    const ayak = d.line!.items.find((i) => i.weapon === 'ayak')!;
+    expect(ayak).toMatchObject({ count: 0, short: 2 });
+    expect(ayak.title).toContain('no spec energy left');
+    expect(d.line!.items.find((i) => i.weapon === 'elderMaul')!.short).toBeUndefined();
+  });
+
+  test('calculator Max-drain plan: AG flying → Tonalztics ×2 specs (4 hits) → Def 156', () => {
     const m = buildTargetMonster(findTarget('ag-flying'), undefined, 'none', A).monster;
     const plan = maxDrainReductions(m, { weapon: 'elderMaul', ayak: true });
     const line = drainLineFromReductions(plan.reductions, { tonalztics: 0.8 }, plan, plan.summary, 3);
     expect(line.items.map((i) => [i.weapon, i.count, i.unit, i.specs])).toEqual([
-      ['tonalztics', 4, 'hit', 2],
+      ['tonalztics', 2, 'spec', 2],
       ['ayak', 3, 'spec', 3],
     ]);
     expect(line.items[0].hitChance).toBe(0.8);
+    expect(line.items[0].title).toMatch(/^2 Tonalztics specs \(4 hits\)/);
     expect(line.defAfter).toBe(156);
     const bgs = drainLineFromReductions(maxDrainReductions(undrained('bork'), { weapon: 'bgs', ayak: false }).reductions, {}, plan, '');
     expect(bgs.items[0]).toMatchObject({ weapon: 'bgs', unit: 'dmg' });

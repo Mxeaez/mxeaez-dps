@@ -86,7 +86,8 @@ const runPlan = async (page, raid) => {
   })));
   console.log(`     ${raid} plan (${secs.toFixed(1)} s): ${headline}; free ${free}`);
   kit.forEach((k) => console.log(`       ${k.text.slice(0, 150)}`));
-  check(secs <= 30, `${raid}: plan ran in ≤ 30 s (${secs.toFixed(1)} s)`);
+  // phase 23 review: ≤ 60 s — the machine is shared (≤ 30 s on an idle machine)
+  check(secs <= 60, `${raid}: plan ran in ≤ 60 s (${secs.toFixed(1)} s)`);
   check(cells === 28, `${raid}: 28 inventory cells (${cells})`);
   check(headline.includes(exp.team), `${raid}: team label "${exp.team}"`);
   check(kit.every((k) => k.slots === undefined || k.saves === '∞' || Number(k.saves) + 1e-9 >= Math.max(1, Number(k.slots))), `${raid}: every kit loadout saves ≥ max(1 s, 1 s per slot)`);

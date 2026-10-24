@@ -3,6 +3,24 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 23 fixes — review follow-ups (2026-10-23)
+
+- **Fight length** for the Solo budget = hp ÷ (party size × best preset DPS) (was ÷ team-DPS multiplier: FA's ×1 timed
+  a 6-man fight as you alone). `fightSecondsFrom` (bestSetup.ts); still per boss / phase, clamped 15–600 s. With the
+  6-man defaults every FA fight is 15-79 s → 2 specs, so **Bork Solo is back to 2 maul specs, Def 195, top 10.327**
+  (phase 23 had 168 s → 3 specs, 10.524); Xarth 34 s, top 13.917; a 2-man Ocellus P3 is 237 s → 3 specs.
+- **Ayak ×0 (no energy)**: the Solo line keeps Ayak specs asked for that don't fit (greyed, `DrainLineItem.short`);
+  the Ayak hint uses the fitted count.
+- Wording: glossary "Players assumed at your DPS" (was "Team DPS ×") and "Fight length (computed)"; Advanced "Use the
+  Defence floor when its chance is ≥ __%"; Tonalztics shown as specs (×4, "8 hits" in the tooltip); "77% land" under
+  each icon (11 px); "team-only" → "needs teammates' specs" (`planLabelText`, display only).
+- Calculator Max-drain buttons: every button labelled (Elder maul / DWH / BGS); accursed hit chance from the undrained
+  monster. Stale RoutesView comment removed.
+- verifyPhase17 / 21: plan-time checks relaxed to ≤ 60 s (shared machine).
+- Tests: Phase23.test.ts 15 (party-size formula, multiplier ignored; clamp bounds: Jelly 15 s, 600 s, 90 s; Bork Solo
+  28 s / 2 specs / Def 195 / top 10.327; Ayak ×0; Tonalztics as specs); Presets.test label text. `yarn test`, lint, tsc
+  green; verifyPhase23 all OK.
+
 ## Phase 23 — Best-setup UI cleanup (2026-10-23)
 
 - User feedback: too much on screen; "Fight length", "Floor at P", "Team DPS × 1 at party 6", the "LB" boxes and the

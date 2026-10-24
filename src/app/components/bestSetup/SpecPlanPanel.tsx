@@ -5,7 +5,7 @@ import {
   buildTargetMonster, DRAIN_STATES, DrainStateId, findTarget,
 } from '@/lib/fracturedArchive/bestSetup';
 import { BestSetupAssumptions } from '@/lib/fracturedArchive/presets';
-import { drainModel } from '@/lib/fracturedArchive/specs';
+import { drainModel, planLabelText } from '@/lib/fracturedArchive/specs';
 import { formatProbability, recommendCarriers } from '@/lib/fracturedArchive/teamSpecs';
 import DrainLineView from '@/app/components/bestSetup/DrainLineView';
 
@@ -58,7 +58,7 @@ const SpecPlanPanel: React.FC<{
       </div>
       {state.pFloor !== undefined && (
         <div className="text-gray-500 dark:text-gray-400" data-testid="drain-pfloor" title="P(floor): the chance this plan gets the boss to its Defence floor; the DPS uses the floor only when this is at least the confidence in Advanced">
-          {`Chance of the Defence floor (${floor}): ${formatProbability(state.pFloor)}${state.label ? ` · ${state.label}` : ''}`}
+          {`Chance of the Defence floor (${floor}): ${formatProbability(state.pFloor)}${state.label ? ` · full plan: ${planLabelText(state.label)}` : ''}`}
         </div>
       )}
       <details data-testid="team-table">
