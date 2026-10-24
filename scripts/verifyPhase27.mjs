@@ -3,8 +3,8 @@
  *
  * Usage (dev server running): node scripts/verifyPhase27.mjs [baseUrl]
  * - FA Plan inputs: "Comfort supplies (your call)" with brew / restore / food / other only (no ranging / super combat
- *   inputs), the "Potions: chosen from the kit" note, the "Rings:" one-line summary (default Camp one ring), the ring
- *   policy selector under "Advanced (plan)".
+ *   inputs), the "Potions: chosen from the kit" note, the ring policy (phase 30: a "Rings" dropdown with the inputs,
+ *   default Camp one ring, its one-line summary next to it).
  * - Camp one ring (default): every kit loadout wears the chosen ring; the inventory grid shows one Super combat if the
  *   kit has a melee loadout and one Ranging potion if ranged (matching "Potions (from the kit)"); prints the total and
  *   the other rings' times.
@@ -44,7 +44,8 @@ const readPlan = async (page) => ({
   ring: await page.locator('[data-testid="plan-ring-result"]').getAttribute('data-ring'),
   policy: await page.locator('[data-testid="plan-ring-result"]').getAttribute('data-policy'),
   ringLine: (await page.locator('[data-testid="plan-ring-result"]').innerText()).replace(/\s+/g, ' ').trim(),
-  summary: (await page.locator('[data-testid="plan-ring-summary"]').innerText()).replace(/\s+/g, ' ').trim(),
+  // phase 30: the ring policy is a dropdown with the inputs; its one-line summary is next to it
+  summary: (await page.locator('[data-testid="plan-ring-summary-text"]').innerText()).replace(/\s+/g, ' ').trim(),
 });
 const count = (cells, label) => cells.filter((c) => c.label === label).length;
 const checkPotions = (p, name) => {
@@ -76,8 +77,8 @@ const main = async () => {
   const supLabel = await page.locator('[data-testid="plan-supplies"]').innerText();
   check(/Comfort supplies \(your call, 10 slots\)/.test(supLabel), 'label "Comfort supplies (your call, 10 slots)" (6 brews + 4 restores)');
   check(/Potions: chosen from the kit/.test(await page.locator('[data-testid="plan-potions-note"]').innerText()), 'potions note shown');
-  check(/^Rings: Camp one ring/.test((await page.locator('[data-testid="plan-ring-summary"]').innerText()).replace(/\s+/g, ' ').trim()), 'ring summary in the simple view: Camp one ring');
-  check(!(await page.locator('[data-testid="plan-ring-policy"]').isVisible()), 'ring policy selector is under Advanced (closed)');
+  // phase 30: the ring policy left Advanced: a dropdown with the inputs, its summary next to it
+  check(await page.locator('[data-testid="plan-ring-policy"]').isVisible() && await page.locator('[data-testid="plan-ring-policy"]').inputValue() === 'camp-one', 'ring policy dropdown with the inputs (not under Advanced): Camp one ring');
 
   // --- camp one ring (default)
   let t0 = Date.now();
@@ -110,7 +111,7 @@ const main = async () => {
   const sw = await readPlan(page);
   print(sw, 'allow switches');
   check(sw.policy === 'switch' && sw.ring === '', 'allow switches: no camped ring');
-  check(sw.summary.startsWith('Rings: Allow ring switches'), `summary "${sw.summary}"`);
+  check(sw.summary.startsWith('each loadout wears its own best ring'), `summary "${sw.summary}"`);
   check(JSON.stringify(sw.kit.map((k) => k.ring)) !== JSON.stringify(camp.kit.map((k) => k.ring)) || sw.total !== camp.total, `rings or total changed (${camp.total} → ${sw.total})`);
   checkPotions(sw, 'allow switches');
   await shot(page, 'fa-switch');

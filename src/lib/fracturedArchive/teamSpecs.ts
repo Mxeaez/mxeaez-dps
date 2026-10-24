@@ -530,7 +530,9 @@ export interface TeamNeed {
  * the same ranked Magic defence drain) as all of them: "needed ×N · team brings ×M" on that boss under the plan's
  * carriers. Review 2: in sequence (upstream's weapon order): the first weapon's count is minimised with the others as
  * brought and fixed, then the next given it, so the counts together still give the same drain (on Xarth 4 maul alone or
- * 4 Tonalztics alone each reach the floor: one of them is needed). 0 = its specs change nothing there.
+ * 4 Tonalztics alone each reach the floor: one of them is needed). 0 = its specs change nothing there. Phase 30: when
+ * the full set reaches the floor (Ayak: 0 magic def) with P ≥ threshold, "needed" is the fewest that still do (a
+ * smaller count ranked at the same Defence but below the threshold no longer counts).
  */
 export const specsNeeded = (
   model: Pick<DrainModel, 'def' | 'floor' | 'magicLevel' | 'magicDef' | 'outcomes' | 'expectedDamage'>,
@@ -549,7 +551,9 @@ export const specsNeeded = (
   DEFENCE_DRAIN_ORDER.filter((w) => counts[w]).forEach((w) => {
     for (let n = 0; n <= counts[w]!; n++) {
       const o = defenceOutcome(model, seq({ ...cur, [w]: n }), threshold);
-      if (o.rankedDef === full.rankedDef) {
+      // phase 30: when everything brought reaches the floor at the threshold, "needed" must too (not a sub-threshold
+      // count that ranks at the same Defence: AG Flying ×3 (86%) → ×4 (98%))
+      if (o.rankedDef === full.rankedDef && (full.pFloor < threshold || o.pFloor >= threshold)) {
         cur[w] = n;
         out[w] = { n, result: defText(o), brings: defText(full) };
         return;
@@ -562,7 +566,7 @@ export const specsNeeded = (
     const ayakText = (o: AyakOutcome) => (zero ? pct(o.pZero) : `→ magic def ${o.magicDefAfter}`);
     for (let n = 0; n <= counts.ayak; n++) {
       const o = ayakOutcome(model, n, threshold);
-      if (o.rankedDrain === fullAyak.rankedDrain) {
+      if (o.rankedDrain === fullAyak.rankedDrain && (fullAyak.pZero < threshold || o.pZero >= threshold)) {
         out.ayak = { n, result: ayakText(o), brings: ayakText(fullAyak) };
         break;
       }

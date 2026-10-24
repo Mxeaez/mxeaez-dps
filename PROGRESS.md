@@ -3,6 +3,40 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 30 — Plan tab polish (2026-10-24)
+
+UI / defaults only; the planner's maths is unchanged.
+
+- **Supply icons**: brew / restore / food show the wiki's inventory images (Saradomin brew(4).png, Super restore(4).png,
+  Anglerfish.png — the cooked fish's file; "Cooked anglerfish.png" 404s), downloaded with the generic User-Agent into
+  `src/public/img/supplies/` and statically imported like upstream's Ranging / Super combat images (so they show in dev
+  without a CDN deploy; not in `cdn/`, so `copyCdn.mjs` is not involved); "Other" keeps the generic flask.
+- **Ring policy** left Advanced: a "Rings" dropdown in the supplies row with the one-line summary next to it (the
+  explanation is its tooltip); behaviour unchanged.
+- **Empty pinned defaults** (all raids; FA / ToB keep the Saturated heart until phase 31). CoX: the Guardians are
+  pickaxe-only, and the planner adds the Dragon pickaxe switch itself (it's in the CoX pool / presets): no pin, no raid
+  rule needed (`Phase30.test.ts`; CoX planNote updated). Headlines (Team, camp one ring): FA 21:53.0 → **21:44.4** (5
+  freed slots: Ascension crossbows + diamond (e) worn beside the Twisted bow switch, AG 190.7 → 182.1 s; 3 slots stay
+  free), ToA 14:10.6 → **14:06.0** (Lightbearer + Zaryte crossbow freed: Twisted bow switch, Zebak 126.5 → 121.9 s),
+  CoX **6:36.3** and ToB **7:30.0** unchanged (same kits), FA without Obligator / Ascension 24:53.8 → **24:45.3**
+  (Tumeken's shadow loadout boosted by the heart that was unused before). Solo party 1: 22:10.5 → **22:01.3**, Bring
+  Elder maul + Tonalztics = the brute-force optimum over all 32 sets (1321.34 s, tied by ten other sets).
+- **Drain-line wording**: `specsNeeded` (Defence loop, and Eye of Ayak likewise) — when everything brought reaches the
+  floor at the threshold, "needed" is the fewest that still do: AG Flying "needed ×4 (98%) · team brings ×4 (8 hits,
+  98%)" (was ×3 (86%)); Xarth Tonalztics "needed ×2 (97%) · team brings ×4 (8 hits, >99.9%)" (was ×1 (66%)); Bork maul
+  "needed ×3 (98%) · team brings ×4 (99.6%)", Tonalztics "needed ×3 (97%) · team brings ×4 (8 hits, 99.6%)" (was "not
+  needed").
+- **Greedy steps re-timed on the returned kit** (`retimeSteps`, a prefix re-time per step; negligible cost): ToB
+  "Tonalztics −34.3 s, Elder maul −10.4 s, Tonalztics −3.5 s" (was −31.8 / −10.4 / −3.5).
+- Search carriers table summary: "Per boss minimum at 95% (for reference): …".
+- Tests: Phase30 (icons, ring dropdown placement, empty defaults, CoX pickaxe added, steps on the returned kit);
+  Phase29 (AG ×4 98%, Xarth ×2 97%, Bork, never-sub-threshold sweep incl. Ayak; slow block keeps the phase 29 pinned
+  list as input); Phase27 / Ownership keep the phase 29 lists as explicit inputs; Phase21 defaults; CrossRaid re-pinned.
+  `yarn test` 1371 (1358 pass / 13 skipped); `RUN_SLOW_TESTS=1` CrossRaid + Phase27 + Phase28 + Phase29 87 / 87; lint,
+  tsc clean.
+- Playwright: new verifyPhase30 all OK (screenshots phase30-*); verifyPhase21 / 23 / 26 / 27 / 29 re-pinned and all OK;
+  tracked screenshots restored.
+
 ## Phase 29 fixes 2 — ring guard, Ayak cap, drain-line wording (2026-10-24)
 
 - **Ring guard** (blocker; `guardedFullRuns`, every camp-one run): the best two screened rings in full, g = the largest

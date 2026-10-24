@@ -56,6 +56,9 @@ import RangingImg from '@/public/img/potions/Ranging.png';
 import SuperCombatImg from '@/public/img/potions/Super combat.png';
 import SaturatedHeartImg from '@/public/img/potions/Saturated heart.png';
 import ImbuedHeartImg from '@/public/img/potions/Imbued heart.png';
+import SaradominBrewImg from '@/public/img/supplies/Saradomin brew(4).png';
+import SuperRestoreImg from '@/public/img/supplies/Super restore(4).png';
+import AnglerfishImg from '@/public/img/supplies/Anglerfish.png';
 import headSlot from '@/public/img/slots/head.png';
 import capeSlot from '@/public/img/slots/cape.png';
 import neckSlot from '@/public/img/slots/neck.png';
@@ -94,9 +97,14 @@ const maxTotals = new Map<string, number>();
 
 const DEBOUNCE_MS = 500;
 
+// phase 30: the comfort supplies use the wiki's inventory images (src/public/img/supplies, bundled like the potions,
+// so they show in dev too); "Other" keeps the generic flask
 const SUPPLY_IMAGES: Partial<Record<SupplyType, string>> = {
   ranging: RangingImg.src,
   superCombat: SuperCombatImg.src,
+  brew: SaradominBrewImg.src,
+  restore: SuperRestoreImg.src,
+  food: AnglerfishImg.src,
 };
 const SUPPLY_COLOURS: Record<SupplyType, string> = {
   brew: '#d9b44a', restore: '#b04aa6', ranging: '#3f8fd1', superCombat: '#3c9a3c', food: '#a0522d', other: '#888888',
@@ -145,12 +153,12 @@ const ringOther = (x: PlanResult['ring']['screened'][number], chosen: number | n
   return `${x.ring} (slower by the quick screen; not planned in full)`;
 };
 
-/** A generic potion / supply icon (no image in src/public/img for brews, restores, food). */
+/** A supply icon: the item's image, or a generic flask ("Other"). */
 const SupplyIcon: React.FC<{ type: SupplyType, label: string, size?: number }> = ({ type, label, size = 26 }) => {
   const src = SUPPLY_IMAGES[type];
   if (src) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={src} alt={label} title={label} width={size} height={size} style={{ width: size, height: size }} className="object-contain" data-testid="item-icon" />;
+    return <img src={src} alt={label} title={label} width={size} height={size} style={{ width: size, height: size }} className="object-contain" data-testid="item-icon" data-supply={type} />;
   }
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" role="img" aria-label={label} data-testid="item-icon">
@@ -574,6 +582,12 @@ const PlanView: React.FC<{
 
   const supplyTotal = COMFORT_SUPPLY_TYPES.reduce((t, s) => t + supplies[s], 0);
   const ringPolicyDef = RING_POLICIES.find((p) => p.id === ringPolicy)!;
+  // phase 30: the ring policy sits with the inputs (was in Advanced); its explanation is the tooltip
+  const ringPolicyTitle = `${ringPolicyDef.title}${{
+    'camp-one': '. Tried: Ultor, Bellator, Venator, Magus, Ring of shadows, Lightbearer (the ones you own); camping Lightbearer also gives the Solo spec budget its regen.',
+    'camp-lightbearer': '. Sets the Solo spec budget\'s Lightbearer regen (15 s per 10%) for this plan.',
+    switch: '',
+  }[ringPolicy]}`;
   const ringSummary = () => {
     if (ringPolicy === 'switch') return 'each loadout wears its own best ring (ring switches take slots)';
     if (ringPolicy === 'camp-lightbearer') return 'Lightbearer on every loadout (Solo spec energy regenerates twice as fast)';
@@ -649,25 +663,24 @@ const PlanView: React.FC<{
               onChange={(e) => setNonItem(Math.min(28, Math.max(0, Math.floor(Number(e.target.value) || 0))))}
             />
           </label>
+          <span className="flex flex-wrap items-center gap-x-2" data-testid="plan-ring-summary">
+            <label htmlFor="plan-ring-policy" className="flex items-center gap-1 font-semibold" title={ringPolicyTitle}>
+              Rings
+              <select id="plan-ring-policy" className="form-control text-xs py-0.5 font-normal" value={ringPolicy} onChange={(e) => setRingPolicy(e.target.value as RingPolicy)} data-testid="plan-ring-policy">
+                {RING_POLICIES.map((p) => <option key={p.id} value={p.id} title={p.title}>{p.label}</option>)}
+              </select>
+            </label>
+            <span className="text-gray-600 dark:text-gray-300" data-testid="plan-ring-summary-text" title={ringPolicyTitle}>{ringSummary()}</span>
+          </span>
         </div>
         <div className="text-gray-600 dark:text-gray-300" data-testid="plan-potions-note">
           {raid.boostsNeedSupplies
             ? 'Potions: chosen from the kit — one Super combat if it has a melee loadout, one Ranging potion if ranged (a slot each); magic uses the pinned heart.'
             : 'Potions: the raid\'s own potion ("Other") boosts every style; no combat potions are brought.'}
         </div>
-        <div className="flex flex-wrap gap-x-2 items-center" data-testid="plan-ring-summary">
-          <span className="font-semibold" title="Which ring each loadout wears; change it under Advanced (plan)">Rings:</span>
-          <span data-testid="plan-ring-summary-text">{`${ringPolicyDef.label} — ${ringSummary()}`}</span>
-        </div>
         <details className="border border-body-400 dark:border-dark-200 rounded px-2 py-1" data-testid="plan-advanced">
           <summary className="cursor-pointer font-semibold" data-testid="plan-advanced-toggle">Advanced (plan)</summary>
           <div className="flex flex-col gap-1 mt-1">
-            <label htmlFor="plan-ring-policy" className="flex items-center gap-1">
-              Ring policy
-              <select id="plan-ring-policy" className="form-control text-xs py-0.5" value={ringPolicy} onChange={(e) => setRingPolicy(e.target.value as RingPolicy)} data-testid="plan-ring-policy">
-                {RING_POLICIES.map((p) => <option key={p.id} value={p.id} title={p.title}>{p.label}</option>)}
-              </select>
-            </label>
             <label htmlFor="plan-mages" className="flex items-center gap-1" title="Team drains: Eye of Ayak carriers are planned only if someone in the party attacks with magic">
               Mages in party
               <select
@@ -681,11 +694,6 @@ const PlanView: React.FC<{
                 {Array.from({ length: raid.partySize.max + 1 }, (_, i) => <option key={i} value={i}>{i}</option>)}
               </select>
             </label>
-            <div className="text-gray-500 dark:text-gray-400">
-              {ringPolicyDef.title}
-              {ringPolicy === 'camp-one' && '. Tried: Ultor, Bellator, Venator, Magus, Ring of shadows, Lightbearer (the ones you own); camping Lightbearer also gives the Solo spec budget its regen.'}
-              {ringPolicy === 'camp-lightbearer' && '. Sets the Solo spec budget\'s Lightbearer regen (15 s per 10%) for this plan.'}
-            </div>
           </div>
         </details>
         <div className="flex flex-col gap-1" data-testid="plan-pinned">

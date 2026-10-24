@@ -20,7 +20,6 @@ import { DEFAULT_ASSUMPTIONS, PRESETS } from '@/lib/fracturedArchive/presets';
 import { runGearSearch, searchCacheKey } from '@/lib/fracturedArchive/search';
 import {
   DEFAULT_NON_ITEM_SLOTS,
-  DEFAULT_PINNED_NAMES,
   DEFAULT_SUPPLIES,
   equipmentItemIds,
   ownedPinned,
@@ -34,6 +33,9 @@ import { resolveItem } from '@/lib/fracturedArchive/loadout';
 import { generateEmptyPlayer } from '@/state';
 
 // Phase 26: "Items I don't own" (src/lib/fracturedArchive/ownership.ts; Search marking, planner exclusion).
+
+/** Phase 30: the FA default pinned list is just the heart now; these checks keep the phase 26-29 list as their input. */
+const PHASE29_PINNED = ['Lightbearer', 'Zaryte crossbow', 'Kodai wand', 'Ancestral robe top', 'Elidinis\' ward (f)', 'Saturated heart'];
 
 /** A Map-backed localStorage stand-in. */
 const memoryStorage = () => {
@@ -154,7 +156,7 @@ describe('pool and presets', () => {
   });
 
   test('pinned ids: unowned ones are dropped', () => {
-    const ids = DEFAULT_PINNED_NAMES.map((n) => planItemByName(n).id);
+    const ids = PHASE29_PINNED.map((n) => planItemByName(n).id);
     const { kept, dropped } = ownedPinned(ids, ['Lightbearer', 'Saturated heart']);
     expect(dropped).toEqual([planItemByName('Lightbearer').id, ids[ids.length - 1]]);
     expect(kept.length).toBe(ids.length - 2);
@@ -209,7 +211,7 @@ describe('planner honours the list', () => {
     drain: 'team',
     settings: RAID_TIME_DEFAULTS,
     route: ROUTE,
-    pinned: DEFAULT_PINNED_NAMES.map((n) => planItemByName(n).id),
+    pinned: PHASE29_PINNED.map((n) => planItemByName(n).id),
     nonItemSlots: DEFAULT_NON_ITEM_SLOTS,
     supplies: DEFAULT_SUPPLIES,
     ...patch,

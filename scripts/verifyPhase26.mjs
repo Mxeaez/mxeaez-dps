@@ -8,7 +8,7 @@
  *   the top (no re-run) but greyed with a "uses: Obligator" badge.
  * - "Only items I own": the search re-runs without them; prints the new top row; no row is marked.
  * - Plan tab (FA defaults): "Excluded: Obligator, Ascension crossbows", no kit loadout uses them; prints the kit, free
- *   slots and total; "compare with max" → "Best possible with everything: 21:53.0 (yours: …)" (phase 29; phase 27:
+ *   slots and total; "compare with max" → "Best possible with everything: 21:44.4 (yours: …)" (phase 30; phase 29: 21:53.0; phase 27:
  *   22:47.9; was 23:30.4).
  * - Reload: the list and the toggle persist. Clear: list empty, Search top row back to Obligator 13.917, unmarked.
  * Screenshots docs/screenshots/phase26-*.png.
@@ -110,7 +110,7 @@ const main = async () => {
   await page.locator('[data-testid="plan-compare-max"]').click();
   await page.locator('[data-testid="plan-max-line"]').waitFor({ timeout: 600000 });
   const maxLine = (await page.locator('[data-testid="plan-max-line"]').innerText()).trim();
-  check(maxLine === `Best possible with everything: 21:53.0 (yours: ${total})`, `"${maxLine}"`);
+  check(maxLine === `Best possible with everything: 21:44.4 (yours: ${total})`, `"${maxLine}"`); // phase 30: 21:53.0 → 21:44.4
   await shot(page, 'plan-excluded');
 
   // --- reload: persisted

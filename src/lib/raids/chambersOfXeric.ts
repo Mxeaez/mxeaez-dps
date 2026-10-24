@@ -68,5 +68,5 @@ export const CHAMBERS_OF_XERIC_RAID: RaidConfig = {
   encounterTarget: COX_ENCOUNTER_TARGET,
   hpNote: 'HP and Defence scaled by party size and Challenge Mode (upstream, verified in-game).',
   defaultSupplies: COX_DEFAULT_SUPPLIES,
-  planNote: 'CoX: overloads, brews (Xeric\'s aid) and restores (Prayer enhance) are made in the raid — "Saradomin brew" / "Super restore" stand for them, "Other" for the Overload; every style keeps the Overload (+) boost. The Dragon pickaxe is for the Guardians (remove it if your layout has none).',
+  planNote: 'CoX: overloads, brews (Xeric\'s aid) and restores (Prayer enhance) are made in the raid — "Saradomin brew" / "Super restore" stand for them, "Other" for the Overload; every style keeps the Overload (+) boost. The Guardians take damage from pickaxes only: the planner adds a Dragon pickaxe switch for them.',
 };

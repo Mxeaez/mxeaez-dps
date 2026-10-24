@@ -110,15 +110,16 @@ export const INVENTORY_SLOTS = 28;
 export type SupplyType = 'brew' | 'restore' | 'ranging' | 'superCombat' | 'food' | 'other';
 
 /**
- * Supply types; `image` = file under src/public/img/potions (null = generic icon). No magic potion: the magic boost is a
+ * Supply types; `image` = file under src/public/img/potions (Ranging, Super combat) or src/public/img/supplies (phase 30:
+ * wiki inventory images; null = generic icon). No magic potion: the magic boost is a
  * heart (Saturated / Imbued), a reusable pinned item (`HEART_ITEMS`), one slot for the whole raid.
  */
 export const SUPPLY_TYPES: { id: SupplyType, label: string, image: string | null }[] = [
-  { id: 'brew', label: 'Saradomin brew', image: null },
-  { id: 'restore', label: 'Super restore', image: null },
+  { id: 'brew', label: 'Saradomin brew', image: 'Saradomin brew(4).png' },
+  { id: 'restore', label: 'Super restore', image: 'Super restore(4).png' },
   { id: 'ranging', label: 'Ranging potion', image: 'Ranging.png' },
   { id: 'superCombat', label: 'Super combat', image: 'Super combat.png' },
-  { id: 'food', label: 'Food', image: null },
+  { id: 'food', label: 'Food', image: 'Anglerfish.png' },
   { id: 'other', label: 'Other', image: null },
 ];
 
@@ -1853,6 +1854,19 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         exactA = raidTimeAssumptionsFrom(assumptions, drain, settings, tuning.model);
       }
     }
+    // phase 30: the greedy's steps re-timed on a kit (the returned one): each prefix of the carriers added, in order, on
+    // these members (the greedy measured them on the kit before partial switches / the final re-optimisation)
+    const retimeSteps = (steps: CarrierStep[], members: number[]): CarrierStep[] => {
+      let c: CarrierCounts = { ...NO_CARRIERS };
+      let prev = cmpSeconds(teamCmp(c, members));
+      return steps.map((st) => {
+        c = { ...c, [st.weapon]: c[st.weapon] + 1 };
+        const t = cmpSeconds(teamCmp(c, members));
+        const saved = t === prev ? 0 : prev - t;
+        prev = t;
+        return { ...st, saved, seconds: t };
+      });
+    };
     // Team: the briefing of the carriers the drain state uses (per weapon: carriers, what the last one saves, the
     // encounters it saves most on) + the per-boss 95% minimum (teamRoles) on a route
     const teamCarriers = (): CarrierCounts => ({ ...NO_CARRIERS, ...assumptions.team.carriers });
@@ -1894,7 +1908,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         text: carriersText(party, rows),
         carriers: c,
         mode: autoCarriers ? 'auto' : 'manual',
-        ...(carrierSteps ? { steps: carrierSteps } : {}),
+        ...(carrierSteps ? { steps: retimeSteps(carrierSteps, members) } : {}),
       };
     };
     let share: PlanSpecs['share'];

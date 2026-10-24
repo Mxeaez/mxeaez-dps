@@ -231,10 +231,16 @@ describe('every raid\'s plan runs (reduced pool)', () => {
 // (2 Elder maul + 2 Tonalztics = the Advanced counts minus the Ayak carrier, which saves nothing without a magic kit);
 // ToA 14:10.5 → 13:19.6 (1 Elder maul + 5 Eye of Ayak, camp Magus ring); CoX 6:36.3 (2 maul, 2 Tonalztics, 1 BGS,
 // 1 Ayak); ToB 7:30.6 → 7:30.0 (2 Tonalztics, 1 maul).
+// Phase 30 (empty pinned defaults; FA / ToB keep the heart): FA 21:53.0 → 21:44.4 (of the 5 freed slots, 2 carry a
+// second ranged weapon: Ascension crossbows + diamond bolts (e) worn, the Twisted bow + Seeking dragon arrows a switch;
+// Archive Guardian 190.7 → 182.1 s; 3 slots stay free); ToA 14:10.6 → 14:06.0 (Lightbearer + Zaryte crossbow freed: a
+// Twisted bow + Seeking dragon arrows switch, Zebak 126.5 → 121.9 s);
+// CoX 6:36.3 (the planner adds the Dragon pickaxe switch for the Guardians itself: the same kit); ToB 7:30.0 (only the
+// heart was pinned).
 const HEADLINES: [string, string, number][] = [
-  ['fractured-archive', '21:53.0', 1313.0],
+  ['fractured-archive', '21:44.4', 1304.4],
   // review 2: Eye of Ayak carriers capped at the mages (1): 13:19.6 → 14:10.6 (1 maul, 1 Tonalztics, 1 Ayak; Ultor)
-  ['toa', '14:10.6', 850.6],
+  ['toa', '14:06.0', 846.0],
   ['cox', '6:36.3', 396.3],
   ['tob', '7:30.0', 450.0],
 ];
@@ -244,7 +250,10 @@ const HEADLINES: [string, string, number][] = [
 // Lightbearer (the pinned Lightbearer is worn, which frees its slot; Magus / Ultor screens ≥ 36 s slower); kit Twisted
 // bow (Masori) worn + Inquisitor's + Scythe (slash).
 // Phase 29 (planner decides the spec weapons): 25:24.5 → 24:53.8, camping Ultor ring; Tonalztics in a free slot.
-const ONLY_OWNED_HEADLINE: [string, number] = ['24:53.8', 1493.8];
+// Phase 30 (empty pinned defaults): 24:53.8 → 24:45.3; the 5 freed slots + Tonalztics' slot buy a Tumeken's shadow
+// (Ancestral) loadout (the pinned heart, unused before, now boosts it), the Twisted bow a partial switch on it, the route
+// via Bork + Smorks; no spec weapon (your last slot is worth 8.5 s of gear).
+const ONLY_OWNED_HEADLINE: [string, number] = ['24:45.3', 1485.3];
 const FA_NOT_OWNED = ['Obligator', 'Ascension crossbows'];
 
 /**

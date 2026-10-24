@@ -53,6 +53,16 @@ const reduced = (raid: RaidConfig) => ({
   partners: 1,
   seeds: 2,
 });
+/**
+ * Phase 30: the default pinned lists became empty (FA / ToB keep the heart); these reduced-pool pins were measured with
+ * the phase 27-29 lists, which they keep as explicit inputs (they check the planner, not the defaults).
+ */
+const PHASE29_PINNED: Record<RaidConfig['id'], string[]> = {
+  'fractured-archive': ['Lightbearer', 'Zaryte crossbow', 'Kodai wand', 'Ancestral robe top', 'Elidinis\' ward (f)', 'Saturated heart'],
+  toa: ['Lightbearer', 'Zaryte crossbow'],
+  cox: ['Dragon pickaxe'],
+  tob: ['Saturated heart'],
+};
 const runs = new Map<string, PlanResult>();
 const planned = (raid: RaidConfig, ringPolicy?: RingPolicy, drain: 'team' | 'solo' = 'team'): PlanResult => {
   const key = `${raid.id}|${ringPolicy}|${drain}`;
@@ -63,7 +73,7 @@ const planned = (raid: RaidConfig, ringPolicy?: RingPolicy, drain: 'team' | 'sol
       drain,
       settings: raid.defaultTimeSettings,
       route: 'all',
-      pinned: raid.planDefaults.pinned.map((n) => planItemByName(n).id),
+      pinned: PHASE29_PINNED[raid.id].map((n) => planItemByName(n).id),
       nonItemSlots: raid.planDefaults.nonItemSlots,
       supplies: raid.defaultSupplies,
       ...(ringPolicy ? { ringPolicy } : {}),

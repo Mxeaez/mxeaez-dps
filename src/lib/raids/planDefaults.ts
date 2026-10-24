@@ -15,6 +15,11 @@ export const SATURATED_HEART = 'Saturated heart';
  * it is a pinned item, not a supply: pinned by default where the potions are brought (FA, ToB). ToA / CoX don't pin it:
  * their raid potion (Smelling salts / Overload, the "Other" supply) boosts magic too.
  *
+ * Phase 30: the pinned lists are empty (the user's decision, ROADMAP round 4: the planner decides the styles, so nothing
+ * is "always brought"; the list is for the user's own additions) — except the heart in FA / ToB until phase 31 makes it
+ * magic's kit potion. CoX's Dragon pickaxe needs no pin: the Guardians take damage from pickaxes only, so the planner
+ * adds the pickaxe switch itself (it is in the CoX pool and presets).
+ *
  * Spec weapons are not listed here (phase 29: the Elder maul the FA / CoX / ToB lists had is gone too): the Plan tab's
  * planner decides them (Solo: the subset search; Team: your share of the team's carriers), or "Specs I bring" does
  * when picked; they are counted once with the pinned items. The supply types are slot counts; in raids that make their own potions the brew / restore
@@ -44,12 +49,13 @@ const supplies = (s: Partial<SupplyCounts>): SupplyCounts => ({
 
 /**
  * The Fractured Archive: the user's own kit (2026-10-23): rune pouch, Lightbearer, Elder maul, Zaryte crossbow, Kodai
- * wand, Ancestral robe top, Elidinis' ward (f); 6 brews, 4 restores (phase 17 defaults; phase 27: the 2 ranging /
- * 1 super combat became one potion per style in the kit, derived by the planner); and a Saturated heart (the magic
- * boost, user correction 2026-10-23: "Nobody uses magic potions, they use Saturated heart").
+ * wand, Ancestral robe top, Elidinis' ward (f) (phase 30: the items left the pinned list, the planner decides); 6 brews,
+ * 4 restores (phase 17 defaults; phase 27: the 2 ranging / 1 super combat became one potion per style in the kit,
+ * derived by the planner); and a Saturated heart (the magic boost, user correction 2026-10-23: "Nobody uses magic
+ * potions, they use Saturated heart").
  */
 export const FA_PLAN_DEFAULTS: RaidPlanDefaults = {
-  pinned: ['Lightbearer', 'Zaryte crossbow', 'Kodai wand', 'Ancestral robe top', 'Elidinis\' ward (f)', SATURATED_HEART],
+  pinned: [SATURATED_HEART],
   nonItemSlots: 1,
   supplies: supplies({ brew: 6, restore: 4 }),
   raidSupplied: [],
@@ -66,11 +72,11 @@ export const FA_PLAN_DEFAULTS: RaidPlanDefaults = {
  * combat potions, `boostsNeedSupplies: false`). Spec weapons: the planner (phase 29).
  */
 export const TOA_PLAN_DEFAULTS: RaidPlanDefaults = {
-  pinned: ['Lightbearer', 'Zaryte crossbow'],
+  pinned: [],
   nonItemSlots: 1,
   supplies: supplies({ restore: 6, other: 2 }),
   raidSupplied: [],
-  source: 'Tombs of Amascut/Strategies max inventory (Zaryte crossbow, Lightbearer, 6 Sanfew serums, rune pouch); salts from the Helpful Spirit',
+  source: 'Tombs of Amascut/Strategies max inventory (6 Sanfew serums, rune pouch; phase 30: the planner decides the gear); salts from the Helpful Spirit',
 };
 
 /**
@@ -85,11 +91,11 @@ export const TOA_PLAN_DEFAULTS: RaidPlanDefaults = {
  * the counts for an Olm-only plan.
  */
 export const COX_PLAN_DEFAULTS: RaidPlanDefaults = {
-  pinned: ['Dragon pickaxe'],
+  pinned: [],
   nonItemSlots: 1,
   supplies: supplies({ brew: 2, restore: 2, other: 1 }),
   raidSupplied: [],
-  source: 'Chambers of Xeric/Strategies (pickaxe for Guardians, Elder maul for Tekton, rune pouch); potions made in the raid',
+  source: 'Chambers of Xeric/Strategies (rune pouch; the planner adds the pickaxe for the Guardians and picks the spec weapons); potions made in the raid',
 };
 
 /**

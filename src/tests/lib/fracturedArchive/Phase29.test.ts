@@ -40,6 +40,7 @@ import { FRACTURED_ARCHIVE_RAID } from '@/lib/raids';
 // Docs: docs/BEST_SETUP.md, *Spec weapons (phase 29)*.
 
 const A = DEFAULT_ASSUMPTIONS;
+const ELIDINIS_WARD = "Elidinis' ward (f)";
 const undrained = (key: string, phase?: string) => buildTargetMonster(findTarget(key), phase, 'none', A).monster;
 const roleTarget = (key: string): RoleTarget => ({ key, label: findTarget(key).label, model: drainModel(undrained(key), A) });
 
@@ -350,14 +351,19 @@ describe('Team drain line: "needed ×N · team brings ×M"', () => {
     expect(tona.hits).toBe(8);
     const n = tona.needed!;
     const ranked = (k: number) => defenceOutcome(model, Array(k).fill('tonalztics')).rankedDef;
+    const pFloor = (k: number) => defenceOutcome(model, Array(k).fill('tonalztics')).pFloor;
     expect(ranked(n)).toBe(ranked(4));
-    expect(n === 0 || ranked(n - 1) !== ranked(4)).toBe(true);
-    // review 2: "needed ×3 (86%) · team brings ×4 (8 hits, 98%)" — P(floor from the first round), hits on the team's part
-    expect(n).toBe(3);
-    const p = (k: number) => formatProbability(defenceOutcome(model, Array(k).fill('tonalztics')).pFloor);
+    // phase 30: the full set reaches the floor at ≥ 95%, so "needed" is the fewest that still do
+    expect(pFloor(4)).toBeGreaterThanOrEqual(0.95);
+    expect(pFloor(n)).toBeGreaterThanOrEqual(0.95);
+    expect(n === 0 || pFloor(n - 1) < 0.95).toBe(true);
+    // review 2: "needed ×3 (86%) · …" — phase 30: 3 specs rank at the floor too, but only at 86% (< 95%): ×4 (98%)
+    expect(n).toBe(4);
+    const p = (k: number) => formatProbability(pFloor(k));
     expect(p(3)).toBe('86%');
+    expect(ranked(3)).toBe(ranked(4));
     expect(p(4)).toBe('98%');
-    expect(neededText(tona)).toBe('needed ×3 (86%) · team brings ×4 (8 hits, 98%)');
+    expect(neededText(tona)).toBe('needed ×4 (98%) · team brings ×4 (8 hits, 98%)');
     expect(neededText({ ...tona, needed: 0 })).toBe('not needed · team brings ×4 (8 hits, 98%)');
     expect(tona.title.startsWith(`${neededText(tona)}; `)).toBe(true);
     // the Max-drain plan's deterministic count ("4 Tonalztics of Ralos" hits = 2 specs → Def 156)
@@ -376,6 +382,50 @@ describe('Team drain line: "needed ×N · team brings ×M"', () => {
     expect(together.rankedDef).toBe(model.floor);
     expect(nd).toMatchObject({ elderMaul: { n: 0 } });
     expect(nd.tonalztics!.n).toBeGreaterThan(0);
+    // phase 30: at the threshold, not "×1 (66%)"
+    expect(nd.tonalztics).toEqual({ n: 2, result: '97%', brings: '>99.9%' });
+  });
+
+  test('phase 30: Bork — Tonalztics is needed after maul ×3 (the pair reaches the floor at the threshold)', () => {
+    const model = drainModel(undrained('bork'), A);
+    const nd = specsNeeded(model, [...Array(4).fill('elderMaul'), ...Array(4).fill('tonalztics')]);
+    expect(nd.elderMaul).toEqual({ n: 3, result: '98%', brings: '99.6%' });
+    expect(nd.tonalztics).toEqual({ n: 3, result: '97%', brings: '99.6%' });
+  });
+
+  test('phase 30: "needed" never shows a sub-threshold probability when everything brought is above it', () => {
+    const weapons = ['elderMaul', 'dwh', 'bgs', 'tonalztics'] as const;
+    const keys = ['ag-flying', 'xarth', 'bork', 'smorks', 'moia', 'dagonhai'];
+    let checked = 0;
+    keys.forEach((key) => {
+      const model = drainModel(undrained(key), A);
+      [1, 2, 3, 4].forEach((k) => weapons.forEach((w1) => weapons.forEach((w2) => {
+        const attempts = [...Array(k).fill(w1), ...Array(k).fill(w2)];
+        const full = defenceOutcome(model, attempts);
+        const nd = specsNeeded(model, attempts);
+        if (full.rankedDef > model.floor || full.pFloor < 0.95) return;
+        // the needed counts together still reach the floor at ≥ 95%
+        const order = ['elderMaul', 'dwh', 'bgs', 'tonalztics'] as const;
+        const needed = order.flatMap((w) => Array(nd[w]?.n ?? 0).fill(w));
+        const o = defenceOutcome(model, needed);
+        expect(o.rankedDef).toBe(model.floor);
+        expect(o.pFloor).toBeGreaterThanOrEqual(0.95);
+        // and no line shows a probability under 95%
+        Object.values(nd).forEach((x) => {
+          const pctNum = x!.result.startsWith('>') ? 100 : parseFloat(x!.result);
+          expect(pctNum).toBeGreaterThanOrEqual(95);
+        });
+        checked += 1;
+      })));
+    });
+    expect(checked).toBeGreaterThan(50);
+    // Eye of Ayak: the same rule for P(magic def 0)
+    const moia = drainModel(undrained('moia'), A);
+    [2, 3, 4, 6, 8].forEach((k) => {
+      const full = ayakOutcome(moia, k);
+      const nd = specsNeeded(moia, Array(k).fill('ayak'));
+      if (full.pZero >= 0.95) expect(ayakOutcome(moia, nd.ayak!.n).pZero).toBeGreaterThanOrEqual(0.95);
+    });
   });
 
   test('no floor target: "needed ×N (→ Def X)"', () => {
@@ -546,7 +596,13 @@ describe('planner: spec modes', () => {
  * seeds came from the all-weapons table.
  */
 (process.env.RUN_SLOW_TESTS ? describe : describe.skip)('FA defaults (slow)', () => {
-  const full = (patch: Partial<PlanInputs>) => plan(inputs({ ringPolicy: DEFAULT_RING_POLICY, specMode: 'auto', ...patch }), { model: FA.time });
+  // phase 30: the default pinned list is just the heart now; these regressions (and the reviewer's brute force) were
+  // measured with the phase 29 list, which they keep as an explicit input (CrossRaid pins the new defaults' headline)
+  const phase29Pinned = ['Lightbearer', 'Zaryte crossbow', 'Kodai wand', 'Ancestral robe top', ELIDINIS_WARD, 'Saturated heart']
+    .map((n) => planItemByName(n).id);
+  const full = (patch: Partial<PlanInputs>) => plan(inputs({
+    ringPolicy: DEFAULT_RING_POLICY, specMode: 'auto', pinned: phase29Pinned, ...patch,
+  }), { model: FA.time });
 
   test('Solo, party 1, planner decides: Bring Tonalztics, ≤ 22:10.5; the ring and the subset are a fixed point', () => {
     const r = full({ drain: 'solo', assumptions: { ...FA.defaultAssumptions, partySize: 1 } });

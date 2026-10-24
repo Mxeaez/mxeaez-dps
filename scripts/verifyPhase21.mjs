@@ -6,7 +6,8 @@
  *   that raid's defaults (comfort supplies, rune pouch, items always brought; src/lib/raids/planDefaults.ts), the plan
  *   runs in ≤ 150 s (phase 27: camp one ring screens six rings), 28 inventory cells, every kit loadout obeys the dedupe
  *   rule (saves ≥ max(1, slots) s).
- * - FA: total 21:53.0 (phase 29: the planner picks the spec weapons; phase 27: 22:47.9; was 23:30.4).
+ * - FA: total 21:44.4 (phase 30: empty pinned defaults; phase 29, the planner picks the spec weapons: 21:53.0; phase 27:
+ *   22:47.9; was 23:30.4).
  * - ToB: 7:30.0 at 28/28 (phase 29 review: planner carriers; phase 29: 7:30.6; phase 27, camp Ultor ring: 7:31.7; was 7:32.4 with 1 free slot), a Dawnbringer loadout (the staff
  *   free), no Dawnbringer inventory cell, a "Lighter kit" alternative, the "Raid items (0 slots)" note; Search: the
  *   Prinkipas only in Hard Mode. The Scythe loadouts are printed (with one ring camped, single-piece swaps of the Scythe
@@ -32,21 +33,21 @@ const EXPECTED = {
     supplies: {
       brew: 6, restore: 4, food: 0, other: 0,
     },
-    pinned: ['Lightbearer', 'Zaryte crossbow', 'Kodai wand', 'Ancestral robe top', 'Elidinis\' ward (f)', 'Saturated heart'],
+    pinned: ['Saturated heart'], // phase 30: nothing else pinned by default
     team: 'times: your DPS alone',
   },
   toa: {
     supplies: {
       brew: 0, restore: 6, food: 0, other: 2,
     },
-    pinned: ['Lightbearer', 'Zaryte crossbow'],
+    pinned: [], // phase 30
     team: 'times assume 6 players at your DPS',
   },
   cox: {
     supplies: {
       brew: 2, restore: 2, food: 0, other: 1,
     },
-    pinned: ['Dragon pickaxe'],
+    pinned: [], // phase 30: the planner adds the pickaxe for the Guardians
     team: 'times assume 6 players at your DPS',
   },
   tob: {
@@ -109,7 +110,7 @@ const run = async () => {
 
   // FA
   const fa = await runPlan(page, 'fractured-archive');
-  check(fa.total === '21:53.0', `FA plan total ${fa.total} (phase 29: 21:53.0; phase 27: 22:47.9)`);
+  check(fa.total === '21:44.4', `FA plan total ${fa.total} (phase 30, empty pinned defaults: 21:44.4; phase 29: 21:53.0; phase 27: 22:47.9)`);
   await shot(page, 'plan-fa');
 
   // ToA, CoX

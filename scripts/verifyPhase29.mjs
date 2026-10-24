@@ -8,7 +8,7 @@
  *   fewest of those specs giving the same ranked Defence; "not needed" when 0).
  * - Review: "Team carriers: Planner decides" by default (counts disabled); the briefing shows the planner's carriers
  *   (2 Elder maul + 2 Tonalztics on the FA defaults) with what the last carrier of each saves and the order they were
- *   added; Solo party 1 brings Tonalztics (22:10.5) with "dropping … / adding … to this plan" and "best without …";
+ *   added; Solo party 1 brings Elder maul + Tonalztics (22:01.3; phase 29: Tonalztics, 22:10.5) with "dropping … / adding … to this plan" and "best without …";
  *   the party-1 Search drain box has no team carrier table.
  * - "I wear a Lightbearer" follows the ring policy: Camp one ring → the planned ring (off unless it is Lightbearer),
  *   Camp Lightbearer → on, Allow ring switches → the user's toggle again.
@@ -77,8 +77,9 @@ const main = async () => {
   const ranked = await text(page.locator('[data-testid="search-ranked-at"]'));
   check(/^ranked at Def \d+ · Magic def -?\d+$/.test(ranked) && await page.locator('[data-testid="search-ranked-at"] img').count() === 2, `"${ranked}" with the Defence / Magic icons`);
   const panelTona = await text(page.locator('[data-testid="spec-plan"] [data-testid="drain-line-item"][data-weapon="tonalztics"]'));
-  // review 2: "needed ×3 (86%) · team brings ×4 (8 hits, 98%)" (Search uses the Advanced 2 / 2 / 1 before any plan)
-  check(/needed ×3 \(86%\) · team brings ×4 \(8 hits, 98%\)/.test(panelTona), `Search drain box (AG Flying, Team): "${panelTona}"`);
+  // review 2: "needed ×3 (86%) · …"; phase 30: "needed" reaches the threshold too when the team's specs do:
+  // "needed ×4 (98%) · team brings ×4 (8 hits, 98%)" (Search uses the Advanced 2 / 2 / 1 before any plan)
+  check(/needed ×4 \(98%\) · team brings ×4 \(8 hits, 98%\)/.test(panelTona), `Search drain box (AG Flying, Team): "${panelTona}"`);
   check(/run a plan to fill these/.test((await page.locator('[data-testid="team-carriers-note"]').textContent())), 'carriers note before any plan: "run a plan to fill these"');
   check(await page.locator('[data-testid="team-carrier-mode"]').inputValue() === 'auto', 'Team carriers: "Planner decides" by default');
   check(await page.locator('#bs-team-elderMaul').isDisabled(), 'carrier counts disabled while the planner decides');
@@ -111,7 +112,7 @@ const main = async () => {
 
   // AG Flying drain line in the encounter table
   const agDrains = await text(page.locator('[data-testid="plan-phase-row"][data-target="ag-flying"] [data-testid="plan-phase-drains"]').first());
-  check(/needed ×3 \(86%\) · team brings ×4 \(8 hits, 98%\)/.test(agDrains), `AG Flying (Team) drain line: "${agDrains}"`);
+  check(/needed ×4 \(98%\) · team brings ×4 \(8 hits, 98%\)/.test(agDrains), `AG Flying (Team) drain line: "${agDrains}"`);
   const carriers = Object.fromEntries(rows.map((r) => [r.weapon, r.carriers]));
   check(carriers.elderMaul === 2 && carriers.tonalztics === 2 && rows.length === 2, `planner carriers: ${JSON.stringify(carriers)} (2 Elder maul + 2 Tonalztics)`);
   check(/picked by the planner/.test(await text(page.locator('[data-testid="plan-team-roles"] .font-semibold').first())), 'briefing says "picked by the planner"');
@@ -127,8 +128,7 @@ const main = async () => {
   check(/from the last plan/.test((await page.locator('[data-testid="team-carriers-note"]').textContent())), 'carriers note after the plan: "from the last plan"');
   check(await page.locator('#bs-team-tonalztics').inputValue() === '2' && await page.locator('#bs-team-ayak').inputValue() === '0', `Advanced counts follow the plan: Tonalztics ${await page.locator('#bs-team-tonalztics').inputValue()}, Ayak ${await page.locator('#bs-team-ayak').inputValue()}`);
 
-  await page.locator('[data-testid="plan-advanced-toggle"]').click();
-  await page.locator('[data-testid="plan-ring-policy"]').selectOption('camp-lightbearer');
+  await page.locator('[data-testid="plan-ring-policy"]').selectOption('camp-lightbearer'); // phase 30: with the inputs
   await page.waitForTimeout(300);
   lb = await lightbearer(page);
   check(lb.locked && lb.on && /Camp Lightbearer/.test(lb.text), `Camp Lightbearer: "${lb.text}"`);
@@ -157,7 +157,9 @@ const main = async () => {
     weapon: e.getAttribute('data-weapon'), delta: Number(e.getAttribute('data-delta')), text: e.textContent.trim(),
   })));
   check(weapons.length > 0 && weapons.every((w) => w.delta > 0 && w.text.startsWith('dropping ')), `each brought weapon: ${weapons.map((w) => w.text).join('; ')}`);
-  check(/^Bring: Tonalztics$/.test(soloBring) && soloTotal === '22:10.5', `Solo optimum (review brute force): Bring Tonalztics, 22:10.5 (${soloBring}, ${soloTotal})`);
+  // phase 30 (empty pinned defaults): the brute force over all 32 sets has 1321.34 s for {Elder maul, Tonalztics} (tied
+  // with ten other sets pairing Tonalztics with Elder maul or DWH); phase 29: Bring Tonalztics, 22:10.5
+  check(/^Bring: Elder maul, Tonalztics$/.test(soloBring) && soloTotal === '22:01.3', `Solo optimum (brute force): Bring Elder maul, Tonalztics, 22:01.3 (${soloBring}, ${soloTotal})`);
   const without = page.locator('[data-testid="plan-spec-without"]');
   check(await without.count() === weapons.length, `${await without.count() ? await text(without.first()) : 'no "best without" line'}`);
   const others = await page.locator('[data-testid="plan-spec-rejected"], [data-testid="plan-spec-other"]').evaluateAll((els) => els.map((e) => e.textContent.trim()));

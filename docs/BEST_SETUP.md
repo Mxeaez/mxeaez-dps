@@ -1,4 +1,4 @@
-# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14; Routes tab phase 16; Plan tab phase 17; raid tabs + ToA phase 18; CoX phase 19; ToB phase 20; per-raid Plan defaults + dedupe phase 21; UI cleanup phase 23; "Items I don't own" phase 26; potions from the kit + ring policy phase 27)
+# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14; Routes tab phase 16; Plan tab phase 17; raid tabs + ToA phase 18; CoX phase 19; ToB phase 20; per-raid Plan defaults + dedupe phase 21; UI cleanup phase 23; "Items I don't own" phase 26; potions from the kit + ring policy phase 27; Plan tab polish phase 30)
 
 `/best-setup` (dev: http://localhost:3001/osrs-dps/best-setup; "Best setup" button in the top bar, "Calculator" leads
 back). Tabs, in order: **Search** (the default, phase 9/12, see the end of this file) searches a pool of end-game items
@@ -282,11 +282,14 @@ table then shows the other routes' times with the same kit); **Comfort supplies 
 restore, food, other (phase 27; Fractured Archive default Saradomin brew 6, Super restore 4; phase 21: each raid has its
 own, see *Per-raid defaults*); the combat potions are **not inputs** any more, the planner derives them from the kit
 (*Potions from the kit and ring policy*, below); no magic potion — see *Heart* below; **Rune pouch /
-other non-items** (default 1); **Rings** (one-line summary; the policy is under "Advanced (plan)", default *Camp one
-ring*);
-**Items I always bring** (default Lightbearer, Elder maul, Zaryte crossbow, Kodai wand, Ancestral robe top, Elidinis'
-ward (f), Saturated heart; editable with the calculator's item search; each takes a slot unless a kit loadout wears it, and any loadout
-may use them for free). Time-model settings come from the Advanced box (phase 23; defaults `raid.defaultTimeSettings`;
+other non-items** (default 1); **Rings** (phase 30: a dropdown on the same row — Camp one ring (default) / Camp
+Lightbearer / Allow ring switches — with the one-line summary of what it chose next to it; it was under "Advanced
+(plan)" before);
+**Items I always bring** (phase 30: empty by default — the planner decides the styles, so nothing is "always brought";
+the list is for your own additions — except the Saturated heart in FA / ToB until phase 31 makes it magic's kit
+potion; before: Lightbearer, Zaryte crossbow, Kodai wand, Ancestral robe top, Elidinis' ward (f), Saturated heart;
+editable with the calculator's item search; each takes a slot unless a kit loadout wears it, and any loadout may use
+them for free). Time-model settings come from the Advanced box (phase 23; defaults `raid.defaultTimeSettings`;
 FA: `RAID_TIME_DEFAULTS`). Phase 22: `plan()` and `computeRouteComparison()` throw if the time model passed isn't the
 assumptions' raid's (`assertTimeModelForRaid`), since both default to the Fractured Archive's.
 
@@ -350,8 +353,10 @@ their names. Rules:
 
 **Output.** Free-slot badge; worn set (laid out like the calculator's equipment grid); 4×7 inventory (supplies, switch
 items grouped by style with a coloured border — melee red, ranged green, magic blue —, spec weapons, pinned items, rune
-pouch / other, swap space, free; icons + tooltips; brews / restores / food get a generic potion icon, Ranging / Super
-combat / Saturated heart upstream's images; a note on where the spec weapons come from: the planner or "Specs I bring"); kit loadouts with icon
+pouch / other, swap space, free; icons + tooltips; phase 30: brews / restores / food show the wiki's inventory images
+(Saradomin brew(4), Super restore(4), Anglerfish; `src/public/img/supplies/`, bundled like upstream's potion images so
+they show in dev without a CDN deploy), "Other" a generic flask, Ranging / Super combat / Saturated heart upstream's
+images; a note on where the spec weapons come from: the planner or "Specs I bring"); kit loadouts with icon
 rows and where each came from; "Potions (from the kit)" and "Ring" lines (phase 27; the old "unused potion supplies"
 warning is gone: the kit never brings a potion it doesn't use); a warning with a one-click fix for always-brought items
 no loadout wears ("Remove these to free N slots"), which re-plans; the
@@ -393,7 +398,10 @@ Elidinis' ward (f)); removing them (one click) gives Ascension crossbows worn + 
 ### Per-raid defaults, raid items and the dedupe rule (phase 21)
 
 **Defaults per raid** (`RaidBase.planDefaults`, `src/lib/raids/planDefaults.ts`; the Plan inputs load them when the
-raid tab opens, "reset" restores the pinned list). Spec weapons come from the planner (phase 29; Elder maul left the FA / CoX / ToB
+raid tab opens, "reset" restores the pinned list). **Phase 30: the pinned lists are empty** (FA / ToB keep the
+Saturated heart until phase 31); the "Items always brought" column below is the phase 21-29 list, kept for the
+sources. CoX needs no pinned pickaxe: the Guardians take damage from pickaxes only, so every CoX plan adds the Dragon
+pickaxe switch itself (the CoX pool and presets have it; `Phase30.test.ts`). Spec weapons come from the planner (phase 29; Elder maul left the FA / CoX / ToB
 pinned lists) or "Specs I bring", and are counted once with the pinned items. Every raid has 1 non-item slot (the rune pouch: every Strategies
 example inventory has one).
 
@@ -464,8 +472,8 @@ are in the inventory grid (tooltip "from the kit: one per style") and in a "Poti
 **Comfort supplies** stay user-entered: brew, restore, food, other ("Comfort supplies (your call)"), per-raid defaults in
 `planDefaults.ts` (FA 6 brew / 4 restore, ToA 6 restore / 2 Other, CoX 2 / 2 / 1 Other, ToB 4 brew / 3 restore).
 
-**Ring policy** (`PlanInputs.ringPolicy`, `RING_POLICIES`; the Plan tab's Advanced box, with a one-line "Rings:" summary
-in the simple view; default `DEFAULT_RING_POLICY` = *Camp one ring*; `plan()` without a policy = *Allow ring switches*,
+**Ring policy** (`PlanInputs.ringPolicy`, `RING_POLICIES`; phase 30: a "Rings" dropdown with the Plan inputs, its
+one-line summary next to it — it was in the Advanced box; default `DEFAULT_RING_POLICY` = *Camp one ring*; `plan()` without a policy = *Allow ring switches*,
 so the API and the phase 17-26 tests are unchanged):
 
 - **Allow ring switches**: each candidate keeps the ring its search row / preset has (ring switches are inventory
@@ -618,7 +626,13 @@ both "not needed"); the % is P(floor from the first round) with those specs / wi
 instead when the plan doesn't rank at the floor (The Smorks, floor 0), "(→ magic def X)" for Eye of Ayak short of 0.
 Hits are on the team's part only ("needed ×3 (6 hits)" read as six hits required: 4 hits reach AG's floor). Solo
 lines: "×2 (4 hits)". The Xarth 66% is the ranking rule at work: below 95% the ranking uses the reachable Defence
-nearest the expected one, which is still the floor there.
+nearest the expected one, which is still the floor there. **Phase 30**: when everything brought reaches the floor at
+the confidence (P ≥ 95%), "needed" must too — the fewest specs that still do, not a smaller count that ranks at the
+same Defence below the threshold (Eye of Ayak likewise for magic def 0). With the Advanced 2 / 2 / 1: AG Flying
+"needed ×4 (98%) · team brings ×4 (8 hits, 98%)" (was ×3 (86%)); Xarth Elder maul "not needed", Tonalztics "needed ×2
+(97%) · team brings ×4 (8 hits, >99.9%)" (was ×1 (66%)); Bork Elder maul "needed ×3 (98%) · team brings ×4 (99.6%)",
+Tonalztics "needed ×3 (97%) · team brings ×4 (8 hits, 99.6%)" (was "not needed"). The Search drain box's carrier table
+is labelled "Per boss minimum at 95% (for reference): …" (the planner's carriers are the Plan tab's).
 
 *Your share* (`assignMe`, default "assign me"): the Team drain state counts every carrier whoever carries it, so
 carrying gains *you* nothing; you get the most-needed weapon of the planner's carriers (most carriers; ties Elder maul,
@@ -643,6 +657,19 @@ party 1 the Search drain box has no team carrier table.
 | ToB | 7:31.7 | 7:30.6 | **7:30.0** | 2 Tonalztics, 1 Elder maul | Tonalztics: slot worth 0.5 s |
 | FA without Obligator + Ascension crossbows | 25:24.5 | 24:53.8 | **24:53.8** (Ultor) | 2 Tonalztics | Tonalztics, free slot |
 
+**Phase 30 (empty pinned defaults; FA / ToB keep the heart)** — the same planner, the freed slots re-spent (slow
+`CrossRaid` pins, `verifyPhase21 / 23 / 26 / 30`):
+
+| Raid | Phase 29 (fixes 2) | **Phase 30** | What the freed slots buy |
+|---|---|---|---|
+| FA | 21:53.0 | **21:44.4** | 5 freed (Lightbearer, Zaryte crossbow, Kodai wand, Ancestral robe top, Elidinis' ward (f)): Ascension crossbows + diamond bolts (e) worn (Masori) beside the Twisted bow switch (+ Seeking dragon arrows) and Inquisitor's + Obligator — Archive Guardian 190.7 → 182.1 s; 3 slots stay free (nothing else saves ≥ 1 s per slot); carriers and share unchanged (2 maul + 2 Tonalztics; you: Tonalztics) |
+| ToA | 14:10.6 | **14:06.0** | Lightbearer + Zaryte crossbow freed: a Twisted bow + Seeking dragon arrows switch (Zebak 126.5 → 121.9 s); your share still none (slot now worth 2.7 s) |
+| CoX | 6:36.3 | **6:36.3** | none: the pinned Dragon pickaxe was already the kit's Guardians switch; the planner adds it itself (same kit) |
+| ToB | 7:30.0 | **7:30.0** | none (only the heart was pinned) |
+| FA without Obligator + Ascension crossbows | 24:53.8 | **24:45.3** | a Tumeken's shadow (Ancestral) loadout (the pinned heart, unused before, now boosts it) with the Twisted bow as a partial switch on it, route via Bork + Smorks; no spec weapon for you (slot worth 8.5 s) |
+
+FA steps on the returned kit (phase 30): Tonalztics −223.9 s, Tonalztics −34.6, Elder maul −13.3, Elder maul −3.6.
+
 FA 6-man, in the order added: Tonalztics −230.0 s, Tonalztics −35.2 s, Elder maul −13.3 s, Elder maul −3.6 s; the next
 best (a third Tonalztics, an Ayak carrier without a magic kit) saves < 1 s. In the final kit the last Tonalztics
 carrier saves 27.0 s (Ocellus 19.3, Bork + Smorks 4.2, AG 3.5) and the last Elder maul 3.6 s (Bork + Smorks). The old
@@ -655,9 +682,18 @@ an uncapped Magic-defence drain looked worth 5 carriers on ToA: UNVERIFIED D22; 
 −13.3 / −10.9 / −16.7 / −17.8 / −16.0 s; now maul −55.1, Ayak −14.0, Tonalztics −3.5 s). **Search / Summary follow the
 planner's carriers**: in "Planner decides" mode, after a plan the disabled Advanced counts show its carriers and Search /
 Summary use them (`withPlanCarriers`); before any plan they keep the defaults (note: "run a plan to fill these").
-The briefing's steps are measured on the final kit (ToB: −34.3 / −10.4 / −3.5 s).
+The briefing's steps are measured on the final kit (ToB: −34.3 / −10.4 / −3.5 s). Phase 30: always — each prefix of
+the carriers added is re-timed on the returned kit (the greedy measured them on the kit before partial switches; ToB
+showed −31.8 / −10.4 / −3.5 s).
 
-**Solo** (FA defaults at party size 1, camp one ring → Ultor; `verifyPhase29`): **22:10.5, "Bring: Tonalztics"** —
+**Solo, phase 30** (empty pinned defaults, party 1, camp one ring → Ultor; `verifyPhase29`): **22:01.3, "Bring: Elder
+maul, Tonalztics"** (Elder maul saves 0.6 s in a free slot; kit Ascension crossbows (Masori) worn + Inquisitor's +
+Obligator + Twisted bow). Brute force over all 32 sets ("Specs I bring", camp one ring, 2026-10-24): 1321.34 s best,
+shared by {Elder maul, Tonalztics} and ten other sets pairing Tonalztics with Elder maul or DWH (BGS / Ayak on top change nothing); {Tonalztics} 1321.91;
+the planner's pick is the optimum (0.00 s miss). The phase 29 numbers below are with the phase 29 pinned list (kept as
+the input of the slow Phase29 regressions).
+
+**Solo** (phase 29 FA defaults at party size 1, camp one ring → Ultor): **22:10.5, "Bring: Tonalztics"** —
 the reviewer's brute force over all 32 sets (each planned with "Specs I bring", re-timed with `compareRoutes`) has
 {Tonalztics} 1330.53 s fastest, then {Elder maul, Eye of Ayak} 22:42.7 (the phase 29 pick) and {DWH, Ayak} 22:46.1.
 Dropping Tonalztics: +228.2 s; best without it: Elder maul + Eye of Ayak, 22:42.7; adding Elder maul +52.0 s, DWH

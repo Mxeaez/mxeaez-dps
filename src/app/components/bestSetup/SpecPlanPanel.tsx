@@ -65,7 +65,7 @@ const SpecPlanPanel: React.FC<{
       {assumptions.partySize > 1 && (
       <details data-testid="team-table">
         <summary className="cursor-pointer">
-          {`Team carriers: ${rec.text}`}
+          {`Per boss minimum at ${formatProbability(rec.threshold)} (for reference): ${rec.text}`}
         </summary>
         <table className="mt-1">
           <thead>
