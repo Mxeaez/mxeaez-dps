@@ -100,18 +100,53 @@ export const SUPPLY_TYPES: { id: SupplyType, label: string, image: string | null
 export type SupplyCounts = Record<SupplyType, number>;
 
 /**
- * The Fractured Archive's default supplies (6 brew / 4 restore / 2 ranging / 1 super combat). Phase 21: each raid has its
- * own (`RaidBase.planDefaults`, src/lib/raids/planDefaults.ts); this name stays for the phase 17 code and tests.
+ * The Fractured Archive's default comfort supplies (6 brew / 4 restore; phase 27: the combat potions come from the kit).
+ * Phase 21: each raid has its own (`RaidBase.planDefaults`, src/lib/raids/planDefaults.ts); this name stays for the
+ * phase 17 code and tests.
  */
 export const DEFAULT_SUPPLIES: SupplyCounts = FA_PLAN_DEFAULTS.supplies;
 
 /**
- * The supply that carries each style's boost where the potions are brought (FA, ToB). A style whose supply count is 0 is
- * evaluated without its potion (the Assumptions box's potion is the one used "if brought"). Magic has no supply: its
- * boost is a pinned heart (`pinnedHeart`). The drain / spec model keeps the potions.
+ * Phase 27: the supplies the user enters ("Comfort supplies (your call)"): brews, restores, food, other. The combat
+ * potions (`KIT_POTIONS`) are not inputs any more.
  */
+export const COMFORT_SUPPLY_TYPES: SupplyType[] = ['brew', 'restore', 'food', 'other'];
+
+/** The comfort part of a supply count (combat potions zeroed: the planner derives them from the kit). */
+export const comfortSupplies = (s: SupplyCounts): SupplyCounts => ({ ...s, ranging: 0, superCombat: 0 });
+
+/**
+ * Phase 27: the potion each style brings where the potions are brought (FA, ToB: `boostsNeedSupplies`): a kit with a
+ * melee loadout brings one Super combat, with a ranged loadout one Ranging potion (one potion item = one slot, whatever
+ * its doses). Magic has none: its boost is a pinned heart (`pinnedHeart`). ToA / CoX: the raid potion ("Other").
+ */
+export const KIT_POTIONS: Partial<Record<StyleGroup, SupplyType>> = {
+  melee: 'superCombat', ranged: 'ranging',
+};
+
+/** Phase 21 name of the inverse map (supply → style); kept for the inventory code and tests. */
 export const SUPPLY_POTION_GROUP: Partial<Record<SupplyType, StyleGroup>> = {
   superCombat: 'melee', ranging: 'ranged',
+};
+
+/** Slots taken by a kit's potions: one per distinct potion among its members (null = none). */
+export const potionSlots = (potions: (string | null | undefined)[]): number => new Set(potions.filter((x) => !!x)).size;
+
+const GROUP_ORDER_POTIONS: StyleGroup[] = ['melee', 'ranged', 'magic'];
+
+/** Phase 27: the potions a kit of these style groups brings (none in ToA / CoX). */
+export const kitPotions = (groups: StyleGroup[], boostsNeedSupplies: boolean): { type: SupplyType, label: string, group: StyleGroup }[] => (
+  boostsNeedSupplies ? GROUP_ORDER_POTIONS.filter((g) => groups.includes(g) && KIT_POTIONS[g]).map((g) => ({
+    type: KIT_POTIONS[g]!, label: SUPPLY_TYPES.find((x) => x.id === KIT_POTIONS[g])!.label, group: g,
+  })) : []);
+
+/** Phase 27: the comfort supplies plus the kit's potions (what the inventory holds). */
+export const kitSupplies = (comfort: SupplyCounts, groups: StyleGroup[], boostsNeedSupplies: boolean): SupplyCounts => {
+  const out = comfortSupplies(comfort);
+  kitPotions(groups, boostsNeedSupplies).forEach((p) => {
+    out[p.type] = 1;
+  });
+  return out;
 };
 
 /**
@@ -136,8 +171,9 @@ export const pinnedHeart = (pinned: number[]) => pinned.map(heartById).find((h) 
 
 /**
  * The best-setup assumptions as the plan uses them (Search / Summary always assume every style's boost):
- * - potions brought (FA, ToB: `boostsNeedSupplies`): melee / ranged lose the boost when their potion count is 0; magic
- *   is boosted iff a heart is pinned, with that heart's boost (whatever the Assumptions box says).
+ * - potions brought (FA, ToB: `boostsNeedSupplies`): phase 27: melee / ranged keep their boost (the kit brings the
+ *   potion of every style it has: `KIT_POTIONS`, counted in its slot cost); magic is boosted iff a heart is pinned, with
+ *   that heart's boost (whatever the Assumptions box says).
  * - raid potions (ToA Smelling salts, CoX Overload: boost every style): every style keeps the raid's boost iff the
  *   "Other" supply count is > 0; with none, magic falls back to a pinned heart, melee / ranged lose the boost.
  */
@@ -148,8 +184,7 @@ export const planAssumptions = (a: BestSetupAssumptions, supplies: SupplyCounts,
     if (heart) return { ...a, potions: { ...a.potions, magic: heart.potion }, withoutPotion: ['melee', 'ranged'] };
     return { ...a, withoutPotion: ['melee', 'ranged', 'magic'] };
   }
-  const without = (Object.entries(SUPPLY_POTION_GROUP) as [SupplyType, StyleGroup][])
-    .filter(([t]) => !(supplies[t] > 0)).map(([, g]) => g);
+  const without: StyleGroup[] = [];
   if (!heart) without.push('magic');
   const withHeart = heart && a.potions.magic !== heart.potion ? { ...a, potions: { ...a.potions, magic: heart.potion } } : a;
   return without.length ? { ...withHeart, withoutPotion: without } : withHeart;
@@ -244,6 +279,60 @@ export const pinnedPlanItem = (id: number): PlanItem | undefined => {
   const p = equipmentById(id);
   return p ? toPlanItem(p) : undefined;
 };
+
+// --- ring policy ---------------------------------------------------------------------------------------------------
+
+/**
+ * Phase 27: rings across a kit. 'switch' = each loadout keeps the ring its search / preset found (ring switches are
+ * inventory items, the phase 17-26 behaviour); 'camp-one' = every loadout wears one ring, the best of `CAMP_RINGS` by
+ * route time; 'camp-lightbearer' = every loadout wears Lightbearer (constant spec regen: the Solo spec budget uses the
+ * Lightbearer regen).
+ */
+export type RingPolicy = 'switch' | 'camp-one' | 'camp-lightbearer';
+
+/** The Plan tab's default (the user, 2026-10-23: "a lot of people don't bring ring switches"). */
+export const DEFAULT_RING_POLICY: RingPolicy = 'camp-one';
+
+export const RING_POLICIES: { id: RingPolicy, label: string, title: string }[] = [
+  { id: 'camp-one', label: 'Camp one ring', title: 'Every loadout wears the same ring; the planner picks the ring with the lowest route time' },
+  { id: 'camp-lightbearer', label: 'Camp Lightbearer', title: 'Every loadout wears Lightbearer: spec energy regenerates twice as fast (Solo drains), a bit less DPS' },
+  { id: 'switch', label: 'Allow ring switches', title: 'Each loadout wears its own best ring; a ring switch is an inventory item' },
+];
+
+/** The rings "Camp one ring" tries (unowned ones are skipped). */
+export const CAMP_RINGS: ItemRef[] = ['Ultor ring', 'Bellator ring', 'Venator ring', 'Magus ring', ['Ring of shadows', 'Charged'], 'Lightbearer'];
+
+/** The camped rings the user owns, as plan items. */
+export const campRingItems = (notOwned: string[] = []): PlanItem[] => CAMP_RINGS
+  .filter((r) => isOwned(typeof r === 'string' ? r : r[0], notOwned))
+  .map((r) => { try { return planItemByName(r); } catch { return null; } })
+  .filter((x): x is PlanItem => !!x && x.id > 0)
+  .map((x) => ({ ...x, slot: 'ring' as Slot }));
+
+/** Rings fully planned after the screen (the best, plus the runner-up when within the margin). */
+const RING_FINALISTS = 2;
+const RING_FINALIST_MARGIN = 0.01;
+/** Optimiser seeds of a ring screen. */
+const SCREEN_SEEDS = 6;
+
+const ringLabel = (ring: PlanItem | null) => (ring ? `ring: ${ring.name}` : 'rings as searched');
+
+/**
+ * Phase 27: the assumptions of a ring run: a camp policy sets the Solo spec budget's Lightbearer regen
+ * (`mySpecs.lightbearer`) to whether the camped ring is Lightbearer; 'switch' keeps the user's flag.
+ */
+export const ringAssumptions = (a: BestSetupAssumptions, policy: RingPolicy, ring: { name: string } | null): BestSetupAssumptions => {
+  if (policy === 'switch' || !ring) return a;
+  const lb = ring.name === 'Lightbearer';
+  return a.mySpecs.lightbearer === lb ? a : { ...a, mySpecs: { ...a.mySpecs, lightbearer: lb } };
+};
+
+/** One ring run of the planner (internal). */
+interface RingRun {
+  seconds: number;
+  ms: number;
+  result?: PlanResult;
+}
 
 /** The equipment as the calculator holds it: every slot set (null when empty), blowpipe darts kept. */
 export const toPlayerEquipment = (eq: PlanEquipment): Partial<PlayerEquipment> => Object.fromEntries(ALL_SLOTS.map((slot) => {
@@ -466,6 +555,11 @@ export interface KitProblem {
   allowed?: boolean[];
   /** Phase 21: raid-supplied item ids (0 slots; see kitSlotUsage). */
   raidSupplied?: number[];
+  /**
+   * Phase 27: the potion each candidate needs (any label; null = none): a kit pays one slot per distinct potion of its
+   * members (`potionSlots`), so a melee + ranged kit pays Super combat + Ranging potion and a melee-only kit one.
+   */
+  potions?: (string | null)[];
   /** Phase 21: skip the dedupe rule (the optimiser's prune step); default false. */
   noPrune?: boolean;
   /** Phase 21 (`lightenKit`): prune this kit with drops and same-group swaps instead of optimising. */
@@ -541,7 +635,7 @@ export const optimiseKit = (p: KitProblem): KitOptimum => {
       });
       min = Math.min(min, p.items[i].length);
     }
-    return p.fixedSlots + all.size - (m.length ? min : 0);
+    return p.fixedSlots + all.size - (m.length ? min : 0) + (p.potions ? potionSlots(m.map((i) => p.potions![i])) : 0);
   };
   const solution = (members: number[], seed: number): KitSolution => ({
     members, time: timeOf(members), used: usedOf(members), seed,
@@ -692,7 +786,13 @@ export interface PlanInputs {
   /** Items always brought (equipment ids). */
   pinned: number[];
   nonItemSlots: number;
+  /**
+   * The comfort supplies (brew, restore, food, other). Phase 27: the combat potions (ranging, superCombat) are ignored —
+   * they come from the kit (`kitPotions`, one slot per style present).
+   */
   supplies: SupplyCounts;
+  /** Phase 27: rings across the kit (default 'switch'; the Plan tab's default is DEFAULT_RING_POLICY). */
+  ringPolicy?: RingPolicy;
   totalSlots?: number;
   /** Search rows already known, by phase key (the UI's session cache); missing phases are searched. */
   searchRows?: Record<string, SearchRow[]>;
@@ -756,7 +856,7 @@ const SEARCH_TOP_N = 80;
 const RETIME_TOP = 5;
 
 export interface PlanProgress {
-  stage: 'search' | 'matrix' | 'partials' | 'optimise' | 'final';
+  stage: 'search' | 'matrix' | 'partials' | 'optimise' | 'rings' | 'final';
   done: number;
   total: number;
   label: string;
@@ -797,8 +897,13 @@ export interface PlanResult {
   planned: number;
   rejected: PlanRejection[];
   alternatives: PlanRejection[];
-  /** Potion supplies whose style no kit loadout uses (they only take slots). */
-  unusedSupplies: { type: SupplyType, label: string, count: number, group: StyleGroup }[];
+  /** Phase 27: the potions the kit brings (one per style present; in the inventory grid and slot count). */
+  potions: { type: SupplyType, label: string, group: StyleGroup }[];
+  /**
+   * Phase 27: the ring policy used; `ring` = the ring every loadout wears (camp policies; null for switch);
+   * `screened` (camp one ring): each ring's route time, fastest first (`full` = from a full run, else the screen).
+   */
+  ring: { policy: RingPolicy, ring: string | null, screened: { ring: string, seconds: number, full: boolean }[] };
   /** The optimiser's (matrix) DPS of the kit per phase key, for checking against the exact times. */
   matrixDps: Record<string, number>;
   /**
@@ -894,21 +999,24 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
   // phase 26: the "Items I don't own" list (pool, presets, pinned items)
   const notOwned = normaliseNotOwned(inputs.notOwned);
   const { kept: pinnedIds, dropped: droppedIds } = ownedPinned(inputs.pinned, notOwned);
-  const assumptions = planAssumptions(inputs.assumptions, inputs.supplies, pinnedIds);
+  // phase 27: the potions come from the kit (kitPotions); only the comfort supplies are the user's
+  const comfort = comfortSupplies(inputs.supplies);
+  const planA = planAssumptions(inputs.assumptions, comfort, pinnedIds);
+  const policy: RingPolicy = inputs.ringPolicy ?? 'switch';
+  const boostsNeedSupplies = raidBase(planA.raid).boostsNeedSupplies;
+  const potionOf = (g: StyleGroup): SupplyType | null => (boostsNeedSupplies ? KIT_POTIONS[g] ?? null : null);
   const total = inputs.totalSlots ?? INVENTORY_SLOTS;
   const cancelled = () => hooks.shouldCancel?.() === true;
   const progress = (p: PlanProgress) => hooks.onProgress?.(p);
-  assertTimeModelForRaid(tuning.model ?? FA_TIME_MODEL, assumptions);
-  const exactA = raidTimeAssumptionsFrom(assumptions, drain, settings, tuning.model);
-  const allRoutes = routesFor(exactA);
+  assertTimeModelForRaid(tuning.model ?? FA_TIME_MODEL, planA);
+  const routeA = raidTimeAssumptionsFrom(planA, drain, settings, tuning.model);
+  const allRoutes = routesFor(routeA);
   const routes = inputs.route === 'all' ? allRoutes : allRoutes.filter((r) => r.id === inputs.route);
   if (!routes.length) throw new Error(`Planner: unknown route '${inputs.route}'`);
   // phase 23: the assumptions no longer carry a fight length by default; the planner's fallback stays 90 s
-  const fallbackFight = assumptions.fightSeconds ?? DEFAULT_FIGHT_SECONDS;
-  // Team / None: drains don't depend on the fight length, any fixed length is exact. Solo: set per encounter below.
-  const fastA: RaidTimeAssumptions = { ...exactA, fixedFightSeconds: drain === 'none' ? undefined : fallbackFight };
+  const fallbackFight = planA.fightSeconds ?? DEFAULT_FIGHT_SECONDS;
 
-  const specItems = carriedSpecWeaponNames(assumptions.mySpecs).map(planItemByName);
+  const specItems = carriedSpecWeaponNames(planA.mySpecs).map(planItemByName);
   // equipment + hearts (a heart is never worn: always one inventory slot, counted once)
   const pinnedItems = pinnedIds.map(pinnedPlanItem).filter((p): p is PlanItem => !!p);
   const droppedPinned = droppedIds.map(pinnedPlanItem).filter((p): p is PlanItem => !!p);
@@ -917,12 +1025,13 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     ...specItems.filter((it) => !isOwned(it.name, notOwned)).map((it) => `${it.name} is in "My specs" but on your "Items I don't own" list (${unownedBase(it.name, notOwned)}): untick it in My specs.`),
   ];
   // phase 21: the raid's own items (ToB: Dawnbringer) cost no slot and are free to put on any loadout
-  const raidSupplied = raidSuppliedItemIds(assumptions);
+  const raidSupplied = raidSuppliedItemIds(planA);
   const raidSuppliedSet = new Set(raidSupplied);
   const carried = Array.from(new Set([...specItems, ...pinnedItems].map((i) => i.id)));
   const carriedSet = new Set(carried);
   const isFreeItem = (id: number) => carriedSet.has(id) || raidSuppliedSet.has(id);
-  const fixedSlots = sumSupplies(inputs.supplies) + Math.max(0, Math.floor(inputs.nonItemSlots || 0));
+  // the kit's potions are added per kit (KitProblem.potions)
+  const fixedSlots = sumSupplies(comfort) + Math.max(0, Math.floor(inputs.nonItemSlots || 0));
 
   const emptyResult = (searchRows: Record<string, SearchRow[]>): PlanResult => ({
     cancelled: true,
@@ -940,7 +1049,8 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     excluded: notOwned,
     droppedPinned,
     ownershipNotices,
-    unusedSupplies: [],
+    potions: [],
+    ring: { policy, ring: null, screened: [] },
     matrixDps: {},
     searchRows,
     stats: {
@@ -960,7 +1070,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
   });
 
   // 1. phase targets and searches
-  const byEncounter = encounterPhaseTargets(routes, exactA);
+  const byEncounter = encounterPhaseTargets(routes, routeA);
   const targets: { targetKey: string, phase?: string }[] = [];
   const encounterOfCol: EncounterId[] = [];
   byEncounter.forEach((ts, e) => ts.forEach((t) => {
@@ -978,7 +1088,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     });
     const r = runGearSearch(basePlayer, {
       targetKey: t.targetKey, phase: t.phase, drain, styles: 'all',
-    }, assumptions, {
+    }, planA, {
       ...(tuning.search || {}),
       notOwned,
       topN: SEARCH_TOP_N,
@@ -991,112 +1101,123 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     searchRows[phaseKey(t.targetKey, t.phase)] = pickSearchRows(r, cfg.perGroupWeapons, cfg.perWeapon);
   }
   const tSearch = Date.now();
+  const rowCache = new Map<string, [number[], number[]]>();
 
-  // 2. full candidates (presets + search rows), merged by items + group
-  const candidates: PlanCandidate[] = [];
-  const byKey = new Map<string, PlanCandidate>();
-  const labelCount = new Map<string, number>();
-  const uniqueLabel = (l: string) => {
-    const n = (labelCount.get(l) ?? 0) + 1;
-    labelCount.set(l, n);
-    return n === 1 ? l : `${l} #${n}`;
-  };
-  const addCandidate = (c: Omit<PlanCandidate, 'key' | 'label'> & { label: string }): PlanCandidate | null => {
-    const key = `${c.group}|${equipmentKey(c.equipment)}`;
-    const old = byKey.get(key);
-    if (old) {
-      old.options = mergeOptions(old.options, c.options);
-      return null;
-    }
-    const cand: PlanCandidate = { ...c, key, label: uniqueLabel(c.label) };
-    byKey.set(key, cand);
-    candidates.push(cand);
-    return cand;
-  };
-  let nPreset = 0;
-  let nSearch = 0;
-  for (const preset of filterPresets(tuning.presets || raidBase(assumptions.raid).presets, notOwned)) {
-    let equipment: PlanEquipment;
-    try {
-      equipment = presetEquipment(preset);
-    } catch {
-      continue;
-    }
-    const options = presetStyles(preset).flatMap((style) => presetSpells(preset).map((spell) => ({ style, spell })));
-    if (addCandidate({
-      label: preset.name, kind: 'preset', group: preset.group, equipment, options, source: 'preset',
-    })) nPreset += 1;
-  }
-  for (const t of targets) {
-    const where = `${findTarget(t.targetKey).label}${t.phase ? ` (${t.phase})` : ''}`;
-    for (const row of searchRows[phaseKey(t.targetKey, t.phase)] || []) {
-      if (addCandidate({
-        label: row.weaponLabel,
-        kind: 'search',
-        group: row.group,
-        equipment: searchRowEquipment(row),
-        options: [{ style: row.style, spell: row.spell }],
-        source: `search: ${where}`,
-      })) nSearch += 1;
-    }
-  }
-
-  // 3. DPS matrix (columns = phase targets under the drain state at the fixed fight length)
-  const colIx = new Map(targets.map((t, i) => [phaseKey(t.targetKey, t.phase), i]));
-  let evaluations = 0;
-  const monstersAt = (d: DrainStateId, fightOf: (col: number) => number) => targets.map((t, col) => buildTargetMonster(
-    findTarget(t.targetKey),
-    t.phase,
-    d,
-    { ...assumptions, fightSeconds: fightOf(col) },
-  ).monster);
-  let monsters = monstersAt(drain, () => fallbackFight);
-  const dpsOn = (
-    c: Pick<PlanCandidate, 'group' | 'options' | 'label'>,
-    eq: PlanEquipment,
-    col: number,
-    ms = monsters,
-  ): { dps: number, option: number } => {
-    let best = { dps: 0, option: 0 };
-    const playerEq = toPlayerEquipment(eq);
-    c.options.forEach((o, oi) => {
-      let dps = 0;
+  // phase 27: one run of steps 2-7 per ring (`ring` = the camped ring on every candidate; null = rings as searched).
+  // `screen`: full candidates only (no partial switches), fewer seeds, one exact re-time, no explanations — ranks the
+  // rings of "Camp one ring" before the full runs.
+  const runRing = (ring: PlanItem | null, screen: boolean): RingRun => {
+    const tRing = Date.now();
+    const assumptions = ringAssumptions(planA, policy, ring);
+    const exactA = raidTimeAssumptionsFrom(assumptions, drain, settings, tuning.model);
+    // Team / None: drains don't depend on the fight length, any fixed length is exact. Solo: set per encounter below.
+    const fastA: RaidTimeAssumptions = { ...exactA, fixedFightSeconds: drain === 'none' ? undefined : fallbackFight };
+    // 2. full candidates (presets + search rows), merged by items + group
+    const candidates: PlanCandidate[] = [];
+    const byKey = new Map<string, PlanCandidate>();
+    const labelCount = new Map<string, number>();
+    const uniqueLabel = (l: string) => {
+      const n = (labelCount.get(l) ?? 0) + 1;
+      labelCount.set(l, n);
+      return n === 1 ? l : `${l} #${n}`;
+    };
+    const addCandidate = (c0: Omit<PlanCandidate, 'key' | 'label'> & { label: string }): PlanCandidate | null => {
+      // a camped ring replaces every candidate's ring (merging candidates that only differed by it)
+      const c = ring ? { ...c0, equipment: { ...c0.equipment, ring } } : c0;
+      const key = `${c.group}|${equipmentKey(c.equipment)}`;
+      const old = byKey.get(key);
+      if (old) {
+        old.options = mergeOptions(old.options, c.options);
+        return null;
+      }
+      const cand: PlanCandidate = { ...c, key, label: uniqueLabel(c.label) };
+      byKey.set(key, cand);
+      candidates.push(cand);
+      return cand;
+    };
+    let nPreset = 0;
+    let nSearch = 0;
+    for (const preset of filterPresets(tuning.presets || raidBase(assumptions.raid).presets, notOwned)) {
+      let equipment: PlanEquipment;
       try {
-        const player = applyLoadoutToPlayer(basePlayer, c.label, c.group, playerEq, o.style, o.spell, ms[col], assumptions);
-        dps = evaluateLoadout(player, ms[col], false).dps;
+        equipment = presetEquipment(preset);
       } catch {
-        dps = 0;
+        continue;
       }
-      evaluations += 1;
-      if (dps > best.dps) best = { dps, option: oi };
+      const options = presetStyles(preset).flatMap((style) => presetSpells(preset).map((spell) => ({ style, spell })));
+      if (addCandidate({
+        label: preset.name, kind: 'preset', group: preset.group, equipment, options, source: 'preset',
+      })) nPreset += 1;
+    }
+    for (const t of targets) {
+      const where = `${findTarget(t.targetKey).label}${t.phase ? ` (${t.phase})` : ''}`;
+      for (const row of searchRows[phaseKey(t.targetKey, t.phase)] || []) {
+        if (addCandidate({
+          label: row.weaponLabel,
+          kind: 'search',
+          group: row.group,
+          equipment: searchRowEquipment(row),
+          options: [{ style: row.style, spell: row.spell }],
+          source: `search: ${where}`,
+        })) nSearch += 1;
+      }
+    }
+
+    // 3. DPS matrix (columns = phase targets under the drain state at the fixed fight length)
+    const colIx = new Map(targets.map((t, i) => [phaseKey(t.targetKey, t.phase), i]));
+    let evaluations = 0;
+    const monstersAt = (d: DrainStateId, fightOf: (col: number) => number) => targets.map((t, col) => buildTargetMonster(
+      findTarget(t.targetKey),
+      t.phase,
+      d,
+      { ...assumptions, fightSeconds: fightOf(col) },
+    ).monster);
+    let monsters = monstersAt(drain, () => fallbackFight);
+    const dpsOn = (
+      c: Pick<PlanCandidate, 'group' | 'options' | 'label'>,
+      eq: PlanEquipment,
+      col: number,
+      ms = monsters,
+    ): { dps: number, option: number } => {
+      let best = { dps: 0, option: 0 };
+      const playerEq = toPlayerEquipment(eq);
+      c.options.forEach((o, oi) => {
+        let dps = 0;
+        try {
+          const player = applyLoadoutToPlayer(basePlayer, c.label, c.group, playerEq, o.style, o.spell, ms[col], assumptions);
+          dps = evaluateLoadout(player, ms[col], false).dps;
+        } catch {
+          dps = 0;
+        }
+        evaluations += 1;
+        if (dps > best.dps) best = { dps, option: oi };
+      });
+      return best;
+    };
+    const dps: number[][] = [];
+    const bestOpt: number[][] = [];
+    const optLabel = (i: number, col: number) => {
+      const o = candidates[i].options[bestOpt[i]?.[col] ?? 0];
+      return o ? styleLabel(o.style, o.spell) : '-';
+    };
+    const matrixKit = (members: number[], table: number[][] = dps): RaidKit => ({
+      best: (q) => {
+        const col = colIx.get(phaseKey(q.targetKey, q.phase));
+        if (col === undefined) throw new Error(`Planner: phase ${phaseKey(q.targetKey, q.phase)} not in the matrix`);
+        let bi = -1;
+        for (const m of members) {
+          if (bi < 0 || table[m][col] > table[bi][col]) bi = m;
+        }
+        if (bi < 0) return null;
+        return {
+          loadout: candidates[bi].label, style: optLabel(bi, col), group: candidates[bi].group, dps: table[bi][col],
+        };
+      },
     });
-    return best;
-  };
-  const dps: number[][] = [];
-  const bestOpt: number[][] = [];
-  const optLabel = (i: number, col: number) => {
-    const o = candidates[i].options[bestOpt[i]?.[col] ?? 0];
-    return o ? styleLabel(o.style, o.spell) : '-';
-  };
-  const matrixKit = (members: number[], table: number[][] = dps): RaidKit => ({
-    best: (q) => {
-      const col = colIx.get(phaseKey(q.targetKey, q.phase));
-      if (col === undefined) throw new Error(`Planner: phase ${phaseKey(q.targetKey, q.phase)} not in the matrix`);
-      let bi = -1;
-      for (const m of members) {
-        if (bi < 0 || table[m][col] > table[bi][col]) bi = m;
-      }
-      if (bi < 0) return null;
-      return {
-        loadout: candidates[bi].label, style: optLabel(bi, col), group: candidates[bi].group, dps: table[bi][col],
-      };
-    },
-  });
-  // Solo: the drains depend on the fight length. Each encounter's length = its undrained time with the best single
-  // full candidate (one extra undrained pass over the presets + search rows); the matrix plans drains with it.
-  let soloFight: Partial<Record<EncounterId, number>> | undefined;
-  if (drain === 'solo') {
-    try {
+    // Solo: the drains depend on the fight length. Each encounter's length = its undrained time with the best single
+    // full candidate (one extra undrained pass over the presets + search rows); the matrix plans drains with it.
+    let soloFight: Partial<Record<EncounterId, number>> | undefined;
+    if (drain === 'solo') {
       const noneMonsters = monstersAt('none', () => fallbackFight);
       const noneDps: number[][] = candidates.map((c, i) => {
         if (cancelled()) throw new PlanCancelled();
@@ -1117,189 +1238,185 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         });
         soloFight[e] = Number.isFinite(bestT) && bestT > 0 ? Math.round(bestT) : fallbackFight;
       }
-    } catch (e) {
-      if (e instanceof PlanCancelled) return emptyResult(searchRows);
-      throw e;
+      fastA.fixedFightSeconds = soloFight;
+      monsters = monstersAt(drain, (col) => soloFight![encounterOfCol[col]] ?? fallbackFight);
     }
-    fastA.fixedFightSeconds = soloFight;
-    monsters = monstersAt(drain, (col) => soloFight![encounterOfCol[col]] ?? fallbackFight);
-  }
-  const fillMatrix = (from: number, stage: PlanProgress['stage']) => {
-    for (let i = from; i < candidates.length; i++) {
-      if (cancelled()) throw new PlanCancelled();
-      if ((i - from) % 5 === 0) {
-        progress({
-          stage, done: i - from, total: candidates.length - from, label: candidates[i].label,
-        });
+    const fillMatrix = (from: number, stage: PlanProgress['stage']) => {
+      for (let i = from; i < candidates.length; i++) {
+        if (cancelled()) throw new PlanCancelled();
+        if ((i - from) % 5 === 0) {
+          progress({
+            stage, done: i - from, total: candidates.length - from, label: candidates[i].label,
+          });
+        }
+        // the full candidates' rows are the same in a ring's screen and full run: cached per ring
+        const cacheKey = `${ring?.id ?? 0}|${candidates[i].key}|${candidates[i].options.map(optionKey).join(';')}`;
+        const cached = rowCache.get(cacheKey);
+        if (cached) {
+          [dps[i], bestOpt[i]] = cached;
+        } else {
+          const row = targets.map((_, col) => dpsOn(candidates[i], candidates[i].equipment, col));
+          dps[i] = row.map((x) => x.dps);
+          bestOpt[i] = row.map((x) => x.option);
+          rowCache.set(cacheKey, [dps[i], bestOpt[i]]);
+        }
       }
-      const row = targets.map((_, col) => dpsOn(candidates[i], candidates[i].equipment, col));
-      dps[i] = row.map((x) => x.dps);
-      bestOpt[i] = row.map((x) => x.option);
-    }
-  };
-
-  try {
-    fillMatrix(0, 'matrix');
-  } catch (e) {
-    if (e instanceof PlanCancelled) return emptyResult(searchRows);
-    throw e;
-  }
-  const colMax = targets.map((_, col) => Math.max(0, ...dps.map((r) => r[col])));
-  const score = (i: number) => dps[i].reduce((s, d, col) => s + (colMax[col] > 0 ? d / colMax[col] : 0), 0);
-  const ranked = (ixs: number[]) => ixs.map((i) => ({ i, s: score(i) })).sort((a, b) => (b.s - a.s) || (a.i - b.i)).map((x) => x.i);
-  const fullCount = candidates.length;
-
-  // 4. partial switches
-  let nPartial = 0;
-  let capped = 0;
-  try {
-    const byGroup = (g: StyleGroup) => ranked(candidates.map((_, i) => i).filter((i) => candidates[i].group === g && dps[i].some((d) => d > 0)));
-    const bases = GROUP_ORDER.flatMap((g) => byGroup(g).slice(0, cfg.bases));
-    const partnersOf = (g: StyleGroup) => {
-      const top = byGroup(g).slice(0, cfg.partners);
-      // + the best loadout of each carried / raid-supplied weapon of this group (they cost no slot)
-      const carriedWeapons = byGroup(g).filter((i) => isFreeItem(candidates[i].equipment.weapon?.id ?? -1));
-      const seenWeapon = new Set<number>();
-      const extra = carriedWeapons.filter((i) => {
-        const w = candidates[i].equipment.weapon!.id;
-        if (seenWeapon.has(w)) return false;
-        seenWeapon.add(w);
-        return !top.includes(i);
-      });
-      return [...top, ...extra];
     };
-    const pending: (Omit<PlanCandidate, 'key' | 'label'> & { label: string })[] = [];
-    const pairs = bases.flatMap((a) => GROUP_ORDER.filter((g) => g !== candidates[a].group).flatMap((g) => partnersOf(g).map((b) => [a, b])));
-    // phase 21: single-piece swaps within a weapon — a base with one piece of another full loadout of the same weapon
-    // (e.g. Torva helm + Oathplate + Scythe with the Salve amulet(ei) of "Torva + Salve (ei) + Scythe"), so near-duplicate
-    // sets of one weapon can merge into one set + the pieces that matter (then the dedupe rule drops the leftovers)
-    bases.forEach((a) => {
-      const A = candidates[a];
-      const weapon = A.equipment.weapon?.id;
-      if (weapon === undefined) return;
-      const seenPiece = new Set<string>();
-      for (let b = 0; b < fullCount; b++) {
+
+    fillMatrix(0, 'matrix');
+    const colMax = targets.map((_, col) => Math.max(0, ...dps.map((r) => r[col])));
+    const score = (i: number) => dps[i].reduce((s, d, col) => s + (colMax[col] > 0 ? d / colMax[col] : 0), 0);
+    const ranked = (ixs: number[]) => ixs.map((i) => ({ i, s: score(i) })).sort((a, b) => (b.s - a.s) || (a.i - b.i)).map((x) => x.i);
+    const fullCount = candidates.length;
+
+    // 4. partial switches
+    let nPartial = 0;
+    let capped = 0;
+    if (!screen) {
+      const byGroup = (g: StyleGroup) => ranked(candidates.map((_, i) => i).filter((i) => candidates[i].group === g && dps[i].some((d) => d > 0)));
+      const bases = GROUP_ORDER.flatMap((g) => byGroup(g).slice(0, cfg.bases));
+      const partnersOf = (g: StyleGroup) => {
+        const top = byGroup(g).slice(0, cfg.partners);
+        // + the best loadout of each carried / raid-supplied weapon of this group (they cost no slot)
+        const carriedWeapons = byGroup(g).filter((i) => isFreeItem(candidates[i].equipment.weapon?.id ?? -1));
+        const seenWeapon = new Set<number>();
+        const extra = carriedWeapons.filter((i) => {
+          const w = candidates[i].equipment.weapon!.id;
+          if (seenWeapon.has(w)) return false;
+          seenWeapon.add(w);
+          return !top.includes(i);
+        });
+        return [...top, ...extra];
+      };
+      const pending: (Omit<PlanCandidate, 'key' | 'label'> & { label: string })[] = [];
+      const pairs = bases.flatMap((a) => GROUP_ORDER.filter((g) => g !== candidates[a].group).flatMap((g) => partnersOf(g).map((b) => [a, b])));
+      // phase 21: single-piece swaps within a weapon — a base with one piece of another full loadout of the same weapon
+      // (e.g. Torva helm + Oathplate + Scythe with the Salve amulet(ei) of "Torva + Salve (ei) + Scythe"), so near-duplicate
+      // sets of one weapon can merge into one set + the pieces that matter (then the dedupe rule drops the leftovers)
+      bases.forEach((a) => {
+        const A = candidates[a];
+        const weapon = A.equipment.weapon?.id;
+        if (weapon === undefined) return;
+        const seenPiece = new Set<string>();
+        for (let b = 0; b < fullCount; b++) {
+          const B = candidates[b];
+          if (b === a || B.group !== A.group || B.equipment.weapon?.id !== weapon || !dps[b].some((d) => d > 0)) continue;
+          PIECE_SLOTS.forEach((slot) => {
+            const it = B.equipment[slot];
+            if (!it || it.id === A.equipment[slot]?.id || seenPiece.has(`${slot}|${it.id}`)) return;
+            seenPiece.add(`${slot}|${it.id}`);
+            pending.push({
+              label: `${A.label} + ${it.name}`,
+              kind: 'partial',
+              group: A.group,
+              equipment: { ...A.equipment, [slot]: it },
+              options: mergeOptions(A.options, B.options),
+              source: `${A.label} with ${it.name} (${slot}, from ${B.label})`,
+              base: A.label,
+              partner: B.label,
+              pieces: [slot],
+            });
+          });
+        }
+      });
+      // phase 21: a raid-supplied weapon (ToB's Dawnbringer) on every full candidate of another style ("Dawnbringer on
+      // worn gear"): weapon only, so it costs 0 slots whichever loadout ends up worn
+      const freeWeaponPartners = GROUP_ORDER.flatMap((g) => byGroup(g)).filter((i) => raidSuppliedSet.has(candidates[i].equipment.weapon?.id ?? -1));
+      const seenFreeWeapon = new Set<number>();
+      freeWeaponPartners.forEach((b) => {
+        const w = candidates[b].equipment.weapon!.id;
+        if (seenFreeWeapon.has(w)) return;
+        seenFreeWeapon.add(w);
         const B = candidates[b];
-        if (b === a || B.group !== A.group || B.equipment.weapon?.id !== weapon || !dps[b].some((d) => d > 0)) continue;
-        PIECE_SLOTS.forEach((slot) => {
-          const it = B.equipment[slot];
-          if (!it || it.id === A.equipment[slot]?.id || seenPiece.has(`${slot}|${it.id}`)) return;
-          seenPiece.add(`${slot}|${it.id}`);
+        for (let a = 0; a < fullCount; a++) {
+          const A = candidates[a];
+          if (A.group === B.group || bases.includes(a) || !dps[a].some((d) => d > 0)) continue;
+          const v0 = partialSwitchVariants(A.equipment, B.equipment, () => 0)[0];
+          // the variant also takes the partner's ammo / shield (or drops the shield for a two-hander): say so
+          let extras = B.equipment.ammo ? ' + ammo' : '';
+          if ((v0.equipment.shield?.id ?? -1) !== (A.equipment.shield?.id ?? -1)) extras += v0.equipment.shield ? ' + shield' : ', shield removed';
           pending.push({
-            label: `${A.label} + ${it.name}`,
+            label: `${B.equipment.weapon?.name ?? B.label} switch on ${A.label}`,
             kind: 'partial',
-            group: A.group,
-            equipment: { ...A.equipment, [slot]: it },
-            options: mergeOptions(A.options, B.options),
-            source: `${A.label} with ${it.name} (${slot}, from ${B.label})`,
+            group: B.group,
+            equipment: v0.equipment,
+            options: B.options,
+            source: `${A.label} → ${B.label}, weapon${extras} (the raid item: 0 slots)`,
             base: A.label,
             partner: B.label,
-            pieces: [slot],
+            pieces: [],
+          });
+        }
+      });
+      pairs.forEach(([a, b], pi) => {
+        if (cancelled()) throw new PlanCancelled();
+        const A = candidates[a];
+        const B = candidates[b];
+        progress({
+          stage: 'partials', done: pi, total: pairs.length, label: `${A.label} → ${B.label}`,
+        });
+        // B's best phase: where it is closest to the best candidate (ties: higher DPS)
+        let col = 0;
+        dps[b].forEach((d, c) => {
+          const rel = colMax[c] > 0 ? d / colMax[c] : 0;
+          const relBest = colMax[col] > 0 ? dps[b][col] / colMax[col] : 0;
+          if (rel > relBest + EPS || (Math.abs(rel - relBest) <= EPS && d > dps[b][col])) col = c;
+        });
+        const variants = partialSwitchVariants(A.equipment, B.equipment, (eq) => dpsOn(B, eq, col).dps, isFreeItem);
+        variants.forEach((v) => {
+          pending.push({
+            label: `${B.equipment.weapon?.name ?? B.label} switch${v.pieces.length ? ` +${v.pieces.length}` : ''} on ${A.label}`,
+            kind: 'partial',
+            group: B.group,
+            equipment: v.equipment,
+            options: B.options,
+            source: `${A.label} → ${B.label}${v.pieces.length ? `: ${v.pieces.map((s) => B.equipment[s]!.name).join(', ')}` : ', weapon only'}`,
+            base: A.label,
+            partner: B.label,
+            pieces: v.pieces,
           });
         });
-      }
-    });
-    // phase 21: a raid-supplied weapon (ToB's Dawnbringer) on every full candidate of another style ("Dawnbringer on
-    // worn gear"): weapon only, so it costs 0 slots whichever loadout ends up worn
-    const freeWeaponPartners = GROUP_ORDER.flatMap((g) => byGroup(g)).filter((i) => raidSuppliedSet.has(candidates[i].equipment.weapon?.id ?? -1));
-    const seenFreeWeapon = new Set<number>();
-    freeWeaponPartners.forEach((b) => {
-      const w = candidates[b].equipment.weapon!.id;
-      if (seenFreeWeapon.has(w)) return;
-      seenFreeWeapon.add(w);
-      const B = candidates[b];
-      for (let a = 0; a < fullCount; a++) {
-        const A = candidates[a];
-        if (A.group === B.group || bases.includes(a) || !dps[a].some((d) => d > 0)) continue;
-        const v0 = partialSwitchVariants(A.equipment, B.equipment, () => 0)[0];
-        // the variant also takes the partner's ammo / shield (or drops the shield for a two-hander): say so
-        let extras = B.equipment.ammo ? ' + ammo' : '';
-        if ((v0.equipment.shield?.id ?? -1) !== (A.equipment.shield?.id ?? -1)) extras += v0.equipment.shield ? ' + shield' : ', shield removed';
-        pending.push({
-          label: `${B.equipment.weapon?.name ?? B.label} switch on ${A.label}`,
-          kind: 'partial',
-          group: B.group,
-          equipment: v0.equipment,
-          options: B.options,
-          source: `${A.label} → ${B.label}, weapon${extras} (the raid item: 0 slots)`,
-          base: A.label,
-          partner: B.label,
-          pieces: [],
-        });
-      }
-    });
-    pairs.forEach(([a, b], pi) => {
-      if (cancelled()) throw new PlanCancelled();
-      const A = candidates[a];
-      const B = candidates[b];
-      progress({
-        stage: 'partials', done: pi, total: pairs.length, label: `${A.label} → ${B.label}`,
       });
-      // B's best phase: where it is closest to the best candidate (ties: higher DPS)
-      let col = 0;
-      dps[b].forEach((d, c) => {
-        const rel = colMax[c] > 0 ? d / colMax[c] : 0;
-        const relBest = colMax[col] > 0 ? dps[b][col] / colMax[col] : 0;
-        if (rel > relBest + EPS || (Math.abs(rel - relBest) <= EPS && d > dps[b][col])) col = c;
+      // cap: keep the cheaper switches (fewer pieces) first, stable
+      const room = Math.max(0, cfg.maxCandidates - candidates.length);
+      const order = pending.map((p, i) => ({ p, i })).sort((x, y) => (x.p.pieces!.length - y.p.pieces!.length) || (x.i - y.i));
+      order.forEach(({ p }) => {
+        if (byKey.has(`${p.group}|${equipmentKey(p.equipment)}`)) {
+          addCandidate(p);
+          return;
+        }
+        if (candidates.length - fullCount >= room) {
+          capped += 1;
+          return;
+        }
+        if (addCandidate(p)) nPartial += 1;
       });
-      const variants = partialSwitchVariants(A.equipment, B.equipment, (eq) => dpsOn(B, eq, col).dps, isFreeItem);
-      variants.forEach((v) => {
-        pending.push({
-          label: `${B.equipment.weapon?.name ?? B.label} switch${v.pieces.length ? ` +${v.pieces.length}` : ''} on ${A.label}`,
-          kind: 'partial',
-          group: B.group,
-          equipment: v.equipment,
-          options: B.options,
-          source: `${A.label} → ${B.label}${v.pieces.length ? `: ${v.pieces.map((s) => B.equipment[s]!.name).join(', ')}` : ', weapon only'}`,
-          base: A.label,
-          partner: B.label,
-          pieces: v.pieces,
-        });
-      });
-    });
-    // cap: keep the cheaper switches (fewer pieces) first, stable
-    const room = Math.max(0, cfg.maxCandidates - candidates.length);
-    const order = pending.map((p, i) => ({ p, i })).sort((x, y) => (x.p.pieces!.length - y.p.pieces!.length) || (x.i - y.i));
-    order.forEach(({ p }) => {
-      if (byKey.has(`${p.group}|${equipmentKey(p.equipment)}`)) {
-        addCandidate(p);
-        return;
-      }
-      if (candidates.length - fullCount >= room) {
-        capped += 1;
-        return;
-      }
-      if (addCandidate(p)) nPartial += 1;
-    });
-    fillMatrix(fullCount, 'partials');
-  } catch (e) {
-    if (e instanceof PlanCancelled) return emptyResult(searchRows);
-    throw e;
-  }
-  const tMatrix = Date.now();
+      fillMatrix(fullCount, 'partials');
+    }
+    const tMatrix = Date.now();
 
-  // 5. optimise
-  const routeTime = (members: number[]) => {
-    const cmp = compareRoutes(matrixKit(members), fastA, routes);
-    return cmp.fastest >= 0 ? cmp.routes[cmp.fastest].seconds : Infinity;
-  };
-  const items = candidates.map((c) => equipmentItemIds(c.equipment));
-  // seeds: the best single loadouts by their own route time (ties: matrix score)
-  const singles = candidates.map((_, i) => ({ i, t: routeTime([i]), s: score(i) }));
-  const seeds = singles
-    .filter((x) => dps[x.i].some((d) => d > 0))
-    .sort((a, b) => ((a.t === b.t ? 0 : a.t - b.t) || (b.s - a.s) || (a.i - b.i)))
-    .slice(0, cfg.seeds)
-    .map((x) => x.i);
-  // at least the best seed of every style group, so single-style and mixed kits both get explored
-  for (const g of GROUP_ORDER) {
-    const top = singles.filter((x) => candidates[x.i].group === g && dps[x.i].some((d) => d > 0))
-      .sort((a, b) => ((a.t === b.t ? 0 : a.t - b.t) || (b.s - a.s) || (a.i - b.i)))[0];
-    if (top && !seeds.includes(top.i)) seeds.push(top.i);
-  }
-  let opt: KitOptimum;
-  try {
-    opt = optimiseKit({
+    // 5. optimise
+    const routeTime = (members: number[]) => {
+      const cmp = compareRoutes(matrixKit(members), fastA, routes);
+      return cmp.fastest >= 0 ? cmp.routes[cmp.fastest].seconds : Infinity;
+    };
+    const items = candidates.map((c) => equipmentItemIds(c.equipment));
+    // phase 27: the potion each candidate needs (Super combat / Ranging potion; magic: the pinned heart; ToA / CoX: none)
+    const potions = candidates.map((c) => potionOf(c.group));
+    // seeds: the best single loadouts by their own route time (ties: matrix score)
+    const singles = candidates.map((_, i) => ({ i, t: routeTime([i]), s: score(i) }));
+    const seeds = singles
+      .filter((x) => dps[x.i].some((d) => d > 0))
+      .sort((a, b) => ((a.t === b.t ? 0 : a.t - b.t) || (b.s - a.s) || (a.i - b.i)))
+      .slice(0, screen ? Math.min(cfg.seeds, SCREEN_SEEDS) : cfg.seeds)
+      .map((x) => x.i);
+    // at least the best seed of every style group, so single-style and mixed kits both get explored
+    for (const g of GROUP_ORDER) {
+      const top = singles.filter((x) => candidates[x.i].group === g && dps[x.i].some((d) => d > 0))
+        .sort((a, b) => ((a.t === b.t ? 0 : a.t - b.t) || (b.s - a.s) || (a.i - b.i)))[0];
+      if (top && !seeds.includes(top.i)) seeds.push(top.i);
+    }
+    const opt = optimiseKit({
       items,
       carried,
       fixedSlots,
@@ -1307,122 +1424,120 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       time: routeTime,
       seeds: seeds.length ? seeds : [0],
       raidSupplied,
+      potions,
       noPrune: tuning.noPrune,
       shouldCancel: hooks.shouldCancel,
       onProgress: (done, n) => progress({
-        stage: 'optimise', done, total: n, label: 'kits',
+        stage: screen ? 'rings' : 'optimise', done, total: n, label: screen ? ringLabel(ring) : 'kits',
       }),
     });
-  } catch (e) {
-    if (e instanceof PlanCancelled) return emptyResult(searchRows);
-    throw e;
-  }
-  const tOpt = Date.now();
-  progress({
-    stage: 'final', done: 0, total: 1, label: 'route times',
-  });
-
-  // 6. exact times: the best RETIME_TOP kits of the optimiser are re-timed with the Routes tab's code (createKitEvaluator
-  // + compareRoutes, drains planned with each kit's own encounter lengths) and the fastest wins (ties: optimiser order)
-  const kitLoadoutsOf = (m: number[]): KitLoadout[] => m.map((i) => {
-    const c = candidates[i];
-    const eq = toPlayerEquipment(c.equipment);
-    return {
-      id: c.key,
-      name: c.label,
-      group: c.group,
-      options: c.options,
-      toPlayer: (monster, o) => applyLoadoutToPlayer(basePlayer, c.label, c.group, eq, o.style, o.spell, monster, assumptions),
-    };
-  });
-  const sortedFinals = [opt.best, ...opt.finals]
-    .filter((x) => x.used <= total || x === opt.best)
-    .sort((a, b) => (better(a, b, total) ? -1 : Number(better(b, a, total))));
-  const finalists: KitSolution[] = [];
-  sortedFinals.forEach((x) => {
-    const k = [...x.members].sort((a, b) => a - b).join(',');
-    if (finalists.length < RETIME_TOP && !finalists.some((f) => [...f.members].sort((a, b) => a - b).join(',') === k)) finalists.push(x);
-  });
-  let chosen = finalists[0];
-  let evaluator = createKitEvaluator(kitLoadoutsOf(chosen.members), assumptions);
-  let comparison = compareRoutes(evaluator, exactA, routes);
-  let exactEvaluations = evaluator.evaluations();
-  const exactSeconds = (c: RouteComparison) => (c.fastest >= 0 ? c.routes[c.fastest].seconds : Infinity);
-  for (const f of finalists.slice(1)) {
-    const ev = createKitEvaluator(kitLoadoutsOf(f.members), assumptions);
-    const cmp = compareRoutes(ev, exactA, routes);
-    exactEvaluations += ev.evaluations();
-    if (exactSeconds(cmp) < exactSeconds(comparison) - EPS) {
-      chosen = f;
-      evaluator = ev;
-      comparison = cmp;
-    }
-  }
-  const { members } = chosen;
-  const planned = comparison.fastest;
-  // worn = the loadout used on the planned route's first phase (saves one switch)
-  const firstChoice = planned >= 0
-    ? comparison.routes[planned].encounters.flatMap((e) => e.phases).find((p) => p.choice)?.choice
-    : undefined;
-  let wornIx = members.findIndex((i) => candidates[i].label === firstChoice?.loadout);
-  if (wornIx < 0) wornIx = 0;
-  const kitOrder = [members[wornIx], ...members.filter((_, j) => j !== wornIx)];
-  const kit = kitOrder.map((i) => candidates[i]);
-  const slots = kitSlotUsage(kitOrder.map((i) => items[i]), 0, carried, inputs.supplies, inputs.nonItemSlots, total, raidSupplied);
-  const inventory = inventoryGrid(kit, 0, specItems, pinnedItems, inputs.supplies, inputs.nonItemSlots, total, raidSupplied);
-
-  // 7. why: improvements that don't fit, and the best kit of every other style mix
-  const T = chosen.time;
-  const usedOfKit = (m: number[]) => {
-    const allIds = new Set<number>(carried.filter((id) => !raidSuppliedSet.has(id)));
-    m.forEach((x) => items[x].forEach((id) => {
-      if (!raidSuppliedSet.has(id)) allIds.add(id);
-    }));
-    return fixedSlots + allIds.size - Math.min(...m.map((x) => items[x].length));
-  };
-  // phase 21: what each kit loadout costs and saves (vs the kit without it; optimiser times)
-  const kitMarginal = kitOrder.map((i) => {
-    if (kitOrder.length < 2) return { slots: 0, seconds: Infinity };
-    const without = kitOrder.filter((x) => x !== i);
-    const tw = routeTime(without);
-    return { slots: chosen.used - usedOfKit(without), seconds: tw === T ? 0 : tw - T };
-  });
-  const additions: PlanRejection[] = [];
-  candidates.forEach((c, i) => {
-    if (members.includes(i)) return;
-    const m = [...members, i];
-    const t = routeTime(m);
-    if (!(t < T - 0.05)) return;
-    const used = usedOfKit(m);
-    const extra = used - chosen.used;
-    let reason = 'fits (not taken)';
-    if (used > total) reason = `needs ${extra} more slot${extra === 1 ? '' : 's'}, ${Math.max(0, total - chosen.used)} free`;
-    else if (T - t < switchSavingRequired(extra)) reason = `fits, but saves < ${switchSavingRequired(extra)} s for ${Math.max(0, extra)} slot${extra === 1 ? '' : 's'} (dedupe rule)`;
-    additions.push({
-      label: c.label,
-      kind: 'addition',
-      deltaSeconds: T - t,
-      deltaSlots: extra,
-      reason,
+    const tOpt = Date.now();
+    progress({
+      stage: 'final', done: 0, total: 1, label: 'route times',
     });
-  });
-  additions.sort((a, b) => (b.deltaSeconds - a.deltaSeconds) || (a.deltaSlots - b.deltaSlots) || a.label.localeCompare(b.label));
-  const rejected: PlanRejection[] = [];
-  const seenLabel = new Set<string>();
-  for (const a of additions) {
-    if (rejected.length >= 3) break;
-    if (seenLabel.has(a.label)) continue;
-    seenLabel.add(a.label);
-    rejected.push(a);
-  }
-  const mixOf = (s: KitSolution) => groupsLabel(Array.from(new Set(s.members.map((i) => candidates[i].group))));
-  const usedOf = usedOfKit;
-  const chosenMix = mixOf(chosen);
-  // the best kit of every other style mix: optimised over that mix's candidates only; a group the optimiser left out
-  // is forced in with its best addition (fitting if one fits, else the fewest extra slots)
-  const MIXES: StyleGroup[][] = [['melee'], ['ranged'], ['magic'], ['melee', 'ranged'], ['melee', 'magic'], ['ranged', 'magic'], GROUP_ORDER];
-  const alternatives: PlanRejection[] = [];
-  try {
+
+    // 6. exact times: the best RETIME_TOP kits of the optimiser are re-timed with the Routes tab's code (createKitEvaluator
+    // + compareRoutes, drains planned with each kit's own encounter lengths) and the fastest wins (ties: optimiser order)
+    const kitLoadoutsOf = (m: number[]): KitLoadout[] => m.map((i) => {
+      const c = candidates[i];
+      const eq = toPlayerEquipment(c.equipment);
+      return {
+        id: c.key,
+        name: c.label,
+        group: c.group,
+        options: c.options,
+        toPlayer: (monster, o) => applyLoadoutToPlayer(basePlayer, c.label, c.group, eq, o.style, o.spell, monster, assumptions),
+      };
+    });
+    const sortedFinals = [opt.best, ...opt.finals]
+      .filter((x) => x.used <= total || x === opt.best)
+      .sort((a, b) => (better(a, b, total) ? -1 : Number(better(b, a, total))));
+    const finalists: KitSolution[] = [];
+    sortedFinals.forEach((x) => {
+      const k = [...x.members].sort((a, b) => a - b).join(',');
+      if (finalists.length < (screen ? 1 : RETIME_TOP) && !finalists.some((f) => [...f.members].sort((a, b) => a - b).join(',') === k)) finalists.push(x);
+    });
+    let chosen = finalists[0];
+    let evaluator = createKitEvaluator(kitLoadoutsOf(chosen.members), assumptions);
+    let comparison = compareRoutes(evaluator, exactA, routes);
+    let exactEvaluations = evaluator.evaluations();
+    const exactSeconds = (c: RouteComparison) => (c.fastest >= 0 ? c.routes[c.fastest].seconds : Infinity);
+    for (const f of finalists.slice(1)) {
+      const ev = createKitEvaluator(kitLoadoutsOf(f.members), assumptions);
+      const cmp = compareRoutes(ev, exactA, routes);
+      exactEvaluations += ev.evaluations();
+      if (exactSeconds(cmp) < exactSeconds(comparison) - EPS) {
+        chosen = f;
+        evaluator = ev;
+        comparison = cmp;
+      }
+    }
+    if (screen) return { seconds: exactSeconds(comparison), ms: Date.now() - tRing };
+    const { members } = chosen;
+    const planned = comparison.fastest;
+    // worn = the loadout used on the planned route's first phase (saves one switch)
+    const firstChoice = planned >= 0
+      ? comparison.routes[planned].encounters.flatMap((e) => e.phases).find((p) => p.choice)?.choice
+      : undefined;
+    let wornIx = members.findIndex((i) => candidates[i].label === firstChoice?.loadout);
+    if (wornIx < 0) wornIx = 0;
+    const kitOrder = [members[wornIx], ...members.filter((_, j) => j !== wornIx)];
+    const kit = kitOrder.map((i) => candidates[i]);
+    const supplies = kitSupplies(comfort, kit.map((c) => c.group), boostsNeedSupplies);
+    const slots = kitSlotUsage(kitOrder.map((i) => items[i]), 0, carried, supplies, inputs.nonItemSlots, total, raidSupplied);
+    const inventory = inventoryGrid(kit, 0, specItems, pinnedItems, supplies, inputs.nonItemSlots, total, raidSupplied);
+
+    // 7. why: improvements that don't fit, and the best kit of every other style mix
+    const T = chosen.time;
+    const usedOfKit = (m: number[]) => {
+      const allIds = new Set<number>(carried.filter((id) => !raidSuppliedSet.has(id)));
+      m.forEach((x) => items[x].forEach((id) => {
+        if (!raidSuppliedSet.has(id)) allIds.add(id);
+      }));
+      return fixedSlots + allIds.size - Math.min(...m.map((x) => items[x].length)) + potionSlots(m.map((x) => potions[x]));
+    };
+    // phase 21: what each kit loadout costs and saves (vs the kit without it; optimiser times)
+    const kitMarginal = kitOrder.map((i) => {
+      if (kitOrder.length < 2) return { slots: 0, seconds: Infinity };
+      const without = kitOrder.filter((x) => x !== i);
+      const tw = routeTime(without);
+      return { slots: chosen.used - usedOfKit(without), seconds: tw === T ? 0 : tw - T };
+    });
+    const additions: PlanRejection[] = [];
+    candidates.forEach((c, i) => {
+      if (members.includes(i)) return;
+      const m = [...members, i];
+      const t = routeTime(m);
+      if (!(t < T - 0.05)) return;
+      const used = usedOfKit(m);
+      const extra = used - chosen.used;
+      let reason = 'fits (not taken)';
+      if (used > total) reason = `needs ${extra} more slot${extra === 1 ? '' : 's'}, ${Math.max(0, total - chosen.used)} free`;
+      else if (T - t < switchSavingRequired(extra)) reason = `fits, but saves < ${switchSavingRequired(extra)} s for ${Math.max(0, extra)} slot${extra === 1 ? '' : 's'} (dedupe rule)`;
+      additions.push({
+        label: c.label,
+        kind: 'addition',
+        deltaSeconds: T - t,
+        deltaSlots: extra,
+        reason,
+      });
+    });
+    additions.sort((a, b) => (b.deltaSeconds - a.deltaSeconds) || (a.deltaSlots - b.deltaSlots) || a.label.localeCompare(b.label));
+    const rejected: PlanRejection[] = [];
+    const seenLabel = new Set<string>();
+    for (const a of additions) {
+      if (rejected.length >= 3) break;
+      if (seenLabel.has(a.label)) continue;
+      seenLabel.add(a.label);
+      rejected.push(a);
+    }
+    const mixOf = (s: KitSolution) => groupsLabel(Array.from(new Set(s.members.map((i) => candidates[i].group))));
+    const usedOf = usedOfKit;
+    const chosenMix = mixOf(chosen);
+    // the best kit of every other style mix: optimised over that mix's candidates only; a group the optimiser left out
+    // is forced in with its best addition (fitting if one fits, else the fewest extra slots)
+    const MIXES: StyleGroup[][] = [['melee'], ['ranged'], ['magic'], ['melee', 'ranged'], ['melee', 'magic'], ['ranged', 'magic'], GROUP_ORDER];
+    const alternatives: PlanRejection[] = [];
     for (const mix of MIXES) {
       const label = groupsLabel(mix);
       if (label === chosenMix) continue;
@@ -1430,7 +1545,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       const mixSeeds = seeds.filter((i) => allowed[i]).slice(0, 5);
       if (!mixSeeds.length) continue;
       let s = optimiseKit({
-        items, carried, fixedSlots, totalSlots: total, time: routeTime, seeds: mixSeeds, allowed, raidSupplied, noPrune: tuning.noPrune, shouldCancel: hooks.shouldCancel,
+        items, carried, fixedSlots, totalSlots: total, time: routeTime, seeds: mixSeeds, allowed, raidSupplied, potions, noPrune: tuning.noPrune, shouldCancel: hooks.shouldCancel,
       }).best;
       for (const g of mix) {
         if (s.members.some((i) => candidates[i].group === g)) continue;
@@ -1466,15 +1581,10 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         reason,
       });
     }
-  } catch (e) {
-    if (e instanceof PlanCancelled) return emptyResult(searchRows);
-    throw e;
-  }
-  alternatives.sort((a, b) => (b.deltaSeconds - a.deltaSeconds) || a.label.localeCompare(b.label));
-  // phase 21: the lighter kit (same-style cheaper swaps where the slots bought < 1 s each), listed first when it frees slots
-  try {
+    alternatives.sort((a, b) => (b.deltaSeconds - a.deltaSeconds) || a.label.localeCompare(b.label));
+    // phase 21: the lighter kit (same-style cheaper swaps where the slots bought < 1 s each), listed first when it frees slots
     const light = lightenKit({
-      items, carried, fixedSlots, totalSlots: total, time: routeTime, seeds: members, raidSupplied, groups: candidates.map((c) => c.group), shouldCancel: hooks.shouldCancel,
+      items, carried, fixedSlots, totalSlots: total, time: routeTime, seeds: members, raidSupplied, potions, groups: candidates.map((c) => c.group), shouldCancel: hooks.shouldCancel,
     }, members);
     const freed = chosen.used - light.used;
     if (freed >= 1 && Number.isFinite(light.time)) {
@@ -1487,56 +1597,96 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         reason: `−${freed} slot${freed === 1 ? '' : 's'} for +${slower.toFixed(1)} s (each freed slot cost < ${SWITCH_MIN_SECONDS_PER_SLOT} s)`,
       });
     }
+
+    const tEnd = Date.now();
+    const result: PlanResult = {
+      cancelled: false,
+      kit,
+      kitMarginal,
+      slots,
+      inventory,
+      specItems,
+      pinnedItems,
+      comparison,
+      planned,
+      rejected,
+      alternatives,
+      potions: kitPotions(kit.map((c) => c.group), boostsNeedSupplies),
+      ring: { policy, ring: ring?.name ?? null, screened: [] },
+      matrixDps: Object.fromEntries(targets.map((t, col) => [phaseKey(t.targetKey, t.phase), Math.max(0, ...members.map((m) => dps[m][col]))])),
+      unusedCarried: pinnedItems
+        .filter((it, i, all) => all.findIndex((x) => x.id === it.id) === i)
+        .filter((it) => !specItems.some((x) => x.id === it.id))
+        .filter((it) => (heartById(it.id)
+          ? !kit.some((c) => c.group === 'magic')
+          : !kit.some((c) => equipmentItemIds(c.equipment).includes(it.id)))),
+      excluded: notOwned,
+      droppedPinned,
+      ownershipNotices,
+      searchRows,
+      stats: {
+        searches: missing.length,
+        phases: targets.length,
+        candidates: {
+          preset: nPreset, search: nSearch, partial: nPartial, total: candidates.length, capped,
+        },
+        evaluations: evaluations + exactEvaluations,
+        kitsEvaluated: opt.kitsEvaluated,
+        objectiveSeconds: chosen.time,
+        retimed: finalists.length,
+        ...(soloFight ? { fightSeconds: soloFight } : {}),
+        ms: {
+          search: tSearch - t0, matrix: tMatrix - tRing, optimise: tOpt - tMatrix, total: tEnd - t0,
+        },
+      },
+    };
+    return { seconds: exactSeconds(comparison), ms: tEnd - tRing, result };
+  };
+
+  // phase 27: the ring policy. Switch: one run, rings as searched. Camp Lightbearer: one run, Lightbearer on every
+  // candidate. Camp one ring: every owned CAMP_RINGS ring is screened (full candidates only), then the best
+  // RING_FINALISTS (within RING_FINALIST_MARGIN of the best screen) get the full run; the fastest exact route wins.
+  try {
+    if (policy !== 'camp-one') {
+      const only = policy === 'camp-lightbearer' ? planItemByName('Lightbearer') : null;
+      return runRing(only, false).result!;
+    }
+    const rings = campRingItems(notOwned);
+    if (!rings.length) {
+      const r = runRing(null, false).result!;
+      return { ...r, ring: { policy, ring: null, screened: [] } };
+    }
+    const screened = rings.map((it, i) => {
+      progress({
+        stage: 'rings', done: i, total: rings.length, label: it.name,
+      });
+      return { ring: it, seconds: runRing(it, true).seconds };
+    }).sort((a, b) => ((a.seconds === b.seconds ? 0 : a.seconds - b.seconds) || a.ring.name.localeCompare(b.ring.name)));
+    const best0 = screened[0].seconds;
+    const finalists = screened.filter((x, i) => i === 0 || (i < RING_FINALISTS && x.seconds <= best0 * (1 + RING_FINALIST_MARGIN)));
+    let best: { ring: PlanItem, run: RingRun } | null = null;
+    const fullSeconds = new Map<number, number>();
+    for (const f of finalists) {
+      const run = runRing(f.ring, false);
+      fullSeconds.set(f.ring.id, run.seconds);
+      if (!best || run.seconds < best.run.seconds - EPS) best = { ring: f.ring, run };
+    }
+    const r = best!.run.result!;
+    return {
+      ...r,
+      ring: {
+        policy,
+        ring: best!.ring.name,
+        screened: screened.map((x) => ({
+          ring: x.ring.name, seconds: fullSeconds.get(x.ring.id) ?? x.seconds, full: fullSeconds.has(x.ring.id),
+        })).sort((a, b) => ((a.seconds === b.seconds ? 0 : a.seconds - b.seconds) || a.ring.localeCompare(b.ring))),
+      },
+      stats: { ...r.stats, ms: { ...r.stats.ms, total: Date.now() - t0 } },
+    };
   } catch (e) {
     if (e instanceof PlanCancelled) return emptyResult(searchRows);
     throw e;
   }
-
-  const tEnd = Date.now();
-  return {
-    cancelled: false,
-    kit,
-    kitMarginal,
-    slots,
-    inventory,
-    specItems,
-    pinnedItems,
-    comparison,
-    planned,
-    rejected,
-    alternatives,
-    unusedSupplies: (Object.entries(SUPPLY_POTION_GROUP) as [SupplyType, StyleGroup][])
-      .filter(([t, g]) => inputs.supplies[t] > 0 && !kit.some((c) => c.group === g))
-      .map(([t, g]) => ({
-        type: t, label: SUPPLY_TYPES.find((x) => x.id === t)!.label, count: inputs.supplies[t], group: g,
-      })),
-    matrixDps: Object.fromEntries(targets.map((t, col) => [phaseKey(t.targetKey, t.phase), Math.max(0, ...members.map((m) => dps[m][col]))])),
-    unusedCarried: pinnedItems
-      .filter((it, i, all) => all.findIndex((x) => x.id === it.id) === i)
-      .filter((it) => !specItems.some((x) => x.id === it.id))
-      .filter((it) => (heartById(it.id)
-        ? !kit.some((c) => c.group === 'magic')
-        : !kit.some((c) => equipmentItemIds(c.equipment).includes(it.id)))),
-    excluded: notOwned,
-    droppedPinned,
-    ownershipNotices,
-    searchRows,
-    stats: {
-      searches: missing.length,
-      phases: targets.length,
-      candidates: {
-        preset: nPreset, search: nSearch, partial: nPartial, total: candidates.length, capped,
-      },
-      evaluations: evaluations + exactEvaluations,
-      kitsEvaluated: opt.kitsEvaluated,
-      objectiveSeconds: chosen.time,
-      retimed: finalists.length,
-      ...(soloFight ? { fightSeconds: soloFight } : {}),
-      ms: {
-        search: tSearch - t0, matrix: tMatrix - tSearch, optimise: tOpt - tMatrix, total: tEnd - t0,
-      },
-    },
-  };
 };
 
 /** The player of a kit loadout against a monster, with its best style option there (for "Load into calculator"). */

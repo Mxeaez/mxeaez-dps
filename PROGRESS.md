@@ -3,6 +3,43 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 27 — Planner: potions from the kit, comfort supplies, ring policy (2026-10-23)
+
+- User requests: "Maybe it should calculate the potions itself based on the gear" and "A lot of people don't bring
+  ring switches. They camp one ring like Ultor the whole fight, or camp Lightbearer for constant specs".
+- **Potions from the kit** (`planner.ts`: `KIT_POTIONS`, `kitPotions`, `kitSupplies`, `potionSlots`,
+  `comfortSupplies`): FA / ToB kits bring one Super combat if they have a melee loadout and one Ranging potion if
+  ranged (one slot each, doses irrelevant); magic = the pinned heart (unchanged); ToA / CoX = the raid potion ("Other").
+  The potion slots are part of the optimiser's slot cost (`KitProblem.potions`, one per distinct potion of the members:
+  3-way kit 2, melee-only 1, magic-only 0). `planAssumptions` keeps melee / ranged boosted; `PlanResult.potions`
+  replaces `unusedSupplies` (gone with its "Drop them" warning). Per-raid defaults are comfort supplies only (FA 6 / 4,
+  ToB 4 / 3; ToA / CoX unchanged).
+- **Ring policy** (`PlanInputs.ringPolicy`, `RingPolicy`, `RING_POLICIES`, `CAMP_RINGS`, `ringAssumptions`; `plan()`
+  default `switch`, Plan tab default `DEFAULT_RING_POLICY` = `camp-one`): `plan()` steps 2-7 now run per ring
+  (`runRing`); a camped ring replaces every candidate's ring. Camp one ring screens each owned ring (Ultor, Bellator,
+  Venator, Magus, Ring of shadows, Lightbearer; presets + search rows, 6 seeds), fully plans the best (+ runner-up
+  within 1 %), the fastest exact route wins; `PlanResult.ring` lists every ring's time. Camp Lightbearer (and camping
+  Lightbearer) sets the Solo budget's Lightbearer regen (`mySpecs.lightbearer`); a pinned Lightbearer is then worn.
+  Full-candidate matrix rows are cached per ring between the screen and the full run.
+- **UI** (`PlanView.tsx`): "Comfort supplies (your call)" (brew / restore / food / other), a potions note, a "Rings:"
+  one-line summary, "Advanced (plan)" with the ring policy select; results show "Potions (from the kit)" and "Ring: …
+  on every loadout · others: …" (`*` = screen only); potions in the inventory grid; kit loadouts carry `data-ring`.
+- **Numbers** (defaults, Team, compare all; before → after with camp one ring): FA 23:30.4 → **22:47.9** (Ultor; switch
+  22:47.7, camp Lightbearer 23:16.9); ToA 14:20.2 → **14:22.3** (Magus; switch 14:20.2); CoX 6:39.9 → **6:40.3**
+  (Ultor; switch 6:39.9); ToB 7:32.4 → **7:31.7** (Ultor; switch 7:32.4). Allow switches with the same potions =
+  the phase 26 planner exactly (A/B on the reduced pools of all four raids).
+- Tests: new `Phase27.test.ts` (19, ~2 min: kit potions / comfort supplies, potion slots in the optimiser's cost incl. a tight
+  case, plan grid + slots, heart unaffected, policies / camp rings / ownership, Lightbearer flag, camp one ring per raid
+  (ring everywhere, no ring switch items, fastest of the screens), camp Lightbearer per raid (worn, not carried), a
+  pinned Lightbearer reported unused under camp Magus (ToA), allow switches = previous totals per raid); updated
+  Heart / Planner / Phase21 / CrossRaid tests; CrossRaid slow headlines re-pinned (camp one ring).
+- Playwright: `scripts/verifyPhase27.mjs` (screenshots `docs/screenshots/phase27-*.png`); verifyPhase21 / 23 / 26 pins
+  updated (FA 22:47.9, ToA 14:22.3, ToB 7:31.7 28/28, plan time limit 150 s); their tracked screenshots restored.
+- Docs: BEST_SETUP.md *Potions from the kit and ring policy (phase 27)*, UNVERIFIED D11 / D14 updated, new D18.
+
+Unverified / open: the ring screen skips partial switches (a ring could be missed when its screen is > 1 % behind);
+a whole raid on one potion item; the default plan is slower (six ring screens).
+
 ## Phase 26 — "Items I don't own" (2026-10-23)
 
 - User request: "Most best-in-slot setups have Obligator and Ascension crossbows, but I don't have those yet ... I

@@ -134,7 +134,7 @@ const main = async () => {
   const planLines = await page.locator('[data-testid="plan-phase-drains"] [data-testid="drain-line-item"]').count();
   check(planLines > 0, `Plan per-phase drain lines: ${planLines} icons`);
   const faTotal = (await page.locator('[data-testid="plan-total"]').innerText()).trim();
-  check(faTotal === '23:30.4', `FA plan total ${faTotal} (23:30.4 unchanged)`);
+  check(faTotal === '22:47.9', `FA plan total ${faTotal} (phase 27: 22:47.9, camp one ring)`);
   await shot(page, 'plan-fa');
 
   await page.locator('[data-testid="raid-tab-toa"]').click();
@@ -143,7 +143,7 @@ const main = async () => {
   const toaRoutes = await page.locator('[data-testid="plan-route-row"]').count();
   check(toaRoutes === 1, `ToA Plan: ${toaRoutes} route row (single route)`);
   const toaTotal = (await page.locator('[data-testid="plan-total"]').innerText()).trim();
-  check(toaTotal === '14:20.2', `ToA plan total ${toaTotal} (14:20.2 unchanged)`);
+  check(toaTotal === '14:22.3', `ToA plan total ${toaTotal} (phase 27: 14:22.3, camp Magus ring)`);
   await shot(page, 'plan-toa');
 
   // --- calculator Max-drain buttons

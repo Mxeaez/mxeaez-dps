@@ -72,8 +72,8 @@ describe('heart as a pinned item', () => {
     expect(sat.potions.magic).toBe(Potion.SATURATED_HEART);
     expect(imb.withoutPotion).toBeUndefined();
     expect(imb.potions.magic).toBe(Potion.IMBUED_HEART);
-    // ranging / super combat are still supplies
-    expect(planAssumptions(a, NO_SUPPLIES, [SATURATED]).withoutPotion).toEqual(['melee', 'ranged']);
+    // phase 27: ranging / super combat come from the kit (always boosted; the kit pays their slots)
+    expect(planAssumptions(a, NO_SUPPLIES, [SATURATED]).withoutPotion).toBeUndefined();
     const off = shadowDps(without, targetKey);
     const on = shadowDps(sat, targetKey);
     expect(off.potions).toEqual([]);
@@ -111,7 +111,7 @@ describe('heart as a pinned item', () => {
     expect(cells.filter((c) => c.kind === 'supply')).toEqual([]);
   });
 
-  test('a pinned heart is reported unused only when the kit has no magic loadout; never as an unused supply', () => {
+  test('a pinned heart is reported unused only when the kit has no magic loadout; never as a potion', () => {
     const r = plan({
       basePlayer: generateEmptyPlayer(),
       assumptions: DEFAULT_ASSUMPTIONS,
@@ -131,7 +131,7 @@ describe('heart as a pinned item', () => {
       seeds: 2,
     });
     expect(r.kit.every((k) => k.group === 'melee')).toBe(true);
-    expect(r.unusedSupplies).toEqual([]);
+    expect(r.potions.map((p) => p.type)).toEqual(['superCombat']);
     expect(r.unusedCarried.map((x) => x.name)).toEqual(['Saturated heart']);
     expect(r.inventory.filter((c) => c.kind === 'pinned').map((c) => c.label)).toEqual(['Saturated heart']);
     expect(r.slots!.supplies).toBe(11); // 6 brews, 4 restores, 1 super combat: the heart is not a supply

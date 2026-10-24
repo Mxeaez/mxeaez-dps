@@ -1,4 +1,4 @@
-# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14; Routes tab phase 16; Plan tab phase 17; raid tabs + ToA phase 18; CoX phase 19; ToB phase 20; per-raid Plan defaults + dedupe phase 21; UI cleanup phase 23; "Items I don't own" phase 26)
+# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14; Routes tab phase 16; Plan tab phase 17; raid tabs + ToA phase 18; CoX phase 19; ToB phase 20; per-raid Plan defaults + dedupe phase 21; UI cleanup phase 23; "Items I don't own" phase 26; potions from the kit + ring policy phase 27)
 
 `/best-setup` (dev: http://localhost:3001/osrs-dps/best-setup; "Best setup" button in the top bar, "Calculator" leads
 back). Tabs, in order: **Search** (the default, phase 9/12, see the end of this file) searches a pool of end-game items
@@ -94,8 +94,8 @@ own" flag under `mxeaez-dps:only-owned`); blocked storage just means it isn't re
 - **Plan** always honours the list (`PlanInputs.notOwned`): the per-phase searches use the filtered pool, presets that
   use a listed item are dropped, and listed pinned items are dropped (struck through in "Items I always bring", plus a
   notice). A listed spec weapon that "My specs" still brings gets a notice only (the drain model follows My specs: untick
-  it there). Above the result: **Excluded: Obligator, Ascension crossbows** and **Best possible with everything: 23:30.4
-  (yours: …)**: the max total comes from the session cache of a plan run with an empty list and the same inputs, or a
+  it there). Above the result: **Excluded: Obligator, Ascension crossbows** and **Best possible with everything: 22:47.9
+  (yours: …)** (phase 27; 23:30.4 before): the max total comes from the session cache of a plan run with an empty list and the same inputs, or a
   *compare with max* button runs that plan (a second run, about as long, so it's on demand).
 
 ## Raid tabs and Tombs of Amascut (phase 18)
@@ -274,20 +274,24 @@ so a change of supplies / items / route skips the searches.
 **Inputs.** From the boxes above the tabs: party size (default 6), drain state (default Team), spec weapons ("My
 specs": Elder maul, DWH, BGS, Tonalztics when ticked, Eye of Ayak when its count > 0 — each takes a slot). In the tab's
 "Assumptions (plan)" box: **Route** — one of the 8, or *Compare all* (default: plan for the fastest route; the route
-table then shows the other routes' times with the same kit); **Supplies** as slot counts (Fractured Archive defaults
-below; phase 21: each raid has its own, see *Per-raid defaults* — default Saradomin brew 6,
-Super restore 4, Ranging potion 2, Super combat 1, food 0, other 0; no magic potion — see *Heart* below); **Rune pouch /
-other non-items** (default 1);
+table then shows the other routes' times with the same kit); **Comfort supplies (your call)** as slot counts — brew,
+restore, food, other (phase 27; Fractured Archive default Saradomin brew 6, Super restore 4; phase 21: each raid has its
+own, see *Per-raid defaults*); the combat potions are **not inputs** any more, the planner derives them from the kit
+(*Potions from the kit and ring policy*, below); no magic potion — see *Heart* below; **Rune pouch /
+other non-items** (default 1); **Rings** (one-line summary; the policy is under "Advanced (plan)", default *Camp one
+ring*);
 **Items I always bring** (default Lightbearer, Elder maul, Zaryte crossbow, Kodai wand, Ancestral robe top, Elidinis'
 ward (f), Saturated heart; editable with the calculator's item search; each takes a slot unless a kit loadout wears it, and any loadout
 may use them for free). Time-model settings come from the Advanced box (phase 23; defaults `raid.defaultTimeSettings`;
 FA: `RAID_TIME_DEFAULTS`). Phase 22: `plan()` and `computeRouteComparison()` throw if the time model passed isn't the
 assumptions' raid's (`assertTimeModelForRaid`), since both default to the Fractured Archive's.
 
-**Supplies → DPS** (review fix): Super combat carries the melee boost, Ranging potion the ranged one
-(`SUPPLY_POTION_GROUP`). A style whose supply count is 0 is evaluated **without a potion**
-(`planAssumptions(assumptions, supplies, pinned)` → `BestSetupAssumptions.withoutPotion`, honoured by
-`applyLoadoutToPlayer`); the Assumptions box's potion is the one used "if brought". The searches, matrix, exact times
+**Supplies → DPS** (review fix; phase 27): Super combat carries the melee boost, Ranging potion the ranged one
+(`KIT_POTIONS`). Since phase 27 the kit always brings the potion of each style it has, so melee / ranged are always
+boosted and the potion's slot is part of the kit's slot cost; before, a style whose supply count was 0 was evaluated
+**without a potion** (`BestSetupAssumptions.withoutPotion`, still used for magic without a heart and for ToA / CoX
+without the raid potion; `planAssumptions(assumptions, supplies, pinned)`, honoured by `applyLoadoutToPlayer`); the
+Assumptions box's potion is the one used. The searches, matrix, exact times
 and "Load into calculator" all use it; the drain / spec model keeps the potions (team carriers bring their own).
 
 **Heart** (fix 2026-10-23, user: "Nobody uses magic potions, they use Saturated heart instead"): the magic boost is a
@@ -303,8 +307,8 @@ their names. Rules:
 - **ToA, CoX** (raid potions: Smelling salts / Overload boost every style): every style keeps the raid potion iff the
   "Other" supply count is > 0 (the default); with 0 Other no style is boosted, except magic when a heart is pinned. The
   heart isn't pinned by default there.
-- Warnings: the heart never shows as an unused supply; it shows under "Always brought but in no kit loadout" when the
-  kit has no magic loadout.
+- Warnings: the heart is never a kit potion; it shows under "Always brought but in no kit loadout" when the kit has
+  no magic loadout.
 
 **Algorithm** (`plan(inputs, tuning?, hooks?)`; `PLAN_DEFAULTS` holds the caps):
 
@@ -326,7 +330,8 @@ their names. Rules:
    the fight (Bork + Smorks 281 s instead of 90 s; matrix DPS within 1% of the exact times, tested).
 4. *Slot cost*: inventory = |items of all kit loadouts ∪ pinned ∪ spec weapons| − fewest items of any kit loadout (the
    most the bag ever holds: while wearing the smallest loadout; the difference to the worn set is shown as "swap
-   space") + supplies + non-items; must be ≤ 28. Shared items count once. The cost doesn't depend on which loadout is
+   space") + comfort supplies + the kit's potions (phase 27: one per style present, `KitProblem.potions`) + non-items;
+   must be ≤ 28. Shared items count once. The cost doesn't depend on which loadout is
    worn, so the **worn set is the loadout used on the route's first phase** (the AG shield; saves a switch).
 5. *Optimiser* (`optimiseKit`): seeds = the 20 best single loadouts by their own route time (+ the best of each style);
    from each, two greedy passes (add the loadout with the best Δtime ÷ Δslots; add the one with the best Δtime) while
@@ -343,8 +348,9 @@ their names. Rules:
 items grouped by style with a coloured border — melee red, ranged green, magic blue —, spec weapons, pinned items, rune
 pouch / other, swap space, free; icons + tooltips; brews / restores / food get a generic potion icon, Ranging / Super
 combat / Saturated heart upstream's images; a note that spec weapons come from "My specs"); kit loadouts with icon
-rows and where each came from; warnings with one-click fixes — potion supplies (Super combat / Ranging) whose style no kit loadout uses ("Drop
-them (+N slots)") and always-brought items no loadout wears ("Remove these to free N slots"), both re-plan; the
+rows and where each came from; "Potions (from the kit)" and "Ring" lines (phase 27; the old "unused potion supplies"
+warning is gone: the kit never brings a potion it doesn't use); a warning with a one-click fix for always-brought items
+no loadout wears ("Remove these to free N slots"), which re-plans; the
 per-encounter table (loadouts and styles used, "avg DPS (time-weighted)" = damage ÷ seconds, seconds; phase rows with
 each phase's DPS); the route table; the why list; run statistics. "Load worn set into calculator" opens the calculator with the worn set against the route's first phase
 (drains as planned; its DPS = the first phase row, checked by `scripts/verifyPhase17.mjs`); "Load all loadouts" adds
@@ -389,10 +395,10 @@ example inventory has one).
 
 | Raid | Items always brought | Supplies (slots) | Raid items (0 slots) | Source |
 |---|---|---|---|---|
-| Fractured Archive | Lightbearer, Elder maul, Zaryte crossbow, Kodai wand, Ancestral robe top, Elidinis' ward (f), Saturated heart | 6 brew, 4 restore, 2 ranging, 1 super combat | — | the user's kit (2026-10-23) |
+| Fractured Archive | Lightbearer, Elder maul, Zaryte crossbow, Kodai wand, Ancestral robe top, Elidinis' ward (f), Saturated heart | 6 brew, 4 restore (+ the kit's potions, phase 27; was 2 ranging, 1 super combat) | — | the user's kit (2026-10-23) |
 | Tombs of Amascut | Lightbearer, Zaryte crossbow | 6 restore (Sanfew serums, later Tears / Nectar), 2 Other (Smelling salts) | — | Tombs_of_Amascut/Strategies max-gear inventory: Zaryte crossbow, Lightbearer, 6 Sanfew serums, 1 divine super combat, rune pouch; "Players can no longer eat food" at high invocations; salts / nectar / tears from the Helpful Spirit "once after completing two paths, and once again …" (Tombs of Amascut). The boost is always the salts, so no combat potions |
 | Chambers of Xeric | Dragon pickaxe, Elder maul | 2 brew (Xeric's aid), 2 restore (Prayer enhance / Revitalisation), 1 Other (Overload) | — | Chambers_of_Xeric/Strategies: "If guardians are in the raid, bring the best pickaxe possible"; specials "Bandos godsword + Elder maul > Dragon warhammer" (the first maul / DWH spec on Tekton always hits); the potions are made in the raid and dropped by Tekton, Vasa, Vanguards, Vespula, Muttadiles. Olm wants more ("6-7 brews, 2-3 restores"): raise them for an Olm-heavy plan |
-| Theatre of Blood | Elder maul, Saturated heart | 4 brew, 3 restore, 1 ranging, 1 super combat | **Dawnbringer** | Theatre_of_Blood/Strategies max-gear inventories (Elder maul + BGS + claws, rune pouch, 1 brew + 1 restore + combat potions + food); the chests after Bloat and Sotetseg sell brews / restores, hence fewer than a raid without resupply. Lightbearer isn't in those inventories |
+| Theatre of Blood | Elder maul, Saturated heart | 4 brew, 3 restore (+ the kit's potions, phase 27; was 1 ranging, 1 super combat) | **Dawnbringer** | Theatre_of_Blood/Strategies max-gear inventories (Elder maul + BGS + claws, rune pouch, 1 brew + 1 restore + combat potions + food); the chests after Bloat and Sotetseg sell brews / restores, hence fewer than a raid without resupply. Lightbearer isn't in those inventories |
 
 **ToB supply chests** (documented, not modelled): "When the Pestilent Bloat and Sotetseg are killed, players will gain
 access to a chest with supplies ... containing food and potions" (Saradomin brews, Super restores, staminas; Strategies).
@@ -433,6 +439,63 @@ without it). The "why" list marks additions that fit but miss the rule.
 The three ToB Scythe sets each saved ≥ 1 s per slot, so the rule alone didn't drop them; once the single-piece swap
 "Oathplate + Salve (ei)" exists the optimiser keeps one Scythe set + the Salve (7:32.2, 28/28). ToA's 14:20.2 is the
 drop rule (Torva + Obligator: 0.2 s for its slot).
+
+### Potions from the kit and ring policy (phase 27)
+
+User requests (2026-10-23): "It's hard to know your potions up front … it's like I have to know the best layout to
+predict the potions. Maybe it should calculate the potions itself based on the gear" and "A lot of people don't bring
+ring switches. They camp one ring like Ultor the whole fight, or camp Lightbearer for constant specs even though it's a
+bit less DPS."
+
+**Potions from the kit** (`KIT_POTIONS`, `kitPotions`, `kitSupplies`, `potionSlots` in planner.ts). Where the
+potions are brought (FA, ToB: `boostsNeedSupplies`) a kit with a melee loadout brings **one Super combat**, with a
+ranged loadout **one Ranging potion**; magic uses the pinned heart (unchanged); ToA / CoX bring no combat potion (the
+raid potion, "Other", boosts every style, as before). One potion item = one slot whatever its doses (no "Potion doses"
+setting: upstream's boost model doesn't depend on doses). The potion slots are part of the kit's slot cost in the
+optimiser (`KitProblem.potions`: one slot per distinct potion of the kit's members), so a melee + ranged + magic kit pays
+2, a melee-only kit 1 and a magic-only kit 0, and adding a second style is weighed with its potion. The chosen potions
+are in the inventory grid (tooltip "from the kit: one per style") and in a "Potions (from the kit)" line;
+`PlanInputs.supplies` keeps its type, but its ranging / superCombat counts are ignored (`comfortSupplies`).
+
+**Comfort supplies** stay user-entered: brew, restore, food, other ("Comfort supplies (your call)"), per-raid defaults in
+`planDefaults.ts` (FA 6 brew / 4 restore, ToA 6 restore / 2 Other, CoX 2 / 2 / 1 Other, ToB 4 brew / 3 restore).
+
+**Ring policy** (`PlanInputs.ringPolicy`, `RING_POLICIES`; the Plan tab's Advanced box, with a one-line "Rings:" summary
+in the simple view; default `DEFAULT_RING_POLICY` = *Camp one ring*; `plan()` without a policy = *Allow ring switches*,
+so the API and the phase 17-26 tests are unchanged):
+
+- **Allow ring switches**: each candidate keeps the ring its search row / preset has (ring switches are inventory
+  items) — the previous behaviour (with the same potions the phase 26 planner gives the same kits and totals; tested on
+  the reduced pools of all four raids).
+- **Camp one ring**: every candidate (presets, search rows, partial switches) gets the same ring, so no ring is ever a
+  switch item. Rings tried (`CAMP_RINGS`, owned ones only): Ultor ring, Bellator ring, Venator ring, Magus ring, Ring of
+  shadows (charged), Lightbearer. Each ring is first **screened** (presets + search rows only, no partial switches, 6
+  seeds, one exact re-time; ~3 s each in Jest), then the best ring — and the runner-up when its screen is within 1 % —
+  gets the full plan; the fastest exact route wins. The result lists every ring's time ("others: Lightbearer +47.6 s*",
+  `*` = screen only, an upper bound). Camping Lightbearer here also turns on the Solo Lightbearer regen.
+- **Camp Lightbearer**: every loadout wears Lightbearer, and the plan's assumptions get the Solo spec budget's
+  Lightbearer regen (`mySpecs.lightbearer` = true via `ringAssumptions`: 10 % per 15 s instead of 30 s; matters for
+  Solo drains only). A camp policy with another ring sets that flag to false; *Allow switches* keeps the user's.
+- **Pinned Lightbearer** (FA, ToA defaults): worn under *Camp Lightbearer* (no slot, no warning); under *Camp one ring*
+  with another ring it stays pinned and shows under "Always brought but in no kit loadout" (one click removes it).
+
+The dedupe rule, the alternatives and the lighter kit run inside the chosen ring's plan.
+
+**Results** (defaults, Team drains, compare all, Jest without coverage; the slow `CrossRaid` headline test pins the
+camp-one totals):
+
+| Raid | Phase 26 | Allow ring switches | **Camp one ring (default)** | Camp Lightbearer |
+|---|---|---|---|---|
+| FA | 23:30.4 | 22:47.7 — worn Tumeken's shadow (Ancestral, Magus ring), Inquisitor's + Obligator (Ultor ring); 1 Super combat; 1 free | **22:47.9, Ultor ring** — worn Twisted bow (Masori), Obligator switch +5 on Ascension crossbows (Masori); Super combat + Ranging potion; 28/28 (screens: Lightbearer +47.6 s, Bellator +82.0, Ring of shadows +85.0, Magus +85.2, Venator +118.2) | 23:16.9 (+29.0 s vs camp Ultor) |
+| ToA | 14:20.2 | 14:20.2 (unchanged: no combat potions) | **14:22.3, Magus ring** (+2.1 s vs switching; Ultor +3.1 s full run) | 14:30.0 |
+| CoX | 6:39.9 | 6:39.9 (unchanged) | **6:40.3, Ultor ring** (+0.4 s; Bellator +2.3 s full run) | 6:48.2 |
+| ToB | 7:32.4 | 7:32.4 (same potions as its old defaults) | **7:31.7, Ultor ring** (−0.7 s: no ring switch items frees slots; Bellator +1.5 s) | 7:47.0 |
+
+FA's gain over phase 26 is the potions: the old defaults carried 2 ranging + 1 super combat (3 slots) whatever the kit;
+now 1 per style. Camping one ring costs 0.1 s (FA), 2.1 s (ToA), 0.4 s (CoX) or saves 0.7 s (ToB) vs switching rings.
+
+**Timings**: a camp-one-ring plan screens six rings and plans one or two in full: Jest (no coverage) FA ~33 s after the
+searches (vs ~22 s for one ring run); in the browser (headless Chromium, dev server, `scripts/verifyPhase21.mjs`) a first default plan takes 68-79 s (ToA 67.8, CoX 78.8, ToB 68.2 s incl. the searches; was 18-21 s), hence the 150 s limit there.
 
 ## Routes tab (phase 16: raid time model)
 

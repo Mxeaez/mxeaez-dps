@@ -60,15 +60,16 @@ describe('slot accounting', () => {
   });
 
   test('supplies and non-item slots are added; a smaller loadout needs swap space', () => {
-    // default supplies 6 + 4 + 2 + 1 = 13, + rune pouch
-    const u = kitSlotUsage([[1, 2, 3], [4, 5]], 0, [], DEFAULT_SUPPLIES, DEFAULT_NON_ITEM_SLOTS);
+    // default comfort supplies 6 + 4 = 10 (phase 27: potions come from the kit), + rune pouch
+    const u = kitSlotUsage([[1, 2, 3], [4, 5]], 0, [], { ...DEFAULT_SUPPLIES, ranging: 2, superCombat: 1 }, DEFAULT_NON_ITEM_SLOTS);
+    expect(DEFAULT_SUPPLIES.brew + DEFAULT_SUPPLIES.restore).toBe(10);
     expect(u.supplies).toBe(13);
     expect(u.nonItem).toBe(1);
     expect(u.inventoryItems).toBe(2); // 4, 5 while wearing 1-3
     expect(u.swapReserve).toBe(1); // wearing {4,5}: 1, 2, 3 in the bag
     expect(u.used).toBe(13 + 1 + 2 + 1);
     // which loadout is worn doesn't change the slots needed
-    const v = kitSlotUsage([[1, 2, 3], [4, 5]], 1, [], DEFAULT_SUPPLIES, DEFAULT_NON_ITEM_SLOTS);
+    const v = kitSlotUsage([[1, 2, 3], [4, 5]], 1, [], { ...DEFAULT_SUPPLIES, ranging: 2, superCombat: 1 }, DEFAULT_NON_ITEM_SLOTS);
     expect(v.used).toBe(u.used);
     expect(v.inventoryItems).toBe(3);
     expect(v.swapReserve).toBe(0);
@@ -329,14 +330,16 @@ describe('review fixes', () => {
     }
   });
 
-  test('a style whose potion is not in the supplies is evaluated without it; drains keep the potions', () => {
+  test('phase 27: melee / ranged always keep their potion (the kit brings it); no heart = magic unboosted; drains keep the potions', () => {
     const tbow = PRESETS.find((p) => p.name === 'Twisted bow (Masori)')!;
     const scythe = PRESETS.find((p) => p.name === 'Torva + Scythe (slash)')!;
     const heart = [planItemByName('Saturated heart').id];
     const withPots = planAssumptions(DEFAULT_ASSUMPTIONS, DEFAULT_SUPPLIES, heart);
-    const noRanging = planAssumptions(DEFAULT_ASSUMPTIONS, { ...DEFAULT_SUPPLIES, ranging: 0 }, heart);
+    // the old "no ranging potion supply" case: the planner no longer reads the count; an unboosted ranged player is
+    // modelled with withoutPotion (what the planner did before phase 27)
+    const noRanging = { ...withPots, withoutPotion: ['ranged' as const] };
     expect(withPots.withoutPotion).toBeUndefined();
-    expect(noRanging.withoutPotion).toEqual(['ranged']);
+    expect(planAssumptions(DEFAULT_ASSUMPTIONS, { ...DEFAULT_SUPPLIES, ranging: 0 }, heart).withoutPotion).toBeUndefined();
     expect(planAssumptions(DEFAULT_ASSUMPTIONS, DEFAULT_SUPPLIES).withoutPotion).toEqual(['magic']); // no heart pinned
     const { monster } = buildTargetMonster(findTarget('xarth'), undefined, 'team', withPots);
     const dpsOf = (preset: typeof tbow, a: typeof withPots) => evaluateLoadout(
@@ -352,15 +355,15 @@ describe('review fixes', () => {
     expect(drained.inputs.defenceReductions).toEqual(monster.inputs.defenceReductions);
   });
 
-  test('potions whose style the kit never uses are reported', () => {
+  test('phase 27: the kit brings only the potions of its styles (no unused potions)', () => {
     const r = plan(inputs({ route: ROUTE }), {
       ...SMALL,
       search: { weapons: ['Scythe of Vitur'], maxPasses: 1 },
       presets: PRESETS.filter((p) => p.name === 'Torva + Scythe (slash)'),
     });
     expect(r.kit.every((k) => k.group === 'melee')).toBe(true);
-    expect(r.unusedSupplies).toEqual([{
-      type: 'ranging', label: 'Ranging potion', count: 2, group: 'ranged',
-    }]);
+    expect(r.potions).toEqual([{ type: 'superCombat', label: 'Super combat', group: 'melee' }]);
+    expect(r.inventory.filter((c) => c.kind === 'supply' && c.supply === 'superCombat').length).toBe(1);
+    expect(r.inventory.filter((c) => c.kind === 'supply' && c.supply === 'ranging').length).toBe(0);
   });
 });

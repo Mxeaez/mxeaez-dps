@@ -56,8 +56,9 @@ describe('per-raid plan defaults', () => {
     expect(FRACTURED_ARCHIVE_RAID.planDefaults.pinned).toEqual([
       'Lightbearer', 'Elder maul', 'Zaryte crossbow', 'Kodai wand', 'Ancestral robe top', 'Elidinis\' ward (f)', 'Saturated heart',
     ]);
+    // phase 27: comfort supplies only (the combat potions come from the kit)
     expect(FRACTURED_ARCHIVE_RAID.defaultSupplies).toEqual({
-      brew: 6, restore: 4, ranging: 2, superCombat: 1, food: 0, other: 0,
+      brew: 6, restore: 4, ranging: 0, superCombat: 0, food: 0, other: 0,
     });
     expect(DEFAULT_PINNED_NAMES).toBe(FRACTURED_ARCHIVE_RAID.planDefaults.pinned);
     expect(DEFAULT_SUPPLIES).toBe(FRACTURED_ARCHIVE_RAID.defaultSupplies);
@@ -71,7 +72,7 @@ describe('per-raid plan defaults', () => {
     expect(CHAMBERS_OF_XERIC_RAID.defaultSupplies).toMatchObject({ brew: 2, restore: 2, other: 1 });
     expect(THEATRE_OF_BLOOD_RAID.planDefaults.pinned).toEqual(['Elder maul', 'Saturated heart']);
     expect(THEATRE_OF_BLOOD_RAID.defaultSupplies).toEqual({
-      brew: 4, restore: 3, ranging: 1, superCombat: 1, food: 0, other: 0,
+      brew: 4, restore: 3, ranging: 0, superCombat: 0, food: 0, other: 0,
     });
     // potion boosts: from the raid in ToA / CoX (no combat potions by default), brought in ToB / FA
     [TOMBS_OF_AMASCUT_RAID, CHAMBERS_OF_XERIC_RAID].forEach((r) => {

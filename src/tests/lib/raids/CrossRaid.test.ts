@@ -10,7 +10,7 @@ import {
   computeRouteComparison, formatDuration, raidTimeAssumptionsFrom,
 } from '@/lib/fracturedArchive/raidTime';
 import {
-  plan, PlanResult, planAssumptions, planItemByName,
+  DEFAULT_RING_POLICY, plan, PlanResult, planAssumptions, planItemByName,
 } from '@/lib/fracturedArchive/planner';
 import {
   RaidConfig, RAIDS, raidConfig, raidOf, teamDpsMultiplier, withScalingInput,
@@ -98,7 +98,8 @@ describe('switching raids: defaults per raid, no leaks', () => {
     };
     expect(planAssumptions(t.get('toa'), { ...none, other: 2 }).withoutPotion).toBeUndefined();
     expect(planAssumptions(t.get('toa'), none).withoutPotion).toEqual(['melee', 'ranged', 'magic']);
-    expect(planAssumptions(t.get('fractured-archive'), none).withoutPotion).toEqual(['melee', 'ranged', 'magic']);
+    // phase 27: FA melee / ranged potions come from the kit (always boosted); magic needs the pinned heart
+    expect(planAssumptions(t.get('fractured-archive'), none).withoutPotion).toEqual(['magic']);
   });
 
   test('a raid\'s monster inputs only reach its own targets', () => {
@@ -173,6 +174,8 @@ describe.each(RAIDS.map((r) => [r.name, r] as const))('%s: every target', (_, ra
 });
 
 const planFor = (raid: RaidConfig, reduced: boolean): PlanResult => plan({
+  // phase 27: the full (headline) plan uses the Plan tab's default ring policy (camp one ring); the reduced one switches
+  ...(reduced ? {} : { ringPolicy: DEFAULT_RING_POLICY }),
   basePlayer: generateEmptyPlayer(),
   assumptions: raid.defaultAssumptions,
   drain: 'team',
@@ -206,19 +209,21 @@ describe('every raid\'s plan runs (reduced pool)', () => {
 });
 
 /**
- * The four headline plan totals (default assumptions and Plan inputs, Team drains, compare all; docs/BEST_SETUP.md,
- * *Plan tab*, phase 21 table; scripts/verifyPhase21.mjs reads the same numbers in the browser). A full default plan
- * per raid takes 25-32 s here (~2 min for the four), so this block only runs with `RUN_SLOW_TESTS=1`
+ * The four headline plan totals (default assumptions and Plan inputs, camp one ring, Team drains, compare all;
+ * docs/BEST_SETUP.md, *Plan tab*; scripts/verifyPhase21.mjs reads the same numbers in the browser). A full default plan
+ * per raid takes 1-2 min here (camp one ring screens six rings), so this block only runs with `RUN_SLOW_TESTS=1`
  * (`$env:RUN_SLOW_TESTS=1; node .yarn/releases/yarn-4.9.2.cjs test CrossRaid`); the fast pins below run always.
  */
+// phase 25 (rupture / Seeking dragon arrows / Elemental amulet in the pool): CoX 6:41.9 → 6:39.9, ToB 7:32.2 → 7:32.4.
+// Phase 27 (potions from the kit, camp one ring by default): FA 23:30.4 → 22:47.9 (camp Ultor ring; 1 Super combat +
+// 1 Ranging potion instead of 2 ranging + 1 super combat frees a slot; allow switches would be 22:47.7); ToA 14:20.2 →
+// 14:22.3 (camp Magus ring; switches 14:20.2); CoX 6:39.9 → 6:40.3 (camp Ultor ring; switches 6:39.9); ToB 7:32.4 →
+// 7:31.7 (camp Ultor ring: no ring switch items, the freed slots buy a better kit; switches 7:32.4).
 const HEADLINES: [string, string, number][] = [
-  ['fractured-archive', '23:30.4', 1410.4], // heart fix: Saturated heart pinned (was 23:18.8 without it)
-  ['toa', '14:20.2', 860.2],
-  // phase 25 (rupture / Seeking dragon arrows / Elemental amulet in the pool): CoX 6:41.9 → 6:39.9 (the kit's ranged
-  // loadouts wear rupture, Scorching bow + Seeking); ToB 7:32.2 → 7:32.4 (kit picks an Ascension crossbows + rupture
-  // switch; the planner is a heuristic, so a bigger pool can cost a few tenths). FA / ToA unchanged (no ranged kit).
-  ['cox', '6:39.9', 399.9],
-  ['tob', '7:32.4', 452.4],
+  ['fractured-archive', '22:47.9', 1367.9],
+  ['toa', '14:22.3', 862.3],
+  ['cox', '6:40.3', 400.3],
+  ['tob', '7:31.7', 451.7],
 ];
 
 (process.env.RUN_SLOW_TESTS ? describe : describe.skip)('headline plan totals (slow)', () => {

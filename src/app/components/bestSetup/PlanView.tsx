@@ -13,6 +13,8 @@ import {
   enumerateRoutes, formatDuration, PhaseTime,
 } from '@/lib/fracturedArchive/raidTime';
 import {
+  COMFORT_SUPPLY_TYPES,
+  DEFAULT_RING_POLICY,
   equipmentById,
   HEART_ITEMS,
   heartById,
@@ -27,6 +29,9 @@ import {
   PlanProgress,
   PlanRejection,
   PlanResult,
+  RING_POLICIES,
+  ringAssumptions,
+  RingPolicy,
   SUPPLY_TYPES,
   SupplyCounts,
   SupplyType,
@@ -177,6 +182,7 @@ const WornGrid: React.FC<{ kit: PlanCandidate }> = ({ kit }) => {
 
 const cellTitle = (c: InventoryCell) => {
   switch (c.kind) {
+    case 'supply': return c.supply === 'ranging' || c.supply === 'superCombat' ? `${c.label} (from the kit: one per style)` : `${c.label} (comfort supply)`;
     case 'switch': return `${c.label} (${c.group} switch)`;
     case 'spec': return `${c.label} (spec weapon)`;
     case 'pinned': return `${c.label} (always brought)`;
@@ -260,7 +266,9 @@ const PlanView: React.FC<{
       return selectedHeart ? [selectedHeart.id] : [];
     }), [raid, selectedHeart]);
   const [route, setRoute] = useState('all');
+  // phase 27: comfort supplies only (the kit's potions are derived by the planner); the ring policy (Advanced)
   const [supplies, setSupplies] = useState<SupplyCounts>(raid.defaultSupplies);
+  const [ringPolicy, setRingPolicy] = useState<RingPolicy>(DEFAULT_RING_POLICY);
   const [nonItem, setNonItem] = useState(raid.planDefaults.nonItemSlots);
   const [pinned, setPinned] = useState<number[]>(defaultPinned);
   // a new Heart in the Assumptions box replaces the pinned one (or removes it); the first render keeps the defaults
@@ -282,7 +290,7 @@ const PlanView: React.FC<{
   const job = useRef<PlanJob | null>(null);
   // phase 26: the pinned items the plan keeps (unowned ones are dropped); "compare with max"
   const keptPinned = useMemo(() => ownedPinned(pinned, notOwned).kept, [pinned, notOwned]);
-  const maxKey = `${raid.id}|${JSON.stringify(assumptions)}|${drain}|${route}|${JSON.stringify(supplies)}|${nonItem}|${JSON.stringify(pinned)}|${JSON.stringify(settings)}`;
+  const maxKey = `${raid.id}|${JSON.stringify(assumptions)}|${drain}|${route}|${JSON.stringify(supplies)}|${ringPolicy}|${nonItem}|${JSON.stringify(pinned)}|${JSON.stringify(settings)}`;
   const [maxSeconds, setMaxSeconds] = useState<number | undefined>(undefined);
   const [comparing, setComparing] = useState(false);
   const compareJob = useRef<PlanJob | null>(null);
@@ -311,6 +319,7 @@ const PlanView: React.FC<{
         pinned,
         nonItemSlots: nonItem,
         supplies,
+        ringPolicy,
         searchRows,
         ...(list.length ? { notOwned: list } : {}),
       },
@@ -383,32 +392,45 @@ const PlanView: React.FC<{
       clearTimeout(timer);
       cancel();
     };
-  }, [assumptions, drain, route, supplies, nonItem, pinned, runId, cancel, settings, notOwned, maxKey]);
+  }, [assumptions, drain, route, supplies, ringPolicy, nonItem, pinned, runId, cancel, settings, notOwned, maxKey]);
 
   const planned = result && result.comparison && result.planned >= 0 ? result.comparison.routes[result.planned] : null;
   const firstPhase = planned?.encounters[0]?.phases[0];
 
+  // the assumptions the plan used (a camped ring sets the Solo Lightbearer regen)
+  const resultAssumptions = () => ringAssumptions(
+    planAssumptions(assumptions, supplies, keptPinned),
+    result?.ring.policy ?? 'switch',
+    result?.ring.ring ? { name: result.ring.ring } : null,
+  );
   const monsterForFirstPhase = () => {
     if (!planned || !firstPhase) return null;
     const enc = planned.encounters[0];
     return buildTargetMonster(findTarget(firstPhase.targetKey), firstPhase.phase, drain, {
-      ...planAssumptions(assumptions, supplies, keptPinned), fightSeconds: enc.drainFightSeconds ?? assumptions.fightSeconds,
+      ...resultAssumptions(), fightSeconds: enc.drainFightSeconds ?? assumptions.fightSeconds,
     }).monster;
   };
   const loadWorn = () => {
     const monster = monsterForFirstPhase();
     if (!result || !monster) return;
-    const player = planLoadoutToPlayer(generateEmptyPlayer(), result.kit[0], monster, planAssumptions(assumptions, supplies, keptPinned));
+    const player = planLoadoutToPlayer(generateEmptyPlayer(), result.kit[0], monster, resultAssumptions());
     openInCalculator(player, monster).catch(console.error);
   };
   const loadAll = () => {
     const monster = monsterForFirstPhase();
     if (!result || !monster) return;
-    const players = result.kit.map((c) => planLoadoutToPlayer(generateEmptyPlayer(), c, monster, planAssumptions(assumptions, supplies, keptPinned)));
+    const players = result.kit.map((c) => planLoadoutToPlayer(generateEmptyPlayer(), c, monster, resultAssumptions()));
     openLoadoutsInCalculator(players, monster).catch(console.error);
   };
 
-  const supplyTotal = SUPPLY_TYPES.reduce((t, s) => t + supplies[s.id], 0);
+  const supplyTotal = COMFORT_SUPPLY_TYPES.reduce((t, s) => t + supplies[s], 0);
+  const ringPolicyDef = RING_POLICIES.find((p) => p.id === ringPolicy)!;
+  const ringSummary = () => {
+    if (ringPolicy === 'switch') return 'each loadout wears its own best ring (ring switches take slots)';
+    if (ringPolicy === 'camp-lightbearer') return 'Lightbearer on every loadout (Solo spec energy regenerates twice as fast)';
+    const r = result && !running && result.ring.policy === 'camp-one' ? result.ring.ring : null;
+    return r ? `one ring on every loadout: ${r} (the fastest of ${result!.ring.screened.length})` : 'one ring on every loadout (the planner picks it)';
+  };
   const fraction = progress
     ? (progress.done + (progress.search ? Math.min(0.99, progress.search.evaluations / Math.max(1, progress.search.estimate)) : 0)) / Math.max(1, progress.total)
     : 0;
@@ -418,6 +440,7 @@ const PlanView: React.FC<{
       case 'matrix': return `DPS matrix: loadout ${p.done + 1} / ${p.total}`;
       case 'partials': return `Partial switches ${p.done + 1} / ${p.total}`;
       case 'optimise': return `Optimising: seed ${p.done + 1} / ${p.total}`;
+      case 'rings': return `Trying rings ${p.done + 1} / ${p.total}: ${p.label}`;
       default: return 'Route times…';
     }
   };
@@ -443,8 +466,8 @@ const PlanView: React.FC<{
           </label>
         </div>
         <div className="flex flex-wrap gap-x-3 gap-y-2 items-center" data-testid="plan-supplies">
-          <span className="font-semibold">{`Supplies (${supplyTotal} slots):`}</span>
-          {SUPPLY_TYPES.map((s) => (
+          <span className="font-semibold" title="Brews, restores, food and anything else you like to bring: the planner doesn't choose these">{`Comfort supplies (your call, ${supplyTotal} slots):`}</span>
+          {SUPPLY_TYPES.filter((s) => COMFORT_SUPPLY_TYPES.includes(s.id)).map((s) => (
             <label key={s.id} htmlFor={`plan-supply-${s.id}`} className="flex items-center gap-1" title={s.label}>
               <SupplyIcon type={s.id} label={s.label} size={18} />
               {s.label}
@@ -472,6 +495,31 @@ const PlanView: React.FC<{
             />
           </label>
         </div>
+        <div className="text-gray-600 dark:text-gray-300" data-testid="plan-potions-note">
+          {raid.boostsNeedSupplies
+            ? 'Potions: chosen from the kit — one Super combat if it has a melee loadout, one Ranging potion if ranged (a slot each); magic uses the pinned heart.'
+            : 'Potions: the raid\'s own potion ("Other") boosts every style; no combat potions are brought.'}
+        </div>
+        <div className="flex flex-wrap gap-x-2 items-center" data-testid="plan-ring-summary">
+          <span className="font-semibold">Rings:</span>
+          <span data-testid="plan-ring-summary-text">{`${ringPolicyDef.label} — ${ringSummary()}`}</span>
+        </div>
+        <details className="border border-body-400 dark:border-dark-200 rounded px-2 py-1" data-testid="plan-advanced">
+          <summary className="cursor-pointer font-semibold" data-testid="plan-advanced-toggle">Advanced (plan)</summary>
+          <div className="flex flex-col gap-1 mt-1">
+            <label htmlFor="plan-ring-policy" className="flex items-center gap-1">
+              Ring policy
+              <select id="plan-ring-policy" className="form-control text-xs py-0.5" value={ringPolicy} onChange={(e) => setRingPolicy(e.target.value as RingPolicy)} data-testid="plan-ring-policy">
+                {RING_POLICIES.map((p) => <option key={p.id} value={p.id} title={p.title}>{p.label}</option>)}
+              </select>
+            </label>
+            <div className="text-gray-500 dark:text-gray-400">
+              {ringPolicyDef.title}
+              {ringPolicy === 'camp-one' && '. Tried: Ultor, Bellator, Venator, Magus, Ring of shadows, Lightbearer (the ones you own); camping Lightbearer also gives the Solo spec budget its regen.'}
+              {ringPolicy === 'camp-lightbearer' && '. Sets the Solo spec budget\'s Lightbearer regen (15 s per 10%) for this plan.'}
+            </div>
+          </div>
+        </details>
         <div className="flex flex-col gap-1" data-testid="plan-pinned">
           <div className="flex flex-wrap gap-2 items-center">
             <span className="font-semibold" title="Always in the inventory (or worn, if a loadout uses them); free to use in any loadout">Items I always bring:</span>
@@ -601,7 +649,7 @@ const PlanView: React.FC<{
             <div className="flex flex-col gap-1 text-xs min-w-[300px] flex-1" data-testid="kit-loadouts">
               <div className="font-semibold">{`Kit loadouts (${result.kit.length})`}</div>
               {result.kit.map((c, i) => (
-                <div key={c.key} className="border-l-4 pl-2 border-body-400 dark:border-dark-200" data-testid="kit-loadout" data-weapon={c.equipment.weapon?.name ?? ''} data-group={c.group}>
+                <div key={c.key} className="border-l-4 pl-2 border-body-400 dark:border-dark-200" data-testid="kit-loadout" data-weapon={c.equipment.weapon?.name ?? ''} data-ring={c.equipment.ring?.name ?? ''} data-group={c.group}>
                   <div>
                     <span className="font-semibold">{i === 0 ? 'Worn: ' : 'Switch: '}</span>
                     {c.label}
@@ -618,19 +666,19 @@ const PlanView: React.FC<{
                   />
                 </div>
               ))}
-              {result.unusedSupplies.map((u) => (
-                <div key={u.type} className="mt-1 px-2 py-1 rounded border border-orange-400 bg-orange-50 dark:bg-orange-900/30 flex flex-wrap items-center gap-2" data-testid="unused-supplies">
-                  <span>{`${u.count} ${u.label} unused by this kit (no ${u.group} loadout).`}</span>
-                  <button
-                    type="button"
-                    className="btn text-xs"
-                    data-testid="drop-supplies"
-                    onClick={() => setSupplies({ ...supplies, [u.type]: 0 })}
-                  >
-                    {`Drop them (+${u.count} slot${u.count === 1 ? '' : 's'})`}
-                  </button>
-                </div>
-              ))}
+              <div className="mt-1 text-gray-600 dark:text-gray-300" data-testid="plan-potions">
+                {result.potions.length
+                  ? `Potions (from the kit): ${result.potions.map((p) => `${p.label} (${p.group})`).join(', ')}`
+                  : 'Potions (from the kit): none'}
+              </div>
+              <div className="text-gray-600 dark:text-gray-300" data-testid="plan-ring-result" data-ring={result.ring.ring ?? ''} data-policy={result.ring.policy}>
+                {result.ring.ring ? `Ring: ${result.ring.ring} on every loadout` : 'Ring: each loadout\'s own'}
+                {result.ring.screened.length > 1 && (
+                  <span className="text-gray-500 dark:text-gray-400" title="Route time with each ring camped (* = screen: presets + search rows only; the best rings get the full plan)">
+                    {` · others: ${result.ring.screened.filter((x) => x.ring !== result.ring.ring).map((x) => `${x.ring} ${fmtDelta(secs(planned.seconds) - secs(x.seconds))}${x.full ? '' : '*'}`).join(', ')}`}
+                  </span>
+                )}
+              </div>
               {result.unusedCarried.length > 0 && (
                 <div className="mt-1 px-2 py-1 rounded border border-orange-400 bg-orange-50 dark:bg-orange-900/30 flex flex-wrap items-center gap-2" data-testid="unused-carried">
                   <span>{`Always brought but in no kit loadout: ${result.unusedCarried.map((x) => x.name).join(', ')}.`}</span>

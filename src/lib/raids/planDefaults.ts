@@ -25,6 +25,7 @@ export interface RaidPlanDefaults {
   pinned: ItemRef[];
   /** Non-equipment slots; the first is the rune pouch. */
   nonItemSlots: number;
+  /** Comfort supplies (brew, restore, food, other); phase 27: ranging / super combat stay 0 (derived from the kit). */
   supplies: SupplyCounts;
   /**
    * Items the raid hands out (ToB: the Dawnbringer, picked up at Verzik): free to use in any loadout, 0 inventory
@@ -42,15 +43,14 @@ const supplies = (s: Partial<SupplyCounts>): SupplyCounts => ({
 
 /**
  * The Fractured Archive: the user's own kit (2026-10-23): rune pouch, Lightbearer, Elder maul, Zaryte crossbow, Kodai
- * wand, Ancestral robe top, Elidinis' ward (f); 6 brews, 4 restores, 2 ranging, 1 super combat (phase 17 defaults); and a
- * Saturated heart (the magic boost, user correction 2026-10-23: "Nobody uses magic potions, they use Saturated heart").
+ * wand, Ancestral robe top, Elidinis' ward (f); 6 brews, 4 restores (phase 17 defaults; phase 27: the 2 ranging /
+ * 1 super combat became one potion per style in the kit, derived by the planner); and a Saturated heart (the magic
+ * boost, user correction 2026-10-23: "Nobody uses magic potions, they use Saturated heart").
  */
 export const FA_PLAN_DEFAULTS: RaidPlanDefaults = {
   pinned: ['Lightbearer', 'Elder maul', 'Zaryte crossbow', 'Kodai wand', 'Ancestral robe top', 'Elidinis\' ward (f)', SATURATED_HEART],
   nonItemSlots: 1,
-  supplies: supplies({
-    brew: 6, restore: 4, ranging: 2, superCombat: 1,
-  }),
+  supplies: supplies({ brew: 6, restore: 4 }),
   raidSupplied: [],
   source: 'the user\'s kit (2026-10-23)',
 };
@@ -96,16 +96,15 @@ export const COX_PLAN_DEFAULTS: RaidPlanDefaults = {
  * max-gear inventories bring Elder maul (+ Bandos godsword, Dragon claws), a rune pouch, 1 brew, 1 restore, combat /
  * ranging potions and food; "Additional supplies ... are available after each death and after defeating Pestilent Bloat
  * and Sotetseg", and the chests sell Saradomin brews and Super restores — so the default stock is moderate: 4 brew,
- * 3 restore, 1 ranging, 1 super combat, and a pinned Saturated heart (ToB has no raid boost: the potions are brought). The
+ * 3 restore (phase 27: the kit's potions — 1 Super combat / 1 Ranging potion per style present — are derived by the
+ * planner), and a pinned Saturated heart (ToB has no raid boost: the potions are brought). The
  * Dawnbringer is the raid's own item ("Used to break Verzik Vitur's shield during the first phase"): 0 slots, not pinned.
  * Lightbearer isn't in the Strategies inventories: not pinned.
  */
 export const TOB_PLAN_DEFAULTS: RaidPlanDefaults = {
   pinned: ['Elder maul', SATURATED_HEART],
   nonItemSlots: 1,
-  supplies: supplies({
-    brew: 4, restore: 3, ranging: 1, superCombat: 1,
-  }),
+  supplies: supplies({ brew: 4, restore: 3 }),
   raidSupplied: ['Dawnbringer'],
   source: 'Theatre of Blood/Strategies inventories (Elder maul, rune pouch); brews / restores topped up from the chests after Bloat and Sotetseg; Dawnbringer from the raid',
 };
