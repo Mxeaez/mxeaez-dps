@@ -94,9 +94,10 @@ describe('switching raids: defaults per raid, no leaks', () => {
     expect(snapshot(DEFAULT_ASSUMPTIONS)).toEqual(FA_SNAPSHOT);
     // the plan's potion rule follows the raid (ToA: salts from the raid, FA: brought)
     const none = {
-      brew: 0, restore: 0, ranging: 0, superCombat: 0, magic: 0, food: 0, other: 0,
+      brew: 0, restore: 0, ranging: 0, superCombat: 0, food: 0, other: 0,
     };
-    expect(planAssumptions(t.get('toa'), none).withoutPotion).toBeUndefined();
+    expect(planAssumptions(t.get('toa'), { ...none, other: 2 }).withoutPotion).toBeUndefined();
+    expect(planAssumptions(t.get('toa'), none).withoutPotion).toEqual(['melee', 'ranged', 'magic']);
     expect(planAssumptions(t.get('fractured-archive'), none).withoutPotion).toEqual(['melee', 'ranged', 'magic']);
   });
 
@@ -211,7 +212,7 @@ describe('every raid\'s plan runs (reduced pool)', () => {
  * (`$env:RUN_SLOW_TESTS=1; node .yarn/releases/yarn-4.9.2.cjs test CrossRaid`); the fast pins below run always.
  */
 const HEADLINES: [string, string, number][] = [
-  ['fractured-archive', '23:18.8', 1398.8],
+  ['fractured-archive', '23:30.4', 1410.4], // heart fix: Saturated heart pinned (was 23:18.8 without it)
   ['toa', '14:20.2', 860.2],
   ['cox', '6:41.9', 401.9],
   ['tob', '7:32.2', 452.2],

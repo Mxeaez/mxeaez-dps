@@ -45,8 +45,9 @@ export interface RaidBase {
   presets: PresetDef[];
   searchPool: Record<StyleGroup, StylePool>;
   /**
-   * Plan tab: a style's potion boost needs its potion among the inventory supplies (FA). false: the boost comes from the
-   * raid itself (ToA: Smelling salts from the supply chest), every style keeps it.
+   * Plan tab: a style's potion boost needs its potion among the inventory supplies (FA, ToB; magic: a pinned heart).
+   * false: the boost is the raid's own potion (ToA Smelling salts, CoX Overload: the "Other" supply), every style keeps
+   * it while Other > 0.
    */
   boostsNeedSupplies: boolean;
   /**

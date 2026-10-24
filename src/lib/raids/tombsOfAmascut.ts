@@ -6,7 +6,7 @@ import type { RaidConfig } from '@/lib/raids/index';
 /**
  * Tombs of Amascut supplies (phase 21: src/lib/raids/planDefaults.ts, TOA_PLAN_DEFAULTS): 6 restores (Sanfew serums,
  * later Tears / Nectar from the Helpful Spirit) + 2 Other (Smelling salts). The boost is always Smelling salts
- * (`boostsNeedSupplies: false`), so the potion supply types are 0.
+ * (`boostsNeedSupplies: false`; every style while Other > 0), so the potion supply types are 0 and no heart is pinned.
  */
 export const TOA_DEFAULT_SUPPLIES: SupplyCounts = TOMBS_OF_AMASCUT_BASE.planDefaults.supplies;
 

@@ -5,7 +5,7 @@
  * - For each raid tab (Fractured Archive, Tombs of Amascut, Chambers of Xeric, Theatre of Blood): the Plan inputs show
  *   that raid's defaults (supplies, rune pouch, items always brought; src/lib/raids/planDefaults.ts), the plan runs in
  *   ≤ 30 s, 28 inventory cells, every kit loadout obeys the dedupe rule (saves ≥ max(1, slots) s).
- * - FA: total 23:18.8 (phase 17 fixes).
+ * - FA: total 23:30.4 (heart fix: the Saturated heart pinned, magic boosted; was 23:18.8 without it).
  * - ToB: 7:32.2 at 28/28, one full Scythe set (no near-duplicate Scythe presets), a Dawnbringer loadout (the staff
  *   free), no Dawnbringer inventory cell, a "Lighter kit" alternative, the "Raid items (0 slots)" note; Search: the
  *   Prinkipas only in Hard Mode.
@@ -28,30 +28,30 @@ const shot = async (page, name) => {
 const EXPECTED = {
   'fractured-archive': {
     supplies: {
-      brew: 6, restore: 4, ranging: 2, superCombat: 1, magic: 0, food: 0, other: 0,
+      brew: 6, restore: 4, ranging: 2, superCombat: 1, food: 0, other: 0,
     },
-    pinned: ['Lightbearer', 'Elder maul', 'Zaryte crossbow', 'Kodai wand', 'Ancestral robe top', 'Elidinis\' ward (f)'],
+    pinned: ['Lightbearer', 'Elder maul', 'Zaryte crossbow', 'Kodai wand', 'Ancestral robe top', 'Elidinis\' ward (f)', 'Saturated heart'],
     team: 'times: your DPS alone',
   },
   toa: {
     supplies: {
-      brew: 0, restore: 6, ranging: 0, superCombat: 0, magic: 0, food: 0, other: 2,
+      brew: 0, restore: 6, ranging: 0, superCombat: 0, food: 0, other: 2,
     },
     pinned: ['Lightbearer', 'Zaryte crossbow'],
     team: 'times assume 6 players at your DPS',
   },
   cox: {
     supplies: {
-      brew: 2, restore: 2, ranging: 0, superCombat: 0, magic: 0, food: 0, other: 1,
+      brew: 2, restore: 2, ranging: 0, superCombat: 0, food: 0, other: 1,
     },
     pinned: ['Dragon pickaxe', 'Elder maul'],
     team: 'times assume 6 players at your DPS',
   },
   tob: {
     supplies: {
-      brew: 4, restore: 3, ranging: 1, superCombat: 1, magic: 1, food: 0, other: 0,
+      brew: 4, restore: 3, ranging: 1, superCombat: 1, food: 0, other: 0,
     },
-    pinned: ['Elder maul'],
+    pinned: ['Elder maul', 'Saturated heart'],
     team: 'times assume 4 players at your DPS',
   },
 };
@@ -103,7 +103,7 @@ const run = async () => {
 
   // FA
   const fa = await runPlan(page, 'fractured-archive');
-  check(fa.total === '23:18.8', `FA plan total ${fa.total} (phase 17 fixes: 23:18.8)`);
+  check(fa.total === '23:30.4', `FA plan total ${fa.total} (heart fix: 23:30.4)`);
   await shot(page, 'plan-fa');
 
   // ToA, CoX

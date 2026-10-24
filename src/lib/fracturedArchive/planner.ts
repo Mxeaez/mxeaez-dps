@@ -1,4 +1,5 @@
 import { EquipmentPiece, Player, PlayerEquipment } from '@/types/Player';
+import Potion from '@/enums/Potion';
 import { availableEquipment } from '@/lib/Equipment';
 import {
   applyLoadoutToPlayer,
@@ -78,15 +79,17 @@ export const INVENTORY_SLOTS = 28;
 
 // --- inputs --------------------------------------------------------------------------------------------------------
 
-export type SupplyType = 'brew' | 'restore' | 'ranging' | 'superCombat' | 'magic' | 'food' | 'other';
+export type SupplyType = 'brew' | 'restore' | 'ranging' | 'superCombat' | 'food' | 'other';
 
-/** Supply types; `image` = file under src/public/img/potions (null = generic icon). */
+/**
+ * Supply types; `image` = file under src/public/img/potions (null = generic icon). No magic potion: the magic boost is a
+ * heart (Saturated / Imbued), a reusable pinned item (`HEART_ITEMS`), one slot for the whole raid.
+ */
 export const SUPPLY_TYPES: { id: SupplyType, label: string, image: string | null }[] = [
   { id: 'brew', label: 'Saradomin brew', image: null },
   { id: 'restore', label: 'Super restore', image: null },
   { id: 'ranging', label: 'Ranging potion', image: 'Ranging.png' },
   { id: 'superCombat', label: 'Super combat', image: 'Super combat.png' },
-  { id: 'magic', label: 'Magic boost (Saturated heart)', image: 'Saturated heart.png' },
   { id: 'food', label: 'Food', image: null },
   { id: 'other', label: 'Other', image: null },
 ];
@@ -100,19 +103,53 @@ export type SupplyCounts = Record<SupplyType, number>;
 export const DEFAULT_SUPPLIES: SupplyCounts = FA_PLAN_DEFAULTS.supplies;
 
 /**
- * The supply that carries each style's boost. A style whose supply count is 0 is evaluated without its potion (the
- * Assumptions box's potion is the one used "if brought"). The drain / spec model keeps the potions.
+ * The supply that carries each style's boost where the potions are brought (FA, ToB). A style whose supply count is 0 is
+ * evaluated without its potion (the Assumptions box's potion is the one used "if brought"). Magic has no supply: its
+ * boost is a pinned heart (`pinnedHeart`). The drain / spec model keeps the potions.
  */
 export const SUPPLY_POTION_GROUP: Partial<Record<SupplyType, StyleGroup>> = {
-  superCombat: 'melee', ranging: 'ranged', magic: 'magic',
+  superCombat: 'melee', ranging: 'ranged',
 };
 
-/** The best-setup assumptions as the plan uses them: styles whose potion isn't in the supplies lose the boost. */
-export const planAssumptions = (a: BestSetupAssumptions, supplies: SupplyCounts): BestSetupAssumptions => {
-  if (!raidBase(a.raid).boostsNeedSupplies) return a; // e.g. ToA: salts from the raid's supply chest
+/**
+ * The magic boost items: reusable, one inventory slot for the whole raid, never worn. Not equipment, so they have
+ * pseudo ids (negative, far from the `-1` "no weapon" sentinel) that live in the pinned list next to equipment ids;
+ * `planItemByName` resolves their names. `image` = file under src/public/img/potions.
+ */
+export const HEART_ITEMS: { id: number, name: string, potion: Potion, image: string }[] = [
+  {
+    id: -9001, name: 'Saturated heart', potion: Potion.SATURATED_HEART, image: 'Saturated heart.png',
+  },
+  {
+    id: -9002, name: 'Imbued heart', potion: Potion.IMBUED_HEART, image: 'Imbued heart.png',
+  },
+];
+
+export const heartById = (id: number) => HEART_ITEMS.find((h) => h.id === id);
+export const heartByPotion = (p: Potion) => HEART_ITEMS.find((h) => h.potion === p);
+
+/** The first heart among the pinned ids (equipment ids + heart pseudo ids), if any. */
+export const pinnedHeart = (pinned: number[]) => pinned.map(heartById).find((h) => !!h);
+
+/**
+ * The best-setup assumptions as the plan uses them (Search / Summary always assume every style's boost):
+ * - potions brought (FA, ToB: `boostsNeedSupplies`): melee / ranged lose the boost when their potion count is 0; magic
+ *   is boosted iff a heart is pinned, with that heart's boost (whatever the Assumptions box says).
+ * - raid potions (ToA Smelling salts, CoX Overload: boost every style): every style keeps the raid's boost iff the
+ *   "Other" supply count is > 0; with none, magic falls back to a pinned heart, melee / ranged lose the boost.
+ */
+export const planAssumptions = (a: BestSetupAssumptions, supplies: SupplyCounts, pinned: number[] = []): BestSetupAssumptions => {
+  const heart = pinnedHeart(pinned);
+  if (!raidBase(a.raid).boostsNeedSupplies) {
+    if (supplies.other > 0) return a;
+    if (heart) return { ...a, potions: { ...a.potions, magic: heart.potion }, withoutPotion: ['melee', 'ranged'] };
+    return { ...a, withoutPotion: ['melee', 'ranged', 'magic'] };
+  }
   const without = (Object.entries(SUPPLY_POTION_GROUP) as [SupplyType, StyleGroup][])
     .filter(([t]) => !(supplies[t] > 0)).map(([, g]) => g);
-  return without.length ? { ...a, withoutPotion: without } : a;
+  if (!heart) without.push('magic');
+  const withHeart = heart && a.potions.magic !== heart.potion ? { ...a, potions: { ...a.potions, magic: heart.potion } } : a;
+  return without.length ? { ...withHeart, withoutPotion: without } : withHeart;
 };
 
 /**
@@ -187,7 +224,23 @@ export const toPlanItem = (p: EquipmentPiece, slot: Slot = p.slot as Slot): Plan
   ...(p.isTwoHanded ? { twoHanded: true } : {}),
 });
 
-export const planItemByName = (name: ItemRef): PlanItem => toPlanItem(resolveItem(name));
+/** A heart as a plan item (inventory only: never worn, so `slot` is a placeholder no loadout reads). */
+export const heartPlanItem = (h: typeof HEART_ITEMS[number]): PlanItem => ({
+  id: h.id, name: h.name, version: '', slot: 'ring',
+});
+
+export const planItemByName = (name: ItemRef): PlanItem => {
+  const heart = typeof name === 'string' ? HEART_ITEMS.find((h) => h.name === name) : undefined;
+  return heart ? heartPlanItem(heart) : toPlanItem(resolveItem(name));
+};
+
+/** A pinned id as a plan item: equipment, or a heart. */
+export const pinnedPlanItem = (id: number): PlanItem | undefined => {
+  const heart = heartById(id);
+  if (heart) return heartPlanItem(heart);
+  const p = equipmentById(id);
+  return p ? toPlanItem(p) : undefined;
+};
 
 /** The equipment as the calculator holds it: every slot set (null when empty), blowpipe darts kept. */
 export const toPlayerEquipment = (eq: PlanEquipment): Partial<PlayerEquipment> => Object.fromEntries(ALL_SLOTS.map((slot) => {
@@ -727,7 +780,10 @@ export interface PlanResult {
   unusedSupplies: { type: SupplyType, label: string, count: number, group: StyleGroup }[];
   /** The optimiser's (matrix) DPS of the kit per phase key, for checking against the exact times. */
   matrixDps: Record<string, number>;
-  /** Pinned items (not spec weapons) that no kit loadout wears: carried for other reasons, a slot each. */
+  /**
+   * Pinned items (not spec weapons) that no kit loadout wears: carried for other reasons, a slot each. A pinned heart is
+   * listed only when no kit loadout is magic (it boosts magic loadouts; it is never worn).
+   */
   unusedCarried: PlanItem[];
   /** Selected search rows per phase key (for the UI cache). */
   searchRows: Record<string, SearchRow[]>;
@@ -808,7 +864,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
   const t0 = Date.now();
   const cfg = { ...PLAN_DEFAULTS, ...tuning };
   const { drain, settings, basePlayer } = inputs;
-  const assumptions = planAssumptions(inputs.assumptions, inputs.supplies);
+  const assumptions = planAssumptions(inputs.assumptions, inputs.supplies, inputs.pinned);
   const total = inputs.totalSlots ?? INVENTORY_SLOTS;
   const cancelled = () => hooks.shouldCancel?.() === true;
   const progress = (p: PlanProgress) => hooks.onProgress?.(p);
@@ -821,7 +877,8 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
   const fastA: RaidTimeAssumptions = { ...exactA, fixedFightSeconds: drain === 'none' ? undefined : assumptions.fightSeconds };
 
   const specItems = carriedSpecWeaponNames(assumptions.mySpecs).map(planItemByName);
-  const pinnedItems = inputs.pinned.map((id) => equipmentById(id)).filter((p): p is EquipmentPiece => !!p).map((p) => toPlanItem(p));
+  // equipment + hearts (a heart is never worn: always one inventory slot, counted once)
+  const pinnedItems = inputs.pinned.map(pinnedPlanItem).filter((p): p is PlanItem => !!p);
   // phase 21: the raid's own items (ToB: Dawnbringer) cost no slot and are free to put on any loadout
   const raidSupplied = raidSuppliedItemIds(assumptions);
   const raidSuppliedSet = new Set(raidSupplied);
@@ -1416,7 +1473,9 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     unusedCarried: pinnedItems
       .filter((it, i, all) => all.findIndex((x) => x.id === it.id) === i)
       .filter((it) => !specItems.some((x) => x.id === it.id))
-      .filter((it) => !kit.some((c) => equipmentItemIds(c.equipment).includes(it.id))),
+      .filter((it) => (heartById(it.id)
+        ? !kit.some((c) => c.group === 'magic')
+        : !kit.some((c) => equipmentItemIds(c.equipment).includes(it.id)))),
     searchRows,
     stats: {
       searches: missing.length,

@@ -1,12 +1,19 @@
 import type { SupplyCounts } from '@/lib/fracturedArchive/planner';
 import type { ItemRef } from '@/lib/fracturedArchive/presets';
 
+/** The heart's name in the pinned lists (a pseudo item: planner.ts `HEART_ITEMS`). */
+export const SATURATED_HEART = 'Saturated heart';
+
 /**
  * Phase 21: the Plan tab's per-raid defaults (items always brought, non-item slots, supplies) and the items the raid
  * itself hands out (0 inventory slots in the planner). Data only (type imports only), so `src/lib/raids/base.ts` and
  * `planner.ts` can both use it without import cycles. Each raid's `RaidBase` points at one of these
  * (`defaultPinned`, `defaultNonItemSlots`, `defaultSupplies`, `raidSuppliedItems`); docs/BEST_SETUP.md, *Plan tab*,
  * lists them with their sources.
+ *
+ * The magic boost is a heart (`SATURATED_HEART`: reusable, one slot for the whole raid; nobody brings magic potions), so
+ * it is a pinned item, not a supply: pinned by default where the potions are brought (FA, ToB). ToA / CoX don't pin it:
+ * their raid potion (Smelling salts / Overload, the "Other" supply) boosts magic too.
  *
  * Spec weapons are not listed here: they come from "My specs" (default Elder maul + Eye of Ayak) and are counted once
  * with the pinned items. The supply types are slot counts; in raids that make their own potions the brew / restore
@@ -30,15 +37,16 @@ export interface RaidPlanDefaults {
 }
 
 const supplies = (s: Partial<SupplyCounts>): SupplyCounts => ({
-  brew: 0, restore: 0, ranging: 0, superCombat: 0, magic: 0, food: 0, other: 0, ...s,
+  brew: 0, restore: 0, ranging: 0, superCombat: 0, food: 0, other: 0, ...s,
 });
 
 /**
  * The Fractured Archive: the user's own kit (2026-10-23): rune pouch, Lightbearer, Elder maul, Zaryte crossbow, Kodai
- * wand, Ancestral robe top, Elidinis' ward (f); 6 brews, 4 restores, 2 ranging, 1 super combat (phase 17 defaults).
+ * wand, Ancestral robe top, Elidinis' ward (f); 6 brews, 4 restores, 2 ranging, 1 super combat (phase 17 defaults); and a
+ * Saturated heart (the magic boost, user correction 2026-10-23: "Nobody uses magic potions, they use Saturated heart").
  */
 export const FA_PLAN_DEFAULTS: RaidPlanDefaults = {
-  pinned: ['Lightbearer', 'Elder maul', 'Zaryte crossbow', 'Kodai wand', 'Ancestral robe top', 'Elidinis\' ward (f)'],
+  pinned: ['Lightbearer', 'Elder maul', 'Zaryte crossbow', 'Kodai wand', 'Ancestral robe top', 'Elidinis\' ward (f)', SATURATED_HEART],
   nonItemSlots: 1,
   supplies: supplies({
     brew: 6, restore: 4, ranging: 2, superCombat: 1,
@@ -88,15 +96,15 @@ export const COX_PLAN_DEFAULTS: RaidPlanDefaults = {
  * max-gear inventories bring Elder maul (+ Bandos godsword, Dragon claws), a rune pouch, 1 brew, 1 restore, combat /
  * ranging potions and food; "Additional supplies ... are available after each death and after defeating Pestilent Bloat
  * and Sotetseg", and the chests sell Saradomin brews and Super restores — so the default stock is moderate: 4 brew,
- * 3 restore, 1 ranging, 1 super combat, 1 Saturated heart (ToB has no raid boost: the potions are brought). The
+ * 3 restore, 1 ranging, 1 super combat, and a pinned Saturated heart (ToB has no raid boost: the potions are brought). The
  * Dawnbringer is the raid's own item ("Used to break Verzik Vitur's shield during the first phase"): 0 slots, not pinned.
  * Lightbearer isn't in the Strategies inventories: not pinned.
  */
 export const TOB_PLAN_DEFAULTS: RaidPlanDefaults = {
-  pinned: ['Elder maul'],
+  pinned: ['Elder maul', SATURATED_HEART],
   nonItemSlots: 1,
   supplies: supplies({
-    brew: 4, restore: 3, ranging: 1, superCombat: 1, magic: 1,
+    brew: 4, restore: 3, ranging: 1, superCombat: 1,
   }),
   raidSupplied: ['Dawnbringer'],
   source: 'Theatre of Blood/Strategies inventories (Elder maul, rune pouch); brews / restores topped up from the chests after Bloat and Sotetseg; Dawnbringer from the raid',

@@ -119,7 +119,7 @@ Requested after the site went live (2026-10-23). Same workflow per phase as abov
 
 Found in the phase 22 review; larger than a review fix, so not done:
 
-- **Slow headline test in CI**: `src/tests/lib/raids/CrossRaid.test.ts` pins the four headline plan totals (FA 23:18.8,
+- **Slow headline test in CI**: `src/tests/lib/raids/CrossRaid.test.ts` pins the four headline plan totals (FA 23:30.4 since the heart fix,
   ToA 14:20.2, CoX 6:41.9, ToB 7:32.2) only with `RUN_SLOW_TESTS=1` (a full default plan per raid is too slow for the
   default Jest run); the fast run pins each raid's per-encounter times for a fixed kit instead. Run the slow block
   before a release.

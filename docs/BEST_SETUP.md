@@ -78,8 +78,9 @@ scaled by accuracy (and the double Twisted bow scaling there); melee always max 
     Core-ejected entry's 4500-based hp) is gone; P3 95% of hp + 25% enraged (5% left + 20% heal, Defence 180, floor
     120); *P3 siphons* share (default 0). *P2 warden* setting: Elidinis' (default; magic only) or Tumeken's (ranged
     only); P3 uses Tumeken's entries (identical stats).
-- **Plan tab**: the same planner; every style keeps the salts boost (phase 21 supplies: 6 restore + 2 Other, see
-  *Per-raid defaults* below; phase 18 had 8 "Other" slots).
+- **Plan tab**: the same planner; every style keeps the salts boost while the "Other" supply count is > 0 (phase 21
+  supplies: 6 restore + 2 Other, see *Per-raid defaults* below; phase 18 had 8 "Other" slots). With 0 Other no style is
+  boosted (a pinned heart still boosts magic; heart fix).
 - Not modelled: invulnerable time (Akkha's memory blast, Ba-Ba's rolling stones, Zebak's specials, siphon phases),
   paths and puzzles, the phantoms in P3, Kephri's healing (soldier scarab swarms), boulders / swarms / eggs (max hits),
   the warden switching prayers between downs, specs during the core (dragon dagger + liquid adrenaline).
@@ -153,7 +154,7 @@ Fourth raid tab, same code (`THEATRE_OF_BLOOD_RAID`, `src/lib/raids/theatreOfBlo
   New in `tob/damage.ts`: **nylocas style gating** (Vasilias by its form phase "Melee / Ranged / Magic form", default
   melee; wave nylocas by name; Prinkipas by version; Verzik's nylocas not gated) and **Dawnbringer only on Verzik P1**
   — and not under P1's new phase "Shield (Dawnbringer with a teammate)" (one staff per raid).
-- **Defaults**: Super combat / Ranging / Saturated heart (no raid boost; potions are supplies), Piety / Rigour / Augury,
+- **Defaults**: Super combat / Ranging / Saturated heart (no raid boost; potions are supplies, the heart a pinned item), Piety / Rigour / Augury,
   Team carriers **2 Elder maul + 2 BGS** (Strategies 4-scale Maiden plan), team-DPS multiplier = party size.
 - **Presets** = FA list + "Torva + Salve (ei) + Scythe (slash)" (Bloat is undead) and "Dawnbringer (Ancestral)".
   **Pool** = FA pool + Blade of Saeldor (c), Abyssal tentacle, Eye of Ayak, Dawnbringer, Salve amulet(ei) (kept) in
@@ -165,7 +166,7 @@ Fourth raid tab, same code (`THEATRE_OF_BLOOD_RAID`, `src/lib/raids/theatreOfBlo
   exhumed heals, default 0; Entry 22.5%), P3 25% (same stats); Verzik P1 = Dawnbringer specs (2 per player × 112.5,
   each costs one 4-tick attack: specs × 2.4 s ÷ team) + the rest at **1 player × the kit's best + (team − 1) × the
   kit's best without the Dawnbringer**, P2 (+ heals, default 0), P3 (+ heals; Hard Mode always +30%).
-- **Plan**: supplies brew 4 / restore 3 / one of each potion (lower than a no-resupply raid: the chests after Bloat and
+- **Plan**: supplies brew 4 / restore 3 / 1 ranging / 1 super combat + a pinned Saturated heart (lower than a no-resupply raid: the chests after Bloat and
   Sotetseg sell brews and restores — documented, not modelled); phase 21: the Dawnbringer costs 0 slots (*Plan tab →
   Per-raid defaults*).
 
@@ -190,20 +191,35 @@ specs": Elder maul, DWH, BGS, Tonalztics when ticked, Eye of Ayak when its count
 "Assumptions (plan)" box: **Route** — one of the 8, or *Compare all* (default: plan for the fastest route; the route
 table then shows the other routes' times with the same kit); **Supplies** as slot counts (Fractured Archive defaults
 below; phase 21: each raid has its own, see *Per-raid defaults* — default Saradomin brew 6,
-Super restore 4, Ranging potion 2, Super combat 1, Magic boost (Saturated heart) 0, food 0, other 0); **Rune pouch / other
-non-items** (default 1);
+Super restore 4, Ranging potion 2, Super combat 1, food 0, other 0; no magic potion — see *Heart* below); **Rune pouch /
+other non-items** (default 1);
 **Items I always bring** (default Lightbearer, Elder maul, Zaryte crossbow, Kodai wand, Ancestral robe top, Elidinis'
-ward (f); editable with the calculator's item search; each takes a slot unless a kit loadout wears it, and any loadout
+ward (f), Saturated heart; editable with the calculator's item search; each takes a slot unless a kit loadout wears it, and any loadout
 may use them for free). Time-model settings are the raid's Routes / Encounters tab defaults (`raid.defaultTimeSettings`;
 FA: `RAID_TIME_DEFAULTS`). Phase 22: `plan()` and `computeRouteComparison()` throw if the time model passed isn't the
 assumptions' raid's (`assertTimeModelForRaid`), since both default to the Fractured Archive's.
 
-**Supplies → DPS** (review fix): Super combat carries the melee boost, Ranging potion the ranged one, the Magic boost
-slot the magic one (`SUPPLY_POTION_GROUP`). A style whose supply count is 0 is evaluated **without a potion**
-(`planAssumptions` → `BestSetupAssumptions.withoutPotion`, honoured by `applyLoadoutToPlayer`); the Assumptions box's
-potion is the one used "if brought". The searches, matrix, exact times and "Load into calculator" all use it; the
-drain / spec model keeps the potions (team carriers bring their own). With the user's defaults the magic boost is 0,
-so magic loadouts get no boost.
+**Supplies → DPS** (review fix): Super combat carries the melee boost, Ranging potion the ranged one
+(`SUPPLY_POTION_GROUP`). A style whose supply count is 0 is evaluated **without a potion**
+(`planAssumptions(assumptions, supplies, pinned)` → `BestSetupAssumptions.withoutPotion`, honoured by
+`applyLoadoutToPlayer`); the Assumptions box's potion is the one used "if brought". The searches, matrix, exact times
+and "Load into calculator" all use it; the drain / spec model keeps the potions (team carriers bring their own).
+
+**Heart** (fix 2026-10-23, user: "Nobody uses magic potions, they use Saturated heart instead"): the magic boost is a
+reusable item, one inventory slot for the whole raid, so it is a **pinned item**, not a supply (the old "Magic boost"
+supply count is gone). Hearts are pseudo items (`HEART_ITEMS` in `planner.ts`: Saturated heart −9001, Imbued heart
+−9002 — not equipment) that live in the pinned list: one slot each, counted once, never worn; `planItemByName` resolves
+their names. Rules:
+- **FA, ToB** (`boostsNeedSupplies`): magic is boosted **iff a heart is pinned**, with that heart's boost. The default
+  pinned lists include the Saturated heart. The Assumptions box's magic selector reads **Heart** (Saturated / Imbued
+  heart) there; the Plan's pinned heart follows it (changing it swaps the pinned heart; removing the heart in the Plan
+  turns the magic boost off and offers "+ Saturated heart" / "+ Imbued heart"). **Search, Summary and Routes always
+  assume the heart is brought**; the Plan with the heart pinned gives the same DPS.
+- **ToA, CoX** (raid potions: Smelling salts / Overload boost every style): every style keeps the raid potion iff the
+  "Other" supply count is > 0 (the default); with 0 Other no style is boosted, except magic when a heart is pinned. The
+  heart isn't pinned by default there.
+- Warnings: the heart never shows as an unused supply; it shows under "Always brought but in no kit loadout" when the
+  kit has no magic loadout.
 
 **Algorithm** (`plan(inputs, tuning?, hooks?)`; `PLAN_DEFAULTS` holds the caps):
 
@@ -242,7 +258,7 @@ so magic loadouts get no boost.
 items grouped by style with a coloured border — melee red, ranged green, magic blue —, spec weapons, pinned items, rune
 pouch / other, swap space, free; icons + tooltips; brews / restores / food get a generic potion icon, Ranging / Super
 combat / Saturated heart upstream's images; a note that spec weapons come from "My specs"); kit loadouts with icon
-rows and where each came from; warnings with one-click fixes — potion supplies whose style no kit loadout uses ("Drop
+rows and where each came from; warnings with one-click fixes — potion supplies (Super combat / Ranging) whose style no kit loadout uses ("Drop
 them (+N slots)") and always-brought items no loadout wears ("Remove these to free N slots"), both re-plan; the
 per-encounter table (loadouts and styles used, "avg DPS (time-weighted)" = damage ÷ seconds, seconds; phase rows with
 each phase's DPS); the route table; the why list; run statistics. "Load worn set into calculator" opens the calculator with the worn set against the route's first phase
@@ -258,7 +274,16 @@ stayed at their defaults.
 Only the candidate pool above is searched (greedy + local search, not exhaustive; exhaustive on the toy cases in the
 tests). The kit's DPS per phase is the best of its loadouts, so per-phase cherry-picking is limited to the kit.
 
-**Headline** (defaults: 6-man, Team drains, the pinned items and supplies above — no magic boost —, compare all;
+**Headline, heart fix** (defaults incl. the pinned Saturated heart, 6-man, Team drains, compare all;
+`scripts/verifyHeartFix.mjs`, 2026-10-23): worn **Tumeken's shadow switch +6 on Inquisitor's + Obligator** (Shadow,
+Ancestral robe top / bottom, Confliction gauntlets, Occult, Magus ring, Imbued Guthix cape over the Inquisitor's base),
+switch **Inquisitor's + Obligator** (+7 slots, saves 732.5 s); **0 free slots**; fastest route **AG → Bork + Smorks →
+Moia → Xarth → Ocellus, 23:30.4**. The heart's slot costs more than the boost gains on this route (23:18.8 before, with
+no heart and unboosted magic); the plan's Shadow on AG (flying) 8.374 DPS = the calculator after "Load worn set" (Magic
+99 → 112). Removing the heart: the AG magic phase drops to the Ascension crossbows switch. ToB unchanged at **7:32.2**,
+28/28 (the heart was already a 1-slot supply there).
+
+**Headline, phase 17** (defaults: 6-man, Team drains, the pinned items and supplies above — no magic boost —, compare all;
 2026-10-23 after the review fixes, `scripts/verifyPhase17.mjs`): worn a **partial switch: Ascension crossbows +
 diamond bolts (e) with Masori body / chaps (f), Dizana's quiver, Necklace of anguish, Zaryte vambraces over the
 Inquisitor's + Obligator base** (Inquisitor's great helm, Avernic treads, Ultor ring stay); switch **Inquisitor's +
@@ -279,10 +304,10 @@ example inventory has one).
 
 | Raid | Items always brought | Supplies (slots) | Raid items (0 slots) | Source |
 |---|---|---|---|---|
-| Fractured Archive | Lightbearer, Elder maul, Zaryte crossbow, Kodai wand, Ancestral robe top, Elidinis' ward (f) | 6 brew, 4 restore, 2 ranging, 1 super combat | — | the user's kit (2026-10-23) |
+| Fractured Archive | Lightbearer, Elder maul, Zaryte crossbow, Kodai wand, Ancestral robe top, Elidinis' ward (f), Saturated heart | 6 brew, 4 restore, 2 ranging, 1 super combat | — | the user's kit (2026-10-23) |
 | Tombs of Amascut | Lightbearer, Zaryte crossbow | 6 restore (Sanfew serums, later Tears / Nectar), 2 Other (Smelling salts) | — | Tombs_of_Amascut/Strategies max-gear inventory: Zaryte crossbow, Lightbearer, 6 Sanfew serums, 1 divine super combat, rune pouch; "Players can no longer eat food" at high invocations; salts / nectar / tears from the Helpful Spirit "once after completing two paths, and once again …" (Tombs of Amascut). The boost is always the salts, so no combat potions |
 | Chambers of Xeric | Dragon pickaxe, Elder maul | 2 brew (Xeric's aid), 2 restore (Prayer enhance / Revitalisation), 1 Other (Overload) | — | Chambers_of_Xeric/Strategies: "If guardians are in the raid, bring the best pickaxe possible"; specials "Bandos godsword + Elder maul > Dragon warhammer" (the first maul / DWH spec on Tekton always hits); the potions are made in the raid and dropped by Tekton, Vasa, Vanguards, Vespula, Muttadiles. Olm wants more ("6-7 brews, 2-3 restores"): raise them for an Olm-heavy plan |
-| Theatre of Blood | Elder maul | 4 brew, 3 restore, 1 ranging, 1 super combat, 1 Saturated heart | **Dawnbringer** | Theatre_of_Blood/Strategies max-gear inventories (Elder maul + BGS + claws, rune pouch, 1 brew + 1 restore + combat potions + food); the chests after Bloat and Sotetseg sell brews / restores, hence fewer than a raid without resupply. Lightbearer isn't in those inventories |
+| Theatre of Blood | Elder maul, Saturated heart | 4 brew, 3 restore, 1 ranging, 1 super combat | **Dawnbringer** | Theatre_of_Blood/Strategies max-gear inventories (Elder maul + BGS + claws, rune pouch, 1 brew + 1 restore + combat potions + food); the chests after Bloat and Sotetseg sell brews / restores, hence fewer than a raid without resupply. Lightbearer isn't in those inventories |
 
 **ToB supply chests** (documented, not modelled): "When the Pestilent Bloat and Sotetseg are killed, players will gain
 access to a chest with supplies ... containing food and potions" (Saradomin brews, Super restores, staminas; Strategies).
@@ -315,7 +340,7 @@ without it). The "why" list marks additions that fit but miss the rule.
 
 | Raid | Phase 17–20 headline (FA pins + old supplies in every raid) | Phase 21 defaults, rule off (`noPrune`) | Phase 21 |
 |---|---|---|---|
-| FA | 23:18.8 — Ascension crossbows partial over Inquisitor's + Obligator, Inquisitor's + Obligator | 23:18.8 | **23:18.8, unchanged** (both loadouts are needed; 17.4 s in the browser) |
+| FA | 23:18.8 — Ascension crossbows partial over Inquisitor's + Obligator, Inquisitor's + Obligator | 23:18.8 | **23:18.8, unchanged** (both loadouts are needed; 17.4 s in the browser) ; heart fix: **23:30.4** with the Saturated heart pinned (Shadow partial worn) |
 | ToA | 14:20.0 — Keris partisan of breaching (Torva) worn; Shadow, fang, Scythe, Obligator; 1 free | 14:20.0 — same kit incl. Torva + Obligator (saves 0.2 s for +1 slot); 3 free | **14:20.2** — Torva + Obligator dropped; Keris worn, Shadow, fang, Torva + Scythe; **4 free** (19.3 s) |
 | CoX | 6:59.9 (8 "Other" slots) | 6:41.9 | **6:41.9, same kit** — Inquisitor's + Obligator worn; Shadow, Dragon pickaxe, Inquisitor's + Scythe (0 slots, 2.1 s), Harmonised Nightmare staff, Scythe (Tekton; +1 slot, 3.6 s), Ascension crossbows partial; 0 free (every switch ≥ 1 s per slot; 20.6 s) |
 | ToB | 7:35.5 — Torva + Scythe worn; Torva helm + Oathplate + Scythe, two Scythe search sets, Eye of Ayak, Ascension crossbows partial | 7:32.0 (before the piece swaps) — Torva + Scythe worn; Oathplate + Scythe (+2 slots, 6.0 s), Torva + Salve (ei) + Scythe (+1, 3.8 s), Dawnbringer + 5 Ancestral pieces (+0), Eye of Ayak, Ascension crossbows partial; 0 free | **7:32.2, 28/28** — worn Torva helm + Oathplate + Scythe; switches Dawnbringer search set (+1 slot: the staff itself is free), Tumeken's shadow, Oathplate + Salve amulet(ei) swap, Ascension crossbows partial (18.2 s). **Alternative "Lighter kit"**: Dawnbringer (Ancestral) at +0 slots (its Ancestral pieces are the Shadow's) and a smaller Ascension crossbows partial — −3 slots for +1.9 s (7:34.1, 3 free) |
@@ -436,7 +461,8 @@ The view tries every listed style (and spell) per preset and shows the one with 
 ## Assumptions (the "Assumptions" box; defaults in `DEFAULT_ASSUMPTIONS`)
 
 - All skills 99 (the calculator's default player).
-- Potions per style: Super combat / Ranging potion / Saturated heart (selectable; CoX-only overloads/super potions and
+- Potions per style: Super combat / Ranging potion / Saturated heart (selectable; in FA / ToB the magic one is labelled
+  **Heart** and offers Saturated / Imbued heart — it is a pinned item in the Plan tab, see *Plan tab → Heart*; CoX-only overloads/super potions and
   ToA smelling salts are available in the dropdown but don't work in the raid).
 - Prayers: Piety / Rigour / Augury; "Zeal instead of Piety" switches melee to the raid prayer.
 - Elemental fragments: on for magic presets (all four elements, +2 base max hit to elemental spells). Only the Kodai

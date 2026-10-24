@@ -38,6 +38,8 @@ const POTION_OPTIONS = (Object.keys(PotionMap) as unknown as string[])
   .map((k) => Number(k) as Potion)
   .sort((a, b) => PotionMap[a].order - PotionMap[b].order);
 
+const HEART_POTIONS = [Potion.SATURATED_HEART, Potion.IMBUED_HEART];
+
 const GROUP_PRAYER: Record<StyleGroup, string> = { melee: 'Piety', ranged: 'Rigour', magic: 'Augury' };
 
 type MyWeapon = 'elderMaul' | 'dwh' | 'bgs' | 'tonalztics';
@@ -127,19 +129,29 @@ const AssumptionsBox: React.FC<{
       </div>
       {scalingRow && <ScalingInputs raid={raid} value={value} onChange={onChange} />}
       <div className="flex flex-wrap gap-x-4 gap-y-2 items-center">
-        {(['melee', 'ranged', 'magic'] as StyleGroup[]).map((g) => (
-          <label key={g} htmlFor={`bs-potion-${g}`} className="flex items-center gap-1">
-            <span className="capitalize">{`${g} potion`}</span>
-            <select
-              id={`bs-potion-${g}`}
-              className="form-control text-xs py-0.5"
-              value={value.potions[g]}
-              onChange={(e) => set({ potions: { ...value.potions, [g]: Number(e.target.value) as Potion } })}
+        {(['melee', 'ranged', 'magic'] as StyleGroup[]).map((g) => {
+          // where the potions are brought (FA, ToB) the magic boost is a heart, a pinned item in the Plan tab
+          const heart = g === 'magic' && raid.boostsNeedSupplies;
+          const options = heart ? POTION_OPTIONS.filter((p) => HEART_POTIONS.includes(p) || p === value.potions[g]) : POTION_OPTIONS;
+          return (
+            <label
+              key={g}
+              htmlFor={`bs-potion-${g}`}
+              className="flex items-center gap-1"
+              title={heart ? 'Search and Summary assume this heart is brought; the Plan tab boosts magic only while a heart is in "Items I always bring" (it follows this choice)' : undefined}
             >
-              {POTION_OPTIONS.map((p) => <option key={p} value={p}>{PotionMap[p].name}</option>)}
-            </select>
-          </label>
-        ))}
+              <span className={heart ? '' : 'capitalize'}>{heart ? 'Heart' : `${g} potion`}</span>
+              <select
+                id={`bs-potion-${g}`}
+                className="form-control text-xs py-0.5"
+                value={value.potions[g]}
+                onChange={(e) => set({ potions: { ...value.potions, [g]: Number(e.target.value) as Potion } })}
+              >
+                {options.map((p) => <option key={p} value={p}>{PotionMap[p].name}</option>)}
+              </select>
+            </label>
+          );
+        })}
       </div>
       <div className="flex flex-wrap gap-x-4 gap-y-2 items-center">
         {raid.raidOnlyAssumptions && (

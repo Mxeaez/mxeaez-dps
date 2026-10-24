@@ -14,6 +14,9 @@ import {
 } from '@/lib/fracturedArchive/raidTime';
 import {
   equipmentById,
+  HEART_ITEMS,
+  heartById,
+  heartByPotion,
   INVENTORY_SLOTS,
   InventoryCell,
   PlanCandidate,
@@ -39,6 +42,7 @@ import DPS_TEXT_CLASS from '@/app/components/bestSetup/styles';
 import RangingImg from '@/public/img/potions/Ranging.png';
 import SuperCombatImg from '@/public/img/potions/Super combat.png';
 import SaturatedHeartImg from '@/public/img/potions/Saturated heart.png';
+import ImbuedHeartImg from '@/public/img/potions/Imbued heart.png';
 import headSlot from '@/public/img/slots/head.png';
 import capeSlot from '@/public/img/slots/cape.png';
 import neckSlot from '@/public/img/slots/neck.png';
@@ -64,10 +68,14 @@ const DEBOUNCE_MS = 500;
 const SUPPLY_IMAGES: Partial<Record<SupplyType, string>> = {
   ranging: RangingImg.src,
   superCombat: SuperCombatImg.src,
-  magic: SaturatedHeartImg.src,
 };
 const SUPPLY_COLOURS: Record<SupplyType, string> = {
-  brew: '#d9b44a', restore: '#b04aa6', ranging: '#3f8fd1', superCombat: '#3c9a3c', magic: '#c0392b', food: '#a0522d', other: '#888888',
+  brew: '#d9b44a', restore: '#b04aa6', ranging: '#3f8fd1', superCombat: '#3c9a3c', food: '#a0522d', other: '#888888',
+};
+/** The hearts are pinned pseudo items (planner.ts HEART_ITEMS), not equipment: their icons by pseudo id. */
+const HEART_IMAGES: Record<string, string> = {
+  'Saturated heart': SaturatedHeartImg.src,
+  'Imbued heart': ImbuedHeartImg.src,
 };
 
 const SLOT_PLACEHOLDERS: Record<keyof PlayerEquipment, string> = {
@@ -117,7 +125,11 @@ const SupplyIcon: React.FC<{ type: SupplyType, label: string, size?: number }> =
   );
 };
 
-const itemUrl = (id: number) => equipmentImageUrl(equipmentById(id)?.image);
+const itemUrl = (id: number) => {
+  const heart = heartById(id);
+  return heart ? HEART_IMAGES[heart.name] : equipmentImageUrl(equipmentById(id)?.image);
+};
+const pinnedName = (id: number) => heartById(id)?.name ?? equipmentById(id)?.name;
 
 /** The worn set, laid out like the calculator's equipment grid. */
 const WornGrid: React.FC<{ kit: PlanCandidate }> = ({ kit }) => {
@@ -214,11 +226,28 @@ const PhaseRows: React.FC<{ phases: PhaseTime[] }> = ({ phases }) => (
 const PlanView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStateId, raid: RaidConfig }> = ({ assumptions, drain, raid }) => {
   const routes = useMemo(() => enumerateRoutes(raid.time.routeSlots, raid.time.labels), [raid]);
   // phase 21: per-raid defaults (src/lib/raids/planDefaults.ts); the view is remounted on a raid change
-  const defaultPinned = useMemo(() => raid.planDefaults.pinned.map((n) => planItemByName(n).id), [raid]);
+  // the pinned heart (magic boost) follows the Assumptions box's Heart; another magic potion there = no heart pinned
+  const selectedHeart = heartByPotion(assumptions.potions.magic);
+  const defaultPinned = useMemo(() => raid.planDefaults.pinned.map((n) => planItemByName(n).id)
+    .flatMap((id) => {
+      if (!heartById(id)) return [id];
+      return selectedHeart ? [selectedHeart.id] : [];
+    }), [raid, selectedHeart]);
   const [route, setRoute] = useState('all');
   const [supplies, setSupplies] = useState<SupplyCounts>(raid.defaultSupplies);
   const [nonItem, setNonItem] = useState(raid.planDefaults.nonItemSlots);
   const [pinned, setPinned] = useState<number[]>(defaultPinned);
+  // a new Heart in the Assumptions box replaces the pinned one (or removes it); the first render keeps the defaults
+  const lastHeart = useRef(selectedHeart);
+  useEffect(() => {
+    if (lastHeart.current === selectedHeart) return;
+    lastHeart.current = selectedHeart;
+    setPinned((p) => {
+      const had = p.some((id) => heartById(id));
+      const rest = p.filter((id) => !heartById(id));
+      return had && selectedHeart ? [...rest, selectedHeart.id] : rest;
+    });
+  }, [selectedHeart]);
   const [result, setResult] = useState<PlanResult | null>(null);
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState<PlanProgress | null>(null);
@@ -237,7 +266,7 @@ const PlanView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStateI
     cancel();
     setError(null);
     const timer = setTimeout(() => {
-      const prefix = cachePrefix(planAssumptions(assumptions, supplies), drain);
+      const prefix = cachePrefix(planAssumptions(assumptions, supplies, pinned), drain);
       const searchRows: Record<string, SearchRow[]> = {};
       searchCache.forEach((v, k) => {
         if (k.startsWith(prefix)) searchRows[k.slice(prefix.length)] = v;
@@ -282,19 +311,19 @@ const PlanView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStateI
     if (!planned || !firstPhase) return null;
     const enc = planned.encounters[0];
     return buildTargetMonster(findTarget(firstPhase.targetKey), firstPhase.phase, drain, {
-      ...planAssumptions(assumptions, supplies), fightSeconds: enc.drainFightSeconds ?? assumptions.fightSeconds,
+      ...planAssumptions(assumptions, supplies, pinned), fightSeconds: enc.drainFightSeconds ?? assumptions.fightSeconds,
     }).monster;
   };
   const loadWorn = () => {
     const monster = monsterForFirstPhase();
     if (!result || !monster) return;
-    const player = planLoadoutToPlayer(generateEmptyPlayer(), result.kit[0], monster, planAssumptions(assumptions, supplies));
+    const player = planLoadoutToPlayer(generateEmptyPlayer(), result.kit[0], monster, planAssumptions(assumptions, supplies, pinned));
     openInCalculator(player, monster).catch(console.error);
   };
   const loadAll = () => {
     const monster = monsterForFirstPhase();
     if (!result || !monster) return;
-    const players = result.kit.map((c) => planLoadoutToPlayer(generateEmptyPlayer(), c, monster, planAssumptions(assumptions, supplies)));
+    const players = result.kit.map((c) => planLoadoutToPlayer(generateEmptyPlayer(), c, monster, planAssumptions(assumptions, supplies, pinned)));
     openLoadoutsInCalculator(players, monster).catch(console.error);
   };
 
@@ -366,15 +395,26 @@ const PlanView: React.FC<{ assumptions: BestSetupAssumptions, drain: DrainStateI
           <div className="flex flex-wrap gap-2 items-center">
             <span className="font-semibold" title="Always in the inventory (or worn, if a loadout uses them); free to use in any loadout">Items I always bring:</span>
             {pinned.map((id) => {
-              const it = equipmentById(id);
+              const name = pinnedName(id);
               return (
-                <span key={id} className="flex items-center gap-1 border border-body-400 dark:border-dark-200 rounded px-1" data-testid="pinned-item">
-                  <ItemIcon name={it?.name ?? String(id)} src={itemUrl(id)} size={18} />
-                  {it?.name ?? id}
+                <span
+                  key={id}
+                  className="flex items-center gap-1 border border-body-400 dark:border-dark-200 rounded px-1"
+                  data-testid="pinned-item"
+                  data-heart={heartById(id) ? 'true' : undefined}
+                  title={heartById(id) ? 'Magic boost for every magic loadout (reusable: one slot for the whole raid)' : undefined}
+                >
+                  <ItemIcon name={name ?? String(id)} src={itemUrl(id)} size={18} />
+                  {name ?? id}
                   <button type="button" className="text-red-600 ml-1" title="Remove" onClick={() => setPinned(pinned.filter((x) => x !== id))}>×</button>
                 </span>
               );
             })}
+            {raid.boostsNeedSupplies && !pinned.some((id) => heartById(id)) && HEART_ITEMS.map((h) => (
+              <button key={h.id} type="button" className="underline" onClick={() => setPinned([...pinned, h.id])} data-testid="pin-heart" title="The magic boost: magic loadouts are evaluated without a boost unless a heart is brought">
+                {`+ ${h.name}`}
+              </button>
+            ))}
             <button type="button" className="underline" onClick={() => setPinned(defaultPinned)} data-testid="pinned-reset">reset</button>
             {raid.planDefaults.raidSupplied.length > 0 && (
               <span className="text-gray-500 dark:text-gray-400" data-testid="raid-supplied" title="Handed out by the raid: free to use on any loadout, no inventory slot">

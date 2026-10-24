@@ -34,7 +34,7 @@ import { DAWNBRINGER_SPEC_AVERAGE, DAWNBRINGER_SPEC_SECONDS } from '@/lib/raids/
 // dedupe rule (SWITCH_MIN_*), Prinkipas only in Hard Mode, Dawnbringer spec count = the team-DPS multiplier.
 
 const NO_SUPPLIES: SupplyCounts = {
-  brew: 0, restore: 0, ranging: 0, superCombat: 0, magic: 0, food: 0, other: 0,
+  brew: 0, restore: 0, ranging: 0, superCombat: 0, food: 0, other: 0,
 };
 const supplySlots = (s: SupplyCounts) => Object.values(s).reduce((t, n) => t + n, 0);
 const refName = (r: string | [string, string]) => (typeof r === 'string' ? r : r[0]);
@@ -53,9 +53,11 @@ describe('per-raid plan defaults', () => {
   });
 
   test('the Fractured Archive keeps the user\'s list; the phase 17 names point at it', () => {
-    expect(FRACTURED_ARCHIVE_RAID.planDefaults.pinned).toEqual(['Lightbearer', 'Elder maul', 'Zaryte crossbow', 'Kodai wand', 'Ancestral robe top', 'Elidinis\' ward (f)']);
+    expect(FRACTURED_ARCHIVE_RAID.planDefaults.pinned).toEqual([
+      'Lightbearer', 'Elder maul', 'Zaryte crossbow', 'Kodai wand', 'Ancestral robe top', 'Elidinis\' ward (f)', 'Saturated heart',
+    ]);
     expect(FRACTURED_ARCHIVE_RAID.defaultSupplies).toEqual({
-      brew: 6, restore: 4, ranging: 2, superCombat: 1, magic: 0, food: 0, other: 0,
+      brew: 6, restore: 4, ranging: 2, superCombat: 1, food: 0, other: 0,
     });
     expect(DEFAULT_PINNED_NAMES).toBe(FRACTURED_ARCHIVE_RAID.planDefaults.pinned);
     expect(DEFAULT_SUPPLIES).toBe(FRACTURED_ARCHIVE_RAID.defaultSupplies);
@@ -67,14 +69,15 @@ describe('per-raid plan defaults', () => {
     expect(TOMBS_OF_AMASCUT_RAID.defaultSupplies).toMatchObject({ brew: 0, restore: 6, other: 2 });
     expect(CHAMBERS_OF_XERIC_RAID.planDefaults.pinned).toEqual(['Dragon pickaxe', 'Elder maul']);
     expect(CHAMBERS_OF_XERIC_RAID.defaultSupplies).toMatchObject({ brew: 2, restore: 2, other: 1 });
-    expect(THEATRE_OF_BLOOD_RAID.planDefaults.pinned).toEqual(['Elder maul']);
-    expect(THEATRE_OF_BLOOD_RAID.defaultSupplies).toMatchObject({
-      brew: 4, restore: 3, ranging: 1, superCombat: 1, magic: 1,
+    expect(THEATRE_OF_BLOOD_RAID.planDefaults.pinned).toEqual(['Elder maul', 'Saturated heart']);
+    expect(THEATRE_OF_BLOOD_RAID.defaultSupplies).toEqual({
+      brew: 4, restore: 3, ranging: 1, superCombat: 1, food: 0, other: 0,
     });
     // potion boosts: from the raid in ToA / CoX (no combat potions by default), brought in ToB / FA
     [TOMBS_OF_AMASCUT_RAID, CHAMBERS_OF_XERIC_RAID].forEach((r) => {
       expect(r.boostsNeedSupplies).toBe(false);
-      expect(r.defaultSupplies.ranging + r.defaultSupplies.superCombat + r.defaultSupplies.magic).toBe(0);
+      expect(r.defaultSupplies.ranging + r.defaultSupplies.superCombat).toBe(0);
+      expect(r.planDefaults.pinned).not.toContain('Saturated heart'); // the raid potion boosts magic
     });
   });
 

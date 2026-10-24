@@ -57,7 +57,7 @@ const main = async () => {
   check(await page.locator('#plan-supply-brew').inputValue() === '6' && await page.locator('#plan-supply-restore').inputValue() === '4'
     && await page.locator('#plan-supply-ranging').inputValue() === '2' && await page.locator('#plan-supply-superCombat').inputValue() === '1', 'default supplies 6 / 4 / 2 / 1');
   const pinned = await page.locator('[data-testid="pinned-item"]').allInnerTexts();
-  check(pinned.length === 6, `6 pinned items (${pinned.map((x) => x.replace('×', '').trim()).join(', ')})`);
+  check(pinned.length === 7, `7 pinned items (incl. the Saturated heart) (${pinned.map((x) => x.replace('×', '').trim()).join(', ')})`);
 
   const t0 = Date.now();
   await waitIdle(page);
@@ -110,13 +110,15 @@ const main = async () => {
 
   // remove the unused pinned items: they leave the pinned list and the plan re-runs with the freed slots
   const pinnedBefore = await page.locator('[data-testid="pinned-item"]').count();
+  const removed = (await page.locator('[data-testid="unused-carried"] span').first().innerText()).replace(/^.*loadout: /, '').replace(/\.$/, '').split(', ');
   await page.locator('[data-testid="drop-pinned"]').click();
   await page.waitForTimeout(700);
   await waitIdle(page);
   const pinnedAfter = await page.locator('[data-testid="pinned-item"]').count();
   const r = await readPlan(page);
   console.log(`     after removing unused pinned: ${pinnedBefore} → ${pinnedAfter} pinned; ${r.headline}; free ${r.free}; kit ${r.kit.map((k) => k.split('·')[0].trim()).join(' / ')}`);
-  check(pinnedAfter < pinnedBefore && r.cells.filter((c) => c.startsWith('pinned')).length === 0, 'unused pinned items removed in one click; re-planned');
+  // (items the new kit no longer wears, e.g. the heart when it drops magic, may become unused in turn; they stay pinned)
+  check(pinnedAfter < pinnedBefore && !r.cells.some((c) => removed.some((n) => c === `pinned:${n}`)), `unused pinned items removed in one click (${removed.join(', ')}); re-planned`);
   await page.screenshot({ path: 'docs/screenshots/phase17-unpinned.png', fullPage: true });
   await page.getByTestId('plan-pinned').getByRole('button', { name: 'reset' }).click();
   await waitIdle(page);

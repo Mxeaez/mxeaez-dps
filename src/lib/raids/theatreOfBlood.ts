@@ -5,7 +5,7 @@ import type { RaidConfig } from '@/lib/raids/index';
 
 /**
  * Theatre of Blood supplies (phase 21: src/lib/raids/planDefaults.ts, TOB_PLAN_DEFAULTS). The potions are brought (no
- * raid boost: `boostsNeedSupplies`), one of each; 4 brews and 3 restores, fewer than a raid without resupply because the
+ * raid boost: `boostsNeedSupplies`): 1 ranging, 1 super combat, the Saturated heart pinned; 4 brews and 3 restores, fewer than a raid without resupply because the
  * chests after Bloat and Sotetseg sell brews and restores (documented, not modelled).
  */
 export const TOB_DEFAULT_SUPPLIES: SupplyCounts = THEATRE_OF_BLOOD_BASE.planDefaults.supplies;

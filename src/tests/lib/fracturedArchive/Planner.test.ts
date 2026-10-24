@@ -36,7 +36,7 @@ import { generateEmptyPlayer } from '@/state';
 // Phase 17: raid planner (src/lib/fracturedArchive/planner.ts).
 
 const NO_SUPPLIES: SupplyCounts = {
-  brew: 0, restore: 0, ranging: 0, superCombat: 0, magic: 0, food: 0, other: 0,
+  brew: 0, restore: 0, ranging: 0, superCombat: 0, food: 0, other: 0,
 };
 
 const item = (id: number, slot: PlanItem['slot'], twoHanded = false): PlanItem => ({
@@ -332,11 +332,12 @@ describe('review fixes', () => {
   test('a style whose potion is not in the supplies is evaluated without it; drains keep the potions', () => {
     const tbow = PRESETS.find((p) => p.name === 'Twisted bow (Masori)')!;
     const scythe = PRESETS.find((p) => p.name === 'Torva + Scythe (slash)')!;
-    const withPots = planAssumptions(DEFAULT_ASSUMPTIONS, { ...DEFAULT_SUPPLIES, magic: 1 });
-    const noRanging = planAssumptions(DEFAULT_ASSUMPTIONS, { ...DEFAULT_SUPPLIES, ranging: 0, magic: 1 });
+    const heart = [planItemByName('Saturated heart').id];
+    const withPots = planAssumptions(DEFAULT_ASSUMPTIONS, DEFAULT_SUPPLIES, heart);
+    const noRanging = planAssumptions(DEFAULT_ASSUMPTIONS, { ...DEFAULT_SUPPLIES, ranging: 0 }, heart);
     expect(withPots.withoutPotion).toBeUndefined();
     expect(noRanging.withoutPotion).toEqual(['ranged']);
-    expect(planAssumptions(DEFAULT_ASSUMPTIONS, DEFAULT_SUPPLIES).withoutPotion).toEqual(['magic']); // no magic boost by default
+    expect(planAssumptions(DEFAULT_ASSUMPTIONS, DEFAULT_SUPPLIES).withoutPotion).toEqual(['magic']); // no heart pinned
     const { monster } = buildTargetMonster(findTarget('xarth'), undefined, 'team', withPots);
     const dpsOf = (preset: typeof tbow, a: typeof withPots) => evaluateLoadout(
       applyPresetToPlayer(generateEmptyPlayer(), preset, presetStyles(preset)[0], null, monster, a),

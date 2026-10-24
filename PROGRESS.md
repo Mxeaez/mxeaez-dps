@@ -3,6 +3,23 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Fix: Saturated heart as pinned item (2026-10-23)
+
+- User correction: "Nobody uses magic potions, they use Saturated heart instead." The magic boost is now a pinned item
+  (1 slot for the whole raid, counted once, never worn), not a supply: the "Magic boost" supply type is gone. Hearts are
+  pseudo items in the pinned list (`HEART_ITEMS` in planner.ts: Saturated / Imbued heart, ids −9001 / −9002).
+- `planAssumptions(a, supplies, pinned)`: FA / ToB boost magic iff a heart is pinned (with that heart); ToA / CoX keep
+  the raid potion (salts / Overload) for every style iff "Other" > 0, else only a pinned heart boosts magic.
+- Default pinned lists: Saturated heart added for FA and ToB (ToB's 1 heart supply moved there); not for ToA / CoX.
+- UI: Assumptions box magic selector reads "Heart" (Saturated / Imbued) in FA / ToB; the Plan's pinned heart follows it;
+  "+ Saturated heart / + Imbued heart" when removed. Unused-supplies warning never lists the heart; unused-pinned lists
+  it only when the kit has no magic loadout. Search / Summary assume the heart (unchanged).
+- New plan headlines: **FA 23:30.4**, 0 free (worn Tumeken's shadow switch +6 on Inquisitor's + Obligator, switch
+  Inquisitor's + Obligator; was 23:18.8 unboosted without the heart's slot). **ToB 7:32.2**, 0 free (unchanged).
+- Tests: new `Heart.test.ts` (9); Planner / Phase21 / CrossRaid updated (slow FA headline re-pinned, all four pass).
+  `scripts/verifyHeartFix.mjs` all OK (screenshots `docs/screenshots/fix-heart-*.png`; plan Shadow 8.374 DPS = the
+  calculator after Load worn, Magic 112); verifyPhase17 / 21 updated and OK, tracked screenshots restored.
+
 ## Phase 22 — Final review, round 2 (2026-10-23)
 
 - Cross-cutting pass over `src/lib/raids/**`, the planner / time model and the round-2 upstream hooks (ToA prayers,

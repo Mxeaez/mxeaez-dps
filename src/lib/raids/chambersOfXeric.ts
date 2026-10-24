@@ -9,7 +9,8 @@ import type { TimeSettingField } from '@/lib/raids/types';
 /**
  * Chambers of Xeric supplies (phase 21: src/lib/raids/planDefaults.ts, COX_PLAN_DEFAULTS): overloads, brews (Xeric's
  * aid) and restores (Revitalisation / Prayer enhance) are made in the raid, so the default stock is small: 2 brew,
- * 2 restore, 1 Other (Overload). The boost is always Overload (+) (`boostsNeedSupplies: false`).
+ * 2 restore, 1 Other (Overload). The boost is Overload (+) for every style while Other > 0
+ * (`boostsNeedSupplies: false`); no heart pinned.
  */
 export const COX_DEFAULT_SUPPLIES: SupplyCounts = CHAMBERS_OF_XERIC_BASE.planDefaults.supplies;
 
