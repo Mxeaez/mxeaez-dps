@@ -147,12 +147,12 @@ should be clearly marked like [Elder maul icon] ×2", "What is the Encounters ta
 
 | # | Phase | Done when | Status |
 |---|---|---|---|
-| 23 | UI cleanup | Simple/Advanced split; drain line as icons ×N with hit chances; fight-length input removed (computed); one Lightbearer toggle for carriers; Encounters/Routes merged into Plan results; tooltips/glossary; no behaviour change to the numbers | In review |
-| 24 | Spec-accuracy audit | ToA/CoX/ToB spec hit chances include invocation/CM/party multipliers on the defence roll; Kephri maul case explained; hit chance shown per spec in the drain line; tests | In review |
-| 25 | Item data refresh | Amulet of rupture, Seeking dragon arrows and every item added since the pool was written (audit equipment.json vs pool/presets); effects modelled or documented | In review |
-| 26 | "I don't own" list | Cross off items (persisted in the browser); Plan excludes them; Search marks rows that use them but still shows them | In review |
-| 27 | Planner supplies & rings | Potions chosen from the kit (super combat / ranging / heart by style present); comfort supplies (brews/restores/food) per raid, editable; ring policy: camp one ring / camp Lightbearer / allow switches | In review |
-| 28 | Final review (round 3) | Fresh pass; UNVERIFIED updated | Planned |
+| 23 | UI cleanup | Simple/Advanced split; drain line as icons ×N with hit chances; fight-length input removed (computed); one Lightbearer toggle for carriers; Encounters/Routes merged into Plan results; tooltips/glossary; no behaviour change to the numbers | Done |
+| 24 | Spec-accuracy audit | ToA/CoX/ToB spec hit chances include invocation/CM/party multipliers on the defence roll; Kephri maul case explained; hit chance shown per spec in the drain line; tests | Done |
+| 25 | Item data refresh | Amulet of rupture, Seeking dragon arrows and every item added since the pool was written (audit equipment.json vs pool/presets); effects modelled or documented | Done |
+| 26 | "I don't own" list | Cross off items (persisted in the browser); Plan excludes them; Search marks rows that use them but still shows them | Done |
+| 27 | Planner supplies & rings | Potions chosen from the kit (super combat / ranging / heart by style present); comfort supplies (brews/restores/food) per raid, editable; ring policy: camp one ring / camp Lightbearer / allow switches | Done |
+| 28 | Final review (round 3) | Fresh pass; UNVERIFIED updated | Done |
 
 ### Decisions (round 3)
 
@@ -163,3 +163,25 @@ should be clearly marked like [Elder maul icon] ×2", "What is the Encounters ta
 - Phase 27: the combat potions come from the kit (one Super combat / Ranging potion per style present, part of the kit's
   slot cost); comfort supplies (brew / restore / food / other) stay user-entered; ring policy default **Camp one ring**
   (the user: "a lot of people don't bring ring switches"), with Camp Lightbearer and Allow ring switches under Advanced.
+- Phase 28: the Plan's Solo fight length uses the same formula as Search (hp ÷ (party size × your DPS)), not the
+  team-DPS multiplier (FA ×1 made Plan's Solo fights 6× too long at party 6).
+
+### Future work (round 4)
+
+Found in or carried past the phase 28 review; larger than a review fix, so not done:
+
+- **Damage specs vs drains**: model Voidwaker (guaranteed magic-roll hit), Burning / Dragon claws and the bone dagger
+  (guaranteed first hit, ToA Strategies) as spec *damage*, and compare a player's spec energy spent on damage with the
+  same energy spent on drains (e.g. Kephri: one landed maul reaches the floor; the rest is better spent on Voidwaker).
+- **Resupply** in the Plan tab (ToA Helpful Spirit, CoX potions): plan per raid segment instead of one inventory for the
+  whole raid (UNVERIFIED D15, D19).
+- **ToB supply chests**: the chests between rooms restock brews / restores (Strategies); the Plan could count fewer
+  comfort supplies per segment (part of resupply).
+- **Spec energy across encounters**: every boss / Olm target / Sotetseg third starts at 100% today (B10, F7, G7); carry
+  the energy and its regen between encounters in the time model.
+- **FA hp / Defence scaling** once measured in-game (UNVERIFIED C1, A11): fill `FRACTURED_ARCHIVE_HP_SCALING`, then
+  revisit FA's team-DPS multiplier of 1 (the fight length already uses the party size, B17).
+- **Ring screen**: the "≥ +X s (estimate)" of a screen-only ring isn't a bound; a cheap partial-switch pass per ring
+  would make it one (UNVERIFIED D18).
+- **Footer wording**: `teamTimeLabel(1)` "times: your DPS alone" reads oddly mid-sentence in the page footer; change it
+  together with verifyPhase18 / 21 and RaidConfig.test, which pin the text.

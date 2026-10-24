@@ -443,7 +443,7 @@ const RaidBestSetup: React.FC<{
     const fitted = solo.line?.items.find((i) => i.weapon === 'ayak')?.count ?? 0;
     const drained = ayakExpectedDrain(profile, fitted, model.magicDef);
     const fitText = fitted < asked ? `${fitted} of your ${asked} specs fit in your spec energy; ` : '';
-    return `Solo: ≈ ${drained.toFixed(0)} magic def drained on ${target.label} (${fitText}of ${model.magicDef}; ${(profile.hitChance * 100).toFixed(0)}% × ${profile.expectedDamageOnHit.toFixed(1)} per spec)`;
+    return `Solo: ≈ ${drained.toFixed(0)} magic def drained on ${target.label} (${fitText}of ${model.magicDef}; each spec lands ${(profile.hitChance * 100).toFixed(0)}% of the time and drains ≈ ${profile.expectedDamageOnHit.toFixed(1)} when it does)`;
   }, [mode, target, phase, phases, assumptions]);
   // the boss's hp and (undrained) Defence as the calculator scales them (party size, ToA raid / path levels, CoX CM)
   const targetStats = useMemo(() => {

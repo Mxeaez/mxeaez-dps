@@ -16,7 +16,7 @@ export const FRACTURED_ARCHIVE_RAID: RaidConfig = {
   defaultTimeSettings: RAID_TIME_DEFAULTS,
   timeModelNote: 'Time = Σ damage ÷ DPS per phase, the kit\'s best loadout + style per phase (switching is free); no '
     + 'puzzles, travel, healing or adds. HP: infobox × party-size table (unverified). Drains (Solo / Team) are planned '
-    + 'per encounter with that encounter\'s undrained time as the fight length.',
+    + 'per encounter, for a fight as long as that encounter takes undrained with the whole party at your DPS.',
   timeSettingFields: [
     {
       key: 'agShieldHp', label: 'AG shield', kind: 'number', unit: 'hp', title: 'Archive Guardian flying shield hp at 6 players (wiki: "1490 health shield in 6-scale", unverified), dealt at the Flying version\'s DPS; scaled by the (identity, unverified) party-size table',

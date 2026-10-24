@@ -23,6 +23,7 @@ import {
   assertTimeModelForRaid,
   compareRoutes,
   createKitEvaluator,
+  drainFightSecondsOf,
   EncounterId,
   encounterTime,
   FA_TIME_MODEL,
@@ -1051,6 +1052,10 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
   const ownershipNotices = [
     ...droppedPinned.map((it) => `Dropped ${it.name} from "Items I always bring": on your "Items I don't own" list.`),
     ...specItems.filter((it) => !isOwned(it.name, notOwned)).map((it) => `${it.name} is in "My specs" but on your "Items I don't own" list (${unownedBase(it.name, notOwned)}): untick it in My specs.`),
+    // phase 28: Camp Lightbearer always wears it
+    ...(policy === 'camp-lightbearer' && !isOwned('Lightbearer', notOwned)
+      ? ['Ring policy "Camp Lightbearer" wears Lightbearer, which is on your "Items I don\'t own" list: pick another ring policy (Advanced (plan)).']
+      : []),
   ];
   // phase 21: the raid's own items (ToB: Dawnbringer) cost no slot and are free to put on any loadout
   const raidSupplied = raidSuppliedItemIds(planA);
@@ -1286,7 +1291,8 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
           const t = encounterTime(e, matrixKit([i], noneDps), noneA).seconds;
           if (t < bestT) bestT = t;
         });
-        soloFight[e] = Number.isFinite(bestT) && bestT > 0 ? Math.round(bestT) : fallbackFight;
+        // phase 28: the fight length as the time model computes it (hp ÷ (party size × DPS), not the multiplier's)
+        soloFight[e] = drainFightSecondsOf(bestT, { ...noneA, fallbackFightSeconds: fallbackFight });
       }
       fastA.fixedFightSeconds = soloFight;
       monsters = monstersAt(drain, (col) => soloFight![encounterOfCol[col]] ?? fallbackFight);

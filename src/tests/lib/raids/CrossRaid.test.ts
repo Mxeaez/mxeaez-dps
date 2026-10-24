@@ -7,11 +7,12 @@ import {
 import { BestSetupAssumptions, DEFAULT_ASSUMPTIONS, PresetDef } from '@/lib/fracturedArchive/presets';
 import { drainModel } from '@/lib/fracturedArchive/specs';
 import {
-  computeRouteComparison, formatDuration, raidTimeAssumptionsFrom,
+  compareRoutes, computeRouteComparison, createKitEvaluator, formatDuration, KitLoadout, raidTimeAssumptionsFrom,
 } from '@/lib/fracturedArchive/raidTime';
 import {
-  DEFAULT_RING_POLICY, plan, PlanResult, planAssumptions, planItemByName,
+  comfortSupplies, DEFAULT_RING_POLICY, plan, PlanResult, planAssumptions, planItemByName, ringAssumptions, toPlayerEquipment,
 } from '@/lib/fracturedArchive/planner';
+import { applyLoadoutToPlayer } from '@/lib/fracturedArchive/loadout';
 import {
   RaidConfig, RAIDS, raidConfig, raidOf, teamDpsMultiplier, withScalingInput,
 } from '@/lib/raids';
@@ -173,7 +174,8 @@ describe.each(RAIDS.map((r) => [r.name, r] as const))('%s: every target', (_, ra
   }, 120000);
 });
 
-const planFor = (raid: RaidConfig, reduced: boolean): PlanResult => plan({
+const planFor = (raid: RaidConfig, reduced: boolean, notOwned: string[] = []): PlanResult => plan({
+  ...(notOwned.length ? { notOwned } : {}),
   // phase 27: the full (headline) plan uses the Plan tab's default ring policy (camp one ring); the reduced one switches
   ...(reduced ? {} : { ringPolicy: DEFAULT_RING_POLICY }),
   basePlayer: generateEmptyPlayer(),
@@ -226,12 +228,57 @@ const HEADLINES: [string, string, number][] = [
   ['tob', '7:31.7', 451.7],
 ];
 
+// Phase 28: the FA plan without Obligator and Ascension crossbows ("Items I don't own"; phase 26 pinned 25:46.8 with
+// switches and the old potions, before phase 27). Phase 28 (camp one ring, potions from the kit): 25:24.5, camping
+// Lightbearer (the pinned Lightbearer is worn, which frees its slot; Magus / Ultor screens ≥ 36 s slower); kit Twisted
+// bow (Masori) worn + Inquisitor's + Scythe (slash).
+const ONLY_OWNED_HEADLINE: [string, number] = ['25:24.5', 1524.5];
+const FA_NOT_OWNED = ['Obligator', 'Ascension crossbows'];
+
+/**
+ * Phase 28: the total re-computed outside the planner from the returned kit: each kit loadout as a KitLoadout
+ * (applyLoadoutToPlayer with the plan's assumptions and the camped ring's flag), compareRoutes over the raid's routes.
+ */
+const recomputed = (raid: RaidConfig, res: PlanResult): number => {
+  const pinned = raid.planDefaults.pinned.map((n) => planItemByName(n).id);
+  const planA = ringAssumptions(planAssumptions(raid.defaultAssumptions, comfortSupplies(raid.defaultSupplies), pinned), DEFAULT_RING_POLICY, res.ring.ring ? { name: res.ring.ring } : null);
+  const base = generateEmptyPlayer();
+  const loadouts: KitLoadout[] = res.kit.map((c) => {
+    const eq = toPlayerEquipment(c.equipment);
+    return {
+      id: c.key,
+      name: c.label,
+      group: c.group,
+      options: c.options,
+      toPlayer: (m, o) => applyLoadoutToPlayer(base, c.label, c.group, eq, o.style, o.spell, m, planA),
+    };
+  });
+  const cmp = compareRoutes(createKitEvaluator(loadouts, planA), raidTimeAssumptionsFrom(planA, 'team', raid.defaultTimeSettings, raid.time));
+  return cmp.routes[cmp.fastest].seconds;
+};
+
 (process.env.RUN_SLOW_TESTS ? describe : describe.skip)('headline plan totals (slow)', () => {
   test.each(HEADLINES)('%s: %s', (id, text, seconds) => {
-    const res = planFor(raidConfig(id as RaidConfig['id']), false);
+    const raid = raidConfig(id as RaidConfig['id']);
+    const res = planFor(raid, false);
     const total = res.comparison!.routes[res.planned].seconds;
     expect(Math.abs(total - seconds)).toBeLessThanOrEqual(0.5);
     expect(formatDuration(total)).toBe(text);
+    // phase 28: independent re-computation, the camped ring on every loadout, within 28 slots
+    expect(Math.abs(recomputed(raid, res) - total)).toBeLessThan(1e-6);
+    expect(res.kit.every((c) => c.equipment.ring?.name === res.ring.ring)).toBe(true);
+    expect(res.slots!.used).toBeLessThanOrEqual(28);
+  }, 600000);
+
+  test(`fractured-archive without ${FA_NOT_OWNED.join(' / ')}: ${ONLY_OWNED_HEADLINE[0]}`, () => {
+    const raid = raidConfig('fractured-archive');
+    const res = planFor(raid, false, FA_NOT_OWNED);
+    const total = res.comparison!.routes[res.planned].seconds;
+    expect(formatDuration(total)).toBe(ONLY_OWNED_HEADLINE[0]);
+    expect(Math.abs(total - ONLY_OWNED_HEADLINE[1])).toBeLessThanOrEqual(0.5);
+    expect(Math.abs(recomputed(raid, res) - total)).toBeLessThan(1e-6);
+    expect(res.kit.some((c) => Object.values(c.equipment).some((it) => it && FA_NOT_OWNED.includes(it.name)))).toBe(false);
+    expect(total).toBeGreaterThan(HEADLINES[0][2]);
   }, 600000);
 });
 

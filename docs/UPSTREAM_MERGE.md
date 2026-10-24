@@ -14,6 +14,14 @@ calculator warnings), `constants.ts` +14 (4 ToB ids, phase registrations), `Calc
 handler). `git diff --stat 89c3e25 HEAD -- src/lib/PlayerVsNPCCalc.ts src/lib/BaseCalc.ts src/lib/Equipment.ts
 src/lib/constants.ts src/enums/Prayer.ts src/lib/scaling src/worker src/app` (new files included): 31 files, +2990 / −24.
 
+**Round 3 (phases 23-27, reviewed in phase 28)**: `git diff --diff-filter=M 89c3e25 HEAD -- src` = 20 upstream files,
+**+334 / −29** (+11 net in round 3 (+15 / −4), 3 upstream files): `Equipment.ts` +10 / −3 (the `getCanonicalItemId` reverse map,
+phase 27 review; listed under *Fixes worth sending upstream*), `utils.ts` +3 / −1 (`getCdnImage` keeps `'` literal,
+phase 25), `CalcWorkerTypes.ts` +2 (`notOwned` on the search request, phase 26). Everything else in round 3 is in our
+own files (`bestSetup/*`, `fracturedArchive/*`, `raids/*`, `searchWorker.ts`). `git diff --stat 89c3e25 HEAD --
+src/lib/PlayerVsNPCCalc.ts src/lib/BaseCalc.ts src/lib/Equipment.ts src/lib/constants.ts src/lib/Prayer.ts
+src/lib/EquipmentAliases.ts src/lib/scaling src/worker src/app` (new files included): 32 files, +3332 / −26.
+
 ## How to merge
 
 ```
@@ -83,7 +91,9 @@ its own PR.
 
 - **`getCanonicalItemId` scans every alias group per call** (`src/lib/Equipment.ts`): it runs for every item of every
   player the calculator builds; in a best-setup gear search it was 62 % of the time. A reverse map built once (same
-  first-match result) made the 16 Fractured Archive plan searches 42.4 s → 11.3 s (phase 27 review).
+  first-match result) made the 16 Fractured Archive plan searches 42.4 s → 11.3 s (phase 27 review). Phase 28: a test
+  compares it with the linear scan for every id in `equipment.json` and every alias id (`Phase28.test.ts`, no
+  mismatches); it doesn't depend on any fork code, so it applies to upstream as is.
 - **`TOB_MONSTER_IDS` misses 8354 / 10807 / 10786 / 10803** (`src/lib/constants.ts`): monsters.json uses these ids for
   the Nylocas Vasilias (normal / Hard / Entry) and the melee Prinkipas, so upstream doesn't scale them: Vasilias 2500 hp
   at 4 players instead of trunc(2500 × 7/8) = 2187 (`src/tests/lib/raids/ToB.test.ts`, "id fix"; infobox "scaledhp = Yes").

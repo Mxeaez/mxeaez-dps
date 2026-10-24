@@ -8,6 +8,7 @@ import {
   DrainStateId,
   evaluateLoadout,
   findTarget,
+  fightSecondsFrom,
   presetSpells,
   presetStyles,
   styleLabel,
@@ -524,6 +525,20 @@ export const assertTimeModelForRaid = (model: RaidTimeModel, a: { raid?: RaidId 
 };
 
 /**
+ * Phase 28: the fight length the drain planner gets from an encounter's undrained time. The time model's seconds are
+ * hp ÷ (your DPS × team-DPS multiplier); the fight itself lasts hp ÷ (party size × your DPS), the same formula as the
+ * Search / Summary fight length (`autoFightSeconds`, phase 23 fix) and the same 15-600 s clamp. Equal to the encounter
+ * time when the multiplier is the party size (ToA / CoX / ToB defaults); the Fractured Archive's ×1 used to give the
+ * Solo budget a fight as long as you alone would take (6× at party 6). `fallbackFightSeconds` when it can't be killed.
+ */
+export const drainFightSecondsOf = (
+  encounterSeconds: number,
+  a: Pick<RaidTimeAssumptions, 'partySize' | 'dpsMultiplier' | 'fallbackFightSeconds'>,
+): number => (Number.isFinite(encounterSeconds) && encounterSeconds > 0
+  ? fightSecondsFrom(encounterSeconds * (a.dpsMultiplier ?? 1), 1, a.partySize)
+  : a.fallbackFightSeconds);
+
+/**
  * Time of one encounter. Drains (Solo / Team) are planned with the encounter's own length: a first pass without drains
  * gives that length, then the encounter is evaluated once more with the drain state planned for it (one fixed-point
  * iteration; the drained pass is shorter, which would only give a Solo plan less energy, so the plan is a little
@@ -546,7 +561,7 @@ export const encounterTime = (id: EncounterId, kit: RaidKit, a: RaidTimeAssumpti
       id, label, phases: first, seconds: firstSeconds,
     };
   }
-  const fight = Number.isFinite(firstSeconds) && firstSeconds > 0 ? Math.round(firstSeconds) : a.fallbackFightSeconds;
+  const fight = drainFightSecondsOf(firstSeconds, a);
   const phases = model.encounterPass(id, kit, a, a.drain, fight);
   return {
     id, label, phases, seconds: sumSeconds(phases), drainFightSeconds: fight,

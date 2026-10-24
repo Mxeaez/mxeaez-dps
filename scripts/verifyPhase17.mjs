@@ -5,7 +5,7 @@
  * - Plan is the second tab; with the defaults (6-man, Team drains, the user's pinned items and supplies, compare all
  *   routes) a worn set and a 28-cell inventory grid render with icons, the free-slot count is shown, the per-encounter
  *   table has 5 rows for the fastest route; records the run time (target ≤ 30 s).
- * - Brews 6 → 10: free slots drop (or the kit shrinks) and the plan re-runs.
+ * - Comfort supplies 6 brew / 4 restore (phase 27: potions come from the kit). Brews 6 → 10: free slots drop (or the kit shrinks) and the plan re-runs.
  * - "Load worn set into calculator": the calculator's DPS = the plan's DPS on the route's first phase (AG shield).
  * Prints the plan (the phase 17 headline). Screenshots docs/screenshots/phase17-*.png.
  */
@@ -54,8 +54,10 @@ const main = async () => {
   await page.locator('[data-testid="plan-view"]').waitFor({ timeout: 60000 });
   check(await page.locator('[data-testid="drain-team"]').count() === 1, 'drain selector on the Plan tab');
   check(await page.locator('#bs-party').inputValue() === '6', 'party size 6');
+  // phase 27: comfort supplies only (the combat potions come from the kit); phase 28: script updated
   check(await page.locator('#plan-supply-brew').inputValue() === '6' && await page.locator('#plan-supply-restore').inputValue() === '4'
-    && await page.locator('#plan-supply-ranging').inputValue() === '2' && await page.locator('#plan-supply-superCombat').inputValue() === '1', 'default supplies 6 / 4 / 2 / 1');
+    && await page.locator('#plan-supply-ranging').count() === 0 && await page.locator('#plan-supply-superCombat').count() === 0,
+  'default comfort supplies 6 brew / 4 restore; no potion inputs (phase 27)');
   const pinned = await page.locator('[data-testid="pinned-item"]').allInnerTexts();
   check(pinned.length === 7, `7 pinned items (incl. the Saturated heart) (${pinned.map((x) => x.replace('×', '').trim()).join(', ')})`);
 
@@ -102,7 +104,9 @@ const main = async () => {
   const q = await readPlan(page);
   console.log(`     brews 10: free ${q.free}, ${q.headline}; kit ${q.kit.length} loadouts; ${q.stats}`);
   check(reran === 1 || q.stats !== p.stats, 'the plan re-ran');
-  check(q.cells.length === 28 && q.cells.filter((c) => c.startsWith('supply')).length === 17, '17 supply cells after brews 10');
+  // phase 27: supply cells = comfort supplies + the kit's potions (1-2; the new kit may bring one more or less)
+  const supplyCells = (x) => x.cells.filter((c) => c.startsWith('supply')).length;
+  check(q.cells.length === 28 && Math.abs(supplyCells(q) - supplyCells(p) - 4) <= 1, `4 more supply cells after brews 10 (± a kit potion): ${supplyCells(p)} → ${supplyCells(q)}`);
   check(q.free < p.free || q.free === 0 || q.kit.length < p.kit.length || q.cells.filter((c) => c.startsWith('switch')).length < p.cells.filter((c) => c.startsWith('switch')).length,
     `free slots drop or the switches shrink (${p.free} → ${q.free})`);
   await page.screenshot({ path: 'docs/screenshots/phase17-brews10.png', fullPage: true });

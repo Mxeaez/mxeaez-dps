@@ -196,7 +196,7 @@ const SearchView: React.FC<{
         </label>
         {setOnlyOwned && <OnlyOwnedToggle notOwned={notOwned} on={onlyOwned} onChange={setOnlyOwned} />}
         <span className="text-[11px] text-gray-500 dark:text-gray-400">
-          Searches the end-game pool in searchCandidates.ts (all slots, every weapon/ammo/style/spell) for this boss and drain state.
+          Tries every end-game item in every slot (weapons, ammo, styles, spells) against this boss and drain state.
         </span>
       </div>
 
@@ -235,7 +235,7 @@ const SearchView: React.FC<{
             </div>
             <div className="text-gray-500 dark:text-gray-400 flex flex-wrap items-center gap-x-1" data-testid="search-stats">
               <span title={`${result.evaluations} evaluations over ${result.variants} weapon variants`}>
-                {`${result.evaluations} evaluations · ${(result.elapsedMs / 1000).toFixed(1)}s${wallMs !== null ? ` (wall ${(wallMs / 1000).toFixed(1)}s)` : ''} · TTK: ${teamTimeLabel(teamMult)}`}
+                {`${result.evaluations} evaluations · ${(result.elapsedMs / 1000).toFixed(1)}s${wallMs !== null ? ` (wall ${(wallMs / 1000).toFixed(1)}s)` : ''} · Exp. TTK (top row only): ${teamTimeLabel(teamMult)}`}
               </span>
               {result.cantHit.length > 0 && (
                 <details className="inline" data-testid="cant-hit">
@@ -257,7 +257,7 @@ const SearchView: React.FC<{
                   <th>#</th>
                   <th className="text-right">DPS</th>
                   <th className="text-right" title="Gain over the best Phase 8 preset of the searched styles (same boss and drains)">vs best preset</th>
-                  <th className="text-right" title={teamTimeLabel(teamMult)} data-testid="ttk-header">{teamMult === 1 ? 'Exp. TTK' : `Exp. TTK (${teamMult}×)`}</th>
+                  <th className="text-right" title={`Expected time to kill, top row only (${teamTimeLabel(teamMult)})`} data-testid="ttk-header">{teamMult === 1 ? 'Exp. TTK' : `Exp. TTK (${teamMult}×)`}</th>
                   <th className="text-right">Max hit</th>
                   <th className="text-right">Accuracy</th>
                   <th>Style</th>
@@ -293,7 +293,7 @@ const SearchView: React.FC<{
                         )}
                         <LoadoutIconRow icons={searchRowIcons(r)} />
                         <div className="text-[11px] text-gray-500 dark:text-gray-400">{loadoutSummary(r)}</div>
-                        <div className="text-[10px] text-gray-400">{`seed (start of the ascent): ${r.seed}`}</div>
+                        <div className="text-[10px] text-gray-400">{`search started from: ${r.seed}`}</div>
                       </td>
                       <td className="px-2 py-1">
                         <button type="button" className="btn text-xs whitespace-nowrap" onClick={() => onLoad(r)}>

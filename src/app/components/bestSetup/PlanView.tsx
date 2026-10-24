@@ -509,7 +509,7 @@ const PlanView: React.FC<{
             : 'Potions: the raid\'s own potion ("Other") boosts every style; no combat potions are brought.'}
         </div>
         <div className="flex flex-wrap gap-x-2 items-center" data-testid="plan-ring-summary">
-          <span className="font-semibold">Rings:</span>
+          <span className="font-semibold" title="Which ring each loadout wears; change it under Advanced (plan)">Rings:</span>
           <span data-testid="plan-ring-summary-text">{`${ringPolicyDef.label} — ${ringSummary()}`}</span>
         </div>
         <details className="border border-body-400 dark:border-dark-200 rounded px-2 py-1" data-testid="plan-advanced">
@@ -709,7 +709,7 @@ const PlanView: React.FC<{
                 <th className="px-2 text-left">Encounter</th>
                 <th className="px-2 text-left">Loadout used</th>
                 <th className="px-2 text-left">Style</th>
-                <th className="px-2 text-left" title="The drain plan of each phase: icon × specs (Tonalztics: × hits), the chance per spec under each icon, then the Defence the DPS uses">Drains</th>
+                <th className="px-2 text-left" title="The drain plan of each phase: weapon icon × specs, the chance each spec lands under each icon, then the Defence the DPS uses">Drains</th>
                 <th className="px-2 text-right" title="Damage ÷ seconds over the encounter's phases (phase rows: that phase's DPS)">avg DPS (time-weighted)</th>
                 <th className="px-2 text-right">Seconds</th>
               </tr>

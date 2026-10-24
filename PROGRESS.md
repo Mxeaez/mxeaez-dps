@@ -3,6 +3,33 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 28 — Final review, round 3 (2026-10-24)
+
+- Fresh pass over phases 23-27 (d5c43798..1d819af3), focused on what changes numbers.
+- **Fix: Plan's Solo fight length** (`drainFightSecondsOf`, raidTime.ts; planner.ts Solo matrix): encounter undrained
+  time × team-DPS multiplier ÷ party size, clamped 15-600 s — the Search formula since the phase 23 review. FA's ×1 had
+  given Plan / the time model a Solo fight as long as you alone would take (6× at party 6, e.g. Bork + Smorks ~220 s vs
+  ~37 s). ToA / CoX / ToB defaults and all Team / None numbers (headlines) unchanged. RaidTime test re-pinned (300 → 50 s).
+- Camp Lightbearer with Lightbearer on "Items I don't own": notice (planner.ts `ownershipNotices`).
+- **Caches** (`Phase28.test.ts`): `getCanonicalItemId` reverse map = upstream's linear scan for every equipment.json id
+  and alias id (0 mismatches); memoised `resolveItem` = uncached pick for every item name. `DPS_CACHE` / `SEARCH_CACHE`
+  keys listed in BEST_SETUP *Final review, round 3*; Zeal, fragments, ownership and camp Lightbearer each miss, warm =
+  cold.
+- **Headlines** (slow `CrossRaid`): totals recomputed outside the planner (KitLoadouts + `compareRoutes`) equal the
+  planner's; camped ring on every loadout; FA 22:47.9, ToA 14:22.3, CoX 6:40.3, ToB 7:31.7; new pin **FA without
+  Obligator + Ascension crossbows 25:24.5** (camps the pinned Lightbearer).
+- Clarity (wording only): Search "Exp. TTK (top row only)", "Tries every end-game item in every slot …" (was a file
+  name), "search started from: …" (was "seed (start of the ascent)"), Ayak hint in words.
+- verifyPhase17 updated for phase 27 (comfort supplies only; supply cells ± a kit potion).
+- Docs: UNVERIFIED B10 / D9 / D18 updated, new B17 (computed fight length), D19 (potions from the kit), D20 (ownership
+  matching); BEST_SETUP stale Routes-tab / "Team DPS ×" references fixed + *Final review, round 3*; UPSTREAM_MERGE
+  round-3 totals; README features; ROADMAP 23-28 done, *Future work (round 4)*.
+- Verify scripts: verifyPhase13, 17, 21, 23, 24, 25, 26, 27 all OK (21: FA 22:47.9, ToB 7:31.7 28/28, plans 7-16 s);
+  tracked screenshots restored. Also wording: Plan "Drains" column tooltip (Tonalztics as specs), "Rings:" tooltip,
+  FA time-model note.
+- `yarn test` 1326 (1316 pass / 10 skipped); `RUN_SLOW_TESTS=1` CrossRaid headlines + only-owned + Phase27 ring guard
+  pass; lint, tsc clean.
+
 ## Phase 27 fixes — review follow-ups (2026-10-24)
 
 - **Ring screen guard** (`planner.ts`): g = best-screened ring's screen − full time; every ring whose screen is within

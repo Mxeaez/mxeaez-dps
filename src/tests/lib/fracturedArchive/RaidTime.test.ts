@@ -193,14 +193,17 @@ describe('Raid time: drains and routes', () => {
   test('drains are planned per encounter with the first pass\'s length', () => {
     const kit = toyKit(BASE_DPS, 2);
     const e = encounterTime('ezekiel', kit, assume({}, 'team'));
-    expect(e.drainFightSeconds).toBe(300); // undrained 3000 / 10
+    // undrained 3000 / 10 = 300 s for you alone; phase 28: the fight is hp ÷ (party 6 × DPS) = 50 s (multiplier 1)
+    expect(e.drainFightSeconds).toBe(50);
     expect(e.seconds).toBeCloseTo(150, 9); // drained DPS doubled
     const drained = kit.queries.filter((q) => q.drain === 'team');
     expect(drained).toHaveLength(1);
-    expect(drained[0].fightSeconds).toBe(300);
+    expect(drained[0].fightSeconds).toBe(50);
     // a different encounter gets its own length
     const x = encounterTime('xarth', kit, assume({}, 'team'));
-    expect(x.drainFightSeconds).toBe(200);
+    expect(x.drainFightSeconds).toBe(33); // 200 s ÷ 6
+    // with the multiplier at the party size (ToA / CoX / ToB defaults) the fight is the encounter time
+    expect(encounterTime('ezekiel', kit, { ...assume({}, 'team'), dpsMultiplier: 6 }).drainFightSeconds).toBe(50);
     // None: one pass, no fight length
     expect(encounterTime('ezekiel', kit, assume({}, 'none')).drainFightSeconds).toBeUndefined();
   });

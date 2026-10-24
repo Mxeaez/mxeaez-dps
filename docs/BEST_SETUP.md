@@ -30,8 +30,10 @@ presentation only; the numbers are unchanged except the Solo fight length (below
   clamped to 15–600 s (90 s when no preset deals damage). `autoFightSeconds` / `fightSecondsFrom` in bestSetup.ts.
   It is per boss / phase (every row of a Search shares it), not per encounter (AG Flying and Grounded, Ocellus P1 / P3
   each get their own). Review fix: the party size, not the team-DPS multiplier — FA's ×1 had timed a 6-player fight as
-  you alone and inflated the budget. `BestSetupAssumptions.fightSeconds` is optional (undefined = computed; the Plan
-  tab / time model still pass each encounter's own length, and the planner's fallback stays 90 s). The drain line shows
+  you alone and inflated the budget. `BestSetupAssumptions.fightSeconds` is optional (undefined = computed). The Plan
+  tab / time model use each encounter's own undrained time with the same formula (phase 28 fix, `drainFightSecondsOf`
+  in raidTime.ts: encounter time × team-DPS multiplier ÷ party size, same clamp; before, FA's ×1 gave Plan's Solo
+  budget a fight 6× too long at party 6); the planner's fallback stays 90 s. The drain line shows
   the value: "(fight ≈ 34 s → 2 specs)".
   **Effect on Solo numbers** (default assumptions, 6-man FA; was 90 s everywhere = 130% = 2 specs): the computed
   fights are 15-79 s, i.e. 100-120% = 2 specs, so the defaults give the same Solo plans as before (Bork 28 s → 2 maul
@@ -101,8 +103,8 @@ own" flag under `mxeaez-dps:only-owned`); blocked storage just means it isn't re
 ## Raid tabs and Tombs of Amascut (phase 18)
 
 **Raid tabs** at the top of `/best-setup`: *Fractured Archive* (default), *Tombs of Amascut*, *Chambers of Xeric*
-(phase 19) and *Theatre of Blood* (phase 20). Each raid keeps its own assumptions while you switch; the four tabs (Search, Plan, Routes / Encounters,
-Summary) are the same code driven by a **`RaidConfig`** (`src/lib/raids/index.ts`). Shared code has no raid branches:
+(phase 19) and *Theatre of Blood* (phase 20). Each raid keeps its own assumptions while you switch; the tabs (Search, Plan,
+Summary; a Routes / Encounters tab until phase 23) are the same code driven by a **`RaidConfig`** (`src/lib/raids/index.ts`). Shared code has no raid branches:
 the pure modules read the per-raid rules from **`RaidBase`** (`src/lib/raids/base.ts`: targets, party-size range,
 monster inputs, scaling inputs with their own get / set, default assumptions, presets, pool, `hpScalesWithParty`,
 `boostsNeedSupplies`) by `assumptions.raid` / `target.raid`; `RaidConfig` adds the time model and its own settings
@@ -117,7 +119,7 @@ object + settings-box fields (`timeSettingFields`, `timeModelNote`), default sup
 | `searchPool` | `SEARCH_POOL` | FA pool + Keris partisan of breaching, Keris partisan of amascut, Blade of Saeldor (c), Eye of Ayak |
 | `time` (encounter model) | `FA_TIME_MODEL` (raidTime.ts): 8 routes | `TOA_TIME_MODEL` (`src/lib/raids/toa/time.ts`): one fixed route |
 | team-DPS multiplier default | 1 (identity hp table) | party size (hp scales with party) |
-| routes tab | "Routes" | "Encounters" (the single route, breakdown open) |
+| route table (Plan results since phase 23) | 8 routes | the single route |
 
 The raid is `assumptions.raid` (undefined = Fractured Archive), so every cache key, the worker requests and the
 pure modules pick the raid from the assumptions: `findTarget` searches every raid's targets (ToA keys start with
@@ -125,8 +127,8 @@ pure modules pick the raid from the assumptions: `findTarget` searches every rai
 path, the raid's party-size range), the search and planner default to the raid's presets / pool (`raidBase`), and the
 worker hands Routes / Plan the raid's time model.
 
-**Team-DPS multiplier** (assumptions box, "Team DPS ×"; `teamDpsMultiplier` in base.ts): every time shown — Search
-TTK, Routes / Encounters rows and totals, the Plan headline — assumes this many players dealing your DPS, and says so
+**Team-DPS multiplier** (Advanced: "Players assumed at your DPS when converting HP to time", "Team DPS ×" before
+phase 23; `teamDpsMultiplier` in base.ts): every time shown — Search TTK, the Plan's route table and headline — assumes this many players dealing your DPS, and says so
 ("times assume 6 players at your DPS" / "your DPS alone"). Default: the party size where boss hp scales with it (ToA),
 1 for the Fractured Archive (identity hp table, so its numbers are unchanged); "auto" resets an override. Ocellus P2
 stays its wall-clock length (the damage dealt in it scales). The Summary shows the scaled hp of each row and the raid
@@ -524,6 +526,32 @@ Before → after (FA defaults, camp one ring): Jest first plan **77 s → 19.9 s
 within the guard), re-plan after a supplies change 7.7 s (incl. ~1.7 s of debounce / waits). `verifyPhase21` keeps its
 150 s limit.
 
+### Final review, round 3 (phase 28)
+
+- **Headlines re-computed independently** (slow `CrossRaid` test): each returned kit is rebuilt as `KitLoadout`s
+  (`applyLoadoutToPlayer` with the plan's assumptions and the camped ring) and timed with `compareRoutes`; the totals
+  equal the planner's to 1e-6 s, every kit loadout wears the camped ring, ≤ 28 slots. FA 22:47.9 (Ultor), ToA 14:22.3
+  (Magus), CoX 6:40.3 (Ultor), ToB 7:31.7 (Ultor). **FA with Obligator + Ascension crossbows on the "don't own" list:
+  25:24.5**, camping Lightbearer (the pinned Lightbearer is worn and frees its slot; Magus / Ultor screens ≥ 36 s
+  slower); kit Twisted bow (Masori) worn + Inquisitor's + Scythe (slash) (phase 26, before potions-from-kit and ring
+  policy: 25:46.8).
+- **Caches**: `getCanonicalItemId`'s reverse map equals the linear scan for every id in `equipment.json` and every alias
+  id; the memoised `resolveItem` equals the uncached pick for every item name (`Phase28.test.ts`). `DPS_CACHE` /
+  `SEARCH_CACHE` keys: the plan assumptions after the ring policy (raid, party size and ToA / CoX / ToB inputs, potions,
+  `withoutPotion` (heart), Zeal, fragments, My specs incl. the Lightbearer flag, carriers, floor threshold, spec
+  priority), the base player, drain state / target / phase / fight length, style group, equipment ids (ring and
+  blowpipe dart included) and style options; the search key adds "Items I don't own" and the row caps. Tested: Zeal,
+  fragments, ownership and camp Lightbearer each miss, and a warm plan equals a cold one.
+- **Fix: Plan's Solo fight length** = the encounter's undrained time × team-DPS multiplier ÷ party size
+  (`drainFightSecondsOf`, raidTime.ts; clamped 15-600 s like Search). FA's multiplier 1 had given Plan / the time model
+  a Solo fight as long as you alone would take (Bork + Smorks ~220 s instead of ~37 s at party 6), while Search used
+  hp ÷ (party × DPS) since the phase 23 review. ToA / CoX / ToB (multiplier = party size) and every Team / None number,
+  including the headlines, are unchanged.
+- Camp Lightbearer with Lightbearer on the "don't own" list now shows a notice.
+- Wording: Search header "Exp. TTK (top row only)" (the TTK column is filled for the top row only), "Tries every
+  end-game item in every slot …" (was a file name), "search started from: …" (was "seed (start of the ascent)"), the
+  Ayak hint "each spec lands 73% of the time and drains ≈ 27.0 when it does" (was "73% × 27.0 per spec").
+
 ## Routes tab (phase 16: raid time model)
 
 **Phase 23: the tab is gone.** Its route table is now part of the Plan tab's results (the *planned* kit timed on every
@@ -532,8 +560,8 @@ the Advanced box. The "kit" choices of the old tab (best search result per style
 the calculator's loadouts) are no longer in the UI; `computeRouteComparison` / `RAID_ROUTES` stay as tested library
 code. The rest of this section describes the time model, which is unchanged.
 
-Code: `src/lib/fracturedArchive/raidTime.ts` (pure, tested in `src/tests/lib/fracturedArchive/RaidTime.test.ts`); UI
-`src/app/components/bestSetup/RoutesView.tsx`; runs in the search worker (`WorkerRequestType.RAID_ROUTES`,
+Code: `src/lib/fracturedArchive/raidTime.ts` (pure, tested in `src/tests/lib/fracturedArchive/RaidTime.test.ts`); UI:
+the Plan tab's route table (`RoutesView.tsx` was deleted in phase 23); runs in the search worker (`WorkerRequestType.RAID_ROUTES`,
 `computeRouteComparison`). It is the objective function for the phase 17 planner.
 
 **API.** `raidTime(route, kit, assumptions, cache?) → RouteTime` and `compareRoutes(kit, assumptions) → { routes,
@@ -558,7 +586,8 @@ damage is infinite (shown ∞; e.g. a melee-only kit on the AG shield). Settings
 | Ocellus | P1 2500 × (1 − `ocellusWalkingFraction`, default 0) at a corner, the rest at Walking; P2 lasts `ocellusP2Seconds` (default 0 = ignored) and the damage dealt to the Blade in that time × `ocellusP2CarryOver` 50% comes off P3's 5250; P3 remainder × (1 − `ocellusLastQuadrantFraction` 25%) at Quadrants 1-3, the rest at the Deflect option that is worse for the kit (= the one blocking the kit's best style; for a magic-best kit, where magic is never deflected in our model, the lower of the two) |
 
 - **Drains** (None / Solo / Team = the drain buttons above the tab): per encounter, a first pass without drains gives
-  the encounter's time; that (rounded) is the fight length for `drainModel` / the Solo spec budget, and the encounter is
+  the encounter's time; that × team-DPS multiplier ÷ party size (phase 28; = the time when the multiplier is the party
+  size), rounded and clamped to 15-600 s, is the fight length for `drainModel` / the Solo spec budget, and the encounter is
   evaluated again with that drain state (one fixed-point iteration). Team plans don't depend on the length (first
   round), Solo ones do (more energy in long fights). The second pass is shorter, so a Solo plan gets slightly more energy
   than the drained fight would give.

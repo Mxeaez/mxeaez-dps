@@ -320,7 +320,9 @@ describe('review fixes', () => {
   test('Solo: the matrix plans drains with each encounter length; Bork / Smorks DPS within 1% of the exact times', () => {
     const r = plan(inputs({ drain: 'solo' }), SMALL);
     expect(r.cancelled).toBe(false);
-    expect(r.stats.fightSeconds?.['bork-smorks']).toBeGreaterThan(90);
+    // computed, not the 90 s fallback; phase 28: hp ÷ (party 6 × DPS) (was the 1-player time, > 90 s)
+    expect(r.stats.fightSeconds?.['bork-smorks']).toBeGreaterThan(15);
+    expect(r.stats.fightSeconds?.['bork-smorks']).toBeLessThan(90);
     expect(r.stats.retimed).toBeGreaterThan(0);
     const bork = r.comparison!.routes[r.planned].encounters.find((e) => e.id === 'bork-smorks')!;
     expect(bork.phases.length).toBeGreaterThanOrEqual(5);
