@@ -16,6 +16,7 @@ import {
   COMFORT_SUPPLY_TYPES,
   DEFAULT_RING_POLICY,
   equipmentById,
+  equipmentItemIds,
   HEART_ITEMS,
   heartById,
   heartByPotion,
@@ -125,6 +126,13 @@ const fmtDelta = (v: number | null | undefined) => {
   if (!Number.isFinite(s)) return s > 0 ? '−∞' : '+∞';
   // deltaSeconds = seconds saved (+) → shown as the time change
   return `${s > 0 ? '−' : '+'}${Math.abs(s).toFixed(1)} s`;
+};
+
+/** Phase 27 review: another camp ring vs the chosen one: exact when planned in full, else the screen's estimate. */
+const ringOther = (x: PlanResult['ring']['screened'][number], chosen: number | null) => {
+  if (x.full) return `${x.ring} ${fmtDelta(secs(chosen) - secs(x.seconds))}`;
+  if ((x.atLeast ?? 0) >= 1) return `${x.ring} ≥ +${(x.atLeast ?? 0).toFixed(0)} s (estimate)`;
+  return `${x.ring} (slower by the quick screen; not planned in full)`;
 };
 
 /** A generic potion / supply icon (no image in src/public/img for brews, restores, food). */
@@ -649,7 +657,7 @@ const PlanView: React.FC<{
             <div className="flex flex-col gap-1 text-xs min-w-[300px] flex-1" data-testid="kit-loadouts">
               <div className="font-semibold">{`Kit loadouts (${result.kit.length})`}</div>
               {result.kit.map((c, i) => (
-                <div key={c.key} className="border-l-4 pl-2 border-body-400 dark:border-dark-200" data-testid="kit-loadout" data-weapon={c.equipment.weapon?.name ?? ''} data-ring={c.equipment.ring?.name ?? ''} data-group={c.group}>
+                <div key={c.key} className="border-l-4 pl-2 border-body-400 dark:border-dark-200" data-testid="kit-loadout" data-weapon={c.equipment.weapon?.name ?? ''} data-ring={c.equipment.ring?.name ?? ''} data-items={[...equipmentItemIds(c.equipment)].sort((x, y) => x - y).join(',')} data-group={c.group}>
                   <div>
                     <span className="font-semibold">{i === 0 ? 'Worn: ' : 'Switch: '}</span>
                     {c.label}
@@ -674,8 +682,8 @@ const PlanView: React.FC<{
               <div className="text-gray-600 dark:text-gray-300" data-testid="plan-ring-result" data-ring={result.ring.ring ?? ''} data-policy={result.ring.policy}>
                 {result.ring.ring ? `Ring: ${result.ring.ring} on every loadout` : 'Ring: each loadout\'s own'}
                 {result.ring.screened.length > 1 && (
-                  <span className="text-gray-500 dark:text-gray-400" title="Route time with each ring camped (* = screen: presets + search rows only; the best rings get the full plan)">
-                    {` · others: ${result.ring.screened.filter((x) => x.ring !== result.ring.ring).map((x) => `${x.ring} ${fmtDelta(secs(planned.seconds) - secs(x.seconds))}${x.full ? '' : '*'}`).join(', ')}`}
+                  <span className="text-gray-500 dark:text-gray-400" title="Route time with each ring camped, vs the chosen ring. Exact (±) for the rings planned in full; '≥ … (estimate)' for rings whose quick screen (presets + search rows only) was too far behind to plan in full">
+                    {` · others: ${result.ring.screened.filter((x) => x.ring !== result.ring.ring).map((x) => ringOther(x, planned.seconds)).join(', ')}`}
                   </span>
                 )}
               </div>

@@ -57,7 +57,7 @@ values (Bork's flat armour comes from the phase input, so the generated 0 is exp
 | `src/lib/PlayerVsNPCCalc.ts` | 77 / 6 | imports; Zorya's tome accuracy, max hit and spec; fragment max-hit bonus; stunned-Bork accuracy; Obligator thrust distribution (+ Maggot King exclusion); ascension (e) bolts added to the diamond/onyx `wearing` lists; Bork magic resistance and Ocellus void-explosion transforms; `isImmune` checks (incl. Moia out of melee reach, phase 15; ToA prayers, phase 18: +4); CoX Olm melee divisor (phase 19: +5); ToB nylocas style / Dawnbringer `isImmune` check (phase 20: +5); 3 capitalisation fixes in `UNIMPLEMENTED_SPECS` | **Medium–high**: about 9 separate places in upstream's busiest file. Each hunk is 2–6 lines next to an upstream anchor (Eye of Ayak spec, elemental amulet, Eclipse Moon clone, scythe dist, flat armour, `isImmune`), so conflicts are local and easy to redo by hand |
 | `src/lib/BaseCalc.ts` | 28 / 7 | imports; demonbane hook (`?? 100`); spell-immunity, Ocellus-prayer, ToA-prayer (phase 18), ToB nylocas-style (phase 20) and melee-reach (Moia) issues; Blood/Blue/Eclipse Moon and Staff of the Dead name fixes | Medium: the name fixes will conflict if upstream fixes them too. Take upstream's version of those lines |
 | `src/lib/constants.ts` | 27 / 0 | re-export of the raid constants; party-size list; phase dropdowns for Bork / Ocellus / Dagon'hai; Akkha and P2 Warden prayer phases (phase 18, phase names from `src/lib/raids/toa/constants.ts`, upstream's `AKKHA_IDS` / `P2_WARDEN_IDS`); phase 20: 4 missing ToB ids in `TOB_MONSTER_IDS` / `TOB_EM_MONSTER_IDS` (Vasilias 8354 / 10807 / 10786, Prinkipas 10803 — the ids monsters.json uses) and the Vasilias form / Verzik P1 phases (names from `src/lib/raids/tob/constants.ts`) | Low (additions next to the Mad Angel phases and the party-size list) |
-| `src/lib/Equipment.ts` | 11 / 0 | ascension ammo; Obligator Smash speed; Zorya spec cost | Low |
+| `src/lib/Equipment.ts` | 21 / 3 | ascension ammo; Obligator Smash speed; Zorya spec cost; `getCanonicalItemId` reverse map (phase 27 review) | Low |
 | `src/lib/scaling/DefenceReduction.ts` | 9 / 1 | raid floors in `getDefenceFloor`; AG magic-level drain floor | Low–medium (the `floors` line replaces upstream's `const floor = ...` line) |
 | `src/lib/MonsterScaling.ts` | 2 / 0 | `applyFracturedArchiveScaling` after ToA | Low |
 | `src/lib/CalcDetails.ts` | 1 / 0 | `MAX_HIT_ELEMENTAL_FRAGMENT` | Low |
@@ -81,6 +81,9 @@ Bugs in upstream's own code or data handling that we fixed locally (phase 21 lis
 against `89c3e25` and the current data); each is small and independent of the raid-4 work, so it could go upstream as
 its own PR.
 
+- **`getCanonicalItemId` scans every alias group per call** (`src/lib/Equipment.ts`): it runs for every item of every
+  player the calculator builds; in a best-setup gear search it was 62 % of the time. A reverse map built once (same
+  first-match result) made the 16 Fractured Archive plan searches 42.4 s → 11.3 s (phase 27 review).
 - **`TOB_MONSTER_IDS` misses 8354 / 10807 / 10786 / 10803** (`src/lib/constants.ts`): monsters.json uses these ids for
   the Nylocas Vasilias (normal / Hard / Entry) and the melee Prinkipas, so upstream doesn't scale them: Vasilias 2500 hp
   at 4 players instead of trunc(2500 × 7/8) = 2187 (`src/tests/lib/raids/ToB.test.ts`, "id fix"; infobox "scaledhp = Yes").

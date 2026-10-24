@@ -3,6 +3,27 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 27 fixes — review follow-ups (2026-10-24)
+
+- **Ring screen guard** (`planner.ts`): g = best-screened ring's screen − full time; every ring whose screen is within
+  `RING_GUARD_FACTOR` (2) × g of the best full time is planned in full (replaces `RING_FINALISTS` / 1 %). Screen-only
+  rings show "≥ +X s (estimate)" (X = screen gap − `RING_ESTIMATE_FACTOR` 4 × g) or "not planned in full", never a
+  precise delta (`PlanResult.ring.screened[].atLeast`). Slow test (`ringGuard: Infinity`, all six FA rings in full):
+  Ultor is the true best; true gaps Lightbearer +29.1, Bellator +31.8, Venator +45.0, Ring of shadows +54.0, Magus +59.5 s.
+- **Caches for the worker's lifetime**: `DPS_CACHE` (assumptions / base player / monster tag / group / equipment /
+  options) and `SEARCH_CACHE` (picked rows), `clearPlanCaches`; the per-run row cache is gone.
+- **Search slowdown**: CPU profile — 62 % in upstream `getCanonicalItemId` (linear alias scan per item per player), not
+  the fight length (already cached), the pool or ownership. Reverse map built once (Equipment.ts, listed in
+  UPSTREAM_MERGE.md) + memoised `resolveItem`: 16 FA searches 42.4 s → 11.3 s (Jest).
+- Timings (FA defaults, camp one ring): Jest first plan 77 s → 19.9 s, re-plan after a supplies change 33 s → 4.0 s;
+  browser first plan 68-79 s → 12.5-15.8 s (FA / ToA / CoX; ToB 48.0 s), re-plan 7.7 s (incl. waits). Headlines
+  unchanged (FA 22:47.9, ToA 14:22.3, CoX 6:40.3, ToB 7:31.7).
+- verifyPhase21: real guard (no two kit loadouts with the same item set; extra Scythe loadouts cost ≥ 1 slot or save
+  ≥ 1 s; `data-items` on kit loadouts). verifyPhase27: first-plan / re-plan timings, estimates check.
+- Tests: Phase27 + cache test (second plan: 0 searches, < 1/5 of the evaluations, same total as uncached) + slow ring
+  guard test. Full run 1310 pass / 9 skipped; slow headlines + ring guard pass; lint, tsc clean; verifyPhase21/23/26/27
+  all OK (tracked screenshots restored).
+
 ## Phase 27 — Planner: potions from the kit, comfort supplies, ring policy (2026-10-23)
 
 - User requests: "Maybe it should calculate the potions itself based on the gear" and "A lot of people don't bring

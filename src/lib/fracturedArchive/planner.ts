@@ -309,11 +309,35 @@ export const campRingItems = (notOwned: string[] = []): PlanItem[] => CAMP_RINGS
   .filter((x): x is PlanItem => !!x && x.id > 0)
   .map((x) => ({ ...x, slot: 'ring' as Slot }));
 
-/** Rings fully planned after the screen (the best, plus the runner-up when within the margin). */
-const RING_FINALISTS = 2;
-const RING_FINALIST_MARGIN = 0.01;
+/**
+ * Phase 27 review: the ring screen's guard. g = the best-screened ring's screen time − its full-plan time (what partial
+ * switches etc. are worth); every ring whose screen time is within `RING_GUARD_FACTOR` × g of the best full time is
+ * planned in full too. A ring outside it is reported as "≥ +(screen − best − RING_ESTIMATE_FACTOR × g) s (estimate)": the
+ * screens of the FA defaults overstated their ring by 2.2-3.2 g (Bellator, Venator), so 4 g keeps that a lower bound
+ * there; it is an estimate, not a guarantee.
+ */
+export const RING_GUARD_FACTOR = 2;
+/** Phase 27 review: the g multiple taken off a screen-only ring's screen gap for its "≥ +X s (estimate)". */
+export const RING_ESTIMATE_FACTOR = 4;
 /** Optimiser seeds of a ring screen. */
 const SCREEN_SEEDS = 6;
+
+/**
+ * Phase 27 review: caches that live as long as the module (the search worker): DPS per (assumptions, base player,
+ * monster: drain / target / phase / fight length, style group, equipment, style options) and the picked search rows
+ * per (plan assumptions, drain, target / phase, "Items I don't own", search hooks, row caps). Any assumption that changes
+ * DPS changes the key, so nothing needs invalidating; both are cleared when they grow past their cap.
+ */
+const DPS_CACHE = new Map<string, { dps: number, option: number }>();
+const DPS_CACHE_MAX = 400000;
+const SEARCH_CACHE = new Map<string, SearchRow[]>();
+const SEARCH_CACHE_MAX = 400;
+
+/** Empties the planner's caches (tests, timings). */
+export const clearPlanCaches = () => {
+  DPS_CACHE.clear();
+  SEARCH_CACHE.clear();
+};
 
 const ringLabel = (ring: PlanItem | null) => (ring ? `ring: ${ring.name}` : 'rings as searched');
 
@@ -838,9 +862,11 @@ export interface PlanTuning {
   model?: RaidTimeModel;
   /** Phase 21: skip the dedupe rule (comparisons / tests only). */
   noPrune?: boolean;
+  /** Phase 27 review: the ring guard factor (default RING_GUARD_FACTOR; Infinity = plan every camp ring in full). */
+  ringGuard?: number;
 }
 
-export const PLAN_DEFAULTS: Required<Omit<PlanTuning, 'search' | 'presets' | 'model' | 'noPrune'>> = {
+export const PLAN_DEFAULTS: Required<Omit<PlanTuning, 'search' | 'presets' | 'model' | 'noPrune' | 'ringGuard'>> = {
   perGroupWeapons: 3,
   perWeapon: 2,
   bases: 2,
@@ -901,9 +927,11 @@ export interface PlanResult {
   potions: { type: SupplyType, label: string, group: StyleGroup }[];
   /**
    * Phase 27: the ring policy used; `ring` = the ring every loadout wears (camp policies; null for switch);
-   * `screened` (camp one ring): each ring's route time, fastest first (`full` = from a full run, else the screen).
+   * `screened` (camp one ring): each ring's route time, fastest first (`full` = from a full run; else the screen's
+   * time, an upper bound, and `atLeast` = the gap to the chosen ring it is assumed to have at least: screen − best −
+   * RING_ESTIMATE_FACTOR × g, an estimate, see RING_GUARD_FACTOR).
    */
-  ring: { policy: RingPolicy, ring: string | null, screened: { ring: string, seconds: number, full: boolean }[] };
+  ring: { policy: RingPolicy, ring: string | null, screened: { ring: string, seconds: number, full: boolean, atLeast?: number }[] };
   /** The optimiser's (matrix) DPS of the kit per phase key, for checking against the exact times. */
   matrixDps: Record<string, number>;
   /**
@@ -1079,6 +1107,15 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     encounterOfCol.push(e);
   }));
   const searchRows: Record<string, SearchRow[]> = { ...(inputs.searchRows || {}) };
+  const basePlayerKey = JSON.stringify(basePlayer);
+  const searchKey = (t: { targetKey: string, phase?: string }) => JSON.stringify([
+    planA, drain, t.targetKey, t.phase ?? null, notOwned, tuning.search ?? null, cfg.perGroupWeapons, cfg.perWeapon, basePlayerKey,
+  ]);
+  targets.forEach((t) => {
+    const k = phaseKey(t.targetKey, t.phase);
+    const hit = searchRows[k] ? undefined : SEARCH_CACHE.get(searchKey(t));
+    if (hit) searchRows[k] = hit;
+  });
   const missing = targets.filter((t) => !searchRows[phaseKey(t.targetKey, t.phase)]);
   for (const [i, t] of missing.entries()) {
     if (cancelled()) return emptyResult(searchRows);
@@ -1099,9 +1136,10 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     });
     if (r.cancelled) return emptyResult(searchRows);
     searchRows[phaseKey(t.targetKey, t.phase)] = pickSearchRows(r, cfg.perGroupWeapons, cfg.perWeapon);
+    if (SEARCH_CACHE.size >= SEARCH_CACHE_MAX) SEARCH_CACHE.clear();
+    SEARCH_CACHE.set(searchKey(t), searchRows[phaseKey(t.targetKey, t.phase)]);
   }
   const tSearch = Date.now();
-  const rowCache = new Map<string, [number[], number[]]>();
 
   // phase 27: one run of steps 2-7 per ring (`ring` = the camped ring on every candidate; null = rings as searched).
   // `screen`: full candidates only (no partial switches), fewer seeds, one exact re-time, no explanations — ranks the
@@ -1172,13 +1210,22 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       d,
       { ...assumptions, fightSeconds: fightOf(col) },
     ).monster);
+    // the monster of each column, as a cache key (buildTargetMonster depends on these + the assumptions)
+    const tagsAt = (d: DrainStateId, fightOf: (col: number) => number) => targets
+      .map((t, col) => `${d}|${phaseKey(t.targetKey, t.phase)}|${fightOf(col)}`);
+    const ctxKey = JSON.stringify([assumptions, basePlayerKey]);
     let monsters = monstersAt(drain, () => fallbackFight);
+    let tags = tagsAt(drain, () => fallbackFight);
     const dpsOn = (
       c: Pick<PlanCandidate, 'group' | 'options' | 'label'>,
       eq: PlanEquipment,
       col: number,
       ms = monsters,
+      mt = tags,
     ): { dps: number, option: number } => {
+      const key = `${ctxKey}|${mt[col]}|${c.group}|${equipmentKey(eq)}|${c.options.map(optionKey).join(';')}`;
+      const hit = DPS_CACHE.get(key);
+      if (hit) return hit;
       let best = { dps: 0, option: 0 };
       const playerEq = toPlayerEquipment(eq);
       c.options.forEach((o, oi) => {
@@ -1192,6 +1239,8 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         evaluations += 1;
         if (dps > best.dps) best = { dps, option: oi };
       });
+      if (DPS_CACHE.size >= DPS_CACHE_MAX) DPS_CACHE.clear();
+      DPS_CACHE.set(key, best);
       return best;
     };
     const dps: number[][] = [];
@@ -1219,6 +1268,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     let soloFight: Partial<Record<EncounterId, number>> | undefined;
     if (drain === 'solo') {
       const noneMonsters = monstersAt('none', () => fallbackFight);
+      const noneTags = tagsAt('none', () => fallbackFight);
       const noneDps: number[][] = candidates.map((c, i) => {
         if (cancelled()) throw new PlanCancelled();
         if (i % 5 === 0) {
@@ -1226,7 +1276,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
             stage: 'matrix', done: i, total: candidates.length, label: 'fight lengths (undrained)',
           });
         }
-        return targets.map((_, col) => dpsOn(c, c.equipment, col, noneMonsters).dps);
+        return targets.map((_, col) => dpsOn(c, c.equipment, col, noneMonsters, noneTags).dps);
       });
       const noneA: RaidTimeAssumptions = { ...exactA, drain: 'none' };
       soloFight = {};
@@ -1240,6 +1290,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       }
       fastA.fixedFightSeconds = soloFight;
       monsters = monstersAt(drain, (col) => soloFight![encounterOfCol[col]] ?? fallbackFight);
+      tags = tagsAt(drain, (col) => soloFight![encounterOfCol[col]] ?? fallbackFight);
     }
     const fillMatrix = (from: number, stage: PlanProgress['stage']) => {
       for (let i = from; i < candidates.length; i++) {
@@ -1249,17 +1300,10 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
             stage, done: i - from, total: candidates.length - from, label: candidates[i].label,
           });
         }
-        // the full candidates' rows are the same in a ring's screen and full run: cached per ring
-        const cacheKey = `${ring?.id ?? 0}|${candidates[i].key}|${candidates[i].options.map(optionKey).join(';')}`;
-        const cached = rowCache.get(cacheKey);
-        if (cached) {
-          [dps[i], bestOpt[i]] = cached;
-        } else {
-          const row = targets.map((_, col) => dpsOn(candidates[i], candidates[i].equipment, col));
-          dps[i] = row.map((x) => x.dps);
-          bestOpt[i] = row.map((x) => x.option);
-          rowCache.set(cacheKey, [dps[i], bestOpt[i]]);
-        }
+        // DPS_CACHE: a ring's screen and full run, and later plans with other supplies / items / route, reuse the rows
+        const row = targets.map((_, col) => dpsOn(candidates[i], candidates[i].equipment, col));
+        dps[i] = row.map((x) => x.dps);
+        bestOpt[i] = row.map((x) => x.option);
       }
     };
 
@@ -1644,8 +1688,9 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
   };
 
   // phase 27: the ring policy. Switch: one run, rings as searched. Camp Lightbearer: one run, Lightbearer on every
-  // candidate. Camp one ring: every owned CAMP_RINGS ring is screened (full candidates only), then the best
-  // RING_FINALISTS (within RING_FINALIST_MARGIN of the best screen) get the full run; the fastest exact route wins.
+  // candidate. Camp one ring: every owned CAMP_RINGS ring is screened (full candidates only); the best-screened ring
+  // gets the full run, which gives g = its screen − full time; then every ring whose screen is within
+  // RING_GUARD_FACTOR × g of the best full time gets the full run too (review fix); the fastest exact route wins.
   try {
     if (policy !== 'camp-one') {
       const only = policy === 'camp-lightbearer' ? planItemByName('Lightbearer') : null;
@@ -1662,23 +1707,31 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       });
       return { ring: it, seconds: runRing(it, true).seconds };
     }).sort((a, b) => ((a.seconds === b.seconds ? 0 : a.seconds - b.seconds) || a.ring.name.localeCompare(b.ring.name)));
-    const best0 = screened[0].seconds;
-    const finalists = screened.filter((x, i) => i === 0 || (i < RING_FINALISTS && x.seconds <= best0 * (1 + RING_FINALIST_MARGIN)));
     let best: { ring: PlanItem, run: RingRun } | null = null;
     const fullSeconds = new Map<number, number>();
-    for (const f of finalists) {
-      const run = runRing(f.ring, false);
-      fullSeconds.set(f.ring.id, run.seconds);
-      if (!best || run.seconds < best.run.seconds - EPS) best = { ring: f.ring, run };
-    }
+    const full = (ring: PlanItem) => {
+      const run = runRing(ring, false);
+      fullSeconds.set(ring.id, run.seconds);
+      if (!best || run.seconds < best.run.seconds - EPS) best = { ring, run };
+    };
+    full(screened[0].ring);
+    const g = Number.isFinite(screened[0].seconds) && Number.isFinite(fullSeconds.get(screened[0].ring.id)!)
+      ? Math.max(0, screened[0].seconds - fullSeconds.get(screened[0].ring.id)!) : 0;
+    const margin = (tuning.ringGuard ?? RING_GUARD_FACTOR) * g;
+    screened.slice(1).forEach((x) => {
+      if (x.seconds <= best!.run.seconds + margin + EPS || tuning.ringGuard === Infinity) full(x.ring);
+    });
     const r = best!.run.result!;
+    const bestSeconds = best!.run.seconds;
     return {
       ...r,
       ring: {
         policy,
         ring: best!.ring.name,
-        screened: screened.map((x) => ({
-          ring: x.ring.name, seconds: fullSeconds.get(x.ring.id) ?? x.seconds, full: fullSeconds.has(x.ring.id),
+        screened: screened.map((x) => (fullSeconds.has(x.ring.id) ? {
+          ring: x.ring.name, seconds: fullSeconds.get(x.ring.id)!, full: true,
+        } : {
+          ring: x.ring.name, seconds: x.seconds, full: false, atLeast: Math.max(0, x.seconds - bestSeconds - RING_ESTIMATE_FACTOR * g),
         })).sort((a, b) => ((a.seconds === b.seconds ? 0 : a.seconds - b.seconds) || a.ring.localeCompare(b.ring))),
       },
       stats: { ...r.stats, ms: { ...r.stats.ms, total: Date.now() - t0 } },

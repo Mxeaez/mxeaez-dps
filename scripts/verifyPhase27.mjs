@@ -80,13 +80,26 @@ const main = async () => {
   check(!(await page.locator('[data-testid="plan-ring-policy"]').isVisible()), 'ring policy selector is under Advanced (closed)');
 
   // --- camp one ring (default)
+  let t0 = Date.now();
   await waitPlan(page);
+  console.log(`     first plan (incl. searches): ${((Date.now() - t0) / 1000).toFixed(1)} s`);
   const camp = await readPlan(page);
   print(camp, 'camp one ring');
   check(camp.policy === 'camp-one' && !!camp.ring && camp.kit.every((k) => k.ring === camp.ring), `camp one ring: every loadout wears ${camp.ring}`);
   check(camp.summary.includes(`one ring on every loadout: ${camp.ring}`), `summary "${camp.summary}"`);
   check(!camp.cells.some((c) => c.kind === 'switch' && /ring$|Lightbearer/.test(c.label) && c.label !== camp.ring), 'no ring switch items in the inventory');
   checkPotions(camp, 'camp one ring');
+  // review fix: rings not planned in full are estimates, never a precise delta
+  check(/others: .*((estimate)|not planned in full)/.test(camp.ringLine), 'screen-only rings shown as estimates');
+  // review fix: a supplies change re-plans from the caches
+  await page.locator('#plan-supply-brew').fill('7');
+  t0 = Date.now();
+  await waitPlan(page);
+  const replan = (Date.now() - t0) / 1000;
+  console.log(`     re-plan after a supplies change: ${replan.toFixed(1)} s`);
+  check(replan <= 20, `re-plan ≤ 20 s (${replan.toFixed(1)} s)`);
+  await page.locator('#plan-supply-brew').fill('6');
+  await waitPlan(page);
   check(camp.cells.length === 28, '28 inventory cells');
   await page.locator('[data-testid="plan-advanced-toggle"]').click();
   await shot(page, 'fa-camp-one');

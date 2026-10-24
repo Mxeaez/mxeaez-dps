@@ -86,6 +86,7 @@ const runPlan = async (page, raid) => {
     weapon: e.getAttribute('data-weapon'),
     group: e.getAttribute('data-group'),
     slots: e.querySelector('[data-testid="kit-marginal"]')?.getAttribute('data-slots'),
+    items: e.getAttribute('data-items'),
     saves: (e.querySelector('[data-testid="kit-marginal"]')?.textContent.match(/saves ([\d.]+|∞)/) || [])[1],
   })));
   console.log(`     ${raid} plan (${secs.toFixed(1)} s): ${headline}; free ${free}`);
@@ -123,8 +124,12 @@ const run = async () => {
   const tob = await runPlan(page, 'tob');
   const scythes = tob.kit.filter((k) => k.weapon === 'Scythe of Vitur');
   const fullScythePresets = tob.kit.filter((k) => /^(Worn|Switch): (Torva \+ Scythe \(slash\)|Torva helm \+ Oathplate \+ Scythe \(slash\)|Torva \+ Salve \(ei\) \+ Scythe \(slash\))( ·|$)/.test(k.text));
-  // phase 27: with one ring camped, the single-piece swaps of a Scythe set (helm, body, Salve) carry the preset names;
-  // each one obeys the dedupe rule (checked above) — printed, not limited
+  // phase 27: with one ring camped, the single-piece swaps of a Scythe set (helm, body, Salve) carry the preset names.
+  // Review fix: a real guard — no two kit loadouts are the same item set, and every Scythe loadout past the first costs
+  // ≥ 1 slot or saves ≥ 1 s (the dedupe rule)
+  check(new Set(tob.kit.map((k) => k.items)).size === tob.kit.length, `ToB: no two kit loadouts are the same item set (${tob.kit.length} loadouts)`);
+  const extraScythes = scythes.slice(1);
+  check(extraScythes.every((k) => Number(k.slots) >= 1 || k.saves === '∞' || Number(k.saves) >= 1), `ToB: every extra Scythe loadout costs ≥ 1 slot or saves ≥ 1 s (${extraScythes.map((k) => `+${k.slots} slot, ${k.saves} s`).join('; ')})`);
   console.log(`     ToB Scythe preset-named loadouts: ${fullScythePresets.map((k) => k.text.split(' · ')[0]).join(' / ')}; Scythe loadouts ${scythes.length}`);
   const dawn = tob.kit.filter((k) => k.weapon === 'Dawnbringer');
   check(dawn.length === 1 && Number(dawn[0].slots) <= 1, `ToB: a Dawnbringer loadout, the staff free (${dawn.map((k) => `${k.text.split(' · ')[0]} +${k.slots}`).join(', ')})`);

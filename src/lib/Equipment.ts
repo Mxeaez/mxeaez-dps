@@ -210,11 +210,18 @@ export const ammoApplicability = (weaponId?: number, ammoId?: number): AmmoAppli
  * Returns the canonical (base) item ID for a given item ID. This is useful if there are variants of each item.
  * @param itemId
  */
+// mxeaez fork: reverse alias map, built once (the linear scan over every alias group was ~60% of a gear search's time)
+let canonicalIdByAlias: Map<number, number> | null = null;
 export const getCanonicalItemId = (itemId: number): number => {
-  for (const [k, v] of Object.entries(equipmentAliases)) {
-    if (v.includes(itemId)) return parseInt(k);
+  if (!canonicalIdByAlias) {
+    canonicalIdByAlias = new Map();
+    for (const [k, v] of Object.entries(equipmentAliases)) {
+      for (const id of v) {
+        if (!canonicalIdByAlias.has(id)) canonicalIdByAlias.set(id, parseInt(k));
+      }
+    }
   }
-  return itemId;
+  return canonicalIdByAlias.get(itemId) ?? itemId;
 };
 
 export const getCanonicalItem = (equipmentPiece: EquipmentPiece): EquipmentPiece => {

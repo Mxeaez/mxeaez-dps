@@ -20,8 +20,14 @@ import {
 /** When an item name has several versions, the first of these that exists is used (else the first entry). */
 export const ITEM_VERSION_PREFERENCE = ['', 'Charged', 'Normal', 'Restored', 'Undamaged', 'Unpoisoned', 'New'];
 
+// phase 27 review: memoised (a filter over equipment.json per call was ~10% of a gear search after the alias fix)
+const resolvedItems = new Map<string, EquipmentPiece>();
+
 export const resolveItem = (ref: ItemRef): EquipmentPiece => {
   const [name, version] = typeof ref === 'string' ? [ref, undefined] : ref;
+  const cacheKey = version === undefined ? name : `${name}|${version}`;
+  const hit = resolvedItems.get(cacheKey);
+  if (hit) return hit;
   const matches = availableEquipment.filter((e) => e.name === name);
   let item: EquipmentPiece | undefined;
   if (version !== undefined) {
@@ -32,6 +38,7 @@ export const resolveItem = (ref: ItemRef): EquipmentPiece => {
   if (!item) {
     throw new Error(`Best setup: no item named '${name}'${version !== undefined ? ` (version '${version}')` : ''} in equipment.json`);
   }
+  resolvedItems.set(cacheKey, item);
   return item;
 };
 

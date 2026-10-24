@@ -4,6 +4,7 @@ import Potion from '@/enums/Potion';
 import {
   CAMP_RINGS,
   campRingItems,
+  clearPlanCaches,
   COMFORT_SUPPLY_TYPES,
   comfortSupplies,
   DEFAULT_RING_POLICY,
@@ -17,6 +18,7 @@ import {
   planItemByName,
   PlanResult,
   potionSlots,
+  RING_GUARD_FACTOR,
   RING_POLICIES,
   ringAssumptions,
   RingPolicy,
@@ -155,6 +157,33 @@ describe('potions from the kit', () => {
   }, 300000);
 });
 
+describe('caches (review fix)', () => {
+  test('a second plan with other supplies reuses the searches and the DPS rows', () => {
+    clearPlanCaches();
+    const raid = FRACTURED_ARCHIVE_RAID;
+    const inputs = (brew: number) => ({
+      basePlayer: generateEmptyPlayer(),
+      assumptions: raid.defaultAssumptions,
+      drain: 'team' as const,
+      settings: raid.defaultTimeSettings,
+      route: 'all',
+      pinned: raid.planDefaults.pinned.map((n) => planItemByName(n).id),
+      nonItemSlots: 1,
+      supplies: { ...raid.defaultSupplies, brew },
+      ringPolicy: 'switch' as const,
+    });
+    const first = plan(inputs(6), reduced(raid));
+    const second = plan(inputs(7), reduced(raid));
+    expect(first.stats.searches).toBeGreaterThan(0);
+    expect(second.stats.searches).toBe(0);
+    expect(second.stats.evaluations).toBeLessThan(first.stats.evaluations / 5);
+    // same DPS as an uncached run
+    clearPlanCaches();
+    const fresh = plan(inputs(7), reduced(raid));
+    expect(total(second)).toBe(total(fresh));
+  }, 600000);
+});
+
 describe('ring policy', () => {
   test('policies and defaults', () => {
     expect(DEFAULT_RING_POLICY).toBe('camp-one');
@@ -192,6 +221,8 @@ describe('ring policy', () => {
     expect(r.ring.screened[0].full).toBe(true);
     expect(Math.abs(r.ring.screened[0].seconds - total(r))).toBeLessThan(1e-6);
     r.ring.screened.forEach((x) => expect(total(r)).toBeLessThanOrEqual(x.seconds + 1e-6));
+    // review fix: a ring planned only by its screen carries the gap it is assumed to have at least (≥ 0), never a delta
+    r.ring.screened.forEach((x) => expect(x.full ? x.atLeast : x.atLeast! >= 0).toBe(x.full ? undefined : true));
     // camping Lightbearer is one of the options: never faster than the chosen ring
     expect(total(r)).toBeLessThanOrEqual(total(planned(raid, 'camp-lightbearer')) + 1e-6);
   }, 600000);
@@ -228,4 +259,39 @@ describe('ring policy', () => {
     // 'switch' is the planner's default when no policy is given (the Plan tab passes camp one ring)
     expect(total(planned(raidConfig(id)))).toBe(total(r));
   }, 600000);
+});
+
+/**
+ * Review fix: the ring screen's guard. Planning every camp ring in full (`ringGuard: Infinity`) on the default FA plan
+ * picks the same ring and total as the guarded default (screen, then full plans within RING_GUARD_FACTOR × g).
+ * Slow (a full default plan per ring): `RUN_SLOW_TESTS=1`.
+ */
+(process.env.RUN_SLOW_TESTS ? describe : describe.skip)('ring guard (slow)', () => {
+  test('FA defaults: the guarded camp-one ring is the true best of all six rings planned in full', () => {
+    const raid = FRACTURED_ARCHIVE_RAID;
+    const inputs = {
+      basePlayer: generateEmptyPlayer(),
+      assumptions: raid.defaultAssumptions,
+      drain: 'team' as const,
+      settings: raid.defaultTimeSettings,
+      route: 'all',
+      pinned: raid.planDefaults.pinned.map((n) => planItemByName(n).id),
+      nonItemSlots: raid.planDefaults.nonItemSlots,
+      supplies: raid.defaultSupplies,
+      ringPolicy: 'camp-one' as const,
+    };
+    expect(RING_GUARD_FACTOR).toBe(2);
+    const guarded = plan(inputs, { model: raid.time });
+    const all = plan(inputs, { model: raid.time, ringGuard: Infinity });
+    expect(all.ring.screened.every((x) => x.full)).toBe(true);
+    expect(guarded.ring.ring).toBe(all.ring.ring);
+    expect(total(guarded)).toBe(total(all));
+    // every screen-only ring's estimated gap is no more than its true gap
+    guarded.ring.screened.filter((x) => !x.full).forEach((x) => {
+      const truth = all.ring.screened.find((y) => y.ring === x.ring)!.seconds - total(all);
+      // eslint-disable-next-line no-console
+      console.log(`${x.ring}: estimate ≥ +${x.atLeast!.toFixed(1)} s, true +${truth.toFixed(1)} s`);
+      expect(x.atLeast!).toBeLessThanOrEqual(truth + 1e-6);
+    });
+  }, 1800000);
 });

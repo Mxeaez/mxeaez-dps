@@ -470,9 +470,20 @@ so the API and the phase 17-26 tests are unchanged):
 - **Camp one ring**: every candidate (presets, search rows, partial switches) gets the same ring, so no ring is ever a
   switch item. Rings tried (`CAMP_RINGS`, owned ones only): Ultor ring, Bellator ring, Venator ring, Magus ring, Ring of
   shadows (charged), Lightbearer. Each ring is first **screened** (presets + search rows only, no partial switches, 6
-  seeds, one exact re-time; ~3 s each in Jest), then the best ring — and the runner-up when its screen is within 1 % —
-  gets the full plan; the fastest exact route wins. The result lists every ring's time ("others: Lightbearer +47.6 s*",
-  `*` = screen only, an upper bound). Camping Lightbearer here also turns on the Solo Lightbearer regen.
+  seeds, one exact re-time; ~1 s each in Jest with the caches), then the full plan as below. Camping Lightbearer here
+  also turns on the Solo Lightbearer regen.
+
+  **The ring screen: estimated vs fully planned** (review fix). A screen leaves out the partial switches, so it
+  overstates a ring's route time — on the FA defaults by 23 s for Ultor and 50-73 s for Bellator / Venator (the screen
+  showed Bellator +82.0 s; its full plan is +31.8 s). So: (1) the best-screened ring gets the full plan, giving
+  g = its screen − full time; (2) every other ring whose screen is within `RING_GUARD_FACTOR` (2) × g of the best full
+  time gets the full plan too; (3) the fastest exact route wins. The "others" line shows a fully planned ring with its
+  exact delta ("Ultor ring +3.1 s") and a screen-only ring only as **"≥ +X s (estimate)"**, X = screen − best −
+  `RING_ESTIMATE_FACTOR` (4) × g (on the FA defaults screens overstated by up to 3.2 g; an estimate, not a guarantee),
+  or "(slower by the quick screen; not planned in full)" when X < 1 s — never as a precise delta. The slow test
+  (`Phase27.test.ts`, *ring guard*, `RUN_SLOW_TESTS=1`) plans all six FA rings in full (`PlanTuning.ringGuard:
+  Infinity`): the guarded choice (Ultor) is the true best; true gaps Lightbearer +29.1 s, Bellator +31.8, Venator
+  +45.0, Ring of shadows +54.0, Magus +59.5 (Venator's estimate ≥ +26.8 s; the others show "not planned in full").
 - **Camp Lightbearer**: every loadout wears Lightbearer, and the plan's assumptions get the Solo spec budget's
   Lightbearer regen (`mySpecs.lightbearer` = true via `ringAssumptions`: 10 % per 15 s instead of 30 s; matters for
   Solo drains only). A camp policy with another ring sets that flag to false; *Allow switches* keeps the user's.
@@ -486,7 +497,7 @@ camp-one totals):
 
 | Raid | Phase 26 | Allow ring switches | **Camp one ring (default)** | Camp Lightbearer |
 |---|---|---|---|---|
-| FA | 23:30.4 | 22:47.7 — worn Tumeken's shadow (Ancestral, Magus ring), Inquisitor's + Obligator (Ultor ring); 1 Super combat; 1 free | **22:47.9, Ultor ring** — worn Twisted bow (Masori), Obligator switch +5 on Ascension crossbows (Masori); Super combat + Ranging potion; 28/28 (screens: Lightbearer +47.6 s, Bellator +82.0, Ring of shadows +85.0, Magus +85.2, Venator +118.2) | 23:16.9 (+29.0 s vs camp Ultor) |
+| FA | 23:30.4 | 22:47.7 — worn Tumeken's shadow (Ancestral, Magus ring), Inquisitor's + Obligator (Ultor ring); 1 Super combat; 1 free | **22:47.9, Ultor ring** — worn Twisted bow (Masori), Obligator switch +5 on Ascension crossbows (Masori); Super combat + Ranging potion; 28/28 (every ring in full: Lightbearer +29.1 s, Bellator +31.8, Venator +45.0, Ring of shadows +54.0, Magus +59.5) | 23:16.9 (+29.0 s vs camp Ultor) |
 | ToA | 14:20.2 | 14:20.2 (unchanged: no combat potions) | **14:22.3, Magus ring** (+2.1 s vs switching; Ultor +3.1 s full run) | 14:30.0 |
 | CoX | 6:39.9 | 6:39.9 (unchanged) | **6:40.3, Ultor ring** (+0.4 s; Bellator +2.3 s full run) | 6:48.2 |
 | ToB | 7:32.4 | 7:32.4 (same potions as its old defaults) | **7:31.7, Ultor ring** (−0.7 s: no ring switch items frees slots; Bellator +1.5 s) | 7:47.0 |
@@ -494,8 +505,24 @@ camp-one totals):
 FA's gain over phase 26 is the potions: the old defaults carried 2 ranging + 1 super combat (3 slots) whatever the kit;
 now 1 per style. Camping one ring costs 0.1 s (FA), 2.1 s (ToA), 0.4 s (CoX) or saves 0.7 s (ToB) vs switching rings.
 
-**Timings**: a camp-one-ring plan screens six rings and plans one or two in full: Jest (no coverage) FA ~33 s after the
-searches (vs ~22 s for one ring run); in the browser (headless Chromium, dev server, `scripts/verifyPhase21.mjs`) a first default plan takes 68-79 s (ToA 67.8, CoX 78.8, ToB 68.2 s incl. the searches; was 18-21 s), hence the 150 s limit there.
+**Timings and caches** (review fix). Phase 27 first made a default plan 68-79 s in the browser (six ring screens, plus
+16 searches that had crept up to ~30-45 s). Two fixes:
+- **Search speed**: a CPU profile of the 16 FA searches (Jest, 42.4 s) put 62 % of the time in upstream
+  `getCanonicalItemId` (`src/lib/Equipment.ts`: a linear scan over every alias group, called for every item of every
+  evaluated player), not in the phase 23 fight length (`autoFightSeconds` is already cached per boss / phase) nor the
+  phase 25 pool (1,300 evaluations per boss, as in phase 9) or the ownership filter. A reverse alias map built once
+  (same first-match result) + a memoised `resolveItem` (loadout.ts): **42.4 s → 11.3 s** for the 16 searches (Jest).
+  Worth sending upstream (docs/UPSTREAM_MERGE.md).
+- **Caches for the worker's lifetime** (`planner.ts`: `DPS_CACHE`, `SEARCH_CACHE`, `clearPlanCaches`): DPS per
+  (assumptions incl. the ring flag, base player, monster = drain / target / phase / fight length, style group,
+  equipment, style options) and the picked search rows per (plan assumptions, drain, target / phase, "Items I don't
+  own", search hooks, row caps). Every input that changes DPS is in the key, so nothing goes stale; capped (cleared at
+  400k DPS entries / 400 searches).
+
+Before → after (FA defaults, camp one ring): Jest first plan **77 s → 19.9 s**, re-plan after a supplies change
+**33 s → 4.0 s**; browser (`verifyPhase21/27`) first plan FA 12.5-14.9 s, ToA 14.3, CoX 15.8, ToB 48.0 s (more rings
+within the guard), re-plan after a supplies change 7.7 s (incl. ~1.7 s of debounce / waits). `verifyPhase21` keeps its
+150 s limit.
 
 ## Routes tab (phase 16: raid time model)
 
