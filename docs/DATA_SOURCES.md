@@ -831,3 +831,28 @@ data: Archivist's folio (teleport, skipped), Horn of Bran (unlock item), element
 | Rondache | match (shield, str +8, def 35/41/38/-6/55) | Stats only. +2 flat armour / magic resistance (defensive) and the energy-free *Shield Slam* (x + x% damage from charges) are not modelled. | — |
 | Elemental fragments | n/a (not equipped) | Player unlock per element (`buffs.elementalFragments`, toggle under the spell selector): +2 base max hit for that element's spells, added before magic damage and elemental weakness (as the wiki states). | — |
 | Zeal (Horn of Bran) | n/a | New prayer: attack ×1.25, strength ×1.28, defence ×1.25; same drain as Piety; replaces Piety in-game (separate button here, mutually exclusive like other offensive prayers). | — |
+
+### Phase 25 — item refresh for the best-setup pool (2026-10-23)
+
+Sources (fetched 2026-10-23, `?action=raw`): https://oldschool.runescape.wiki/w/Necklace_of_rupture,
+/Seeking_dragon_arrow, /Seeking_broad_arrows, /Arrows (section *Seeking arrows*), /Maggot_King (drops, *Loot
+mechanics*), /Crimson_kisten, /Elemental_amulet, /The_Blood_Moon_Rises, /Crystal_blessing.
+
+**Generator re-run.** `scripts/generateEquipment.py` (2026-10-23): 5463 entries, **no diff** to `cdn/json/equipment.json`
+(nothing added to the wiki since phase 7b), 0 new images. The Maggot King / Blood Moon Rises items (30 June 2026) were
+already in the baseline data: Necklace of rupture 33639, Seeking bronze … dragon arrows 33553–33595, Seeking broad
+arrows 33601, Crimson kisten 33631; also Elemental amulet 34428 and the single-element amulets 34407–34425
+(2 September 2026).
+
+| Item | Stats vs wiki infobox | Wiki effect (quote) | Upstream model | Pool / verdict |
+|---|---|---|---|---|
+| Necklace of rupture | match (ranged +20, ranged str +8, prayer +3) | "an upgraded variant of the necklace of anguish ... boasting an additional +5 ranged attack, +3 ranged strength, and +1 prayer bonus over the necklace of anguish"; no passive | stats only | ranged neck (BiS); in every Masori preset |
+| Seeking dragon arrow | match (ranged +20, ranged str +60) | "+20 ranged attack bonus over their regular variants, as well as increasing the player's minimum hit from 1 to 3 upon a successful hit"; change 8 July 2026: "Seeking arrows now only provide a +20 ranged attack bonus when using bows"; Arrows page: "If an attack would deal 1 or 2 damage, it instead deals 3 ... They can still miss" | `bow_t60` lists 33595 (Twisted / Venator / Scorching bow, Dark bow, ...): bonuses INCLUDED; `PlayerVsNPCCalc`: ranged + "Seeking" ammo INCLUDED → accurate hits `max(dmg, 3)` (an accurate 0 becomes 3, misses stay 0) | ammo for the three pool bows; Twisted bow preset. "Only with bows" holds automatically: arrows can't be fired from crossbows / thrown weapons (INVALID) |
+| Seeking broad arrows | match (ranged +20, str +28) | broad-arrow variant (turoths / kurasks) | in upstream's `isWearingLeafBladedWeapon` list (commit 89c3e25 "Add Seeking broad arrows to isWearingLeafBladedWeapon") | excluded (no raid boss is a turoth / kurask) |
+| Crimson kisten | match (2h crush +80, str +56, speed 4) | Maggot King unique; spec *Brutal Swing* (50%): "four separate accuracy rolls in a single hit. If at least one roll succeeds, the attack deals 70-110% of the player's maximum hit, with additional successful rolls increasing the attack's minimum and maximum hit by 20%" | spec modelled (`PlayerVsNPCCalc`, spec cost 50) | excluded: normal attacks are below Inquisitor's mace (crush +102 / str +96); damage specs aren't in the best-setup model (ROADMAP future item) |
+| Elemental amulet | match (magic +10) | "adding a +2 max hit to elemental spells, which is added before magic damage and elemental weakness modifiers are applied, and therefore scales with both" | `hasMatchingElementalAmulet` → +2 base max hit | magic neck, kept for autocasting weapons (stats alone are dominated by Occult). **Unverified**: stacks with the FA elemental fragment's +2 (both "before magic damage"; modelled additively, UNVERIFIED B16) |
+
+Maggot King's other notable drop is the pet (Maggot marquess); no other equipment. The audit
+(`src/lib/fracturedArchive/poolAudit.ts`, docs/BEST_SETUP.md *Pool audit*) found no other missing item; every
+upstream-effect / stat-dominating item not in a pool is in `POOL_EXCLUDED` with a reason (e.g. Crystal blessing / Echo
+boots / V's helm = Demonic Pacts League items; Barbed / Blunt / Bullet / Field arrows = Barbarian Assault only).

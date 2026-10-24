@@ -30,6 +30,10 @@ import {
  * - Boots: "Avernic treads (max)" in every preset (best in slot for all three styles). Alternatives if you don't have
  *   them: 'Primordial boots' (melee), 'Pegasian boots' (ranged), 'Eternal boots' (magic).
  * - Added "Ancestral + Kodai (best Surge)" so the elemental weaknesses and fragment toggles have a spell to act on.
+ * - Phase 25: ranged neck Necklace of rupture (was Necklace of anguish; rupture is the Maggot King upgrade, +5 ranged /
+ *   +3 ranged str / +1 prayer, no other effect) and the Twisted bow fires Seeking dragon arrows (were dragon arrows:
+ *   +20 ranged attack with bows, minimum hit 3 on an accurate hit). Both are better in every case; swap back to
+ *   'Necklace of anguish' / ['Dragon arrow', 'Unpoisoned'] if you don't have them.
  */
 
 export type StyleGroup = 'melee' | 'ranged' | 'magic';
@@ -73,7 +77,7 @@ export const MASORI_F = {
   body: 'Masori body (f)',
   legs: 'Masori chaps (f)',
   cape: "Dizana's quiver",
-  neck: 'Necklace of anguish',
+  neck: 'Necklace of rupture',
   hands: 'Zaryte vambraces',
   feet: 'Avernic treads (max)',
   ring: 'Venator ring',
@@ -148,7 +152,7 @@ export const PRESETS: PresetDef[] = [
   {
     name: 'Twisted bow (Masori)',
     group: 'ranged',
-    equipment: { ...MASORI_F, weapon: 'Twisted bow', ammo: ['Dragon arrow', 'Unpoisoned'] },
+    equipment: { ...MASORI_F, weapon: 'Twisted bow', ammo: 'Seeking dragon arrow' },
     styles: ['Accurate', 'Rapid'],
   },
   {

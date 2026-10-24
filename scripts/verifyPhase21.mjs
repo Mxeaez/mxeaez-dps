@@ -6,7 +6,7 @@
  *   that raid's defaults (supplies, rune pouch, items always brought; src/lib/raids/planDefaults.ts), the plan runs in
  *   ≤ 30 s, 28 inventory cells, every kit loadout obeys the dedupe rule (saves ≥ max(1, slots) s).
  * - FA: total 23:30.4 (heart fix: the Saturated heart pinned, magic boosted; was 23:18.8 without it).
- * - ToB: 7:32.2 at 28/28, one full Scythe set (no near-duplicate Scythe presets), a Dawnbringer loadout (the staff
+ * - ToB: 7:32.4 with 1 free slot (phase 25; was 7:32.2 at 28/28), one full Scythe set (no near-duplicate Scythe presets), a Dawnbringer loadout (the staff
  *   free), no Dawnbringer inventory cell, a "Lighter kit" alternative, the "Raid items (0 slots)" note; Search: the
  *   Prinkipas only in Hard Mode.
  * Screenshots docs/screenshots/phase21-*.png.
@@ -124,7 +124,9 @@ const run = async () => {
   check(dawn.length === 1 && Number(dawn[0].slots) <= 1, `ToB: a Dawnbringer loadout, the staff free (${dawn.map((k) => `${k.text.split(' · ')[0]} +${k.slots}`).join(', ')})`);
   const alts = await page.locator('[data-testid="plan-alternatives"] li').allInnerTexts();
   alts.slice(0, 2).forEach((a) => console.log(`     alt: ${a.slice(0, 200)}`));
-  check(tob.free === 0 && tob.total === '7:32.2', `ToB main plan 7:32.2, 28/28 (${tob.total}, ${tob.free} free)`);
+  // phase 25: 7:32.2 at 28/28 → 7:32.4 with 1 free slot (the pool's Necklace of rupture / Seeking dragon arrows; see
+  // CrossRaid HEADLINES)
+  check(tob.free === 1 && tob.total === '7:32.4', `ToB main plan 7:32.4, 27/28 (${tob.total}, ${tob.free} free)`);
   check(alts.some((a) => /^Lighter kit: .*−\d+ slots? for \+\d+\.\d s/.test(a)), 'ToB: "Lighter kit" alternative (−N slots for +X.X s)');
   const dawnCell = await page.locator('[data-testid="inventory-cell"][data-label="Dawnbringer"]').count();
   check(dawnCell === 0, 'ToB: no Dawnbringer inventory cell');

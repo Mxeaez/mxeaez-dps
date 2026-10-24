@@ -62,7 +62,7 @@ values (Bork's flat armour comes from the phase input, so the generated 0 is exp
 | `src/lib/MonsterScaling.ts` | 2 / 0 | `applyFracturedArchiveScaling` after ToA | Low |
 | `src/lib/CalcDetails.ts` | 1 / 0 | `MAX_HIT_ELEMENTAL_FRAGMENT` | Low |
 | `src/enums/Prayer.ts` | 16 / 1 | **Zeal = 21** | **High if upstream adds a prayer**: it will likely take id 21 too. Renumber Zeal to the next free id. Saved loadouts that stored 21 then need a one-time fix (only Zeal users) |
-| `src/enums/EquipmentCategory.ts`, `src/utils.ts` | 1 + 18 / 1 | Extending Chain Mace category + styles; CDN URL and shortlink env flags | Medium if upstream adds the Obligator itself. Then drop ours and keep `getObligatorAttackSpeed` / thrust logic only if upstream lacks it |
+| `src/enums/EquipmentCategory.ts`, `src/utils.ts` | 1 + 20 / 1 | Extending Chain Mace category + styles; CDN URL and shortlink env flags; phase 25: `getCdnImage` turns `%27` into a literal `'` (the deployed site 307-redirects `%27`) | Medium if upstream adds the Obligator itself. Then drop ours and keep `getObligatorAttackSpeed` / thrust logic only if upstream lacks it |
 | `src/types/Player.ts` | 6 / 1 | `buffs.elementalFragments` | Low |
 | `src/worker/CalcWorkerTypes.ts` | 64 / 0 | `BEST_SETUP_SEARCH`, `RAID_ROUTES` (phase 16), `RAID_PLAN` (phase 17) request types (they run in our own `searchWorker.ts`); phase 13 removed `BEST_SETUP` and its handler, so `worker.ts` is unchanged from upstream | Low–medium (enum additions at the end) |
 | `src/app/components/monster/MonsterContainer.tsx` | 12 / 2 | party size 2–8 + hint for raid bosses | Low |
@@ -108,6 +108,10 @@ Found in phase 22, **not fixed locally** (upstream code outside the raid work; w
 
 ## Things upstream might add that overlap with ours
 
+- **New items / item effects** (phase 25): after a merge or a data refresh, `PoolAudit.test.ts` fails for any item
+  that beats a best-setup pool item on stats or whose name upstream starts checking in `PlayerVsNPCCalc.ts` /
+  `BaseCalc.ts` / `Equipment.ts`. Add it to a pool (`searchCandidates.ts`, `src/lib/raids/*/searchPool.ts`) or to
+  `POOL_EXCLUDED` (`src/lib/fracturedArchive/poolAudit.ts`) with a reason; `node scripts/auditPool.mjs` prints the list.
 - **ToB** (phase 20): if upstream fixes the Vasilias / Prinkipas ids in `TOB_MONSTER_IDS` itself, drop our four
   added ids (duplicates are harmless). If upstream gates the nylocas by style or blocks the Dawnbringer off P1, drop
   `src/lib/raids/tob/damage.ts` and its two hooks and point `tob/targets.ts` / `time.ts` at upstream's phase names

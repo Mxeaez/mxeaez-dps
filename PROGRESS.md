@@ -3,6 +3,40 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 25 — Item data refresh: Maggot King items and the pool audit (2026-10-23)
+
+- User report: "the Amulet of rupture isn't being used ... Seeking dragon arrows either". The item is the **Necklace of
+  rupture** (33639, Maggot King's elder venator fang + anguish). Both it and **Seeking dragon arrow** (33595) were in
+  `equipment.json` and modelled upstream (rupture: stats only; Seeking: `bow_t60` + accurate hits ≥ 3); only the
+  best-setup pool lacked them. Maggot King's other unique, the **Crimson kisten**, is a damage-spec weapon (excluded,
+  damage specs not modelled yet).
+- **Pool audit** (new `src/lib/fracturedArchive/poolAudit.ts` + `poolAuditSources.ts`; `node scripts/auditPool.mjs
+  [--all]`; Jest `PoolAudit.test.ts`): items that beat a frontier pool item on stats (per raid pool / style / slot; fired
+  ammo per bow / crossbow) or whose name is checked in `PlayerVsNPCCalc.ts` / `BaseCalc.ts` / `Equipment.ts` (307
+  names), minus pool / preset / spec members and `POOL_EXCLUDED` (25 grouped entries with reasons). It found exactly
+  three gaps: Necklace of rupture, Seeking dragon arrow, **Elemental amulet** (+2 base max hit on elemental spells).
+- Pools (every raid): ranged neck rupture + anguish; Twisted / Venator / Scorching bow fire Seeking dragon arrows or
+  dragon arrows; magic neck Occult + Elemental amulet (kept for Harmonised / Kodai / Purging staff, + DHW in CoX).
+  Presets: `MASORI_F` wears rupture, Twisted bow (Masori) fires Seeking dragon arrows (better in every case).
+- Generator re-run (`generateEquipment.py`): no diff, 0 new images (clean; nothing new on the wiki since phase 7b).
+- **`getCdnImage`** maps `%27` → `'` (the deployed site 307-redirects `%27`). Finding: our code never emitted `%27`
+  (no encoding anywhere; browsers keep `'` literal in paths) — dev and production both request `Tumeken's%20shadow.png`
+  → 200; the change guards pre-encoded names. Test in DeployEnv.test.ts.
+- Numbers (defaults): Xarth overall top unchanged (Obligator 12.839 None / 13.917 Solo & Team). Ranged-only top
+  10.012 → **10.430** (Ascension + rupture); Twisted bow 9.834 → **10.379** (Seeking + rupture). Magic-only top 6.291 →
+  **6.633** (Harmonised + Elemental amulet, Team). All styles: rupture rows 7–9. Plan totals: FA 23:30.4 / ToA 14:20.2
+  unchanged; **CoX 6:41.9 → 6:39.9**; **ToB 7:32.2 → 7:32.4**, 1 free slot (was 28/28; heuristic planner, the kit
+  carries an Ascension + rupture switch). Re-pinned CrossRaid fast pins + HEADLINES, Search Jelly margin (> 0.3, was
+  0.5), verifyPhase21 ToB 7:32.4 with 1 free slot.
+- Tests: new `ItemRefresh.test.ts` (stats; Seeking +20 attack, roll 22256 vs 20116 by hand, min hit 3 distribution;
+  rupture max hit 29 vs 28 by hand; Elemental amulet Fire Surge 29 vs Occult 28, Ice Barrage no bonus; pools, presets),
+  `PoolAudit.test.ts` (6). `yarn test` 1281 (1273 pass / 8 skipped); lint, tsc clean.
+- Playwright: new `scripts/verifyPhase25.mjs` all OK (Xarth rows, ranged / magic tops, Tumeken's shadow and '24-carat'
+  sword images 200 with a literal `'`, no `%27`, no 307); verifyPhase13 / 23 / 21 re-run OK (21 with the new ToB pin), tracked screenshots
+  restored. Screenshots `docs/screenshots/phase25-*.png`.
+- Docs: BEST_SETUP *Pool audit*, DATA_SOURCES *Phase 25*, UNVERIFIED B16 (Elemental amulet + fragment stacking),
+  UPSTREAM_MERGE (utils hook, new-items bullet), CLAUDE.md apostrophe note.
+
 ## Phase 24 — Spec-accuracy audit for ToA / CoX / ToB (2026-10-23)
 
 - User report: "Kephri's Defence is insanely high; I never hit with Elder maul" while the drain line showed a high hit

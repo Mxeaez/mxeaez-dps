@@ -168,7 +168,8 @@ describe('search', () => {
     const r = search('jelly', 'solo', { weapons: ['Ascension crossbows'] }, 'ranged');
     expect(r.bestPreset!.preset).toBe('Ascension crossbows + onyx (e) (Masori)');
     expect(r.rows[0].equipment.head?.name).toBe('Void ranger helm');
-    expect(r.rows[0].dps).toBeGreaterThan(r.bestPreset!.dps + 0.5);
+    // phase 25: the margin was > 0.5; the preset now wears the Necklace of rupture too (+5 ranged / +3 ranged str)
+    expect(r.rows[0].dps).toBeGreaterThan(r.bestPreset!.dps + 0.3);
   });
 
   test('top row = the main calculator for the same player (Load into calculator parity)', () => {

@@ -159,7 +159,9 @@ export const getWikiImage = (filename: string) => `https://oldschool.runescape.w
 
 // mxeaez fork: NEXT_PUBLIC_CDN_URL lets production serve images from our own copy of cdn/ (see docs/DEPLOY.md).
 const CDN_URL = process.env.NEXT_PUBLIC_CDN_URL || 'https://tools.runescape.wiki/osrs-dps/cdn';
-export const getCdnImage = (filename: string) => `${CDN_URL}/${filename}`;
+// mxeaez fork (phase 25): apostrophes stay literal — the deployed site 307-redirects '%27' paths (one extra request
+// per image, and the redirect target is host-relative). Everything else is passed through as before.
+export const getCdnImage = (filename: string) => `${CDN_URL}/${filename.replace(/%27/gi, "'")}`;
 
 export const isDevServer = () => process.env.NODE_ENV === 'development';
 

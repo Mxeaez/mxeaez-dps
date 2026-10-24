@@ -692,6 +692,7 @@ against) are listed under the stats line instead of in the table.
 |---|---|
 | `src/lib/fracturedArchive/searchCandidates.ts` | The candidate pool (plain data, commented). **Edit this to change what is searched.** |
 | `src/lib/fracturedArchive/search.ts` | The search (pure): `runGearSearch`, `prunePool`, `spellsForMonster`, `searchRowToPlayer`. |
+| `src/lib/fracturedArchive/poolAudit.ts`, `poolAuditSources.ts` | Phase 25 pool audit + `POOL_EXCLUDED`; `node scripts/auditPool.mjs [--all]`, `PoolAudit.test.ts`. |
 | `src/worker/searchWorker.ts`, `searchWorkerClient.ts` | `WorkerRequestType.BEST_SETUP_SEARCH`: own worker per run, progress messages, cancel = terminate. |
 | `src/app/components/bestSetup/SearchView.tsx` | The tab (auto-run). |
 | `src/lib/fracturedArchive/loadoutIcons.ts`, `src/app/components/bestSetup/ItemIcons.tsx` | Item / boss icons (phase 12). |
@@ -704,10 +705,10 @@ against) are listed under the stats line instead of in the table.
 | Style | Weapons (variants) | Slot candidates (before pruning) | Full-set seeds |
 |---|---|---|---|
 | Melee | 14: Scythe, Obligator, Inquisitor's mace, Soulreaper axe, Osmumten's fang, Emberlight, Arclight, Burning claws, Voidwaker, Abyssal bludgeon, Noxious halberd, Elder maul, Dual macuahuitl, Ghrazi rapier (14 variants) | 31: Torva / Inquisitor's / Oathplate / Bandos / Blood Moon / Void, Neitiznot faceguard, Infernal + Fire cape, rancour / torture / blood fury, Ferocious / Void gloves, Avernic treads (max) / Primordial, Ultor / Bellator, Avernic defender, Rada's blessing 4 | Inquisitor's, Torva, Oathplate, Blood Moon (macuahuitl only), Void (melee) |
-| Ranged | 9: Twisted bow, Ascension crossbows (diamond / onyx ascension bolts (e)), Zaryte crossbow (ruby / diamond / onyx dragon bolts (e)), Bow of Faerdhinen (c), Venator bow, Eclipse atlatl (+ atlatl darts), Scorching bow, Toxic blowpipe (dragon darts), Heavy ballista (dragon javelins) (12 variants) | 22 + 4 atlatl-only: Masori (f) / Crystal / Eclipse Moon / Elite void, Dizana's quiver / Ava's, anguish, Zaryte / Void gloves, Avernic treads (max) / Pegasian, Venator ring, Twisted buckler (ZCB), Rada's; the atlatl also gets Infernal cape, rancour, Ferocious gloves, Ultor ring (it scales with melee strength) | Masori (f), Crystal (Bowfa only), Eclipse Moon (atlatl only), Elite void (ranged) |
-| Magic | 8: Tumeken's shadow, Zorya's tome, Harmonised Nightmare staff, Kodai wand, Sanguinesti staff, Purging staff, Accursed sceptre, Warped sceptre (8 variants) | 25: Ancestral / Virtus / Blue Moon / Void, Imbued Guthix cape, Occult, Confliction / Tormented / Void gloves, Avernic treads (max) / Eternal, Magus ring, Elidinis' ward (f) / Tome of Fire / Water / Earth (one-handed weapons), Rada's | Ancestral, Virtus (Kodai only), Blue Moon, Elite void (magic) |
+| Ranged | 9: Twisted bow, Ascension crossbows (diamond / onyx ascension bolts (e)), Zaryte crossbow (ruby / diamond / onyx dragon bolts (e)), Bow of Faerdhinen (c), Venator bow, Eclipse atlatl (+ atlatl darts), Scorching bow, Toxic blowpipe (dragon darts), Heavy ballista (dragon javelins); the three bows fire Seeking dragon arrows or dragon arrows (phase 25) (15 variants) | 23 + 4 atlatl-only: Masori (f) / Crystal / Eclipse Moon / Elite void, Dizana's quiver / Ava's, Necklace of rupture / anguish, Zaryte / Void gloves, Avernic treads (max) / Pegasian, Venator ring, Twisted buckler (ZCB), Rada's; the atlatl also gets Infernal cape, rancour, Ferocious gloves, Ultor ring (it scales with melee strength) | Masori (f), Crystal (Bowfa only), Eclipse Moon (atlatl only), Elite void (ranged) |
+| Magic | 8: Tumeken's shadow, Zorya's tome, Harmonised Nightmare staff, Kodai wand, Sanguinesti staff, Purging staff, Accursed sceptre, Warped sceptre (8 variants) | 26: Ancestral / Virtus / Blue Moon / Void, Imbued Guthix cape, Occult / Elemental amulet (kept for the autocasting Harmonised staff / Kodai / Purging staff, + Dragon hunter wand in CoX), Confliction / Tormented / Void gloves, Avernic treads (max) / Eternal, Magus ring, Elidinis' ward (f) / Tome of Fire / Water / Earth (one-handed weapons), Rada's | Ancestral, Virtus (Kodai only), Blue Moon, Elite void (magic) |
 
-34 weapon variants in total. Autocast spells (Kodai, Harmonised, Purging staff): Fire Surge (highest base) + the surge of
+37 weapon variants in total. Autocast spells (Kodai, Harmonised, Purging staff): Fire Surge (highest base) + the surge of
 the boss's elemental weakness, Dark Demonbane against demons, Ice Barrage (Kodai) unless the boss is immune to ancients
 (Archive Guardian). Constraints in the data/code: two-handed weapons (from the item data) never get a shield; weapons
 that fire ammo list it per weapon (the test checks the calculator accepts it); others use Rada's blessing in the ammo
@@ -716,7 +717,55 @@ calculator's dart picker.
 
 Left out on purpose: Dragon hunter lance (no dragons), Justiciar / Sunfire fanatic (no offensive effect), Lightbearer
 (spec only), "ruby ascension bolts (e)" (don't exist in the data — only diamond and onyx), Blue Moon spear (the
-calculator doesn't model the Blue Moon / Eclipse Moon set effects; the Blue Moon armour is still seeded).
+calculator doesn't model the Blue Moon / Eclipse Moon set effects; the Blue Moon armour is still seeded). Phase 25: the
+full list of deliberate omissions, with reasons, is `POOL_EXCLUDED` (below).
+
+### Pool audit (phase 25)
+
+User report: "It seems to not have Maggot King items — the Amulet of rupture isn't being used. Doesn't look like it's
+using Seeking dragon arrows either." (The item is the **Necklace of rupture**; there is no "Amulet of rupture".) Both
+were in `cdn/json/equipment.json` and fully modelled upstream since the baseline; only the pool lacked them.
+
+`src/lib/fracturedArchive/poolAudit.ts` (run: `node scripts/auditPool.mjs [--all]`; Jest: `PoolAudit.test.ts`, which
+fails on any new item) lists every item that
+1. **beats a pool item on stats** in some raid's pool / style group / slot: ≥ in every relevant stat and > in one, vs a
+   pool item nothing else in the pool beats (melee: stab | slash | crush + strength, one attack type at a time; ranged:
+   attack + strength; magic: attack + damage). Fired ammo is compared per bow / crossbow with the ammo that weapon
+   accepts. Weapons are not compared by stats (powered staves, bows and specs differ by built-in max hits and effects;
+   the rule flagged ~60 irrelevant weapons), or
+2. **has an upstream effect**: its exact name is a string in `PlayerVsNPCCalc.ts`, `BaseCalc.ts` or `Equipment.ts`
+   (307 names),
+
+and is in no pool, preset or spec loadout (by name or canonical id) and not in `POOL_EXCLUDED` (25 grouped entries,
+each with a reason: Bounty Hunter / Deadman / Leagues / wilderness / Barbarian Assault items, slayer-task and
+vampyre / turoth / kalphite gear, Barrows, obsidian, lower Void / Salve versions, god capes, single-element amulets,
+Brimstone ring, recoil rings, low-tier staves, Gauntlet weapons, pickaxes other than dragon / crystal, damage-spec and
+mid-tier weapons incl. the **Crimson kisten** (Maggot King's other unique: its *Brutal Swing* is a damage spec, which the
+model doesn't have yet — ROADMAP "Damage specs vs drain value"), non-dragon gem bolts).
+
+Before phase 25 the audit found exactly three gaps, now in every raid's pool:
+
+| Item | Wiki (2026-10-23) | Upstream model | Pool |
+|---|---|---|---|
+| Necklace of rupture (33639) | "upgraded variant of the necklace of anguish ... +5 ranged attack, +3 ranged strength, and +1 prayer bonus over the necklace of anguish"; Maggot King's elder venator fang | stats only (no effect; upstream's own Max Ranged / Bowfa presets already wear it) | ranged neck, first; anguish kept |
+| Seeking dragon arrow (33595) | "+20 ranged attack bonus over their regular variants, as well as increasing the player's minimum hit from 1 to 3 upon a successful hit"; 8 July 2026: "+20 ranged attack bonus when using bows" only | in `bow_t60` (Twisted / Venator / Scorching bow accept it, bonuses INCLUDED); accurate hits raised to ≥ 3 (`PlayerVsNPCCalc`, "Seeking" + INCLUDED ammo) | ammo option for the Twisted bow, Venator bow, Scorching bow (dragon arrows kept as a second variant) |
+| Elemental amulet (34428) | "adding a +2 max hit to elemental spells, which is added before magic damage and elemental weakness modifiers" | `hasMatchingElementalAmulet` → +2 base max hit | magic neck, kept for the autocasting weapons (+ DHW in CoX) |
+
+Presets: `MASORI_F` (every Masori preset, incl. CoX's Dragon hunter crossbow) wears **rupture**, and **Twisted bow (Masori)**
+fires **Seeking dragon arrows** (both better in every case; the spec model's ranged armour is that preset, so the
+Tonalztics spec player gets +5 ranged attack too). Upstream commit 89c3e25 "Add Seeking broad arrows to
+isWearingLeafBladedWeapon" is about turoths / kurasks (broad ammo) — irrelevant here, excluded.
+
+Effect on the numbers (default assumptions, Xarth): the overall top row is unchanged (Obligator 12.839 None / 13.917
+Solo & Team). Ranged-only: Team / Solo top Ascension crossbows + diamond (e) **10.012 → 10.430** (+4.2%, rupture);
+Twisted bow **9.834 → 10.379** (+5.5%, Seeking + rupture; dragon arrows + rupture 10.138); None: Twisted bow 7.585 →
+8.248 (+8.7%) and now beats the crossbows. Magic-only: Harmonised Nightmare staff + Tome of Water **6.291 → 6.633**
+(Team, +5.4%) with the Elemental amulet instead of Occult (+2 base max hit before magic damage beats Occult's +5%
+damage and +2 magic attack). With all styles,
+rupture appears in rows 7–9 (ranged rows; rancour / torture are melee necks, so they don't compete — the melee rows
+keep rancour). Plan totals (Team, defaults): FA 23:30.4 and ToA 14:20.2 unchanged (no ranged kit loadout); **CoX
+6:41.9 → 6:39.9** (ranged loadouts wear rupture, Scorching bow + Seeking); **ToB 7:32.2 → 7:32.4**, 1 slot free (was 28/28; the kit now carries
+an Ascension crossbows + rupture switch; the planner is a heuristic, so a bigger pool can cost a few tenths).
 
 ## Algorithm (search.ts)
 
@@ -800,5 +849,9 @@ fragments +2 (the Harmonised Fire Surge result).
   AG Flying, Jelly Solo, Ocellus P2 Team; reduced pool Obligator + Ascension crossbows); the Jelly Elite void find;
   top row == direct PlayerVsNPCCalc (DPS, max hit, TTK); no shield with 2h, defender with 1h; can't-hit list;
   determinism; cancellation after 30 evaluations; a toy 2-slot search equals brute force.
+- `PoolAudit.test.ts` (phase 25): the audit finds nothing missing; the rules flag known items with no exclusions; every
+  exclusion matches an item and no pool member is excluded. `ItemRefresh.test.ts`: rupture / Seeking / Elemental amulet
+  stats and effects (hand-derived rolls and max hits), pool and preset membership.
+- `node scripts/verifyPhase25.mjs`: Xarth Search rows with rupture / Seeking / Elemental amulet, apostrophe images 200.
 - `node scripts/verifyGearSearch.mjs`: full search for Xarth (None) and Ocellus P2 (Team) in the UI, top row equals the
   Jest numbers, wall time ≤ 15 s, the top row loaded into the main calculator shows the same DPS / max hit, Cancel works.

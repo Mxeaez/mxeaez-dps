@@ -26,6 +26,9 @@ import { ItemRef, StyleGroup } from '@/lib/fracturedArchive/presets';
  * of the boss's elemental weakness, demonbane spells only against demons, and Ice Barrage unless the boss is immune
  * (Archive Guardian).
  *
+ * Phase 25: every item that beats a pool item on stats or has an effect in the upstream code is either here or in
+ * POOL_EXCLUDED with a reason (src/lib/fracturedArchive/poolAudit.ts; PoolAudit.test.ts, scripts/auditPool.mjs).
+ *
  * Left out on purpose (task brief, phase 9): Dragon hunter lance (no dragons here), Justiciar / Sunfire fanatic
  * (no offensive effect), Lightbearer (spec-only), "Ruby ascension bolts (e)" (doesn't exist in the data — only diamond
  * and onyx), Ava's assembler / Tormented bracelet / Amulet of torture / blood fury / Fire cape / Primordial /
@@ -76,6 +79,13 @@ const DEMONBANE = ['Dark Demonbane'];
 const ANCIENT = ['Ice Barrage'];
 
 const DRAGON_ARROW: ItemRef = ['Dragon arrow', 'Unpoisoned'];
+/**
+ * Phase 25: "+20 ranged attack bonus over their regular variants, as well as increasing the player's minimum hit from
+ * 1 to 3 upon a successful hit" (wiki, Seeking dragon arrow). Upstream models both (bow_t60 ammo list, min-hit 3 on
+ * accurate hits in PlayerVsNPCCalc). Dragon arrows stay as a second option (cheaper; never better).
+ */
+const SEEKING_DRAGON_ARROW: ItemRef = 'Seeking dragon arrow';
+const BOW_ARROWS: ItemRef[] = [SEEKING_DRAGON_ARROW, DRAGON_ARROW];
 
 const VOID_BODY: Partial<Record<SearchSlot, ItemRef>> = {
   body: ['Elite void top', 'Normal'],
@@ -155,7 +165,7 @@ const MELEE: StylePool = {
 const RANGED: StylePool = {
   group: 'ranged',
   weapons: [
-    { weapon: 'Twisted bow', ammo: [DRAGON_ARROW] },
+    { weapon: 'Twisted bow', ammo: BOW_ARROWS },
     {
       weapon: 'Ascension crossbows',
       ammo: ['Diamond ascension bolts (e)', 'Onyx ascension bolts (e)'],
@@ -163,9 +173,9 @@ const RANGED: StylePool = {
     },
     { weapon: 'Zaryte crossbow', ammo: ['Ruby dragon bolts (e)', 'Diamond dragon bolts (e)', 'Onyx dragon bolts (e)'] },
     { weapon: 'Bow of Faerdhinen (c)', note: 'crystal armour set effect' },
-    { weapon: ['Venator bow', 'Charged'], ammo: [DRAGON_ARROW] },
+    { weapon: ['Venator bow', 'Charged'], ammo: BOW_ARROWS },
     { weapon: 'Eclipse atlatl', ammo: ['Atlatl dart'], note: 'scales with melee strength' },
-    { weapon: 'Scorching bow', ammo: [DRAGON_ARROW], note: 'demonbane' },
+    { weapon: 'Scorching bow', ammo: BOW_ARROWS, note: 'demonbane' },
     { weapon: ['Toxic blowpipe', 'Charged'], dart: ['Dragon dart', 'Unpoisoned'] },
     { weapon: 'Heavy ballista', ammo: [['Dragon javelin', 'Unpoisoned']] },
   ],
@@ -189,7 +199,8 @@ const RANGED: StylePool = {
       VOID_CANDIDATES.legs,
     ],
     cape: [{ ref: "Dizana's quiver", keep: true, note: '+10 ranged / +1 ranged str with fired ammo' }, { ref: "Ava's assembler" }],
-    neck: [{ ref: 'Necklace of anguish' }],
+    // phase 25: Necklace of rupture (Maggot King upgrade of anguish: +5 ranged, +3 ranged str); anguish kept
+    neck: [{ ref: 'Necklace of rupture' }, { ref: 'Necklace of anguish' }],
     hands: [{ ref: 'Zaryte vambraces' }, VOID_CANDIDATES.hands],
     feet: [{ ref: 'Avernic treads (max)' }, { ref: 'Pegasian boots' }],
     ring: [{ ref: 'Venator ring' }],
@@ -256,7 +267,14 @@ const MAGIC: StylePool = {
       VOID_CANDIDATES.legs,
     ],
     cape: [{ ref: 'Imbued Guthix cape' }],
-    neck: [{ ref: 'Occult necklace' }],
+    neck: [
+      { ref: 'Occult necklace' },
+      {
+        ref: 'Elemental amulet',
+        keep: ['Harmonised Nightmare staff', 'Kodai wand', 'Purging staff'],
+        note: 'phase 25: +2 base max hit for elemental spells (upstream; before magic damage)',
+      },
+    ],
     hands: [
       { ref: 'Confliction gauntlets', keep: true, note: 'second accuracy roll with one-handed magic weapons' },
       { ref: 'Tormented bracelet' },

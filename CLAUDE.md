@@ -10,7 +10,9 @@ finder. Read `ROADMAP.md` (phases, decisions, data gaps) and `PROGRESS.md` (what
 - Images in dev: `.env.development` sets `NEXT_PUBLIC_CDN_URL=https://dps.mxeaez.com/cdn` (our deployed copy of
   `cdn/`), because upstream's CDN lacks the raid-4 images. A `next dev` rewrite to it was tried and dropped: the deployed
   site 307-redirects `%27` (apostrophe) paths to a host-relative URL, which breaks behind a proxy. New images only show in
-  dev after a deploy.
+  dev after a deploy. Apostrophes must stay literal in image URLs (`Tumeken's shadow.png` → 200 directly); `getCdnImage`
+  turns any `%27` back into `'` (phase 25), and browsers don't encode `'` in paths. `scripts/verifyPhase25.mjs` checks it.
+- New items: `node scripts/auditPool.mjs` (and `PoolAudit.test.ts`) lists items the best-setup pools are missing.
 - `yarn test` (Jest, ~10 s) and `yarn lint` must both be green before a phase is called done.
 - `yarn build` → static export in `out/`. **Stop `yarn dev` first** — a build while the dev server runs corrupts its
   `.next` ("Cannot find module './NNNN.js'"); delete `.next` and restart `yarn dev` after building. Delete `.next`

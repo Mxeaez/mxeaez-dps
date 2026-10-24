@@ -214,8 +214,11 @@ describe('every raid\'s plan runs (reduced pool)', () => {
 const HEADLINES: [string, string, number][] = [
   ['fractured-archive', '23:30.4', 1410.4], // heart fix: Saturated heart pinned (was 23:18.8 without it)
   ['toa', '14:20.2', 860.2],
-  ['cox', '6:41.9', 401.9],
-  ['tob', '7:32.2', 452.2],
+  // phase 25 (rupture / Seeking dragon arrows / Elemental amulet in the pool): CoX 6:41.9 → 6:39.9 (the kit's ranged
+  // loadouts wear rupture, Scorching bow + Seeking); ToB 7:32.2 → 7:32.4 (kit picks an Ascension crossbows + rupture
+  // switch; the planner is a heuristic, so a bigger pool can cost a few tenths). FA / ToA unchanged (no ranged kit).
+  ['cox', '6:39.9', 399.9],
+  ['tob', '7:32.4', 452.4],
 ];
 
 (process.env.RUN_SLOW_TESTS ? describe : describe.skip)('headline plan totals (slow)', () => {
@@ -234,12 +237,16 @@ const HEADLINES: [string, string, number][] = [
  * total almost always moves one of them. Re-pin (and re-check docs/BEST_SETUP.md) when a change is intended.
  */
 const PINNED_ENCOUNTER_SECONDS: Record<string, Record<string, number>> = {
-  // phase 22 (2026-10-23); the FA kit's fastest route is AG → Bork + Smorks → Moia → Dagon'hai → Ocellus
+  // phase 22 (2026-10-23); the FA kit's fastest route is AG → Bork + Smorks → Moia → Dagon'hai → Ocellus.
+  // Phase 25: re-pinned — the kit's Twisted bow preset now has Seeking dragon arrows + Necklace of rupture (was dragon
+  // arrows + anguish): FA AG 201.8 → 191.8, Moia 72 → 68.9, Dagon'hai 240.1 → 233.8, Ocellus 800.5 → 776.5; ToA Zebak
+  // 126.9 → 120.8; ToB Maiden 57 → 55.5, Sotetseg 80.4 → 77, Xarpus 66.1 → 64.2; CoX Olm 204.5 → 204.4 (the other
+  // CoX encounters are not won by the Twisted bow preset in this kit).
   'fractured-archive': {
-    'archive-guardian': 201.8, 'bork-smorks': 221, moia: 72, dagonhai: 240.1, ocellus: 800.5,
+    'archive-guardian': 191.8, 'bork-smorks': 220.8, moia: 68.9, dagonhai: 233.8, ocellus: 776.5,
   },
   toa: {
-    'toa-kephri': 154.3, 'toa-zebak': 126.9, 'toa-akkha': 161.8, 'toa-baba': 103.1, 'toa-wardens': 349.9,
+    'toa-kephri': 153.8, 'toa-zebak': 120.8, 'toa-akkha': 160.9, 'toa-baba': 103.1, 'toa-wardens': 349.9,
   },
   cox: {
     'cox-tekton': 18.6,
@@ -251,10 +258,10 @@ const PINNED_ENCOUNTER_SECONDS: Record<string, Record<string, number>> = {
     'cox-muttadiles': 23.9,
     'cox-guardians': 36.4,
     'cox-ice-demon': 17.2,
-    'cox-olm': 204.5,
+    'cox-olm': 204.4,
   },
   tob: {
-    'tob-maiden': 57, 'tob-bloat': 39.2, 'tob-nylocas': 44.9, 'tob-sotetseg': 80.4, 'tob-xarpus': 66.1, 'tob-verzik': 271.5,
+    'tob-maiden': 55.5, 'tob-bloat': 39.2, 'tob-nylocas': 44.5, 'tob-sotetseg': 77, 'tob-xarpus': 64.2, 'tob-verzik': 271.5,
   },
 };
 

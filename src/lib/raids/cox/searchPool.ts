@@ -1,6 +1,6 @@
 import { StyleGroup } from '@/lib/fracturedArchive/presets';
 import {
-  CandidateItem, SEARCH_POOL, StylePool, WeaponCandidate,
+  CandidateItem, SEARCH_POOL, StylePool, WeaponCandidate, refName,
 } from '@/lib/fracturedArchive/searchCandidates';
 
 /**
@@ -30,11 +30,16 @@ const EXTRA_WEAPONS: Partial<Record<StyleGroup, WeaponCandidate[]>> = {
 
 const SALVE: CandidateItem = { ref: 'Salve amulet(ei)', keep: true, note: 'undead (Skeletal Mystics)' };
 
+/** Phase 25: the Elemental amulet (+2 elemental base max hit) is also kept for the Dragon hunter wand's Surges. */
+const withDhwKeep = (c: CandidateItem): CandidateItem => (refName(c.ref) === 'Elemental amulet' && Array.isArray(c.keep)
+  ? { ...c, keep: [...c.keep, 'Dragon hunter wand'] }
+  : c);
+
 // eslint-disable-next-line import/prefer-default-export
 export const COX_SEARCH_POOL: Record<StyleGroup, StylePool> = Object.fromEntries(
   (Object.keys(SEARCH_POOL) as StyleGroup[]).map((g) => [g, {
     ...SEARCH_POOL[g],
     weapons: [...SEARCH_POOL[g].weapons, ...(EXTRA_WEAPONS[g] || [])],
-    slots: { ...SEARCH_POOL[g].slots, neck: [...(SEARCH_POOL[g].slots.neck || []), SALVE] },
+    slots: { ...SEARCH_POOL[g].slots, neck: [...(SEARCH_POOL[g].slots.neck || []).map(withDhwKeep), SALVE] },
   }]),
 ) as Record<StyleGroup, StylePool>;
