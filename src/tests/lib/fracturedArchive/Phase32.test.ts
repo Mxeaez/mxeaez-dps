@@ -358,12 +358,13 @@ const A = DEFAULT_ASSUMPTIONS;
 const undrained = (key: string) => buildTargetMonster(findTarget(key), undefined, 'none', A).monster;
 const teamItem = (key: string, w: DrainLineItem['weapon']) => drainStateFor(undrained(key), 'team', A).line!.items.find((i) => i.weapon === w)!;
 
-describe('drain line wording: "needs N landed hits · N specs (C carriers), S swings · P%"', () => {
-  test('AG Flying (Team, default carriers): needs 4 landed hits · 4 specs (2 carriers), 8 swings · 98%', () => {
+// phase 34: "S swings" → "= S attacks, L must land" (Tonalztics; Elder maul / DWH / BGS: specs only)
+describe('drain line wording: "needs N landed hits · N specs (C carriers) = S attacks, N must land · P%"', () => {
+  test('AG Flying (Team, default carriers): needs 4 landed hits · 4 specs (2 carriers) = 8 attacks, 4 must land · 98%', () => {
     const tona = teamItem('ag-flying', 'tonalztics');
-    expect(neededText(tona)).toBe('needs 4 landed hits · 4 specs (2 carriers), 8 swings · 98%');
+    expect(neededText(tona)).toBe('needs 4 landed hits · 4 specs (2 carriers) = 8 attacks, 4 must land · 98%');
     // the tooltip explains the units and the %
-    expect(tona.title).toMatch(/^needs 4 landed hits · 4 specs \(2 carriers\), 8 swings · 98% \(4 landed hits of Tonalztics alone take Def 260 → 156; a charged Tonalztics spec swings twice and each swing can miss; the % is the chance the Defence reaches the floor in the first round with these specs and the other weapons' specs/);
+    expect(tona.title).toMatch(/^needs 4 landed hits · 4 specs \(2 carriers\) = 8 attacks, 4 must land · 98% \(4 landed hits of Tonalztics alone take Def 260 → 156; a charged Tonalztics spec attacks twice and each attack can miss; the % is the chance the Defence reaches the floor in the first round with these specs and the other weapons' specs/);
     // what one landed hit drains: trunc(Magic / 8) = 31: 260 → 229 → 198 → 167 (3 hits, above the floor 156) → 156
     const model = drainModel(undrained('ag-flying'), A);
     expect([model.def, model.floor, Math.trunc(model.magicLevel / 8)]).toEqual([260, 156, 31]);
@@ -373,10 +374,10 @@ describe('drain line wording: "needs N landed hits · N specs (C carriers), S sw
 
   test('the team part: shown when the team brings more ("team: 4 specs (2 carriers) · >99.9%"), else left out', () => {
     expect(neededText(teamItem('xarth', 'elderMaul'))).toBe('not needed · team: 4 specs (2 carriers) · >99.9%');
-    expect(neededText(teamItem('xarth', 'tonalztics'))).toBe('needs 2 landed hits · 2 specs (1 carrier), 4 swings · 97% · team: 4 specs (2 carriers) · >99.9%');
+    expect(neededText(teamItem('xarth', 'tonalztics'))).toBe('needs 2 landed hits · 2 specs (1 carrier) = 4 attacks, 2 must land · 97% · team: 4 specs (2 carriers) · >99.9%');
     expect(neededText(teamItem('bork', 'elderMaul'))).toBe('needs 2 landed specs · 3 specs (2 carriers) · 98% · team: 4 specs (2 carriers) · 99.6%');
-    // Bork: Tonalztics alone would need 11 landed hits (> 6 swings): counted after the maul's drains (Def 195)
-    expect(neededText(teamItem('bork', 'tonalztics'))).toBe('needs 2 landed hits once 1 Elder maul spec lands (Def 195) · 3 specs (2 carriers), 6 swings · 97% · team: 4 specs (2 carriers) · 99.6%');
+    // Bork: Tonalztics alone would need 11 landed hits (> 6 attacks): counted after the maul's drains (Def 195)
+    expect(neededText(teamItem('bork', 'tonalztics'))).toBe('needs 2 landed hits once 1 Elder maul spec lands (Def 195) · 3 specs (2 carriers) = 6 attacks, 2 must land · 97% · team: 4 specs (2 carriers) · 99.6%');
     // Eye of Ayak: magic defence drained
     expect(neededText(teamItem('ag-flying', 'ayak'))).toBe('needs ≈ 39 magic defence drained · 2 specs (1 carrier) · → magic def 91');
   });
@@ -396,7 +397,7 @@ describe('drain line wording: "needs N landed hits · N specs (C carriers), S sw
     });
   });
 
-  test('Solo lines: no carriers — "needs 3 landed hits · 2 specs, 4 swings · → Def 167" (AG Flying, Tonalztics only)', () => {
+  test('Solo lines: no carriers — "needs 3 landed hits · 2 specs = 4 attacks, 3 must land · → Def 167" (AG Flying, Tonalztics only)', () => {
     const d = drainStateFor(undrained('ag-flying'), 'solo', {
       ...A,
       mySpecs: {
@@ -404,12 +405,12 @@ describe('drain line wording: "needs N landed hits · N specs (C carriers), S sw
       },
     });
     const tona = d.line!.items.find((i) => i.weapon === 'tonalztics')!;
-    expect(neededText(tona)).toBe('needs 3 landed hits · 2 specs, 4 swings · → Def 167');
+    expect(neededText(tona)).toBe('needs 3 landed hits · 2 specs = 4 attacks, 3 must land · → Def 167');
     // review: no % on the line ("→ Def 167"), so the tooltip doesn't explain one
     expect(tona.title).not.toMatch(/the %/);
     const xarth = drainStateFor(undrained('xarth'), 'solo', { ...A, mySpecs: { ...A.mySpecs, elderMaul: false, tonalztics: true } });
     const xt = xarth.line!.items.find((i) => i.weapon === 'tonalztics')!;
-    expect(neededText(xt)).toBe('needs 2 landed hits · 2 specs, 4 swings · 97%');
+    expect(neededText(xt)).toBe('needs 2 landed hits · 2 specs = 4 attacks, 2 must land · 97%');
     expect(xt.title).toMatch(/the % is the chance the Defence reaches the floor with your specs/);
     // Team: the % counts every weapon's specs (Bork maul 98% includes the Tonalztics)
     expect(teamItem('bork', 'elderMaul').title).toMatch(/the % is the chance the Defence reaches the floor in the first round with these specs and the other weapons' specs/);
@@ -419,8 +420,8 @@ describe('drain line wording: "needs N landed hits · N specs (C carriers), S sw
   test('text variants: unreachable, needs the other drains too', () => {
     const base = teamItem('ag-flying', 'tonalztics');
     expect(neededText({ ...base, needed: null })).toBe('floor not reachable · team: 4 specs (2 carriers) · 98%');
-    expect(neededText({ ...base, landed: null })).toBe('needs the other drains too · 4 specs (2 carriers), 8 swings · 98%');
-    expect(neededText({ ...base, count: 6 })).toBe('needs 4 landed hits · 4 specs (2 carriers), 8 swings · 98% · team: 6 specs (3 carriers) · 98%');
+    expect(neededText({ ...base, landed: null })).toBe('needs the other drains too · 4 specs (2 carriers) = 8 attacks · 98%');
+    expect(neededText({ ...base, count: 6 })).toBe('needs 4 landed hits · 4 specs (2 carriers) = 8 attacks, 4 must land · 98% · team: 6 specs (3 carriers) · 98%');
   });
 });
 

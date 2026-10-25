@@ -1,12 +1,14 @@
 import React from 'react';
-import { countText, DrainLine, neededText } from '@/lib/fracturedArchive/drainLine';
+import {
+  briefItems, briefText, countText, DrainLine, DrainLineItem, neededText,
+} from '@/lib/fracturedArchive/drainLine';
 import { equipmentImageUrl } from '@/lib/fracturedArchive/loadoutIcons';
 import { ItemIcon } from '@/app/components/bestSetup/ItemIcons';
 
 // Phase 23: a drain plan as "[icon] ×N" per weapon with the per-spec hit chance under each icon, then
 // "→ Def 156 · Magic def 91". The full plan text is the tooltip. Data: src/lib/fracturedArchive/drainLine.ts.
 // Phase 29: Tonalztics shows its hits ("×2 (4 hits)"). Phase 32: planned lines read "needs 4 landed hits · 4 specs (2
-// carriers), 8 swings · 98%" (+ " · team: 6 specs (3 carriers) · 99.8%" when the team brings more; Solo: no carriers).
+// carriers), 8 swings · 98%"; phase 34: "4 specs (2 carriers) = 8 attacks, 4 must land" (+ " · team: 6 specs (3 carriers) · 99.8%" when the team brings more; Solo: no carriers).
 
 const pct = (p: number) => `${Math.round(p * 100)}%`;
 
@@ -67,5 +69,42 @@ const DrainLineView: React.FC<{
     </span>
   );
 };
+
+/**
+ * Phase 34: the short drain line: per weapon a large icon and one bold number ("4 hits", "2 specs", "≈ 39 magic def";
+ * drainLine.ts `briefText`), then a small "→ Def 156". The sentence form (DrainLineView) is the tooltip / details.
+ */
+export const DrainBrief: React.FC<{
+  items: DrainLineItem[],
+  result?: string,
+  /** Tooltip of the whole line (the sentence form). */
+  title?: string,
+  size?: number,
+  className?: string,
+}> = ({
+  items, result, title, size = 26, className,
+}) => (
+  <span className={`inline-flex flex-wrap items-center gap-x-3 gap-y-0.5 ${className ?? ''}`} title={title} data-testid="drain-brief">
+    {items.length === 0 && <span className="text-gray-500 dark:text-gray-400">no specs</span>}
+    {briefItems(items).map((it) => {
+      const text = briefText(it);
+      const dim = it.count === 0 || text === 'not needed';
+      return (
+        <span
+          key={it.weapon}
+          className={`inline-flex items-center gap-1 ${dim ? 'opacity-50' : ''}`}
+          title={it.title}
+          data-testid="drain-brief-item"
+          data-weapon={it.weapon}
+          data-count={it.count}
+        >
+          <ItemIcon name={it.label} src={equipmentImageUrl(it.image)} size={size} title={it.title} />
+          <span className="font-bold whitespace-nowrap" data-testid="drain-brief-count">{it.count === 0 && it.short ? '× 0 (no energy)' : text}</span>
+        </span>
+      );
+    })}
+    {result && <span className="text-xs text-gray-600 dark:text-gray-300 whitespace-nowrap" data-testid="drain-brief-result">{result}</span>}
+  </span>
+);
 
 export default DrainLineView;

@@ -212,7 +212,7 @@ export const drainStateFor = (m: Monster, id: DrainStateId, assumptions: BestSet
       wanted = { ayak: model.canHit.ayak && model.magicDef > 0 ? Math.max(0, Math.floor(mySpecs.ayak)) : 0 };
       // phase 29: the planner's Ayak specs stop at P(magic def 0) ≥ threshold
       if (mySpecs.ayakAuto) wanted = { ayak: ayakSpecsToThreshold(model, wanted.ayak ?? 0, threshold) };
-      // phase 32: "needs 4 landed hits · 4 specs, 8 swings · 98%"
+      // phase 32: "needs 4 landed hits · 4 specs = 8 attacks, 4 must land · 98%" (phase 34 wording)
       needed = soloNeeds(model, p);
     } else {
       const p = teamSpecPlan(model, {

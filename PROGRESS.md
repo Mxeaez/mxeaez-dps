@@ -3,6 +3,51 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 34 — Readability, all three tabs (2026-10-24)
+
+UI only: no number changes. Rule (user): "if it doesn't provide useful information we should hide it" — the default view
+shows what to wear, what to spec, how many and how long, as icons and bold numbers; the rest is in tooltips or sections
+closed by default. Full map of where every old element went: BEST_SETUP *Reading the Plan tab (phase 34)*.
+
+- **Short drain form** (drainLine.ts `briefText` / `briefItems` / `briefResultText`, DrainLineView `DrainBrief`): a
+  large weapon icon and one bold number per weapon — Tonalztics **4 hits** (landed hits needed), Elder maul / DWH **2
+  specs** (landed), BGS **N specs**, Eye of Ayak **≈ 39 magic def** — then "→ Def 156"; "not needed" weapons left out
+  (tooltip keeps them). Search drain box header "[Tonalztics] 4 hits → Def 156 · Magic def 130"; Summary cells; the
+  Plan briefing.
+- **Plan tab**: a raid briefing at the top of the result (`PlanBriefing.tsx`, `briefing.ts` `briefingRows`): boss
+  image, the kit loadouts used as icons (weapon + items, style colour; phone: weapon only), specs at the start (from
+  phase 33's drain events; Sotetseg "× 3"; carriers not repeated; the phase 33 line is the tooltip), seconds; then
+  "Bring" + your share, the worn / inventory grids. Closed sections: **Why this kit** (kit loadouts, potions, ring +
+  others, spec note, rejected / alternatives, stats), **Spec plan** (Solo list / team briefing table, added in order,
+  per-boss minimum, notes), **Per-phase details** (phase 33's encounter table with its toggle, routes). Inputs: the
+  intro and ring summary are tooltips; Route, the potions note and the raid items moved to Advanced (plan).
+- **Search**: drain sentence, hit chances, budget, chance of the floor and the per-boss table under the box's "details";
+  ranked-at / best preset / evaluations / can't-hit under "Search details"; "vs best preset", max hit, accuracy, item
+  list and "search started from" are tooltips. **Summary**: best preset in a tooltip, "↗" load button, drains as icon +
+  number (the sentence and "(fight ≈ 15 s → N specs)" are the tooltip).
+- **Assumptions**: potion / Heart pickers are custom icon lists (`IconSelect.tsx`, `potionChoices.ts`: relevant
+  choices first, the rest under "more"; the same options as the old selects), Zeal with its prayer icon, Elemental
+  fragments → Advanced, the Ayak hint an "ⓘ" tooltip, "from the last plan" / ring-lock notes screen-reader text.
+- **Item icons everywhere** (`ItemNames` / `itemImageByName`): "uses: …" badges, Excluded, potions, rings, Worn / Switch
+  names, alternatives (`PlanRejection.weapons`, new optional field), spec note, added in order, your share, raid items,
+  always-brought warning, "+ heart" buttons.
+- **Drain-line wording** (tooltip / per-phase rows): "4 specs (2 carriers), 8 swings" → "4 specs (2 carriers) = 8
+  attacks, 4 must land" (Solo "4 specs = 8 attacks, 4 must land"; maul / DWH / BGS specs only); tooltip "attacks twice
+  and each attack can miss"; glossary updated. Phase23 / 29 / 32 tests and verifyPhase23 / 29 / 30 / 32 re-pinned to
+  the new text only.
+- Tests: new `Phase34.test.ts` (briefText per weapon; rewording; briefing rows FA Team / Solo, ToB Sotetseg × 3; potion
+  lists = the old options; render-level icon checks on DrainBrief / PlanBriefing / KitLoadoutIcons / ItemNames; slow:
+  the FA Team plan 21:44.4, 6 free, briefing, phase 33 encounter lines, "Why this kit" / "Spec plan" strings).
+  `yarn test` 1456 (1437 pass / 19 skipped); `RUN_SLOW_TESTS=1` CrossRaid + Phase27-34 193 / 193; lint, tsc clean.
+- Playwright: before / after screenshots `phase34-before-{search,plan,summary,plan-phone}.png`,
+  `phase34-after-{search,plan,summary,plan-phone,plan-details}.png` (`scripts/phase34Shots.mjs before|after`); new
+  `verifyPhase34` all OK (default views have no sentence-form drain text, sections open the old content, icons, no
+  overflow at 390 px; the 3 px upstream top bar overflow at 390 px is pre-existing, also on the calculator page); the
+  phase 33 page's plan strings were dumped before the change and compared after: identical except the drain rewording
+  and "Why this kit" now being the section title. verifyPhase21 / 23 / 26 / 27 / 29 / 30 / 31 / 32 / 33 all OK (verifyPhase32 counts the loadout's item-row icons, not the new weapon icon by its name) (they open the moved sections first:
+  `scripts/phase34Sections.mjs`); tracked screenshots restored.
+- Docs: BEST_SETUP *Reading the Plan tab (phase 34)* (layout, where each element went, icons), ROADMAP 34 done.
+
 ## Phase 33 — Specs follow the plan; one drain line per encounter (2026-10-24)
 
 UI / defaults only; no plan total moves (the Plan tab already defaulted to "Planner decides").

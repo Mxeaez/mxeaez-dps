@@ -19,6 +19,7 @@
  * Screenshots docs/screenshots/phase29-*.png.
  */
 import { chromium } from '@playwright/test';
+import { openSections } from './phase34Sections.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
 
@@ -35,11 +36,13 @@ const waitPlan = async (page) => {
   await page.waitForTimeout(1200);
   await page.locator('[data-testid="plan-progress"]').waitFor({ state: 'detached', timeout: 900000 });
   await page.locator('[data-testid="plan-result"]').waitFor({ timeout: 900000 });
+  await openSections(page); // phase 34: open the sections what this script reads moved into
 };
 const waitSearch = async (page) => {
   await page.waitForTimeout(800);
   await page.locator('[data-testid="search-progress"]').waitFor({ state: 'detached', timeout: 300000 });
   await page.locator('[data-testid="search-results"]').waitFor({ timeout: 300000 });
+  await openSections(page); // phase 34: open the sections what this script reads moved into
 };
 const text = async (loc) => (await loc.innerText()).replace(/\s+/g, ' ').trim();
 const lightbearer = async (page) => {
@@ -80,7 +83,7 @@ const main = async () => {
   // review 2: "needed ×3 (86%) · …"; phase 30: "needed" reaches the threshold too when the team's specs do:
   // "needed ×4 (98%) · team brings ×4 (8 hits, 98%)"; phase 32: "needs 4 landed hits · 4 specs (2 carriers), 8 swings ·
   // 98%" (Search uses the Advanced 2 / 2 / 1 before any plan)
-  check(/needs 4 landed hits · 4 specs \(2 carriers\), 8 swings · 98%/.test(panelTona) && !/team:/.test(panelTona), `Search drain box (AG Flying, Team): "${panelTona}"`);
+  check(/needs 4 landed hits · 4 specs \(2 carriers\) = 8 attacks, 4 must land · 98%/.test(panelTona) && !/team:/.test(panelTona), `Search drain box (AG Flying, Team): "${panelTona}"`);
   check(/run a plan to fill these/.test((await page.locator('[data-testid="team-carriers-note"]').textContent())), 'carriers note before any plan: "run a plan to fill these"');
   check(await page.locator('[data-testid="team-carrier-mode"]').inputValue() === 'auto', 'Team carriers: "Planner decides" by default');
   check(await page.locator('#bs-team-elderMaul').isDisabled(), 'carrier counts disabled while the planner decides');
@@ -114,7 +117,7 @@ const main = async () => {
   // AG Flying drain line in the encounter table (phase 33: the phase rows are under "per-phase details")
   if (await page.locator('[data-testid="plan-phase-toggle"]').getAttribute('aria-expanded') !== 'true') await page.locator('[data-testid="plan-phase-toggle"]').click();
   const agDrains = await text(page.locator('[data-testid="plan-phase-row"][data-target="ag-flying"] [data-testid="plan-phase-drains"]').first());
-  check(/needs 4 landed hits · 4 specs \(2 carriers\), 8 swings · 98%/.test(agDrains), `AG Flying (Team) drain line: "${agDrains}"`);
+  check(/needs 4 landed hits · 4 specs \(2 carriers\) = 8 attacks, 4 must land · 98%/.test(agDrains), `AG Flying (Team) drain line: "${agDrains}"`);
   const carriers = Object.fromEntries(rows.map((r) => [r.weapon, r.carriers]));
   check(carriers.elderMaul === 2 && carriers.tonalztics === 2 && rows.length === 2, `planner carriers: ${JSON.stringify(carriers)} (2 Elder maul + 2 Tonalztics)`);
   check(/picked by the planner/.test(await text(page.locator('[data-testid="plan-team-roles"] .font-semibold').first())), 'briefing says "picked by the planner"');

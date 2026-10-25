@@ -14,6 +14,7 @@
  * Screenshots docs/screenshots/phase26-*.png.
  */
 import { chromium } from '@playwright/test';
+import { openSections } from './phase34Sections.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
 const KEY = 'mxeaez-dps:not-owned';
@@ -33,11 +34,13 @@ const waitSearch = async (page) => {
   await page.waitForTimeout(800);
   await page.locator('[data-testid="search-progress"]').waitFor({ state: 'detached', timeout: 300000 });
   await page.locator('[data-testid="search-results"]').waitFor({ timeout: 300000 });
+  await openSections(page); // phase 34: open the sections what this script reads moved into
 };
 const waitPlan = async (page) => {
   await page.waitForTimeout(1000);
   await page.locator('[data-testid="plan-progress"]').waitFor({ state: 'detached', timeout: 600000 });
   await page.locator('[data-testid="plan-result"]').waitFor({ timeout: 600000 });
+  await openSections(page); // phase 34: open the sections what this script reads moved into
 };
 const readRows = (page) => page.locator('[data-testid="search-row"]').evaluateAll((rows) => rows.map((r) => ({
   dps: Number(r.querySelector('[data-testid="dps"]').textContent.trim()),

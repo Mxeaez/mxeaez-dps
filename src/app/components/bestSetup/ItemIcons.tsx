@@ -1,5 +1,5 @@
 import React from 'react';
-import { LoadoutIcon, WeaponPart } from '@/lib/fracturedArchive/loadoutIcons';
+import { itemImageByName, LoadoutIcon, WeaponPart } from '@/lib/fracturedArchive/loadoutIcons';
 
 // Small item icons for the /best-setup tables (phase 12). Image URLs: src/lib/fracturedArchive/loadoutIcons.ts.
 
@@ -51,4 +51,28 @@ export const LoadoutIconRow: React.FC<{ icons: LoadoutIcon[], size?: number }> =
       <ItemIcon key={ic.slot} name={ic.name} title={`${ic.name} (${ic.slot})`} src={ic.imageUrl} size={size} />
     ))}
   </div>
+);
+
+/**
+ * Phase 34: item names with an icon before each ("uses: [icon] Obligator, [icon] Ascension crossbows"). The text is the
+ * names joined by `sep`, exactly as before (icons add no text). `srcOf` overrides the equipment lookup (potions, hearts).
+ */
+export const ItemNames: React.FC<{
+  names: string[], sep?: string, size?: number, srcOf?: (name: string) => string | null | undefined, className?: string,
+}> = ({
+  names, sep = ', ', size = 16, srcOf, className,
+}) => (
+  <span className={`inline ${className ?? ''}`} data-testid="item-names">
+    {names.map((n, i) => (
+      // eslint-disable-next-line react/no-array-index-key
+      <React.Fragment key={`${n}|${i}`}>
+        {i > 0 && sep}
+        {/* plain inline (not flex): flex items would add line breaks to the text */}
+        <span className="whitespace-nowrap [&>img]:align-middle [&>img]:mr-0.5">
+          <ItemIcon name={n} src={(srcOf ? srcOf(n) : undefined) ?? itemImageByName(n)} size={size} />
+          {n}
+        </span>
+      </React.Fragment>
+    ))}
+  </span>
 );

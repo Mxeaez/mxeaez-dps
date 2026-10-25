@@ -17,6 +17,7 @@
  */
 import { existsSync } from 'node:fs';
 import { chromium } from '@playwright/test';
+import { openSections } from './phase34Sections.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
 
@@ -34,11 +35,13 @@ const waitPlan = async (page) => {
   await page.waitForTimeout(1200);
   await page.locator('[data-testid="plan-progress"]').waitFor({ state: 'detached', timeout: 900000 });
   await page.locator('[data-testid="plan-result"]').waitFor({ timeout: 900000 });
+  await openSections(page); // phase 34: open the sections what this script reads moved into
 };
 const waitSearch = async (page) => {
   await page.waitForTimeout(800);
   await page.locator('[data-testid="search-progress"]').waitFor({ state: 'detached', timeout: 300000 });
   await page.locator('[data-testid="search-results"]').waitFor({ timeout: 300000 });
+  await openSections(page); // phase 34: open the sections what this script reads moved into
 };
 const openPlan = async (page, raid) => {
   await page.locator(`[data-testid="raid-tab-${raid}"]`).click();
@@ -66,20 +69,20 @@ const main = async () => {
   await page.locator('[data-testid="boss-select"]').selectOption('ag-flying');
   await waitSearch(page);
   const ag = await text(drainItem('tonalztics'));
-  check(/needs 4 landed hits · 4 specs \(2 carriers\), 8 swings · 98%/.test(ag), `AG Flying Tonalztics: "${ag}"`);
+  check(/needs 4 landed hits · 4 specs \(2 carriers\) = 8 attacks, 4 must land · 98%/.test(ag), `AG Flying Tonalztics: "${ag}"`);
   const table = await text(page.locator('[data-testid="team-table"] summary'));
   check(/^Per boss minimum at 95% \(for reference\): 6-man/.test(table), `carriers table summary: "${table}"`);
   await page.locator('[data-testid="boss-select"]').selectOption('xarth');
   await waitSearch(page);
   const xMaul = await text(drainItem('elderMaul'));
   const xTona = await text(drainItem('tonalztics'));
-  check(/not needed · team: 4 specs \(2 carriers\) · >99\.9%/.test(xMaul) && /needs 2 landed hits · 2 specs \(1 carrier\), 4 swings · 97% · team: 4 specs \(2 carriers\) · >99\.9%/.test(xTona), `Xarth: "${xMaul}" | "${xTona}"`);
+  check(/not needed · team: 4 specs \(2 carriers\) · >99\.9%/.test(xMaul) && /needs 2 landed hits · 2 specs \(1 carrier\) = 4 attacks, 2 must land · 97% · team: 4 specs \(2 carriers\) · >99\.9%/.test(xTona), `Xarth: "${xMaul}" | "${xTona}"`);
   await shot(page, 'search-xarth');
   await page.locator('[data-testid="boss-select"]').selectOption('bork');
   await waitSearch(page);
   const bMaul = await text(drainItem('elderMaul'));
   const bTona = await text(drainItem('tonalztics'));
-  check(/needs 2 landed specs · 3 specs \(2 carriers\) · 98% · team: 4 specs \(2 carriers\) · 99\.6%/.test(bMaul) && /needs 2 landed hits once 1 Elder maul spec lands \(Def 195\) · 3 specs \(2 carriers\), 6 swings · 97% · team: 4 specs \(2 carriers\) · 99\.6%/.test(bTona), `Bork: "${bMaul}" | "${bTona}"`);
+  check(/needs 2 landed specs · 3 specs \(2 carriers\) · 98% · team: 4 specs \(2 carriers\) · 99\.6%/.test(bMaul) && /needs 2 landed hits once 1 Elder maul spec lands \(Def 195\) · 3 specs \(2 carriers\) = 6 attacks, 2 must land · 97% · team: 4 specs \(2 carriers\) · 99\.6%/.test(bTona), `Bork: "${bMaul}" | "${bTona}"`);
 
   // --- FA Plan inputs
   await page.locator('[data-testid="plan-tab"]').click();

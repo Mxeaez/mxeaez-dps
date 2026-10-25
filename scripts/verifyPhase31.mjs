@@ -14,6 +14,7 @@
  * Screenshots docs/screenshots/phase31-*.png.
  */
 import { chromium } from '@playwright/test';
+import { openSections } from './phase34Sections.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
 const FA_TOTAL = process.env.FA_TOTAL || '21:44.4';
@@ -34,6 +35,7 @@ const waitPlan = async (page) => {
   await page.waitForTimeout(1200);
   await page.locator('[data-testid="plan-progress"]').waitFor({ state: 'detached', timeout: 900000 });
   await page.locator('[data-testid="plan-result"]').waitFor({ timeout: 900000 });
+  await openSections(page); // phase 34: open the sections what this script reads moved into
 };
 const pinnedNames = async (page) => (await page.locator('[data-testid="pinned-item"]').allInnerTexts()).map((t) => t.replace('×', '').trim());
 const cells = async (page) => page.locator('[data-testid="inventory-cell"]').evaluateAll((els) => els.map((e) => ({ kind: e.dataset.kind, label: e.dataset.label })));
@@ -89,6 +91,7 @@ const main = async () => {
   await page.locator('[data-testid="plan-tab"]').click();
   await page.locator('[data-testid="plan-view"]').waitFor({ timeout: 30000 });
   check((await pinnedNames(page)).length === 0, `FA pinned list empty (${(await pinnedNames(page)).join(', ') || 'none'})`);
+  await openSections(page, ['plan-advanced']); // phase 34: the potions note moved to Advanced (plan)
   const note = await text(page.locator('[data-testid="plan-potions-note"]'));
   check(/the Saturated heart if magic/.test(note), `potions note: "${note}"`);
   await waitPlan(page);

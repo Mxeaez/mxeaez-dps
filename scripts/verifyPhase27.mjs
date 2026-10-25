@@ -14,6 +14,7 @@
  * Screenshots docs/screenshots/phase27-*.png.
  */
 import { chromium } from '@playwright/test';
+import { openSections } from './phase34Sections.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
 
@@ -30,6 +31,7 @@ const waitPlan = async (page) => {
   await page.waitForTimeout(1200);
   await page.locator('[data-testid="plan-progress"]').waitFor({ state: 'detached', timeout: 900000 });
   await page.locator('[data-testid="plan-result"]').waitFor({ timeout: 900000 });
+  await openSections(page); // phase 34: open the sections what this script reads moved into
 };
 const readPlan = async (page) => ({
   total: (await page.locator('[data-testid="plan-total"]').innerText()).trim(),
@@ -76,6 +78,7 @@ const main = async () => {
   check(JSON.stringify(supplyIds) === JSON.stringify(['brew', 'restore', 'food', 'other']), `comfort supply inputs: ${supplyIds.join(', ')} (no ranging / super combat)`);
   const supLabel = await page.locator('[data-testid="plan-supplies"]').innerText();
   check(/Comfort supplies \(your call, 10 slots\)/.test(supLabel), 'label "Comfort supplies (your call, 10 slots)" (6 brews + 4 restores)');
+  await openSections(page, ['plan-advanced']); // phase 34: the potions note moved to Advanced (plan)
   check(/Potions: chosen from the kit/.test(await page.locator('[data-testid="plan-potions-note"]').innerText()), 'potions note shown');
   // phase 30: the ring policy left Advanced: a dropdown with the inputs, its summary next to it
   check(await page.locator('[data-testid="plan-ring-policy"]').isVisible() && await page.locator('[data-testid="plan-ring-policy"]').inputValue() === 'camp-one', 'ring policy dropdown with the inputs (not under Advanced): Camp one ring');
@@ -102,7 +105,7 @@ const main = async () => {
   await page.locator('#plan-supply-brew').fill('6');
   await waitPlan(page);
   check(camp.cells.length === 28, '28 inventory cells');
-  await page.locator('[data-testid="plan-advanced-toggle"]').click();
+  await openSections(page, ['plan-advanced']); // phase 34: opened above already (a click would close it)
   await shot(page, 'fa-camp-one');
 
   // --- allow switches
@@ -132,6 +135,7 @@ const main = async () => {
   await page.waitForTimeout(500);
   await page.locator('[data-testid="plan-tab"]').click();
   await page.locator('[data-testid="plan-view"]').waitFor({ timeout: 30000 });
+  await openSections(page, ['plan-advanced']);
   check(/raid's own potion/.test(await page.locator('[data-testid="plan-potions-note"]').innerText()), 'ToA: the raid potion note');
   await waitPlan(page);
   const toa = await readPlan(page);

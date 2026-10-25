@@ -19,7 +19,7 @@ import {
 import { SearchJob, startGearSearch } from '@/worker/searchWorkerClient';
 import openInCalculator from '@/app/components/bestSetup/loadIntoCalculator';
 import { searchRowIcons, searchRowWeaponParts } from '@/lib/fracturedArchive/loadoutIcons';
-import { LoadoutIconRow, WeaponLine } from '@/app/components/bestSetup/ItemIcons';
+import { ItemNames, LoadoutIconRow, WeaponLine } from '@/app/components/bestSetup/ItemIcons';
 import DPS_TEXT_CLASS from '@/app/components/bestSetup/styles';
 import DefenceIcon from '@/public/img/bonuses/defence.png';
 import MagicIcon from '@/public/img/bonuses/magic.png';
@@ -31,6 +31,9 @@ import { loadoutUsesUnowned, unownedLabel } from '@/lib/fracturedArchive/ownersh
 // Phase 12: the default tab; runs automatically (debounced) when the page opens and whenever the inputs change.
 // Phase 26: rows that use an item on the "Items I don't own" list are greyed with a "uses: …" badge; "Only items I
 // own" searches the pool without them instead (OnlyOwnedToggle, shared with the Summary tab).
+// Phase 34 (readability): rows show weapon, DPS, TTK, style, icons and the "uses: …" badge; the ranking Defence, the
+// best preset, evaluation counts / timings and the can't-hit list are under "Search details"; the gain over the best
+// preset, max hit, accuracy, the item list and "search started from" are tooltips.
 
 /** Delay between the last input change and the automatic search. */
 export const AUTO_RUN_DEBOUNCE_MS = 300;
@@ -173,7 +176,7 @@ const SearchView: React.FC<{
 
   return (
     <div className="flex flex-col gap-2" data-testid="search-view">
-      <div className="flex flex-wrap gap-3 items-center text-sm">
+      <div className="flex flex-wrap gap-3 items-center text-sm" title="Tries every end-game item in every slot (weapons, ammo, styles, spells) against this boss and drain state.">
         <label htmlFor="bs-search-styles" className="flex items-center gap-1">
           Styles
           <select
@@ -196,9 +199,6 @@ const SearchView: React.FC<{
           Best per weapon
         </label>
         {setOnlyOwned && <OnlyOwnedToggle notOwned={notOwned} on={onlyOwned} onChange={setOnlyOwned} />}
-        <span className="text-[11px] text-gray-500 dark:text-gray-400">
-          Tries every end-game item in every slot (weapons, ammo, styles, spells) against this boss and drain state.
-        </span>
       </div>
 
       {running && (
@@ -220,29 +220,32 @@ const SearchView: React.FC<{
 
       {result && (
         <>
-          <div className="text-xs flex flex-col gap-0.5" data-testid="search-summary">
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              {/* phase 29: the drain plan itself is in the box above (SpecPlanPanel); only what the ranking used here */}
-              <span className="flex items-center gap-1" title={result.drain.plan} data-testid="search-ranked-at">
-                ranked at
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={DefenceIcon.src} alt="" width={14} height={14} className="inline" />
-                {`Def ${result.drain.defAfter} ·`}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={MagicIcon.src} alt="" width={14} height={14} className="inline" />
-                {`Magic def ${result.drain.magicDefAfter}`}
-              </span>
-              <span data-testid="search-best-preset" title="Gain column = DPS over this preset (same boss and drains)">
-                {result.bestPreset
-                  ? `Best preset: ${result.bestPreset.preset} ${fmt(result.bestPreset.dps)} DPS (${result.bestPreset.styleLabel})`
-                  : 'No preset for these styles'}
-              </span>
-            </div>
-            <div className="text-gray-500 dark:text-gray-400 flex flex-wrap items-center gap-x-1" data-testid="search-stats">
-              <span title={`${result.evaluations} evaluations over ${result.variants} weapon variants`}>
-                {`${result.evaluations} evaluations · ${(result.elapsedMs / 1000).toFixed(1)}s${wallMs !== null ? ` (wall ${(wallMs / 1000).toFixed(1)}s)` : ''} · Exp. TTK (top row only): ${teamTimeLabel(teamMult)}`}
-              </span>
-              {result.cantHit.length > 0 && (
+          {target.note && <div className="text-xs text-orange-700 dark:text-orange-300">{target.note}</div>}
+          <details className="text-xs" data-testid="search-details">
+            <summary className="cursor-pointer text-gray-500 dark:text-gray-400" data-testid="search-details-toggle">Search details</summary>
+            <div className="text-xs flex flex-col gap-0.5" data-testid="search-summary">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                {/* phase 29: the drain plan itself is in the box above (SpecPlanPanel); only what the ranking used here */}
+                <span className="flex items-center gap-1" title={result.drain.plan} data-testid="search-ranked-at">
+                  ranked at
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={DefenceIcon.src} alt="" width={14} height={14} className="inline" />
+                  {`Def ${result.drain.defAfter} ·`}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={MagicIcon.src} alt="" width={14} height={14} className="inline" />
+                  {`Magic def ${result.drain.magicDefAfter}`}
+                </span>
+                <span data-testid="search-best-preset" title="Gain column = DPS over this preset (same boss and drains)">
+                  {result.bestPreset
+                    ? `Best preset: ${result.bestPreset.preset} ${fmt(result.bestPreset.dps)} DPS (${result.bestPreset.styleLabel})`
+                    : 'No preset for these styles'}
+                </span>
+              </div>
+              <div className="text-gray-500 dark:text-gray-400 flex flex-wrap items-center gap-x-1" data-testid="search-stats">
+                <span title={`${result.evaluations} evaluations over ${result.variants} weapon variants`}>
+                  {`${result.evaluations} evaluations · ${(result.elapsedMs / 1000).toFixed(1)}s${wallMs !== null ? ` (wall ${(wallMs / 1000).toFixed(1)}s)` : ''} · Exp. TTK (top row only): ${teamTimeLabel(teamMult)}`}
+                </span>
+                {result.cantHit.length > 0 && (
                 <details className="inline" data-testid="cant-hit">
                   <summary className="cursor-pointer underline inline">{`· ${result.cantHit.length} weapon${result.cantHit.length === 1 ? '' : 's'} can't hit (show)`}</summary>
                   <ul className="list-disc ml-5" data-testid="cant-hit-list">
@@ -251,20 +254,17 @@ const SearchView: React.FC<{
                     ))}
                   </ul>
                 </details>
-              )}
+                )}
+              </div>
             </div>
-            {target.note && <div className="text-orange-700 dark:text-orange-300">{target.note}</div>}
-          </div>
+          </details>
           <div className="overflow-x-auto max-w-[100vw]">
             <table className="w-full" data-testid="search-results">
               <thead>
                 <tr className="bg-btns-400 dark:bg-dark-500 text-white">
                   <th>#</th>
                   <th className="text-right">DPS</th>
-                  <th className="text-right" title="Gain over the best Phase 8 preset of the searched styles (same boss and drains)">vs best preset</th>
                   <th className="text-right" title={`Expected time to kill, top row only (${teamTimeLabel(teamMult)})`} data-testid="ttk-header">{teamMult === 1 ? 'Exp. TTK' : `Exp. TTK (${teamMult}×)`}</th>
-                  <th className="text-right">Max hit</th>
-                  <th className="text-right">Accuracy</th>
                   <th>Style</th>
                   <th>Loadout</th>
                   <th aria-label="actions" />
@@ -282,11 +282,15 @@ const SearchView: React.FC<{
                       title={unowned.length ? `Uses items you don't own: ${unownedLabel(unowned)}` : undefined}
                     >
                       <td className="px-2 py-1">{i + 1}</td>
-                      <td className={`px-2 py-1 text-right font-mono ${DPS_TEXT_CLASS}`} data-testid="dps">{fmt(r.dps)}</td>
-                      <td className="px-2 py-1 text-right font-mono text-xs" data-testid="gain">{fmtGain(r.dps, baseDps)}</td>
+                      <td
+                        className="px-2 py-1 text-right font-mono"
+                        title={`vs best preset: ${fmtGain(r.dps, baseDps)} · max hit ${r.maxHit} · accuracy ${fmtAcc(r.accuracy)}`}
+                      >
+                        <span className={`font-bold ${DPS_TEXT_CLASS}`} data-testid="dps">{fmt(r.dps)}</span>
+                        <span className="sr-only" data-testid="gain">{fmtGain(r.dps, baseDps)}</span>
+                        <span className="sr-only" data-testid="maxhit">{r.maxHit}</span>
+                      </td>
                       <td className="px-2 py-1 text-right font-mono" data-testid="ttk">{i === 0 ? fmtTtk(r.ttk === null ? null : r.ttk / teamMult) : ''}</td>
-                      <td className="px-2 py-1 text-right font-mono" data-testid="maxhit">{r.maxHit}</td>
-                      <td className="px-2 py-1 text-right font-mono">{fmtAcc(r.accuracy)}</td>
                       <td className="px-2 py-1 text-xs">
                         <div className="capitalize">{r.group}</div>
                         <div>{r.styleLabel}</div>
@@ -294,11 +298,14 @@ const SearchView: React.FC<{
                       <td className="px-2 py-1">
                         <WeaponLine parts={searchRowWeaponParts(r)} className="font-bold text-sm" />
                         {unowned.length > 0 && (
-                        <span className="inline-block text-[10px] px-1 rounded bg-red-600 text-white" data-testid="unowned-badge">{`uses: ${unownedLabel(unowned)}`}</span>
+                        <span className="inline-block text-[10px] px-1 rounded bg-red-600 text-white" data-testid="unowned-badge">
+                          {'uses: '}
+                          <ItemNames names={unowned} size={14} />
+                        </span>
                         )}
-                        <LoadoutIconRow icons={searchRowIcons(r)} />
-                        <div className="text-[11px] text-gray-500 dark:text-gray-400">{loadoutSummary(r)}</div>
-                        <div className="text-[10px] text-gray-400">{`search started from: ${r.seed}`}</div>
+                        <div title={`${loadoutSummary(r)} · search started from: ${r.seed}`} data-testid="search-row-loadout">
+                          <LoadoutIconRow icons={searchRowIcons(r)} />
+                        </div>
                       </td>
                       <td className="px-2 py-1">
                         <button type="button" className="btn text-xs whitespace-nowrap" onClick={() => onLoad(r)}>

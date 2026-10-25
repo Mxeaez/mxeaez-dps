@@ -33,6 +33,9 @@ import TimeSettingsBox from '@/app/components/bestSetup/TimeSettingsBox';
 import { equipmentImageUrl, targetImageUrl } from '@/lib/fracturedArchive/loadoutIcons';
 import { ItemIcon } from '@/app/components/bestSetup/ItemIcons';
 import NotOwnedBox from '@/app/components/bestSetup/NotOwnedBox';
+import IconSelect, { IconOption } from '@/app/components/bestSetup/IconSelect';
+import { potionChoices } from '@/lib/fracturedArchive/potionChoices';
+import ZealImg from '@/public/img/prayers/Zeal.png';
 import {
   loadNotOwned, loadOnlyOwned, saveNotOwned, saveOnlyOwned,
 } from '@/lib/fracturedArchive/ownership';
@@ -51,13 +54,12 @@ import {
 // Phase 33: "Specs I bring" defaults to none; "Planner decides" (the Plan tab's "Spec weapons", also next to the chips)
 // fills the chips read-only from the last plan's "Bring" (Search / Summary Solo drains use them); "Set manually" = the
 // editable chips.
+// Phase 34 (readability): the potion / Heart pickers show icons (IconSelect, relevant choices first, the rest under
+// "more"); Elemental fragments moved to Advanced; the Ayak hint and the "from the last plan" notes are tooltips.
 // Docs: docs/BEST_SETUP.md.
 
-const POTION_OPTIONS = (Object.keys(PotionMap) as unknown as string[])
-  .map((k) => Number(k) as Potion)
-  .sort((a, b) => PotionMap[a].order - PotionMap[b].order);
-
-const HEART_POTIONS = [Potion.SATURATED_HEART, Potion.IMBUED_HEART];
+/** Phase 34: a potion as an icon-select option. */
+const potionOption = (p: Potion): IconOption<Potion> => ({ value: p, label: PotionMap[p].name, src: PotionMap[p].image.src });
 
 const GROUP_PRAYER: Record<StyleGroup, string> = { melee: 'Piety', ranged: 'Rigour', magic: 'Augury' };
 
@@ -79,7 +81,7 @@ const LIGHTBEARER = 'Lightbearer';
 /** Phase 23: the "?" glossary (plain-language meaning of the terms on this page). */
 export const GLOSSARY: [string, string][] = [
   ['Drains', 'None: no Defence / Magic defence drains. Solo: only your own specs ("Specs I bring": the last plan\'s "Bring" while the planner decides, else the ones you tick), within the spec energy you have in that fight. Team: the team\'s spec carriers (Advanced) each spec twice at the start.'],
-  ['Needs / team', 'Drain line: "needs 4 landed hits · 4 specs (2 carriers), 8 swings · 98%" = the drains that must land (Tonalztics: hits; Elder maul / DWH: specs; BGS: damage; Eye of Ayak: magic defence drained), the specs that give them (a charged Tonalztics spec swings twice; every swing can miss) and the chance the Defence reaches the floor in the first round with these specs and the other weapons\' specs ("→ Def X" instead when the plan doesn\'t rank at the floor); "team: 6 specs (3 carriers) · 99.8%" = what the carriers do in the first round (2 specs each) when that is more. Solo: "needs 4 landed hits · 4 specs, 8 swings · 98%" (your specs).'],
+  ['Needs / team', 'Drain line: "needs 4 landed hits · 4 specs (2 carriers) = 8 attacks, 4 must land · 98%" = the drains that must land (Tonalztics: hits; Elder maul / DWH: specs; BGS: damage; Eye of Ayak: magic defence drained), the specs that give them (a charged Tonalztics spec attacks twice; every attack can miss; Elder maul / DWH / BGS: one attack per spec) and the chance the Defence reaches the floor in the first round with these specs and the other weapons\' specs ("→ Def X" instead when the plan doesn\'t rank at the floor); "team: 6 specs (3 carriers) · 99.8%" = what the carriers do in the first round (2 specs each) when that is more. Solo: "needs 4 landed hits · 4 specs = 8 attacks, 4 must land · 98%" (your specs).'],
   ['Floor', 'The lowest Defence a boss can be drained to (e.g. Archive Guardian 156). The Defence floor is used when its chance is at least the % set in Advanced (95%).'],
   ['First round', 'The specs everyone does at the start of the fight with full (100%) energy: 2 specs each for 50% weapons.'],
   ['Hit chance', 'The "77% land" under each drain icon: the chance one spec lands its drain (from the calculator, against the undrained boss). "×0 (no energy)": specs you asked for that your spec energy doesn\'t cover.'],
@@ -241,9 +243,11 @@ const AssumptionsBox: React.FC<{
   return (
     <div className="text-xs bg-body-100 dark:bg-dark-400 border border-body-400 dark:border-dark-200 rounded p-3 flex flex-col gap-2" data-testid="assumptions">
       <div className="flex items-center gap-2">
-        <span className="font-bold text-sm">Assumptions</span>
-        <span className="text-gray-500 dark:text-gray-400" title={raid.raidOnlyAssumptions ? 'Items per preset: src/lib/fracturedArchive/presets.ts' : raid.presetsNote}>
-          {`All skills 99 · ${raid.raidOnlyAssumptions ? 'Piety (or Zeal)' : 'Piety'} / Rigour / Augury by style`}
+        <span
+          className="font-bold text-sm"
+          title={`All skills 99 · ${raid.raidOnlyAssumptions ? 'Piety (or Zeal)' : 'Piety'} / Rigour / Augury by style. ${raid.raidOnlyAssumptions ? 'Items per preset: src/lib/fracturedArchive/presets.ts' : raid.presetsNote}`}
+        >
+          Assumptions
         </span>
         <span className="flex-1" />
         <button type="button" className="underline" title="Back to this raid's defaults (every input, Advanced included)" onClick={() => onChange(raid.defaultAssumptions)}>Reset</button>
@@ -254,44 +258,31 @@ const AssumptionsBox: React.FC<{
         {(['melee', 'ranged', 'magic'] as StyleGroup[]).map((g) => {
           // where the potions are brought (FA, ToB) the magic boost is a heart (phase 31: the Plan tab's kit potion for magic)
           const heart = g === 'magic' && raid.boostsNeedSupplies;
-          const options = heart ? POTION_OPTIONS.filter((p) => HEART_POTIONS.includes(p) || p === value.potions[g]) : POTION_OPTIONS;
+          const { primary, more } = potionChoices(g, value.potions[g], heart);
+          const title = heart
+            ? 'Magic boost. Search and Summary assume this heart is brought; the Plan tab brings it (the magic potion of the kit) when the kit has a magic loadout, one slot'
+            : `Boost used by every ${g} setup`;
           return (
-            <label
-              key={g}
-              htmlFor={`bs-potion-${g}`}
-              className="flex items-center gap-1"
-              title={heart
-                ? 'Magic boost. Search and Summary assume this heart is brought; the Plan tab brings it (the magic potion of the kit) when the kit has a magic loadout, one slot'
-                : `Boost used by every ${g} setup`}
-            >
-              <span className={heart ? '' : 'capitalize'}>{heart ? 'Heart' : `${g} potion`}</span>
-              <select
+            <span key={g} className="flex items-center gap-1" title={title}>
+              <label htmlFor={`bs-potion-${g}`} className={heart ? '' : 'capitalize'}>{heart ? 'Heart' : `${g} potion`}</label>
+              <IconSelect
                 id={`bs-potion-${g}`}
-                className="form-control text-xs py-0.5"
+                testId={`bs-potion-${g}`}
                 value={value.potions[g]}
-                onChange={(e) => set({ potions: { ...value.potions, [g]: Number(e.target.value) as Potion } })}
-              >
-                {options.map((p) => <option key={p} value={p}>{PotionMap[p].name}</option>)}
-              </select>
-            </label>
+                primary={primary.map(potionOption)}
+                more={more.map(potionOption)}
+                title={title}
+                onChange={(p) => set({ potions: { ...value.potions, [g]: p } })}
+              />
+            </span>
           );
         })}
         {raid.raidOnlyAssumptions && (
-          <>
-            <label htmlFor="bs-zeal" className="flex items-center gap-1" title="Melee setups pray Zeal (the Fractured Archive prayer) instead of Piety">
-              <input id="bs-zeal" type="checkbox" checked={value.useZeal} onChange={(e) => set({ useZeal: e.target.checked })} />
-              Zeal instead of Piety
-            </label>
-            <label htmlFor="bs-fragments" className="flex items-center gap-1" title="All four elemental fragments unlocked: +2 base max hit for elemental spells (magic setups only)">
-              <input
-                id="bs-fragments"
-                type="checkbox"
-                checked={value.elementalFragments}
-                onChange={(e) => set({ elementalFragments: e.target.checked })}
-              />
-              Elemental fragments (magic)
-            </label>
-          </>
+          <label htmlFor="bs-zeal" className="flex items-center gap-1" title="Melee setups pray Zeal (the Fractured Archive prayer) instead of Piety">
+            <input id="bs-zeal" type="checkbox" checked={value.useZeal} onChange={(e) => set({ useZeal: e.target.checked })} />
+            <ItemIcon name="Zeal" src={ZealImg.src} size={18} />
+            Zeal instead of Piety
+          </label>
         )}
       </div>
       <div className="flex flex-wrap gap-x-2 gap-y-2 items-center" data-testid="my-specs" data-mode={specMode}>
@@ -352,11 +343,14 @@ const AssumptionsBox: React.FC<{
           </label>
         )}
         {plannerSpecs && (
-          <span className="text-gray-500 dark:text-gray-400" data-testid="my-specs-note">
+          // phase 34: after a plan the note is only read out (the chips' tooltip says it); before one it says what to do
+          <span className={planBring ? 'sr-only' : 'text-gray-500 dark:text-gray-400'} data-testid="my-specs-note">
             {planBring ? `(from the last plan${planBring.length ? '' : ': it brings none'}; Search / Summary use them)` : '(run a plan to fill these)'}
           </span>
         )}
-        {ayakHint && <span className="text-gray-500 dark:text-gray-400" data-testid="ayak-hint">{ayakHint}</span>}
+        {ayakHint && (
+          <span className="cursor-help text-gray-500 dark:text-gray-400" title={ayakHint} aria-label={ayakHint} data-testid="ayak-hint">ⓘ</span>
+        )}
       </div>
       <div className="flex flex-wrap gap-x-2 gap-y-2 items-center" data-testid="ring-toggle">
         <span className="font-semibold" title="Your ring (Solo spec energy): Lightbearer makes spec energy come back twice as fast">Ring:</span>
@@ -370,7 +364,7 @@ const AssumptionsBox: React.FC<{
           >
             <ItemIcon name="Lightbearer" src={itemImage(LIGHTBEARER)} size={20} />
             {`I wear a Lightbearer: ${lightbearerLock.on ? 'yes' : 'no'}`}
-            <span className="text-gray-500 dark:text-gray-400" data-testid="lightbearer-lock">{`(${lightbearerLock.reason})`}</span>
+            <span className="sr-only" data-testid="lightbearer-lock">{`(${lightbearerLock.reason})`}</span>
           </span>
         ) : (
           <IconToggle
@@ -441,6 +435,17 @@ const AssumptionsBox: React.FC<{
               <span className="text-red-600" data-testid="team-too-many">{`${carrierTotal} carriers > party size: only the first ${value.partySize} count`}</span>
             )}
           </div>
+          {raid.raidOnlyAssumptions && (
+            <label htmlFor="bs-fragments" className="flex items-center gap-1" title="All four elemental fragments unlocked: +2 base max hit for elemental spells (magic setups only)">
+              <input
+                id="bs-fragments"
+                type="checkbox"
+                checked={value.elementalFragments}
+                onChange={(e) => set({ elementalFragments: e.target.checked })}
+              />
+              Elemental fragments (magic)
+            </label>
+          )}
           <label htmlFor="bs-threshold" className="flex items-center gap-1" title="Drain plans are ranked at the Defence floor only when they are this likely to get there (Team: from the first round of specs; Solo: with your specs). Below it, the ranking uses the Defence you can expect on average">
             Use the Defence floor when its chance is ≥
             <input

@@ -21,9 +21,12 @@ import {
 import { SearchJob, startGearSearch } from '@/worker/searchWorkerClient';
 import openInCalculator from '@/app/components/bestSetup/loadIntoCalculator';
 import { searchRowIcons, searchRowWeaponParts, targetImageUrl } from '@/lib/fracturedArchive/loadoutIcons';
-import { ItemIcon, LoadoutIconRow, WeaponLine } from '@/app/components/bestSetup/ItemIcons';
+import {
+  ItemIcon, ItemNames, LoadoutIconRow, WeaponLine,
+} from '@/app/components/bestSetup/ItemIcons';
 import DPS_TEXT_CLASS from '@/app/components/bestSetup/styles';
-import DrainLineView from '@/app/components/bestSetup/DrainLineView';
+import { DrainBrief } from '@/app/components/bestSetup/DrainLineView';
+import { briefResultText } from '@/lib/fracturedArchive/drainLine';
 import { scaleMonster } from '@/lib/MonsterScaling';
 import { raidOf, teamDpsMultiplier, teamTimeLabel } from '@/lib/raids';
 import { loadoutUsesUnowned, unownedLabel } from '@/lib/fracturedArchive/ownership';
@@ -36,6 +39,8 @@ import { OnlyOwnedToggle } from '@/app/components/bestSetup/SearchView';
 // restarts once). Cancel terminates the current search and stops; "Continue" resumes with the uncached ones.
 // Phase 26: like Search, cells whose loadout uses an item on "Items I don't own" are greyed with a badge; "Only items
 // I own" (shared with Search) runs the searches without those items (their own cache keys).
+// Phase 34 (readability): a cell shows weapon, icons, DPS, style, the "uses: …" badge and the drains as icon + number;
+// the best preset, the drain sentence and the Solo budget ("fight ≈ 15 s → 2 specs") are tooltips; "load" is an icon button.
 
 /** What the table needs of a search (the full result has 10+ rows per search). */
 type SummaryCell = Pick<GearSearchResult, 'drain' | 'bestPreset'> & { top: GearSearchResult['rows'][number] | null };
@@ -158,7 +163,7 @@ const SummaryView: React.FC<{
 
   return (
     <div className="flex flex-col gap-2" data-testid="summary-view">
-      <div className="flex flex-wrap gap-3 items-center text-sm">
+      <div className="flex flex-wrap gap-3 items-center text-sm" title="Top gear-search result (all styles) per boss / phase and drain state; cached for this session until an assumption changes.">
         {running ? (
           <button type="button" className="btn text-sm" onClick={cancel} data-testid="summary-cancel">Cancel</button>
         ) : (
@@ -167,9 +172,6 @@ const SummaryView: React.FC<{
           )
         )}
         {setOnlyOwned && <OnlyOwnedToggle notOwned={notOwned} on={onlyOwned} onChange={setOnlyOwned} />}
-        <span className="text-[11px] text-gray-500 dark:text-gray-400">
-          Top gear-search result (all styles) per boss / phase and drain state; cached for this session until an assumption changes.
-        </span>
       </div>
       {(running || done < queries.length) && (
         <div className="flex flex-col gap-1 text-xs" data-testid="summary-progress">
@@ -233,22 +235,35 @@ const SummaryView: React.FC<{
                       >
                         <WeaponLine parts={searchRowWeaponParts(cell.top)} className="text-xs font-bold" iconSize={18} />
                         {unowned.length > 0 && (
-                          <span className="inline-block text-[10px] px-1 rounded bg-red-600 text-white" data-testid="unowned-badge">{`uses: ${unownedLabel(unowned)}`}</span>
+                          <span className="inline-block text-[10px] px-1 rounded bg-red-600 text-white" data-testid="unowned-badge">
+                            {'uses: '}
+                            <ItemNames names={unowned} size={14} />
+                          </span>
                         )}
                         <LoadoutIconRow icons={searchRowIcons(cell.top)} size={16} />
-                        <div className="text-[11px]" title={loadoutSummary(cell.top)}>
-                          <span className={`font-mono ${DPS_TEXT_CLASS}`} data-testid="dps">{fmt(cell.top.dps)}</span>
+                        <div className="text-[11px] flex items-center gap-1" title={`${loadoutSummary(cell.top)} · ${cell.bestPreset ? `best preset ${fmt(cell.bestPreset.dps)}` : 'no preset'}`}>
+                          <span className={`font-mono font-bold ${DPS_TEXT_CLASS}`} data-testid="dps">{fmt(cell.top.dps)}</span>
                           {` · ${cell.top.styleLabel}`}
+                          <button
+                            type="button"
+                            className="ml-1 px-1 rounded border border-body-400 dark:border-dark-200 leading-none"
+                            title="Load into calculator"
+                            aria-label="Load into calculator"
+                            data-testid="summary-load"
+                            onClick={() => onLoad(q, cell)}
+                          >
+                            ↗
+                          </button>
                         </div>
-                        <div className="text-[11px] text-gray-500 dark:text-gray-400">
-                          {cell.bestPreset ? `best preset ${fmt(cell.bestPreset.dps)}` : 'no preset'}
-                          {' · '}
-                          <button type="button" className="underline" onClick={() => onLoad(q, cell)}>load</button>
-                        </div>
-                        <div className="text-[10px] text-gray-500 dark:text-gray-400" data-testid="summary-drains">
-                          {cell.drain.line
-                            ? <DrainLineView line={cell.drain.line} compact showBudget />
-                            : <span title="Drains">{cell.drain.specs}</span>}
+                        <div className="text-[11px]" data-testid="summary-drains">
+                          {cell.drain.line && cell.drain.line.items.length > 0 && (
+                            <DrainBrief
+                              items={cell.drain.line.items}
+                              result={briefResultText(cell.drain.line, cell.drain.line.items)}
+                              size={18}
+                              title={`${cell.drain.line.text}${cell.drain.line.budget ? ` (fight ≈ ${cell.drain.line.budget.fightSeconds} s → ${cell.drain.line.budget.specs} spec${cell.drain.line.budget.specs === 1 ? '' : 's'})` : ''}`}
+                            />
+                          )}
                         </div>
                       </td>
                     );

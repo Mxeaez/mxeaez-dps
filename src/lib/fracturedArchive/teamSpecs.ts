@@ -517,7 +517,7 @@ export const neededSpecs = (
 
 /**
  * Phase 29 review 2: one weapon of a Team drain line. Phase 32 wording (drainLine.ts `neededText`): "needs 4 landed
- * hits · 4 specs (2 carriers), 8 swings · 98% · team: 6 specs (3 carriers) · 99.8%".
+ * hits · 4 specs (2 carriers) = 8 attacks, 4 must land · 98% · team: 6 specs (3 carriers) · 99.8%".
  */
 export interface TeamNeed {
   /** Fewest specs of this weapon (earlier weapons at their own needed counts, later ones as brought). */
@@ -569,7 +569,7 @@ export const landedToReach = (
   return null;
 };
 
-/** Phase 32: the most landed drains `n` specs of a weapon can give (a charged Tonalztics spec swings twice). */
+/** Phase 32: the most landed drains `n` specs of a weapon can give (a charged Tonalztics spec attacks twice). */
 const maxLanded = (w: DefenceDrainWeapon, n: number): number => (w === 'tonalztics' ? 2 * n : n);
 
 const LANDED_UNIT: Record<DefenceDrainWeapon, [string, string]> = {

@@ -100,8 +100,9 @@ export const drainLineItem = (
   if (unit === 'dmg') what = `${label} specs dealing ${count} damage in total`;
   else what = plural(count, `${label} spec`);
   // Tonalztics: a charged spec hits twice; the hit count is in the tooltip (review fix: shown as specs)
-  // phase 32: planned specs count swings (2 per charged spec, each can miss); landed drains (Max-drain buttons) count hits
-  if (weapon === 'tonalztics' && unit === 'spec') what += ` (${extra?.hits !== undefined ? plural(extra.hits, 'landed hit') : plural(count * 2, 'swing')})`;
+  // phase 32: planned specs count attacks (2 per charged spec, each can miss; phase 34: "swings" → "attacks"); landed
+  // drains (Max-drain buttons) count hits
+  if (weapon === 'tonalztics' && unit === 'spec') what += ` (${extra?.hits !== undefined ? plural(extra.hits, 'landed hit') : plural(count * 2, 'attack')})`;
   const short = extra?.wanted !== undefined && extra.wanted > count ? extra.wanted - count : 0;
   if (short) what += count === 0 ? ` (you asked for ${extra!.wanted}: no spec energy left for them)` : ` (${short} of ${extra!.wanted} don't fit in your spec energy)`;
   const landed = weapon === 'tonalztics' ? 'land at least one damaging hit' : 'land';
@@ -134,19 +135,26 @@ const landedText = (weapon: SpecWeapon, n: number): string => {
   return plural(n, 'landed spec');
 };
 
-/** Phase 32: "4 specs (2 carriers), 8 swings" (Team, Tonalztics), "3 specs (2 carriers)", "4 specs, 8 swings" (Solo). */
-const specsText = (it: NeedFields, n: number, swings: boolean): string => {
+/**
+ * Phase 32: "4 specs (2 carriers)" (Team), "4 specs" (Solo). Phase 34 (Tonalztics, one charged spec = 2 attacks): "4 specs
+ * (2 carriers) = 8 attacks, 4 must land" (was ", 8 swings"); Elder maul / DWH / BGS: specs only (one attack each).
+ */
+const specsText = (it: NeedFields, n: number, attacks: boolean): string => {
   const carriers = it.perCarrier ? ` (${plural(Math.ceil(n / it.perCarrier), 'carrier')})` : '';
-  return `${plural(n, 'spec')}${carriers}${swings && it.weapon === 'tonalztics' ? `, ${n * 2} swings` : ''}`;
+  let tail = '';
+  if (attacks && it.weapon === 'tonalztics') {
+    tail = ` = ${n * 2} attacks${typeof it.landed === 'number' && it.landed > 0 ? `, ${it.landed} must land` : ''}`;
+  }
+  return `${plural(n, 'spec')}${carriers}${tail}`;
 };
 
 /**
  * Phase 29: the Team text of an item. Phase 32 (the user: "needed ×4 · team brings ×4 (8 hits)" read as 4 people / 8
- * landed hits): every number carries its unit — "needs 4 landed hits · 4 specs (2 carriers), 8 swings · 98%", then
+ * landed hits): every number carries its unit — "needs 4 landed hits · 4 specs (2 carriers) = 8 attacks, 4 must land · 98%" (phase 34; was ", 8 swings"), then
  * " · team: 6 specs (3 carriers) · 99.8%" when the team brings more than needed (left out when equal). The landed count
  * is this weapon's alone from the start Defence to the ranked Defence (`landedToReach`); the % is P(floor from the first
  * round) with the needed specs / with everything brought ("→ Def 167" when the plan doesn't rank at the floor). Solo
- * (no `perCarrier`, needed = count): "needs 4 landed hits · 4 specs, 8 swings · 98%".
+ * (no `perCarrier`, needed = count): "needs 4 landed hits · 4 specs = 8 attacks, 4 must land · 98%".
  */
 export const neededText = (it: NeedFields): string | undefined => {
   if (it.needed === undefined) return undefined;
@@ -173,7 +181,7 @@ export const neededExplanation = (it: NeedFields & Pick<DrainLineItem, 'label'>)
   const parts = [it.landedAfterOthers
     ? `${landedText(it.weapon, it.landed)} of ${it.label} take ${range} once ${it.landedAfterOthers} (Def ${it.landedFrom})`
     : `${landedText(it.weapon, it.landed)} of ${it.label} alone take ${range}`];
-  if (it.weapon === 'tonalztics') parts.push('a charged Tonalztics spec swings twice and each swing can miss');
+  if (it.weapon === 'tonalztics') parts.push('a charged Tonalztics spec attacks twice and each attack can miss');
   else parts.push('each spec can miss');
   // review: the % counts every weapon's specs (Bork maul 98% includes the Tonalztics; the maul alone is 86%); no % when
   // the line ranks short of the floor ("→ Def X")
@@ -400,4 +408,88 @@ export const encounterDrainSummary = (
     };
   });
   return { events, parts: events[0].parts, text: events.map((e) => e.text).join(' · ') };
+};
+
+// --- phase 34: the short form (icon + one bold number per weapon) -------------------------------------------------
+
+/**
+ * Phase 34: the one number a raider needs per drain weapon, shown bold next to its icon (the full sentence is the
+ * tooltip): Tonalztics "4 hits" (the landed hits it needs), Elder maul / DWH "2 specs" (the landed specs it needs), BGS
+ * "2 specs" (the specs it needs), Eye of Ayak "≈ 39 magic def" (drained); "not needed" when the other weapons' specs
+ * already reach the floor; lines without a "needs" part (None, the Max-drain buttons) fall back to the specs done
+ * (Tonalztics: its hits).
+ */
+export const briefText = (it: Pick<DrainLineItem, 'weapon' | 'count' | 'unit' | 'hits' | 'needed' | 'landed'>): string => {
+  if (it.unit === 'dmg') return `${it.count} dmg`;
+  if (it.needed === 0) return 'not needed';
+  const landed = typeof it.landed === 'number' && it.landed > 0 ? it.landed : undefined;
+  const needed = typeof it.needed === 'number' ? it.needed : undefined;
+  switch (it.weapon) {
+    case 'tonalztics': {
+      if (landed !== undefined) return plural(landed, 'hit');
+      if (needed !== undefined) return plural(needed, 'spec');
+      return it.hits !== undefined ? plural(it.hits, 'hit') : plural(it.count, 'spec');
+    }
+    case 'ayak': return landed !== undefined ? `≈ ${landed} magic def` : plural(needed ?? it.count, 'spec');
+    case 'bgs': return plural(needed ?? it.count, 'spec');
+    default: return plural(landed ?? needed ?? it.count, 'spec');
+  }
+};
+
+/**
+ * Phase 34: the items the short line shows: a weapon the other weapons' specs make unnecessary ("not needed": the team
+ * brings it, this boss doesn't need it) is left out (it stays in the tooltip), unless nothing else is left.
+ */
+export const briefItems = <T extends Pick<DrainLineItem, 'weapon' | 'count' | 'unit' | 'hits' | 'needed' | 'landed'>>(items: T[]): T[] => {
+  const needed = items.filter((i) => briefText(i) !== 'not needed');
+  return needed.length ? needed : items;
+};
+
+/** Phase 34: "→ Def 156" (+ " · Magic def 91" with Eye of Ayak specs, or always with `magic`). */
+export const briefResultText = (line: Pick<DrainLine, 'defAfter' | 'magicDefAfter'>, items: Pick<DrainLineItem, 'weapon' | 'count'>[], magic = false): string => {
+  const ayak = items.some((i) => i.weapon === 'ayak' && i.count > 0);
+  return `→ Def ${line.defAfter}${magic || ayak ? ` · Magic def ${line.magicDefAfter}` : ''}`;
+};
+
+/** Phase 34: one group of the Plan briefing's specs cell: label (when an encounter has several), items, result, repeats. */
+export interface BriefGroup {
+  key: string;
+  /** e.g. "Flying shield", "after maze 1" (none for a single start-of-fight line). */
+  label?: string;
+  items: DrainLineItem[];
+  result: string;
+  /** The same drains this many times (Sotetseg: at the start and after each maze = 3). */
+  times: number;
+  /** Plain text, e.g. "Tonalztics 4 hits + Elder maul 2 specs → Def 156 × 3". */
+  text: string;
+}
+
+const groupText = (label: string | undefined, items: DrainLineItem[], result: string, times: number) => `${label ? `${label}: ` : ''}${briefItems(items).map((i) => `${i.label} ${briefText(i)}`).join(' + ')} ${result}${times > 1 ? ` × ${times}` : ''}`;
+
+/**
+ * Phase 34: the briefing's compact form of an encounter's drain events (encounterDrainSummary): one group per part;
+ * when every event with specs has one part and the same numbers (Sotetseg's three events), one group "× 3". Events with
+ * no specs are left out (the tooltip keeps the full text). [] when nothing is specced.
+ */
+export const encounterBrief = (summary: EncounterDrainSummary): BriefGroup[] => {
+  const withParts = summary.events.filter((e) => e.parts.length > 0);
+  if (!withParts.length) return [];
+  const sig = (p: EncounterDrainPart) => `${p.items.map((i) => `${i.weapon}:${briefText(i)}`).join('|')}|${briefResultText(p.line, p.items)}`;
+  if (withParts.length > 1 && withParts.every((e) => e.parts.length === 1 && sig(e.parts[0]) === sig(withParts[0].parts[0]))) {
+    const p = withParts[0].parts[0];
+    const result = briefResultText(p.line, p.items);
+    return [{
+      key: p.phaseKey, items: p.items, result, times: withParts.length, text: groupText(undefined, p.items, result, withParts.length),
+    }];
+  }
+  const several = withParts.length > 1 || withParts[0].parts.length > 1;
+  return withParts.flatMap((e) => e.parts.map((p) => {
+    let label: string | undefined;
+    if (several && e.reset) label = `after ${e.reset}${e.parts.length > 1 ? `, ${p.label}` : ''}`;
+    else if (several) label = e.parts.length > 1 ? p.label : 'start';
+    const result = briefResultText(p.line, p.items);
+    return {
+      key: p.phaseKey, label, items: p.items, result, times: 1, text: groupText(label, p.items, result, 1),
+    };
+  }));
 };

@@ -13,6 +13,7 @@
  * Screenshots docs/screenshots/phase33-*.png.
  */
 import { chromium } from '@playwright/test';
+import { openSections } from './phase34Sections.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
 const BORK_LINE = 'Start of fight: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 180 · 99.6%';
@@ -35,11 +36,13 @@ const waitPlan = async (page) => {
     await page.waitForTimeout(3000);
   }
   await page.locator('[data-testid="plan-result"]').waitFor({ timeout: 900000 });
+  await openSections(page); // phase 34: open the sections what this script reads moved into
 };
 const waitSearch = async (page) => {
   await page.waitForTimeout(800);
   await page.locator('[data-testid="search-progress"]').waitFor({ state: 'detached', timeout: 300000 });
   await page.locator('[data-testid="search-results"]').waitFor({ timeout: 300000 });
+  await openSections(page); // phase 34: open the sections what this script reads moved into
 };
 const chips = async (page) => Object.fromEntries(await Promise.all(WEAPONS.map(async (w) => {
   const b = page.locator(`[data-testid="bs-my-${w}"]`);

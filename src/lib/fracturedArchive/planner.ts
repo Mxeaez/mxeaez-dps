@@ -1269,6 +1269,8 @@ export interface PlanRejection {
   /** Extra inventory slots vs the plan (+ = more). */
   deltaSlots: number;
   reason: string;
+  /** Phase 34: the weapon of each loadout in `label` (in order; '' when none), for the icons. */
+  weapons?: string[];
 }
 
 export interface PlanResult {
@@ -2296,6 +2298,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         deltaSeconds: T - t,
         deltaSlots: extra,
         reason,
+        weapons: [c.equipment.weapon?.name ?? ''],
       });
     });
     additions.sort((a, b) => (b.deltaSeconds - a.deltaSeconds) || (a.deltaSlots - b.deltaSlots) || a.label.localeCompare(b.label));
@@ -2355,6 +2358,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         deltaSeconds: T - s.time,
         deltaSlots: s.used - chosen.used,
         reason,
+        weapons: s.members.map((i) => candidates[i].equipment.weapon?.name ?? ''),
       });
     }
     alternatives.sort((a, b) => (b.deltaSeconds - a.deltaSeconds) || a.label.localeCompare(b.label));
@@ -2371,6 +2375,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         deltaSeconds: T - light.time,
         deltaSlots: -freed,
         reason: `−${freed} slot${freed === 1 ? '' : 's'} for +${slower.toFixed(1)} s (each freed slot cost < ${SWITCH_MIN_SECONDS_PER_SLOT} s)`,
+        weapons: light.members.map((i) => candidates[i].equipment.weapon?.name ?? ''),
       });
     }
 

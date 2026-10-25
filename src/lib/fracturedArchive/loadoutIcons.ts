@@ -5,6 +5,7 @@ import { getCdnImage } from '@/utils';
 import { resolvePresetEquipment, BestSetupTarget } from '@/lib/fracturedArchive/bestSetup';
 import { PresetDef } from '@/lib/fracturedArchive/presets';
 import { SearchItem, SearchRow } from '@/lib/fracturedArchive/search';
+import { resolveItem } from '@/lib/fracturedArchive/loadout';
 
 /**
  * Item icons for the /best-setup tables (phase 12). Images come from the same place as the main calculator's
@@ -112,4 +113,13 @@ export const presetWeaponParts = (preset: PresetDef, spell: string | null): Weap
 export const targetImageUrl = (target: BestSetupTarget): string | null => {
   const m = getMonsters().find((x) => x.name === target.name && x.version === target.version);
   return m?.image ? getCdnImage(`monsters/${m.image}`) : null;
+};
+
+/** Phase 34: the icon of an item by name ("Obligator", "Ultor ring"), or null (not equipment / no image). */
+export const itemImageByName = (name: string): string | null => {
+  try {
+    return equipmentImageUrl(resolveItem(name).image);
+  } catch {
+    return null;
+  }
 };

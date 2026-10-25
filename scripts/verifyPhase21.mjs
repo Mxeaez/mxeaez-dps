@@ -15,6 +15,7 @@
  * Screenshots docs/screenshots/phase21-*.png.
  */
 import { chromium } from '@playwright/test';
+import { openSections } from './phase34Sections.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
 
@@ -77,6 +78,7 @@ const runPlan = async (page, raid) => {
   await page.waitForTimeout(700); // debounce
   await page.locator('[data-testid="plan-progress"]').waitFor({ state: 'detached', timeout: 600000 });
   await page.locator('[data-testid="plan-result"]').waitFor({ timeout: 600000 });
+  await openSections(page); // phase 34: open the sections what this script reads moved into
   const secs = (Date.now() - t0) / 1000 + 0.5;
   const headline = (await page.locator('[data-testid="plan-headline"]').innerText()).replace(/\s+/g, ' ').trim();
   const total = (await page.locator('[data-testid="plan-total"]').innerText()).trim();
@@ -143,6 +145,7 @@ const run = async () => {
   check(alts.some((a) => /^Lighter kit: .*−\d+ slots? for \+\d+\.\d s/.test(a)), 'ToB: "Lighter kit" alternative (−N slots for +X.X s)');
   const dawnCell = await page.locator('[data-testid="inventory-cell"][data-label="Dawnbringer"]').count();
   check(dawnCell === 0, 'ToB: no Dawnbringer inventory cell');
+  await openSections(page, ['plan-advanced']); // phase 34: the raid items moved to Advanced (plan)
   check((await page.locator('[data-testid="raid-supplied"]').innerText()).includes('Dawnbringer'), 'ToB: "Raid items (0 slots): Dawnbringer" shown');
   await shot(page, 'plan-tob');
 

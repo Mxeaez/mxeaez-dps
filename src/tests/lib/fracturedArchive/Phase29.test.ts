@@ -366,7 +366,7 @@ describe('Team drain line: "needed ×N · team brings ×M"', () => {
     expect(ranked(3)).toBe(ranked(4));
     expect(p(4)).toBe('98%');
     // phase 32 wording (units on every number; Phase32.test.ts)
-    expect(neededText(tona)).toBe('needs 4 landed hits · 4 specs (2 carriers), 8 swings · 98%');
+    expect(neededText(tona)).toBe('needs 4 landed hits · 4 specs (2 carriers) = 8 attacks, 4 must land · 98%'); // phase 34 wording
     expect(neededText({ ...tona, needed: 0 })).toBe('not needed · team: 4 specs (2 carriers) · 98%');
     expect(tona.title.startsWith(`${neededText(tona)} (`)).toBe(true);
     // the Max-drain plan's deterministic count ("4 Tonalztics of Ralos" hits = 2 specs → Def 156)
@@ -438,7 +438,7 @@ describe('Team drain line: "needed ×N · team brings ×M"', () => {
     expect(nd.elderMaul!.brings).toMatch(/^→ Def \d+$/);
   });
 
-  test('countText "×2 (4 hits)" (Max-drain buttons); Solo lines (phase 32): "needs N landed hits · N specs, 2N swings · …"', () => {
+  test('countText "×2 (4 hits)" (Max-drain buttons); Solo lines (phase 32, phase 34 wording): "needs N landed hits · N specs = 2N attacks, N must land · …"', () => {
     expect(countText(2, 4)).toBe('×2 (4 hits)');
     expect(countText(3)).toBe('×3');
     const d = drainStateFor(undrained('ag-flying'), 'solo', {
@@ -451,7 +451,7 @@ describe('Team drain line: "needed ×N · team brings ×M"', () => {
     expect(tona.hits).toBe(tona.count * 2);
     expect(tona.needed).toBe(tona.count);
     expect(tona.perCarrier).toBeUndefined();
-    expect(neededText(tona)).toMatch(new RegExp(`^needs \\d+ landed hits? · ${tona.count} specs?, ${tona.count * 2} swings · `));
+    expect(neededText(tona)).toMatch(new RegExp(`^needs (\\d+) landed hits? · ${tona.count} specs? = ${tona.count * 2} attacks, \\1 must land · `));
   });
 
   test('neededSpecs: fewest specs if every one lands, more of the earlier weapon on ties; null when unreachable', () => {

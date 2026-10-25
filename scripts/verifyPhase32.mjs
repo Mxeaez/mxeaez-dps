@@ -15,6 +15,7 @@
  * Screenshots docs/screenshots/phase32-*.png.
  */
 import { chromium } from '@playwright/test';
+import { openSections } from './phase34Sections.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
 const USER_TOTAL = process.env.USER_TOTAL || '25:46.3';
@@ -40,16 +41,18 @@ const waitPlan = async (page) => {
     await page.waitForTimeout(3000);
   }
   await page.locator('[data-testid="plan-result"]').waitFor({ timeout: 900000 });
+  await openSections(page); // phase 34: open the sections what this script reads moved into
 };
 const waitSearch = async (page) => {
   await page.waitForTimeout(800);
   await page.locator('[data-testid="search-progress"]').waitFor({ state: 'detached', timeout: 300000 });
   await page.locator('[data-testid="search-results"]').waitFor({ timeout: 300000 });
+  await openSections(page); // phase 34: open the sections what this script reads moved into
 };
 const cells = async (page) => page.locator('[data-testid="inventory-cell"]').evaluateAll((els) => els.map((e) => ({ kind: e.dataset.kind, label: e.dataset.label })));
 const kitLoadouts = async (page) => page.locator('[data-testid="kit-loadout"]').evaluateAll((els) => els.map((e) => ({
   group: e.dataset.group,
-  items: Array.from(e.querySelectorAll('img')).map((i) => i.alt || i.title),
+  items: Array.from(e.querySelectorAll('[data-testid="loadout-icons"] img')).map((i) => i.alt || i.title), // phase 34: the item row (the name has a weapon icon too)
   text: e.textContent.replace(/\s+/g, ' ').trim(),
 })));
 
@@ -86,9 +89,9 @@ const main = async () => {
   await page.locator('[data-testid="boss-select"]').selectOption('ag-flying');
   await waitSearch(page);
   const ag = await text(drainCount('tonalztics'));
-  check(ag === 'needs 4 landed hits · 4 specs (2 carriers), 8 swings · 98%', `AG Flying Tonalztics (Team): "${ag}"`);
+  check(ag === 'needs 4 landed hits · 4 specs (2 carriers) = 8 attacks, 4 must land · 98%', `AG Flying Tonalztics (Team): "${ag}"`);
   const agTitle = await drainItem('tonalztics').getAttribute('title');
-  check(/a charged Tonalztics spec swings twice and each swing can miss; the % is the chance the Defence reaches the floor in the first round with these specs and the other weapons' specs/.test(agTitle ?? ''), `AG Flying tooltip: "${agTitle}"`);
+  check(/a charged Tonalztics spec attacks twice and each attack can miss; the % is the chance the Defence reaches the floor in the first round with these specs and the other weapons' specs/.test(agTitle ?? ''), `AG Flying tooltip: "${agTitle}"`);
   const agAyak = await text(drainCount('ayak'));
   check(/^needs ≈ \d+ magic defence drained · 2 specs \(1 carrier\) · → magic def \d+$/.test(agAyak), `AG Flying Eye of Ayak (Team): "${agAyak}"`);
   await shot(page, 'drain-ag-flying');
@@ -96,7 +99,7 @@ const main = async () => {
   await waitSearch(page);
   const xTona = await text(drainCount('tonalztics'));
   const xMaul = await text(drainCount('elderMaul'));
-  check(xTona === 'needs 2 landed hits · 2 specs (1 carrier), 4 swings · 97% · team: 4 specs (2 carriers) · >99.9%', `Xarth Tonalztics (Team): "${xTona}"`);
+  check(xTona === 'needs 2 landed hits · 2 specs (1 carrier) = 4 attacks, 2 must land · 97% · team: 4 specs (2 carriers) · >99.9%', `Xarth Tonalztics (Team): "${xTona}"`);
   check(xMaul === 'not needed · team: 4 specs (2 carriers) · >99.9%', `Xarth Elder maul (Team): "${xMaul}"`);
   await page.locator('[data-testid="boss-select"]').selectOption('bork');
   await waitSearch(page);
@@ -111,7 +114,7 @@ const main = async () => {
   await page.locator('[data-testid="boss-select"]').selectOption('ag-flying');
   await waitSearch(page);
   const solo = await text(drainCount('tonalztics'));
-  check(/^needs \d+ landed hits? · \d+ specs?, \d+ swings · /.test(solo) && !/carrier|team:/.test(solo), `AG Flying Tonalztics (Solo): "${solo}"`);
+  check(/^needs (\d+) landed hits? · \d+ specs? = \d+ attacks, \1 must land · /.test(solo) && !/carrier|team:/.test(solo), `AG Flying Tonalztics (Solo): "${solo}"`);
   await shot(page, 'drain-solo');
   await tonaToggle.click();
   await page.locator('[data-testid="my-specs-mode"]').selectOption('auto');

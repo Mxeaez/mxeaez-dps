@@ -49,9 +49,11 @@ import {
   RaidConfig, teamDpsMultiplier, teamTimeLabel, TimeSettings,
 } from '@/lib/raids';
 import {
-  equipmentImageUrl, LOADOUT_SLOT_ORDER, searchItemIcon, targetImageUrl,
+  equipmentImageUrl, itemImageByName, LOADOUT_SLOT_ORDER, searchItemIcon, targetImageUrl,
 } from '@/lib/fracturedArchive/loadoutIcons';
-import { ItemIcon, LoadoutIconRow } from '@/app/components/bestSetup/ItemIcons';
+import { ItemIcon, ItemNames, LoadoutIconRow } from '@/app/components/bestSetup/ItemIcons';
+import PlanBriefing from '@/app/components/bestSetup/PlanBriefing';
+import { briefingRows } from '@/lib/fracturedArchive/briefing';
 import DrainLineView from '@/app/components/bestSetup/DrainLineView';
 import {
   encounterDrainSummary, encounterItemText, encounterResultText, EncounterDrainSummary,
@@ -76,7 +78,7 @@ import legsSlot from '@/public/img/slots/legs.png';
 import handsSlot from '@/public/img/slots/hands.png';
 import feetSlot from '@/public/img/slots/feet.png';
 import ringSlot from '@/public/img/slots/ring.png';
-import { isOwned, unownedLabel } from '@/lib/fracturedArchive/ownership';
+import { isOwned } from '@/lib/fracturedArchive/ownership';
 import {
   bestWithoutText, describeNeed, specWeaponLabel, weaponDeltaText,
 } from '@/lib/fracturedArchive/specChoice';
@@ -98,6 +100,12 @@ import { PlannerWeapon, SPEC_WEAPONS } from '@/lib/fracturedArchive/specs';
 // Phase 33: "Spec weapons" is shared with the Assumptions box (the page holds it); a "Planner decides" plan hands its
 // "Bring" to the page (the "Specs I bring" chips). The encounter table shows one start-of-fight drain line per
 // encounter (drainLine.ts `encounterDrainSummary`); the per-phase rows are under one "per-phase details" toggle (closed).
+// Phase 34 (readability): the result starts with a raid briefing (PlanBriefing.tsx: boss, what to wear, specs at the start
+// as icon + number, seconds), "Bring" / your share, then the kit (worn / inventory). Everything else is in three sections
+// closed by default: "Why this kit" (loadout list, potions, ring and its alternatives, rejected / alternative kits,
+// stats), "Spec plan" (Solo weapon list / team briefing table, added in order, per-boss minimum) and "Per-phase details"
+// (the encounter table and the route comparison). The inputs keep spec weapons, comfort supplies, rings and "Items I
+// always bring"; the route, the potions note and the raid items moved to "Advanced (plan)". No number changes.
 
 const searchCache = new Map<string, SearchRow[]>();
 const cachePrefix = (a: BestSetupAssumptions, drain: DrainStateId, notOwned: string[] = []) => `${JSON.stringify(a)}|${drain}|${notOwned.length ? `${JSON.stringify([...notOwned].sort())}|` : ''}`;
@@ -122,6 +130,13 @@ const SUPPLY_COLOURS: Record<SupplyType, string> = {
 const HEART_IMAGES: Record<string, string> = {
   'Saturated heart': SaturatedHeartImg.src,
   'Imbued heart': ImbuedHeartImg.src,
+};
+
+/** Phase 34: the kit potions' icons by name ("Potions (from the kit)" line). */
+const POTION_IMAGES: Record<string, string> = {
+  'Super combat': SuperCombatImg.src,
+  'Ranging potion': RangingImg.src,
+  ...HEART_IMAGES,
 };
 
 const SLOT_PLACEHOLDERS: Record<keyof PlayerEquipment, string> = {
@@ -280,6 +295,11 @@ const RejectionList: React.FC<{ rows: PlanRejection[], testId: string }> = ({ ro
   <ul className="list-disc ml-5" data-testid={testId}>
     {rows.map((r) => (
       <li key={r.label}>
+        {/* phase 34: each loadout's weapon icon (icons add no text) */}
+        {(r.weapons ?? []).filter(Boolean).map((w, i) => (
+          // eslint-disable-next-line react/no-array-index-key
+          <span key={`${w}|${i}`} className="inline-block align-middle mr-0.5"><ItemIcon name={w} src={itemImageByName(w)} size={16} /></span>
+        ))}
         <span className="font-semibold">{r.label}</span>
         {`: ${fmtDelta(r.deltaSeconds)} route time, ${r.deltaSlots >= 0 ? '+' : ''}${r.deltaSlots} slot${Math.abs(r.deltaSlots) === 1 ? '' : 's'} — ${r.reason}`}
       </li>
@@ -369,26 +389,43 @@ const shareText = (specs: PlanResult['specs']) => {
   return specs.share.carry ? `carry ${specs.share.reason}` : specs.share.reason;
 };
 
-/** Phase 29: the spec weapons of the plan: "Bring: …" + what each saves (Solo) or the team briefing + your share (Team). */
-const SpecsBox: React.FC<{ specs: PlanResult['specs'] }> = ({ specs }) => (
-  <div className="text-xs flex flex-col gap-1 border border-body-400 dark:border-dark-200 rounded p-2" data-testid="plan-specs" data-mode={specs.mode} data-bring={specs.bring.join(',')}>
-    <div className="flex flex-wrap items-center gap-2">
+/**
+ * Phase 34: the plan's spec actions, shown under the briefing: "Bring: [icons]" and (Team) your share. The rest of the
+ * phase 29 box (what each weapon saves / the team briefing table) is in the "Spec plan" section (SpecPlanBody).
+ */
+const BringBox: React.FC<{ specs: PlanResult['specs'] }> = ({ specs }) => (
+  <div className="text-sm flex flex-col gap-1" data-testid="plan-specs" data-mode={specs.mode} data-bring={specs.bring.join(',')}>
+    <div className="flex flex-wrap items-center gap-2" title={specs.mode === 'auto' ? '(spec weapons picked by the planner)' : '(from "Specs I bring")'}>
       <span className="font-semibold" data-testid="plan-bring">{specs.text}</span>
-      {specs.bring.map((w) => <ItemIcon key={w} name={specWeaponLabel(w)} src={specIcon(w)} size={20} />)}
-      <span className="text-gray-500 dark:text-gray-400">
-        {specs.mode === 'auto' ? '(spec weapons picked by the planner)' : '(from "Specs I bring")'}
-      </span>
+      {specs.bring.map((w) => <ItemIcon key={w} name={specWeaponLabel(w)} src={specIcon(w)} size={28} />)}
     </div>
+    {specs.share && (
+      <div className="flex flex-wrap items-center gap-1" data-testid="plan-share" data-weapon={specs.share.weapon ?? ''} data-carry={specs.share.carry ? 'true' : 'false'} data-manual={specs.share.manual ? 'true' : 'false'}>
+        <span className="font-semibold">{specs.share.manual ? 'Your share (Specs I bring): ' : 'Your share (assign me): '}</span>
+        {specs.share.weapon && <ItemIcon name={specWeaponLabel(specs.share.weapon)} src={specIcon(specs.share.weapon)} size={22} />}
+        {shareText(specs)}
+      </div>
+    )}
+  </div>
+);
+
+/** Phase 29's spec box without "Bring" / your share (phase 34: the "Spec plan" section). */
+const SpecPlanBody: React.FC<{ specs: PlanResult['specs'] }> = ({ specs }) => (
+  <div className="text-xs flex flex-col gap-1">
     {specs.solo && (
       <ul className="list-disc ml-5" data-testid="plan-spec-weapons" title="Route-time change of one change to this plan (the kit re-optimised each time; drains planned at each encounter's fight length), and the fastest set timed without each brought weapon">
         {specs.solo.perWeapon.filter((d) => d.chosen).map((d) => (
-          <li key={d.weapon} data-testid="plan-spec-weapon" data-weapon={d.weapon} data-delta={d.deltaSeconds.toFixed(1)} data-slots={d.deltaSlots}>{weaponDeltaText(d)}</li>
+          <li key={d.weapon} data-testid="plan-spec-weapon" data-weapon={d.weapon} data-delta={d.deltaSeconds.toFixed(1)} data-slots={d.deltaSlots}>
+            <span className="inline-block align-middle mr-0.5"><ItemIcon name={specWeaponLabel(d.weapon)} src={specIcon(d.weapon)} size={16} /></span>
+            {weaponDeltaText(d)}
+          </li>
         ))}
         {(specs.solo.bestWithout ?? []).map((b) => (
           <li key={`without-${b.weapon}`} data-testid="plan-spec-without" data-weapon={b.weapon} data-seconds={b.seconds.toFixed(2)}>{bestWithoutText(b, (x) => formatDuration(x))}</li>
         ))}
         {specs.solo.perWeapon.filter((d) => !d.chosen).sort((a, b) => b.deltaSeconds - a.deltaSeconds).map((d) => (
           <li key={d.weapon} data-testid={specs.solo!.bestRejected?.weapon === d.weapon ? 'plan-spec-rejected' : 'plan-spec-other'} data-weapon={d.weapon} data-delta={d.deltaSeconds.toFixed(1)}>
+            <span className="inline-block align-middle mr-0.5"><ItemIcon name={specWeaponLabel(d.weapon)} src={specIcon(d.weapon)} size={16} /></span>
             {weaponDeltaText(d)}
           </li>
         ))}
@@ -431,7 +468,15 @@ const SpecsBox: React.FC<{ specs: PlanResult['specs'] }> = ({ specs }) => (
         ) : <div>No spec carriers needed on this route.</div>}
         {specs.team.steps && specs.team.steps.length > 0 && (
           <div className="text-gray-500 dark:text-gray-400" data-testid="plan-team-steps">
-            {`Added in this order: ${specs.team.steps.map((st) => `${specWeaponLabel(st.weapon)} −${st.saved.toFixed(1)} s`).join(', ')} (next one < 1 s)`}
+            {'Added in this order: '}
+            <ItemNames
+              names={specs.team.steps.map((st) => `${specWeaponLabel(st.weapon)} −${st.saved.toFixed(1)} s`)}
+              srcOf={(n) => {
+                const st = specs.team!.steps!.find((x) => n.startsWith(`${specWeaponLabel(x.weapon)} `));
+                return st ? specIcon(st.weapon) : null;
+              }}
+            />
+            {' (next one < 1 s)'}
           </div>
         )}
         <details>
@@ -442,12 +487,6 @@ const SpecsBox: React.FC<{ specs: PlanResult['specs'] }> = ({ specs }) => (
             ))}
           </ul>
         </details>
-        {specs.share && (
-          <div data-testid="plan-share" data-weapon={specs.share.weapon ?? ''} data-carry={specs.share.carry ? 'true' : 'false'} data-manual={specs.share.manual ? 'true' : 'false'}>
-            <span className="font-semibold">{specs.share.manual ? 'Your share (Specs I bring): ' : 'Your share (assign me): '}</span>
-            {shareText(specs)}
-          </div>
-        )}
       </div>
     )}
     {specs.notes.map((n) => <div key={n} className="text-orange-700 dark:text-orange-300" data-testid="plan-spec-note">{n}</div>)}
@@ -702,26 +741,17 @@ const PlanView: React.FC<{
   return (
     <div className="flex flex-col gap-3" data-testid="plan-view">
       <div className="text-xs bg-body-100 dark:bg-dark-400 border border-body-400 dark:border-dark-200 rounded p-3 flex flex-col gap-2" data-testid="plan-inputs">
-        <div className="font-bold text-sm">Assumptions (plan)</div>
-        <div>
-          Finds the worn set + switch items with the lowest route time (time model: see Advanced above) that fit in
-          {` ${INVENTORY_SLOTS} `}
-          inventory slots. Party size and drains come from the boxes above; the planner picks the spec weapons (or uses
-          &quot;Specs I bring&quot;); spec weapons and the items below take a slot unless a loadout wears them.
-          {raid.planNote && ` ${raid.planNote}`}
+        <div
+          className="font-bold text-sm"
+          title={`Finds the worn set + switch items with the lowest route time (time model: see Advanced above) that fit in ${INVENTORY_SLOTS} inventory slots. Party size and drains come from the boxes above; the planner picks the spec weapons (or uses "Specs I bring"); spec weapons and the items below take a slot unless a loadout wears them.${raid.planNote ? ` ${raid.planNote}` : ''}`}
+        >
+          Assumptions (plan)
         </div>
         <div className="flex flex-wrap gap-x-4 gap-y-2 items-center">
           <label htmlFor="plan-spec-mode" className="flex items-center gap-1" title={SPEC_MODES.find((m) => m.id === specMode)?.title}>
             Spec weapons
             <select id="plan-spec-mode" className="form-control text-xs py-0.5" value={specMode} onChange={(e) => setSpecMode(e.target.value as SpecMode)} data-testid="plan-spec-mode">
               {SPEC_MODES.map((m) => <option key={m.id} value={m.id} title={m.title}>{m.label}</option>)}
-            </select>
-          </label>
-          <label htmlFor="plan-route" className="flex items-center gap-1">
-            Route
-            <select id="plan-route" className="form-control text-xs py-0.5" value={route} onChange={(e) => setRoute(e.target.value)} data-testid="plan-route">
-              <option value="all">Compare all (plan for the fastest)</option>
-              {routes.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
             </select>
           </label>
         </div>
@@ -757,21 +787,35 @@ const PlanView: React.FC<{
           <span className="flex flex-wrap items-center gap-x-2" data-testid="plan-ring-summary">
             <label htmlFor="plan-ring-policy" className="flex items-center gap-1 font-semibold" title={ringPolicyTitle}>
               Rings
-              <select id="plan-ring-policy" className="form-control text-xs py-0.5 font-normal" value={ringPolicy} onChange={(e) => setRingPolicy(e.target.value as RingPolicy)} data-testid="plan-ring-policy">
+              <select id="plan-ring-policy" className="form-control text-xs py-0.5 font-normal" title={`${ringSummary()}. ${ringPolicyTitle}`} value={ringPolicy} onChange={(e) => setRingPolicy(e.target.value as RingPolicy)} data-testid="plan-ring-policy">
                 {RING_POLICIES.map((p) => <option key={p.id} value={p.id} title={p.title}>{p.label}</option>)}
               </select>
             </label>
-            <span className="text-gray-600 dark:text-gray-300" data-testid="plan-ring-summary-text" title={ringPolicyTitle}>{ringSummary()}</span>
+            {/* phase 34: the select's tooltip says it; kept for screen readers */}
+            <span className="sr-only" data-testid="plan-ring-summary-text" title={ringPolicyTitle}>{ringSummary()}</span>
           </span>
-        </div>
-        <div className="text-gray-600 dark:text-gray-300" data-testid="plan-potions-note">
-          {raid.boostsNeedSupplies
-            ? `Potions: chosen from the kit — one Super combat if it has a melee loadout, one Ranging potion if ranged, the ${kitHeart(assumptions, keptPinned).name} if magic (a slot each).`
-            : 'Potions: the raid\'s own potion ("Other") boosts every style; no combat potions are brought.'}
         </div>
         <details className="border border-body-400 dark:border-dark-200 rounded px-2 py-1" data-testid="plan-advanced">
           <summary className="cursor-pointer font-semibold" data-testid="plan-advanced-toggle">Advanced (plan)</summary>
           <div className="flex flex-col gap-1 mt-1">
+            <label htmlFor="plan-route" className="flex items-center gap-1">
+              Route
+              <select id="plan-route" className="form-control text-xs py-0.5" value={route} onChange={(e) => setRoute(e.target.value)} data-testid="plan-route">
+                <option value="all">Compare all (plan for the fastest)</option>
+                {routes.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
+              </select>
+            </label>
+            <div className="text-gray-600 dark:text-gray-300" data-testid="plan-potions-note">
+              {raid.boostsNeedSupplies
+                ? `Potions: chosen from the kit — one Super combat if it has a melee loadout, one Ranging potion if ranged, the ${kitHeart(assumptions, keptPinned).name} if magic (a slot each).`
+                : 'Potions: the raid\'s own potion ("Other") boosts every style; no combat potions are brought.'}
+            </div>
+            {raid.planDefaults.raidSupplied.length > 0 && (
+              <span className="text-gray-500 dark:text-gray-400" data-testid="raid-supplied" title="Handed out by the raid: free to use on any loadout, no inventory slot">
+                {'Raid items (0 slots): '}
+                <ItemNames names={raid.planDefaults.raidSupplied.map((r) => (typeof r === 'string' ? r : r[0]))} />
+              </span>
+            )}
             <label htmlFor="plan-mages" className="flex items-center gap-1" title="Team drains: Eye of Ayak carriers are planned only if someone in the party attacks with magic">
               Mages in party
               <select
@@ -812,16 +856,12 @@ const PlanView: React.FC<{
               );
             })}
             {raid.boostsNeedSupplies && !pinned.some((id) => heartById(id)) && HEART_ITEMS.map((h) => (
-              <button key={h.id} type="button" className="underline" onClick={() => setPinned([...pinned, h.id])} data-testid="pin-heart" title="Optional: the plan brings a heart as magic's potion whenever the kit has a magic loadout; pin one to always carry it (counted once)">
+              <button key={h.id} type="button" className="underline inline-flex items-center gap-0.5" onClick={() => setPinned([...pinned, h.id])} data-testid="pin-heart" title="Optional: the plan brings a heart as magic's potion whenever the kit has a magic loadout; pin one to always carry it (counted once)">
+                <ItemIcon name={h.name} src={HEART_IMAGES[h.name]} size={16} />
                 {`+ ${h.name}`}
               </button>
             ))}
             <button type="button" className="underline" onClick={() => setPinned(defaultPinned)} data-testid="pinned-reset">reset</button>
-            {raid.planDefaults.raidSupplied.length > 0 && (
-              <span className="text-gray-500 dark:text-gray-400" data-testid="raid-supplied" title="Handed out by the raid: free to use on any loadout, no inventory slot">
-                {`Raid items (0 slots): ${raid.planDefaults.raidSupplied.map((r) => (typeof r === 'string' ? r : r[0])).join(', ')}`}
-              </span>
-            )}
           </div>
           <div className="max-w-[360px]">
             <EquipmentSelect
@@ -858,7 +898,7 @@ const PlanView: React.FC<{
             <div className="text-xs flex flex-col gap-0.5 px-2 py-1 rounded border border-red-300 bg-red-50 dark:bg-red-900/20" data-testid="plan-ownership">
               <div data-testid="plan-excluded">
                 <span className="font-semibold">Excluded: </span>
-                {unownedLabel(result.excluded)}
+                <ItemNames names={result.excluded} />
                 <span className="text-gray-500 dark:text-gray-400"> (Items I don&apos;t own)</span>
               </div>
               <div data-testid="plan-max-compare">
@@ -879,9 +919,14 @@ const PlanView: React.FC<{
             <div className="text-sm" data-testid="plan-headline">
               <span className="font-semibold">{planned.route.label}</span>
               {' · '}
-              <span className={`font-mono ${DPS_TEXT_CLASS}`} data-testid="plan-total">{formatDuration(secs(planned.seconds))}</span>
-              {route === 'all' && <span className="text-xs text-gray-500 dark:text-gray-400"> (fastest route with this kit)</span>}
-              <span className="text-xs text-gray-500 dark:text-gray-400" data-testid="plan-team-label">{` · ${teamTimeLabel(teamDpsMultiplier(assumptions))}`}</span>
+              <span
+                className={`font-mono font-bold text-base ${DPS_TEXT_CLASS}`}
+                data-testid="plan-total"
+                title={`${route === 'all' ? 'Fastest route with this kit' : 'The chosen route'} · ${teamTimeLabel(teamDpsMultiplier(assumptions))}`}
+              >
+                {formatDuration(secs(planned.seconds))}
+              </span>
+              <span className="sr-only" data-testid="plan-team-label">{` · ${teamTimeLabel(teamDpsMultiplier(assumptions))}`}</span>
             </div>
             <span
               className={`px-2 py-0.5 rounded text-sm font-bold ${result.slots.free > 0 ? 'bg-green-600' : 'bg-orange-500'} text-white`}
@@ -896,198 +941,245 @@ const PlanView: React.FC<{
                 {`Supplies, non-items and carried items alone need ${result.slots.used} slots: no room for switches.`}
               </span>
             )}
-            <button type="button" className="btn text-xs" onClick={loadWorn} data-testid="load-worn" title="Opens the calculator with the worn set against the route's first phase (drains as planned)">Load worn set into calculator</button>
-            <button type="button" className="btn text-xs" onClick={loadAll} data-testid="load-all" title="Adds one calculator loadout per kit loadout (replaces the calculator's loadouts if there isn't room), against the route's first phase">Load all loadouts</button>
+            <button type="button" className="btn text-xs" onClick={loadWorn} data-testid="load-worn" title="Load worn set into calculator: opens the calculator with the worn set against the route's first phase (drains as planned)">↗ Load worn</button>
+            <button type="button" className="btn text-xs" onClick={loadAll} data-testid="load-all" title="Load all loadouts: adds one calculator loadout per kit loadout (replaces the calculator's loadouts if there isn't room), against the route's first phase">↗ Load all</button>
           </div>
 
+          <PlanBriefing
+            rows={briefingRows(planned.encounters, drain)}
+            kit={result.kit}
+            imageOf={(id) => targetImageUrl(findTarget(raid.encounterTarget[id]))}
+          />
+          {result.specs && <BringBox specs={result.specs} />}
+          {result.unusedCarried.length > 0 && (
+            <div className="px-2 py-1 rounded border border-orange-400 bg-orange-50 dark:bg-orange-900/30 flex flex-wrap items-center gap-2" data-testid="unused-carried">
+              <span>
+                {'Always brought but in no kit loadout: '}
+                <ItemNames names={result.unusedCarried.map((x) => x.name)} srcOf={(n) => HEART_IMAGES[n]} />
+                .
+              </span>
+              <button
+                type="button"
+                className="btn text-xs"
+                data-testid="drop-pinned"
+                onClick={() => setPinned(pinned.filter((id) => !result.unusedCarried.some((x) => x.id === id)))}
+              >
+                {`Remove these to free ${result.unusedCarried.length} slot${result.unusedCarried.length === 1 ? '' : 's'}`}
+              </button>
+            </div>
+          )}
           <div className="flex flex-wrap gap-6 items-start">
             <div className="flex flex-col items-center gap-1">
               <div className="text-xs font-semibold">Worn</div>
               <WornGrid kit={result.kit[0]} quiverAmmo={result.quiverAmmo} keptAmmo={result.keptAmmo} />
-              <div className="text-[11px] text-center max-w-[180px]" data-testid="worn-label">{result.kit[0].label}</div>
+              <div className="text-[11px] text-center max-w-[180px] flex flex-wrap justify-center items-center gap-0.5" data-testid="worn-label">
+                {result.kit[0].equipment.weapon && <ItemIcon name={result.kit[0].equipment.weapon.name} src={searchItemIcon('weapon', result.kit[0].equipment.weapon).imageUrl} size={16} />}
+                {result.kit[0].label}
+              </div>
             </div>
             <div className="flex flex-col items-center gap-1">
               <div className="text-xs font-semibold">Inventory</div>
               <InventoryGrid cells={result.inventory} quiverAmmo={result.quiverAmmo} />
-              <div className="text-[10px] text-gray-500 dark:text-gray-400 max-w-[190px]" data-testid="spec-note">
-                {result.specs.mode === 'auto'
-                  ? `Spec weapons picked by the planner${result.specItems.length ? ` (${result.specItems.map((x) => x.name).join(', ')})` : ': none'}; each takes a slot.`
-                  : `Spec weapons from "Specs I bring"${result.specItems.length ? ` (${result.specItems.map((x) => x.name).join(', ')})` : ''}; each takes a slot. Untick a weapon or set Ayak × 0 to free it.`}
-              </div>
             </div>
-            <div className="flex flex-col gap-1 text-xs min-w-[300px] flex-1" data-testid="kit-loadouts">
-              <div className="font-semibold">{`Kit loadouts (${result.kit.length})`}</div>
-              {result.kit.map((c, i) => (
-                <div key={c.key} className="border-l-4 pl-2 border-body-400 dark:border-dark-200" data-testid="kit-loadout" data-weapon={c.equipment.weapon?.name ?? ''} data-ring={c.equipment.ring?.name ?? ''} data-items={[...equipmentItemIds(c.equipment)].sort((x, y) => x - y).join(',')} data-group={c.group}>
-                  <div>
-                    <span className="font-semibold">{i === 0 ? 'Worn: ' : 'Switch: '}</span>
-                    {c.label}
-                    <span className="text-gray-500 dark:text-gray-400">{` · ${c.group} · ${c.source}`}</span>
-                    {result.kit.length > 1 && result.kitMarginal?.[i] && (
+          </div>
+
+          <details className="text-xs border border-body-400 dark:border-dark-200 rounded px-2 py-1" data-testid="plan-why-details">
+            <summary className="cursor-pointer font-semibold" data-testid="plan-why-toggle">Why this kit</summary>
+            <div className="flex flex-col gap-2 mt-1">
+              <div className="flex flex-col gap-1 text-xs min-w-[300px] flex-1" data-testid="kit-loadouts">
+                <div className="font-semibold">{`Kit loadouts (${result.kit.length})`}</div>
+                {result.kit.map((c, i) => (
+                  <div key={c.key} className="border-l-4 pl-2 border-body-400 dark:border-dark-200" data-testid="kit-loadout" data-weapon={c.equipment.weapon?.name ?? ''} data-ring={c.equipment.ring?.name ?? ''} data-items={[...equipmentItemIds(c.equipment)].sort((x, y) => x - y).join(',')} data-group={c.group}>
+                    <div>
+                      <span className="font-semibold">{i === 0 ? 'Worn: ' : 'Switch: '}</span>
+                      {c.equipment.weapon && <span className="inline-block align-middle mr-0.5"><ItemIcon name={c.equipment.weapon.name} src={searchItemIcon('weapon', c.equipment.weapon).imageUrl} size={16} /></span>}
+                      {c.label}
+                      <span className="text-gray-500 dark:text-gray-400">{` · ${c.group} · ${c.source}`}</span>
+                      {result.kit.length > 1 && result.kitMarginal?.[i] && (
                       <span className="text-gray-500 dark:text-gray-400" data-testid="kit-marginal" data-slots={result.kitMarginal[i].slots}>
                         {` · +${result.kitMarginal[i].slots} slot${result.kitMarginal[i].slots === 1 ? '' : 's'}, saves ${fmtS(result.kitMarginal[i].seconds)}`}
                       </span>
-                    )}
+                      )}
+                    </div>
+                    <LoadoutIconRow
+                      icons={LOADOUT_SLOT_ORDER.filter((s) => c.equipment[s]).map((s) => searchItemIcon(s, c.equipment[s]!))}
+                      size={20}
+                    />
                   </div>
-                  <LoadoutIconRow
-                    icons={LOADOUT_SLOT_ORDER.filter((s) => c.equipment[s]).map((s) => searchItemIcon(s, c.equipment[s]!))}
-                    size={20}
-                  />
+                ))}
+                <div className="mt-1 text-gray-600 dark:text-gray-300" data-testid="plan-potions">
+                  {result.potions.length ? (
+                    <>
+                      {'Potions (from the kit): '}
+                      <ItemNames names={result.potions.map((p) => `${p.label} (${p.group})`)} srcOf={(n) => POTION_IMAGES[n.replace(/ \([a-z]+\)$/, '')]} />
+                    </>
+                  ) : 'Potions (from the kit): none'}
                 </div>
-              ))}
-              <div className="mt-1 text-gray-600 dark:text-gray-300" data-testid="plan-potions">
-                {result.potions.length
-                  ? `Potions (from the kit): ${result.potions.map((p) => `${p.label} (${p.group})`).join(', ')}`
-                  : 'Potions (from the kit): none'}
-              </div>
-              <div className="text-gray-600 dark:text-gray-300" data-testid="plan-ring-result" data-ring={result.ring.ring ?? ''} data-policy={result.ring.policy}>
-                {result.ring.ring ? `Ring: ${result.ring.ring} on every loadout` : 'Ring: each loadout\'s own'}
-                {result.ring.screened.length > 1 && (
+                <div className="text-gray-600 dark:text-gray-300" data-testid="plan-ring-result" data-ring={result.ring.ring ?? ''} data-policy={result.ring.policy}>
+                  {result.ring.ring ? (
+                    <>
+                      {'Ring: '}
+                      <ItemNames names={[result.ring.ring]} />
+                      {' on every loadout'}
+                    </>
+                  ) : 'Ring: each loadout\'s own'}
+                  {result.ring.screened.length > 1 && (
                   <span className="text-gray-500 dark:text-gray-400" title="Route time with each ring camped, vs the chosen ring. Exact (±) for the rings planned in full; '≥ … (estimate)' for rings whose quick screen (presets + search rows only) was too far behind to plan in full">
-                    {` · others: ${result.ring.screened.filter((x) => x.ring !== result.ring.ring).map((x) => ringOther(x, planned.seconds)).join(', ')}`}
+                    {' · others: '}
+                    <ItemNames
+                      names={result.ring.screened.filter((x) => x.ring !== result.ring.ring).map((x) => ringOther(x, planned.seconds))}
+                      srcOf={(n) => itemImageByName(result.ring.screened.find((x) => n.startsWith(`${x.ring} `))?.ring ?? '')}
+                    />
                   </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="text-[10px] text-gray-500 dark:text-gray-400" data-testid="spec-note">
+                {result.specs.mode === 'auto' ? 'Spec weapons picked by the planner' : 'Spec weapons from "Specs I bring"'}
+                {result.specItems.length > 0 && (
+                  <>
+                    {' ('}
+                    <ItemNames names={result.specItems.map((x) => x.name)} size={14} />
+                    )
+                  </>
+                )}
+                {result.specs.mode === 'auto' && !result.specItems.length && ': none'}
+                {result.specs.mode === 'auto' ? '; each takes a slot.' : '; each takes a slot. Untick a weapon or set Ayak × 0 to free it.'}
+              </div>
+              <div className="text-xs flex flex-col gap-1" data-testid="plan-why">
+                {result.rejected.length > 0 ? (
+                  <>
+                    <div>Faster with one more loadout, but it doesn&apos;t fit:</div>
+                    <RejectionList rows={result.rejected} testId="plan-rejected" />
+                  </>
+                ) : <div>No other candidate loadout would make the route faster.</div>}
+                {result.alternatives.length > 0 && (
+                  <>
+                    <div>Alternatives (a lighter kit, then the best kit of each other style mix):</div>
+                    <RejectionList rows={result.alternatives} testId="plan-alternatives" />
+                  </>
                 )}
               </div>
-              {result.specs && <SpecsBox specs={result.specs} />}
-              {result.unusedCarried.length > 0 && (
-                <div className="mt-1 px-2 py-1 rounded border border-orange-400 bg-orange-50 dark:bg-orange-900/30 flex flex-wrap items-center gap-2" data-testid="unused-carried">
-                  <span>{`Always brought but in no kit loadout: ${result.unusedCarried.map((x) => x.name).join(', ')}.`}</span>
-                  <button
-                    type="button"
-                    className="btn text-xs"
-                    data-testid="drop-pinned"
-                    onClick={() => setPinned(pinned.filter((id) => !result.unusedCarried.some((x) => x.id === id)))}
-                  >
-                    {`Remove these to free ${result.unusedCarried.length} slot${result.unusedCarried.length === 1 ? '' : 's'}`}
-                  </button>
-                </div>
-              )}
+              <div className="text-[11px] text-gray-500 dark:text-gray-400" data-testid="plan-stats">
+                {`${result.stats.phases} phases, ${result.stats.searches} new searches; ${result.stats.candidates.total} candidate loadouts (${result.stats.candidates.preset} presets, ${result.stats.candidates.search} search rows, ${result.stats.candidates.partial} partial switches${result.stats.candidates.capped ? `, ${result.stats.candidates.capped} capped` : ''}); ${result.stats.evaluations} DPS evaluations, ${result.stats.kitsEvaluated} kits timed; ${(result.stats.ms.total / 1000).toFixed(1)} s (search ${(result.stats.ms.search / 1000).toFixed(1)}, matrix ${(result.stats.ms.matrix / 1000).toFixed(1)}, optimiser ${(result.stats.ms.optimise / 1000).toFixed(1)}).`}
+                {' Times: DPS only (Σ HP ÷ DPS per phase); switching is free and instant.'}
+              </div>
             </div>
-          </div>
-
-          <div className="flex items-center gap-2 text-xs">
-            <button
-              type="button"
-              className="underline"
-              aria-expanded={phaseDetails}
-              data-testid="plan-phase-toggle"
-              title="Each encounter's phases with their own loadout, style, drain plan, DPS and seconds"
-              onClick={() => setPhaseDetails(!phaseDetails)}
-            >
-              {`${phaseDetails ? '▾ Hide' : '▸ Show'} per-phase details (${planned.encounters.reduce((t, e) => t + e.phases.length, 0)} phases)`}
-            </button>
-          </div>
-          <table className="w-full text-sm" data-testid="plan-encounters">
-            <thead>
-              <tr className="bg-btns-400 dark:bg-dark-500 text-white">
-                <th className="px-2 text-left">Encounter</th>
-                <th className="px-2 text-left">Loadout used</th>
-                <th className="px-2 text-left">Style</th>
-                <th className="px-2 text-left" title="Encounter rows: the specs at the start of the fight (on the first phase they land on; a phase that needs other spec weapons gets its own line). Phase rows (per-phase details): each phase's drain plan: weapon icon × specs, the chance each spec lands under each icon, then the Defence the DPS uses">Drains</th>
-                <th className="px-2 text-right" title="Damage ÷ seconds over the encounter's phases (phase rows: that phase's DPS)">avg DPS (time-weighted)</th>
-                <th className="px-2 text-right">Seconds</th>
-              </tr>
-            </thead>
-            <tbody>
-              {planned.encounters.map((e) => {
-                const damage = e.phases.reduce((t, p) => t + p.damage, 0);
-                const time = secs(e.seconds);
-                const loadouts = Array.from(new Set(e.phases.map((p) => p.choice?.loadout).filter(Boolean)));
-                const styles = Array.from(new Set(e.phases.map((p) => p.choice?.group).filter(Boolean)));
-                const drains = drain === 'none' ? undefined : encounterDrainSummary(e.phases.map((p) => ({
-                  key: p.key, label: p.label, drainLine: p.choice?.drainLine, drainReset: p.drainReset,
-                })), drain);
-                return (
-                  <React.Fragment key={e.id}>
-                    <tr className="border-t border-body-300 dark:border-dark-400" data-testid="plan-encounter-row" data-encounter={e.id}>
-                      <td className="px-2 py-1">
-                        <span className="flex items-center gap-1">
-                          <ItemIcon name={e.label} src={targetImageUrl(findTarget(raid.encounterTarget[e.id]))} size={20} />
-                          {e.label}
-                        </span>
-                      </td>
-                      <td className="px-2 py-1">{loadouts.join(' / ') || '—'}</td>
-                      <td className="px-2 py-1 capitalize">{styles.join(' / ')}</td>
-                      <td className="px-2 py-1">
-                        {drains && <EncounterDrains summary={drains} />}
-                        <span className="text-[11px] text-gray-500 dark:text-gray-400" data-testid="plan-encounter-fight">
-                          {e.drainFightSeconds !== undefined ? `drains planned for a ${e.drainFightSeconds} s fight` : ''}
-                        </span>
-                      </td>
-                      <td className={`px-2 py-1 text-right font-mono ${DPS_TEXT_CLASS}`}>{Number.isFinite(time) && time > 0 ? (damage / time).toFixed(3) : '0'}</td>
-                      <td className="px-2 py-1 text-right font-mono" data-testid="plan-encounter-seconds">{fmtS(e.seconds)}</td>
-                    </tr>
-                    <PhaseRows phases={e.phases} encounter={e.id} open={phaseDetails} />
-                  </React.Fragment>
-                );
-              })}
-            </tbody>
-          </table>
-
-          {result.comparison && (
-            <div className="overflow-x-auto max-w-[100vw]">
-              <table className="w-full text-sm" data-testid="plan-routes">
+          </details>
+          {result.specs && (result.specs.solo || result.specs.team || result.specs.notes.length > 0) && (
+            <details className="text-xs border border-body-400 dark:border-dark-200 rounded px-2 py-1" data-testid="plan-spec-details">
+              <summary className="cursor-pointer font-semibold" data-testid="plan-spec-toggle">Spec plan</summary>
+              <div className="mt-1"><SpecPlanBody specs={result.specs} /></div>
+            </details>
+          )}
+          <details className="text-xs border border-body-400 dark:border-dark-200 rounded px-2 py-1" data-testid="plan-phase-details">
+            <summary className="cursor-pointer font-semibold" data-testid="plan-phase-details-toggle">Per-phase details</summary>
+            <div className="flex flex-col gap-2 mt-1">
+              <div className="flex items-center gap-2 text-xs">
+                <button
+                  type="button"
+                  className="underline"
+                  aria-expanded={phaseDetails}
+                  data-testid="plan-phase-toggle"
+                  title="Each encounter's phases with their own loadout, style, drain plan, DPS and seconds"
+                  onClick={() => setPhaseDetails(!phaseDetails)}
+                >
+                  {`${phaseDetails ? '▾ Hide' : '▸ Show'} per-phase details (${planned.encounters.reduce((t, e) => t + e.phases.length, 0)} phases)`}
+                </button>
+              </div>
+              <table className="w-full text-sm" data-testid="plan-encounters">
                 <thead>
                   <tr className="bg-btns-400 dark:bg-dark-500 text-white">
-                    <th className="px-2 text-left" title="The same kit timed on every route (the Fractured Archive's middle bosses vary; other raids have one fixed route)">
-                      {result.comparison.routes.length > 1 ? 'Route (same kit)' : 'Route'}
-                    </th>
-                    <th className="px-2 text-right">Total</th>
-                    {raid.time.routeSlots.map((sl) => <th key={sl.order} className="px-2 text-right">{`${sl.order}.`}</th>)}
+                    <th className="px-2 text-left">Encounter</th>
+                    <th className="px-2 text-left">Loadout used</th>
+                    <th className="px-2 text-left">Style</th>
+                    <th className="px-2 text-left" title="Encounter rows: the specs at the start of the fight (on the first phase they land on; a phase that needs other spec weapons gets its own line). Phase rows (per-phase details): each phase's drain plan: weapon icon × specs, the chance each spec lands under each icon, then the Defence the DPS uses">Drains</th>
+                    <th className="px-2 text-right" title="Damage ÷ seconds over the encounter's phases (phase rows: that phase's DPS)">avg DPS (time-weighted)</th>
+                    <th className="px-2 text-right">Seconds</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {result.comparison.routes.map((r, i) => (
-                    <tr
-                      key={r.route.id}
-                      data-testid="plan-route-row"
-                      data-route={r.route.id}
-                      data-fastest={i === result.planned ? 'true' : 'false'}
-                      className={`border-t border-body-300 dark:border-dark-400 ${i === result.planned ? 'bg-orange-100 dark:bg-orange-900/40 font-semibold' : ''}`}
-                    >
-                      <td className="px-2 py-0.5">
-                        {r.route.label}
-                        {i === result.planned && result.comparison!.routes.length > 1 && (
-                          <span className="ml-2 text-[10px] px-1 rounded bg-orange-400 text-white" data-testid="fastest-badge">{route === 'all' ? 'fastest' : 'planned'}</span>
-                        )}
-                      </td>
-                      <td className={`px-2 py-0.5 text-right font-mono ${DPS_TEXT_CLASS}`} data-testid="plan-route-total" title={fmtS(r.seconds)}>{formatDuration(secs(r.seconds))}</td>
-                      {r.encounters.map((e) => (
-                        <td key={e.id} className="px-2 py-0.5 text-right whitespace-nowrap font-normal" data-testid={`plan-enc-${e.id}`} data-seconds={secs(e.seconds)}>
-                          <div className="flex items-center justify-end gap-1 text-xs">
-                            <ItemIcon name={e.label} src={targetImageUrl(findTarget(raid.encounterTarget[e.id]))} size={18} />
-                            <span>{e.label}</span>
-                          </div>
-                          <div className="font-mono text-xs">{e.phases.length ? fmtS(e.seconds) : '—'}</div>
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
+                  {planned.encounters.map((e) => {
+                    const damage = e.phases.reduce((t, p) => t + p.damage, 0);
+                    const time = secs(e.seconds);
+                    const loadouts = Array.from(new Set(e.phases.map((p) => p.choice?.loadout).filter(Boolean)));
+                    const styles = Array.from(new Set(e.phases.map((p) => p.choice?.group).filter(Boolean)));
+                    const drains = drain === 'none' ? undefined : encounterDrainSummary(e.phases.map((p) => ({
+                      key: p.key, label: p.label, drainLine: p.choice?.drainLine, drainReset: p.drainReset,
+                    })), drain);
+                    return (
+                      <React.Fragment key={e.id}>
+                        <tr className="border-t border-body-300 dark:border-dark-400" data-testid="plan-encounter-row" data-encounter={e.id}>
+                          <td className="px-2 py-1">
+                            <span className="flex items-center gap-1">
+                              <ItemIcon name={e.label} src={targetImageUrl(findTarget(raid.encounterTarget[e.id]))} size={20} />
+                              {e.label}
+                            </span>
+                          </td>
+                          <td className="px-2 py-1">{loadouts.join(' / ') || '—'}</td>
+                          <td className="px-2 py-1 capitalize">{styles.join(' / ')}</td>
+                          <td className="px-2 py-1">
+                            {drains && <EncounterDrains summary={drains} />}
+                            <span className="text-[11px] text-gray-500 dark:text-gray-400" data-testid="plan-encounter-fight">
+                              {e.drainFightSeconds !== undefined ? `drains planned for a ${e.drainFightSeconds} s fight` : ''}
+                            </span>
+                          </td>
+                          <td className={`px-2 py-1 text-right font-mono ${DPS_TEXT_CLASS}`}>{Number.isFinite(time) && time > 0 ? (damage / time).toFixed(3) : '0'}</td>
+                          <td className="px-2 py-1 text-right font-mono" data-testid="plan-encounter-seconds">{fmtS(e.seconds)}</td>
+                        </tr>
+                        <PhaseRows phases={e.phases} encounter={e.id} open={phaseDetails} />
+                      </React.Fragment>
+                    );
+                  })}
                 </tbody>
               </table>
+
+              {result.comparison && (
+                <div className="overflow-x-auto max-w-[100vw]">
+                  <table className="w-full text-sm" data-testid="plan-routes">
+                    <thead>
+                      <tr className="bg-btns-400 dark:bg-dark-500 text-white">
+                        <th className="px-2 text-left" title="The same kit timed on every route (the Fractured Archive's middle bosses vary; other raids have one fixed route)">
+                          {result.comparison.routes.length > 1 ? 'Route (same kit)' : 'Route'}
+                        </th>
+                        <th className="px-2 text-right">Total</th>
+                        {raid.time.routeSlots.map((sl) => <th key={sl.order} className="px-2 text-right">{`${sl.order}.`}</th>)}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {result.comparison.routes.map((r, i) => (
+                        <tr
+                          key={r.route.id}
+                          data-testid="plan-route-row"
+                          data-route={r.route.id}
+                          data-fastest={i === result.planned ? 'true' : 'false'}
+                          className={`border-t border-body-300 dark:border-dark-400 ${i === result.planned ? 'bg-orange-100 dark:bg-orange-900/40 font-semibold' : ''}`}
+                        >
+                          <td className="px-2 py-0.5">
+                            {r.route.label}
+                            {i === result.planned && result.comparison!.routes.length > 1 && (
+                              <span className="ml-2 text-[10px] px-1 rounded bg-orange-400 text-white" data-testid="fastest-badge">{route === 'all' ? 'fastest' : 'planned'}</span>
+                            )}
+                          </td>
+                          <td className={`px-2 py-0.5 text-right font-mono ${DPS_TEXT_CLASS}`} data-testid="plan-route-total" title={fmtS(r.seconds)}>{formatDuration(secs(r.seconds))}</td>
+                          {r.encounters.map((e) => (
+                            <td key={e.id} className="px-2 py-0.5 text-right whitespace-nowrap font-normal" data-testid={`plan-enc-${e.id}`} data-seconds={secs(e.seconds)}>
+                              <div className="flex items-center justify-end gap-1 text-xs">
+                                <ItemIcon name={e.label} src={targetImageUrl(findTarget(raid.encounterTarget[e.id]))} size={18} />
+                                <span>{e.label}</span>
+                              </div>
+                              <div className="font-mono text-xs">{e.phases.length ? fmtS(e.seconds) : '—'}</div>
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
-          )}
-
-          <div className="text-xs flex flex-col gap-1" data-testid="plan-why">
-            <div className="font-semibold">Why this kit</div>
-            {result.rejected.length > 0 ? (
-              <>
-                <div>Faster with one more loadout, but it doesn&apos;t fit:</div>
-                <RejectionList rows={result.rejected} testId="plan-rejected" />
-              </>
-            ) : <div>No other candidate loadout would make the route faster.</div>}
-            {result.alternatives.length > 0 && (
-              <>
-                <div>Alternatives (a lighter kit, then the best kit of each other style mix):</div>
-                <RejectionList rows={result.alternatives} testId="plan-alternatives" />
-              </>
-            )}
-          </div>
-
-          <div className="text-[11px] text-gray-500 dark:text-gray-400" data-testid="plan-stats">
-            {`${result.stats.phases} phases, ${result.stats.searches} new searches; ${result.stats.candidates.total} candidate loadouts (${result.stats.candidates.preset} presets, ${result.stats.candidates.search} search rows, ${result.stats.candidates.partial} partial switches${result.stats.candidates.capped ? `, ${result.stats.candidates.capped} capped` : ''}); ${result.stats.evaluations} DPS evaluations, ${result.stats.kitsEvaluated} kits timed; ${(result.stats.ms.total / 1000).toFixed(1)} s (search ${(result.stats.ms.search / 1000).toFixed(1)}, matrix ${(result.stats.ms.matrix / 1000).toFixed(1)}, optimiser ${(result.stats.ms.optimise / 1000).toFixed(1)}).`}
-            {' Times: DPS only (Σ HP ÷ DPS per phase); switching is free and instant.'}
-          </div>
+          </details>
         </div>
       )}
     </div>

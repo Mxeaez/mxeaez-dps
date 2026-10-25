@@ -1,4 +1,4 @@
-# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14; Routes tab phase 16; Plan tab phase 17; raid tabs + ToA phase 18; CoX phase 19; ToB phase 20; per-raid Plan defaults + dedupe phase 21; UI cleanup phase 23; "Items I don't own" phase 26; potions from the kit + ring policy phase 27; Plan tab polish phase 30; quiver ammo + heart as magic's potion phase 31; zero-value switch items + drain-line units phase 32; specs follow the plan + one drain line per encounter phase 33)
+# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14; Routes tab phase 16; Plan tab phase 17; raid tabs + ToA phase 18; CoX phase 19; ToB phase 20; per-raid Plan defaults + dedupe phase 21; UI cleanup phase 23; "Items I don't own" phase 26; potions from the kit + ring policy phase 27; Plan tab polish phase 30; quiver ammo + heart as magic's potion phase 31; zero-value switch items + drain-line units phase 32; specs follow the plan + one drain line per encounter phase 33; readability phase 34)
 
 `/best-setup` (dev: http://localhost:3001/osrs-dps/best-setup; "Best setup" button in the top bar, "Calculator" leads
 back). Tabs, in order: **Search** (the default, phase 9/12, see the end of this file) searches a pool of end-game items
@@ -888,6 +888,95 @@ and Summary keep their per-phase lines. Bork + Smorks at the default 0% stun upt
 same kind (bolts + bolts) still free the slot though switching between them needs a manual swap (not modelled;
 limiting `quiverSavedSlots` to one arrow + one bolt type isn't a one-line change, so it is documented only), and that a
 quiver only pinned or worn by a non-ranged loadout still frees the slot (storage per the wiki; firing unverified).
+
+### Reading the Plan tab (phase 34: readability, all three tabs)
+
+User review (2026-10-24): "very easy to get the information you are looking for, very user friendly. If it doesn't
+provide useful information we should hide it." The default view of every tab now shows only what a raider acts on —
+what to wear, what to spec, how many, how long — as icons and bold numbers; every explanation, intermediate number and
+alternative is in a tooltip or a section closed by default. **No number changed** and no pinned string changed except
+the drain-line wording below (Phase34.test.ts pins the FA Team plan — 21:44.4, 6 free — and every string that moved;
+`verifyPhase34.mjs` compares the page). Screenshots: `docs/screenshots/phase34-before-*.png` /
+`phase34-after-*.png` (Search, Plan, Summary at 1400 px; the Plan at 390 px), `phase34-after-plan-details.png` (every
+section open).
+
+**The Plan tab, top to bottom:**
+
+1. **Headline**: route · **total** (tooltip: fastest route with this kit · how HP becomes time) · **Free slots** ·
+   "↗ Load worn" / "↗ Load all" (the calculator buttons).
+2. **Raid briefing** (`PlanBriefing.tsx`, data `briefing.ts` `briefingRows`), one row per encounter of the planned route:
+   boss image and name; **Wear**: each kit loadout used (worn first), as its weapon icon plus the rest of its items as
+   small icons, coloured by style (red melee, green ranged, blue magic), the loadout name as the tooltip (phone width:
+   the weapon only); **Specs at the start**: per drain weapon a large icon and one bold number (drainLine.ts
+   `briefText`): Tonalztics **4 hits** (the landed hits it needs), Elder maul / DWH **2 specs** (landed specs), BGS
+   **N specs**, Eye of Ayak **≈ 39 magic def** (drained), then a small "→ Def 156" (+ "· Magic def X" with Ayak); a
+   weapon the other specs make unnecessary ("not needed") is left out of the short line. Carriers are not repeated (the
+   Spec plan's team briefing says them). Several parts (AG flying / grounded, Ocellus P1 / P3) get a small label each;
+   Sotetseg's three identical drain events read once with **× 3**; an event with no specs (Bloat after the stomp) is left
+   out. The full phase 33 line ("Start of fight: 2 Elder maul carriers (4 specs) + …") is the tooltip. **Seconds**.
+3. **Bring: [icons]** and **Your share** (Team) — the actions.
+4. A warning when an "always brought" item is in no loadout (with the button that removes it).
+5. **The kit**: the worn grid (and its name, with the weapon icon) and the 28-slot inventory.
+6. Closed sections:
+   - **Why this kit**: the kit loadouts ("Worn: …" / "Switch: …" with the weapon icon, style, source, "+N slots, saves
+     X s", item icons), "Potions (from the kit)" and "Ring: … · others: …" with icons, the spec-weapon note, "Faster with
+     one more loadout…" / "No other candidate…", the alternatives (each with its loadouts' weapon icons; `PlanRejection
+     .weapons`), the planner stats footer.
+   - **Spec plan**: Solo: what each spec weapon saves, the best set without each, the others; Team: the team briefing
+     table (weapon icons), "Added in this order" (icons), the per-boss minimum (its own nested toggle); spec notes.
+   - **Per-phase details**: phase 33's encounter table (its "Show per-phase details" toggle for the phase rows inside)
+     and the route comparison table.
+
+**Drain-line wording** (tooltip and the per-phase rows; drainLine.ts `specsText`): Tonalztics "swings" became
+"attacks", with the landed count: "needs 4 landed hits · 4 specs (2 carriers) = 8 attacks, 4 must land · 98%" (Solo:
+"4 specs = 8 attacks, 4 must land"; "needs the other drains too · 4 specs (2 carriers) = 8 attacks · 98%"); the
+tooltip's "a charged Tonalztics spec attacks twice and each attack can miss"; Elder maul / DWH / BGS read specs only
+(one attack each). Tests and verify scripts were re-pinned to this text only.
+
+**Where every old element went:**
+
+| Tab | Element | Now |
+|---|---|---|
+| Assumptions | "All skills 99 · Piety / Rigour / Augury" | tooltip of "Assumptions" |
+| Assumptions | Melee / Ranged potion, Heart (native selects) | icon lists (`IconSelect.tsx`, `potionChoices.ts`): Super combat, Overload (+), Smelling salts / Ranging potion, Overload (+), Smelling salts / Saturated, Imbued heart first, the rest under "▸ more" (the same options as the old selects) |
+| Assumptions | Zeal | checkbox with the Zeal prayer icon (stays visible) |
+| Assumptions | Elemental fragments | Advanced |
+| Assumptions | Solo Ayak hint ("Solo: ≈ 40 magic def drained …") | "ⓘ" with the hint as tooltip |
+| Assumptions | "(from the last plan; Search / Summary use them)", the ring lock reason | screen-reader text (the chips' tooltips say it); "(run a plan to fill these)" stays visible |
+| Plan inputs | intro paragraph | tooltip of "Assumptions (plan)" |
+| Plan inputs | Route, potions note, "Raid items (0 slots)" (icons) | Advanced (plan) |
+| Plan inputs | ring summary ("one ring on every loadout: Ultor ring …") | the Rings select's tooltip (screen-reader text) |
+| Plan inputs | "+ Saturated heart" / "+ Imbued heart" | with their icons |
+| Plan result | "(fastest route with this kit) · times: …" | tooltip of the total |
+| Plan result | kit loadout list, potions, ring + alternatives, spec-weapon note, rejected / alternative kits, stats | Why this kit |
+| Plan result | team briefing table, added in order, per-boss minimum, Solo weapon list, spec notes | Spec plan |
+| Plan result | "Bring:", your share | visible, under the briefing (with icons) |
+| Plan result | encounter table (phase 33), route comparison | Per-phase details |
+| Plan result | "Excluded: …" | stays, item names with icons |
+| Search | the drain line ("[icon] needs 4 landed hits · …", "94% land", "(fight ≈ 15 s → 2 specs)") | header: "[icon] **4 hits** → Def 156 · Magic def 130"; the sentence form, hit chances and Solo budget under the box's "details" |
+| Search | "Chance of the Defence floor", "Per boss minimum" table | the drain box's "details" |
+| Search | ranked-at, best preset, evaluations / timings / TTK note, can't-hit list | "Search details" (closed) |
+| Search | "Tries every end-game item…" | tooltip of the controls row |
+| Search | "vs best preset", Max hit, Accuracy columns | tooltip of the DPS cell |
+| Search | item list under the icons, "search started from" | tooltip of the icon row |
+| Search | "uses: …" badge | stays, item names with icons |
+| Summary | "best preset N · load" | best preset in the DPS line's tooltip; "↗" load button |
+| Summary | drain line + "(fight ≈ 15 s → N specs)" | icon + bold number ("[icon] 3 hits → Def 167"); the sentence and the budget are the tooltip |
+| Summary | "Top gear-search result…" | tooltip of the controls row |
+
+**Item icons** (`ItemNames` in ItemIcons.tsx: an icon before each name, the text unchanged; `itemImageByName` in
+loadoutIcons.ts): the potion pickers, "Potions (from the kit)" (bundled potion / heart images), "Ring: …" and the other
+rings, "Worn: …" / "Switch: …", the worn grid's name, the alternatives, "uses: …" badges (Search, Summary), "Excluded:
+…", "Always brought but in no kit loadout", the raid items, the spec-weapon note, "Added in this order", your share,
+the team briefing, every drain line, and (already) the Items I always bring / don't own chips.
+
+**Checks**: `Phase34.test.ts` (briefText per weapon, briefItems, the rewording, briefing rows for FA Team / Solo / ToB
+Sotetseg × 3, the potion lists = the old options, render-level tests that every briefing loadout / spec / item name has
+its icon; slow: the FA Team plan's total, briefing, phase 33 encounter lines, "Why this kit" and "Spec plan" strings).
+`verifyPhase34.mjs`: default views show no sentence-form drain text, the sections open the old content, icons present,
+no horizontal page scroll at 390 px. The older verify scripts open the sections first (`scripts/phase34Sections.mjs`).
+The upstream top bar is 393 px wide at a 390 px viewport (the main calculator too): not this page's; the check is that
+nothing in the best-setup panel overflows outside a table scroller.
 
 ## Routes tab (phase 16: raid time model)
 

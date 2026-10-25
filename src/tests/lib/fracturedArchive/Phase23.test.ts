@@ -158,7 +158,8 @@ describe('drain line data', () => {
     // (phase 29 review: "not needed" when the maul specs already give the same ranked Defence on Xarth)
     // (review 2: "needed ×N (P%) · team brings ×4 (8 hits, P%)")
     // (phase 32: "needs N landed hits · N specs (C carriers), 2N swings · P% · team: 4 specs (2 carriers) · P%")
-    expect(items[1].title).toMatch(/^(needs \d+ landed hits? · \d+ specs? \(\d+ carriers?\), \d+ swings · [^·(;]+( · team: 4 specs \(2 carriers\) · [^(;]+)?|not needed · team: 4 specs \(2 carriers\) · [^(;]+)( \(.*\))?; 4 Tonalztics specs \(8 swings\); \d+% of specs land at least one damaging hit$/);
+    // (phase 34: "… · N specs (C carriers) = 2N attacks, L must land · P% …"; "4 Tonalztics specs (8 attacks)")
+    expect(items[1].title).toMatch(/^(needs \d+ landed hits? · \d+ specs? \(\d+ carriers?\) = \d+ attacks, \d+ must land · [^·(;]+( · team: 4 specs \(2 carriers\) · [^(;]+)?|not needed · team: 4 specs \(2 carriers\) · [^(;]+)( \(.*\))?; 4 Tonalztics specs \(8 attacks\); \d+% of specs land at least one damaging hit$/);
     expect(items[1].hits).toBe(8);
     expect(items.every((i) => i.image)).toBe(true);
     expect(d.line!.defAfter).toBe(d.defAfter);

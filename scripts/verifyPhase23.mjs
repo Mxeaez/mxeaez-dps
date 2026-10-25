@@ -14,6 +14,7 @@
  * Screenshots docs/screenshots/phase23-*.png.
  */
 import { chromium } from '@playwright/test';
+import { openSections } from './phase34Sections.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
 
@@ -31,6 +32,7 @@ const waitSearch = async (page) => {
   await page.waitForTimeout(800);
   await page.locator('[data-testid="search-progress"]').waitFor({ state: 'detached', timeout: 300000 });
   await page.locator('[data-testid="search-results"]').waitFor({ timeout: 300000 });
+  await openSections(page); // phase 34: open the sections what this script reads moved into
 };
 const topDps = async (page) => Number((await page.locator('[data-testid="search-row"] [data-testid="dps"]').first().innerText()).trim());
 const lineItems = (page, scope) => page.locator(`${scope} [data-testid="drain-line-item"]`).evaluateAll((els) => els.map((e) => ({
@@ -46,6 +48,7 @@ const runPlan = async (page) => {
   await page.waitForTimeout(800);
   await page.locator('[data-testid="plan-progress"]').waitFor({ state: 'detached', timeout: 600000 });
   await page.locator('[data-testid="plan-result"]').waitFor({ timeout: 600000 });
+  await openSections(page); // phase 34: open the sections what this script reads moved into
 };
 
 const main = async () => {
@@ -102,11 +105,11 @@ const main = async () => {
   await waitSearch(page);
   const team = await lineItems(page, '[data-testid="spec-plan"]');
   // phase 29: the Team line reads "needed ×N · team brings ×M"; phase 32: units on every number — "needs N landed
-  // hits · N specs (C carriers), 2N swings · P%" + " · team: 4 specs (2 carriers) · P%" when the team brings more
+  // hits · N specs (C carriers), 2N swings · P%; phase 34: "= 2N attacks, L must land"" + " · team: 4 specs (2 carriers) · P%" when the team brings more
   check(team.map((i) => i.weapon).join(',') === 'elderMaul,tonalztics,ayak'
     && team.slice(0, 2).every((i) => / · team: 4 specs \(2 carriers\) · /.test(i.count)) && /2 specs \(1 carrier\)/.test(team[2].count),
   `Team drain line: ${team.map((i) => `${i.weapon} "${i.count}"`).join(', ')}`);
-  check(team.every((i) => /^(needs [^·]+ · \d+ specs? \(\d+ carriers?\)(, \d+ swings)? · [^·]+( · team: \d+ specs? \(\d+ carriers?\) · .+)?|(not needed|floor not reachable|magic def 0 not reachable) · team: \d+ specs? \(\d+ carriers?\) · .+)$/.test(i.count)), 'every Team item reads "needs … · N specs (C carriers) · …" or "not needed · team: …"');
+  check(team.every((i) => /^(needs [^·]+ · \d+ specs? \(\d+ carriers?\)( = \d+ attacks(, \d+ must land)?)? · [^·]+( · team: \d+ specs? \(\d+ carriers?\) · .+)?|(not needed|floor not reachable|magic def 0 not reachable) · team: \d+ specs? \(\d+ carriers?\) · .+)$/.test(i.count)), 'every Team item reads "needs … · N specs (C carriers) · …" or "not needed · team: …"');
   check(team.every((i) => /^\d+% land$/.test(i.hit || '') && i.icon), `hit chance under each icon: ${team.map((i) => i.hit).join(', ')}`);
   const result = await page.locator('[data-testid="spec-plan"] [data-testid="drain-line-result"]').innerText();
   check(/→ Def \d+ · Magic def \d+/.test(result), `drain line result "${result}"`);
