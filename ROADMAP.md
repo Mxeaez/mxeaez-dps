@@ -223,9 +223,29 @@ phase; phase 29 changes numbers, so it gets the full independent review.
   counting two bolt types (a same-kind pair needs a manual swap: documented in D23, not a one-line change). The phase 31
   one-type quiver case is covered by the kept ammo when the smaller loadout has no ammo of its own.
 
-### Future work (round 5)
+## Round 5
 
-Found in or carried past the phase 28 review; larger than a review fix, so not done:
+Agreed 2026-10-24 after the user reviewed the phase 32 plan ("Specs I bring" still lit while the planner decides; the
+Plan tab is a lot of text and hard to read; damage specs like Voidwaker / Zaryte crossbow aren't considered; Bork +
+Smorks shows five drain lines when you spec once at the start). Same workflow per phase; phase 35 changes numbers, so
+it gets the full independent review; 33 and 34 get a UI/consistency check.
+
+| # | Phase | Done when | Status |
+|---|---|---|---|
+| 33 | Specs follow the plan; one drain line per encounter | **Specs I bring** defaults to none for every raid (`mySpecs` all false / Ayak 0); in "Planner decides" mode the chips are filled from the plan's "Bring" result (read-only, like the team carriers) so Search / Summary Solo drains follow the plan, and read "run a plan to fill these" before one has run; manual mode unchanged. **One drain line per encounter**: the encounter row shows a single start-of-fight line, e.g. "Start of fight: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 180 · 99.6%" (Solo: "Start: 2 Elder maul specs + 2 Tonalztics specs → Def 180"), computed on the first phase the specs land on (Bork armour 8, AG flying shield, Ocellus P1 at a corner); the per-phase rows keep their lines but collapsed under a "per-phase details" toggle (closed by default). Where phases need different specs (AG grounded vs flying) the encounter line lists both ("Flying: … · Grounded: …"). Tests (defaults; chips == plan Bring; encounter line == the first phase's line; Bork's five rows collapse to one), Playwright, docs | planned |
+| 34 | Plan tab readability | A **raid briefing** at the top of the plan result, one row per encounter: boss image, loadout used (icons), specs at the start (from phase 33), seconds; then the kit (worn / inventory) and the total. Everything else moves under collapsed sections, closed by default: "Why this kit" (loadout list with slots / saves, ring alternatives, lighter kit), "Spec plan" (team briefing table, added-in-order, per-boss minimum, your share), "Per-phase details" (the current encounter table). The Assumptions box keeps only party size, potions, ring policy, comfort supplies, items I don't own and "Items I always bring"; everything else is under Advanced. No number changes: the before/after plan totals and every string in the collapsed sections must be identical (tests pin them); Playwright screenshots of the new layout at desktop and phone width; docs (BEST_SETUP "Reading the Plan tab") | planned |
+| 35 | Damage specs vs drains | Model spec **damage** for Voidwaker (guaranteed magic-roll hit), Burning / Dragon claws, Zaryte crossbow (spec: guaranteed hit + bolt proc), bone dagger / Keris (ToA), and any raid-4 reward with a damage spec (check the wiki for the item the user called "Kiston"; record what it is or that it doesn't exist); each costs a slot like a drain weapon, and spec energy is one budget per encounter: the planner chooses per encounter how the budget splits between drains and damage (damage spec value = expected spec damage − the damage the normal attacks would have done in those ticks, converted to seconds at the encounter's DPS), under the same ≥ 1 s per slot rule. Solo and Team ("your share" can be a damage spec). Headlines re-pinned; tests per weapon (hand-computed expected spec damage vs the upstream spec calc), brute-force on a toy; full independent review; UNVERIFIED rows; docs | planned |
+| 36 | Final review (round 5) | Fresh pass; UNVERIFIED updated | planned |
+
+### Decisions (round 5)
+
+- Nothing is lit in "Specs I bring" unless the user set it; in planner mode the chips mirror the plan.
+- An encounter is specced once, at the start; the per-phase lines are details.
+- Damage specs compete with drains for the same spec energy; neither is assumed.
+
+### Future work (round 6)
+
+Found in or carried past the phase 28 review; larger than a review fix, so not done (the damage-specs item moved to phase 35):
 
 - **Teammates' styles in the team time model** (phase 29 review 2): times are hp ÷ (party × your DPS), so a Magic
   defence drain (Eye of Ayak) speeds up every "copy of you" although only the mages gain; carriers are capped at
@@ -240,9 +260,6 @@ Found in or carried past the phase 28 review; larger than a review fix, so not d
   through a free slot; count that swap (or prefer one arrow + one bolt type) once checked in-game (D23).
 - **Prayer bonus** (phase 32): items' prayer bonus isn't modelled (the blessing left the presets as zero-value); model
   prayer drain if supplies ever get drunk down (D15).
-- **Damage specs vs drains**: model Voidwaker (guaranteed magic-roll hit), Burning / Dragon claws and the bone dagger
-  (guaranteed first hit, ToA Strategies) as spec *damage*, and compare a player's spec energy spent on damage with the
-  same energy spent on drains (e.g. Kephri: one landed maul reaches the floor; the rest is better spent on Voidwaker).
 - **Resupply** in the Plan tab (ToA Helpful Spirit, CoX potions): plan per raid segment instead of one inventory for the
   whole raid (UNVERIFIED D15, D19).
 - **ToB supply chests**: the chests between rooms restock brews / restores (Strategies); the Plan could count fewer
