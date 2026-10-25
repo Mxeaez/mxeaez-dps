@@ -54,7 +54,7 @@ import {
 } from '@/lib/fracturedArchive/loadoutIcons';
 import { ItemIcon, ItemNames, LoadoutIconRow } from '@/app/components/bestSetup/ItemIcons';
 import PlanBriefing from '@/app/components/bestSetup/PlanBriefing';
-import { briefingRows } from '@/lib/fracturedArchive/briefing';
+import { briefingRows, phaseNpc } from '@/lib/fracturedArchive/briefing';
 import DrainLineView from '@/app/components/bestSetup/DrainLineView';
 import {
   encounterDrainSummary, encounterItemText, encounterResultText, EncounterDrainSummary,
@@ -354,7 +354,7 @@ const EncounterDrains: React.FC<{ summary: EncounterDrainSummary }> = ({ summary
           {ev.parts.map((part, k) => (
             <span key={part.phaseKey} className="inline-flex flex-wrap items-center gap-x-1" data-testid="plan-encounter-drain-part" data-phase-key={part.phaseKey} title={part.line.text}>
               {ev.parts.length > 1
-                ? `${ev.reset && k === 0 ? `${ev.head} ` : ''}${part.label}: `
+                ? `${(ev.reset || ev.npc) && k === 0 ? `${ev.head} ` : ''}${part.label}: `
                 : `${ev.head} `}
               {part.items.map((it, i) => (
                 <React.Fragment key={it.weapon}>
@@ -1111,7 +1111,7 @@ const PlanView: React.FC<{
                     const loadouts = Array.from(new Set(e.phases.map((p) => p.choice?.loadout).filter(Boolean)));
                     const styles = Array.from(new Set(e.phases.map((p) => p.choice?.group).filter(Boolean)));
                     const drains = drain === 'none' ? undefined : encounterDrainSummary(e.phases.map((p) => ({
-                      key: p.key, label: p.label, drainLine: p.choice?.drainLine, drainReset: p.drainReset,
+                      key: p.key, label: p.label, drainLine: p.choice?.drainLine, drainReset: p.drainReset, npc: phaseNpc(p.targetKey),
                     })), drain);
                     return (
                       <React.Fragment key={e.id}>

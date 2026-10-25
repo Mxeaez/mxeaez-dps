@@ -16,7 +16,8 @@ import { chromium } from '@playwright/test';
 import { openSections } from './phase34Sections.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
-const BORK_LINE = 'Start of fight: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 180 · 99.6%';
+// phase 35b: one line per NPC (phase 33: Bork's line only, "Start of fight: … → Def 180 · 99.6%")
+const BORK_LINE = 'Bork: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 180 · 99.6% · Smorks: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 5';
 const WEAPONS = ['elderMaul', 'dwh', 'bgs', 'tonalztics'];
 
 let failures = 0;
@@ -90,7 +91,7 @@ const main = async () => {
   const total = await text(page.locator('[data-testid="plan-total"]'));
   check(total === '21:44.4', `FA Team total ${total} (phase 32: 21:44.4)`);
   const bork = await encLine(page, 'bork-smorks');
-  check(bork.data === BORK_LINE && bork.shown === BORK_LINE, `Bork + Smorks: "${bork.shown}"`);
+  check(bork.data === BORK_LINE && bork.shown.replace(' Smorks: ', ' · Smorks: ') === BORK_LINE, `Bork + Smorks: "${bork.shown}"`);
   check(await page.locator('[data-testid="plan-phase-toggle"]').getAttribute('aria-expanded') === 'false', 'per-phase details closed by default');
   const borkRows = page.locator('[data-testid="plan-phase-row"][data-encounter="bork-smorks"]');
   const hiddenAll = await borkRows.evaluateAll((els) => els.every((e) => !e.checkVisibility()));

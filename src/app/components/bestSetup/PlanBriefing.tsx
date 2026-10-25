@@ -9,6 +9,8 @@ import { DrainBrief } from '@/app/components/bestSetup/DrainLineView';
 
 // Phase 34: the Plan tab's raid briefing (one row per encounter: boss, what to wear, specs at the start, seconds). Data:
 // src/lib/fracturedArchive/briefing.ts. Every explanation is a tooltip; the per-phase table is under "Per-phase details".
+// Phase 35b: an encounter with several NPCs (Bork + Smorks) gets one specs line per NPC ("Bork:", "Smorks:") and, when
+// the NPCs use different loadouts, one Wear line per NPC.
 
 const GROUP_BORDER: Record<StyleGroup, string> = {
   melee: 'border-red-500', ranged: 'border-green-600', magic: 'border-blue-500',
@@ -36,6 +38,13 @@ export const KitLoadoutIcons: React.FC<{ kit: PlanCandidate, worn: boolean }> = 
   );
 };
 
+const loadoutIcons = (loadouts: string[], kit: PlanCandidate[]) => loadouts.map((l) => {
+  const k = kit.findIndex((c) => c.label === l);
+  return k >= 0
+    ? <KitLoadoutIcons key={l} kit={kit[k]} worn={k === 0} />
+    : <span key={l} className="text-xs">{l}</span>;
+});
+
 const PlanBriefing: React.FC<{
   rows: BriefingRow[],
   kit: PlanCandidate[],
@@ -46,8 +55,8 @@ const PlanBriefing: React.FC<{
       <thead>
         <tr className="bg-btns-400 dark:bg-dark-500 text-white text-left">
           <th className="px-2">Boss</th>
-          <th className="px-2" title="The kit loadouts used in this fight (the first is worn); hover for the name">Wear</th>
-          <th className="px-2" title="Specs at the start of the fight: the landed hits / specs needed (Eye of Ayak: magic defence drained), then the Defence the DPS uses. Hover for the full plan">Specs at the start</th>
+          <th className="px-2" title="The kit loadouts used in this fight (the first is worn), per NPC when the NPCs use different ones; hover for the name">Wear</th>
+          <th className="px-2" title="Specs at the start of the fight: the landed hits / specs needed (Eye of Ayak: magic defence drained), then the Defence the DPS uses; one line per NPC that is specced (each NPC has its own Defence). Hover for the full plan">Specs at the start</th>
           <th className="px-2 text-right">Seconds</th>
         </tr>
       </thead>
@@ -61,22 +70,29 @@ const PlanBriefing: React.FC<{
               </span>
             </td>
             <td className="px-2 py-1">
-              <span className="flex flex-wrap items-center gap-2">
-                {r.loadouts.length === 0 && '—'}
-                {r.loadouts.map((l) => {
-                  const k = kit.findIndex((c) => c.label === l);
-                  return k >= 0
-                    ? <KitLoadoutIcons key={l} kit={kit[k]} worn={k === 0} />
-                    : <span key={l} className="text-xs">{l}</span>;
-                })}
-              </span>
+              {r.wear.length > 1 ? (
+                // phase 35b: the NPCs use different loadouts: "Bork: [icons]" / "Smorks: [icons]", one line each
+                <span className="flex flex-col gap-0.5">
+                  {r.wear.map((w) => (
+                    <span key={w.npc} className="flex flex-wrap items-center gap-2" data-testid="briefing-wear-group" data-npc={w.npc}>
+                      <span className="text-[11px] text-gray-500 dark:text-gray-400">{`${w.npc}:`}</span>
+                      {loadoutIcons(w.loadouts, kit)}
+                    </span>
+                  ))}
+                </span>
+              ) : (
+                <span className="flex flex-wrap items-center gap-2">
+                  {r.loadouts.length === 0 && '—'}
+                  {loadoutIcons(r.loadouts, kit)}
+                </span>
+              )}
             </td>
             <td className="px-2 py-1" title={r.drainText} data-testid="plan-briefing-specs">
               {r.specs.length === 0 && <span className="text-gray-500 dark:text-gray-400">—</span>}
               <span className="flex flex-col gap-0.5">
                 {r.specs.map((g) => (
                   <span key={g.key} className="inline-flex flex-wrap items-center gap-x-2" data-testid="plan-briefing-group" data-text={g.text}>
-                    {g.label && <span className="text-[11px] text-gray-500 dark:text-gray-400">{g.label}</span>}
+                    {g.label && <span className="text-[11px] text-gray-500 dark:text-gray-400">{`${g.label}:`}</span>}
                     <DrainBrief items={g.items} result={g.result} size={24} title={r.drainText} />
                     {g.times > 1 && <span className="font-bold" title="The Defence is restored mid-fight: the same specs again each time">{`× ${g.times}`}</span>}
                   </span>

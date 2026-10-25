@@ -309,15 +309,21 @@ export interface EncounterDrainPart {
 
 /**
  * Phase 33: one drain event = the phases between two Defence resets (the start of the fight, then each phase whose
- * `drainReset` is set: Sotetseg after each maze, Bloat's later downs). The team specs once per event.
+ * `drainReset` is set: Sotetseg after each maze, Bloat's later downs). The team specs once per event. Phase 35b: one
+ * event per NPC too (Bork and The Smorks are two NPCs with their own Defence: two events).
  */
 export interface EncounterDrainEvent {
   /** The event's first phase, and why the Defence was restored (undefined = the start of the fight). */
   phaseKey: string;
   reset?: string;
+  /** Phase 35b: the NPC's name, set when the encounter has specs on more than one NPC ("Bork", "Smorks"). */
+  npc?: string;
   /** One part per distinct set of spec weapons in the event (the first phase each set lands on). */
   parts: EncounterDrainPart[];
-  /** "Start of fight:" (Team) / "Start:" (Solo) / "After maze 1 (Defence restored), again:". */
+  /**
+   * "Start of fight:" (Team) / "Start:" (Solo) / "After maze 1 (Defence restored), again:"; with `npc`: "Bork:" /
+   * "Bork, after maze 1 (Defence restored), again:".
+   */
   head: string;
   text: string;
 }
@@ -328,7 +334,7 @@ export interface EncounterDrainSummary {
   parts: EncounterDrainPart[];
   /**
    * One event: "Start of fight: …" (Team) / "Start: …" (Solo); several parts: "Flying shield: … · Grounded: …". Each
-   * later event adds " · After maze 1 (Defence restored), again: …".
+   * later event adds " · After maze 1 (Defence restored), again: …". Phase 35b, specs on several NPCs: "Bork: … · Smorks: …".
    */
   text: string;
 }
@@ -377,34 +383,52 @@ const eventParts = (phases: { key: string, label: string, drainLine?: DrainLine 
 
 /**
  * Phase 33: an encounter is specced once per drain event, at its start: the line of the first phase (in the encounter's
- * phase order) that the specs land on (a phase whose drain line specs at least one weapon), e.g. Bork armour 8 for Bork +
- * Smorks. A later phase of the same event whose set of spec weapons differs (AG grounded vs flying: the Elder maul can't
- * hit the flying Guardian; Ocellus P3's Deflect Melee quadrant) is listed as its own part. A phase with `drainReset` (the
- * Defence is restored: Sotetseg after each maze, Bloat's later downs) starts a new event: "After maze 1 (Defence
- * restored), again: …". Undefined when no phase has a drain line (drains "None").
+ * phase order) that the specs land on (a phase whose drain line specs at least one weapon). A later phase of the same
+ * event whose set of spec weapons differs (AG grounded vs flying: the Elder maul can't hit the flying Guardian; Ocellus
+ * P3's Deflect Melee quadrant) is listed as its own part. A phase with `drainReset` (the Defence is restored: Sotetseg
+ * after each maze, Bloat's later downs) starts a new event: "After maze 1 (Defence restored), again: …". Undefined when
+ * no phase has a drain line (drains "None").
+ *
+ * Phase 35b: `npc` (the target's NPC, briefing.ts `phaseNpc`) splits the phases by NPC: each NPC's phases are its own
+ * event(s), in the order the NPCs first appear (Bork's armour phases = one event, The Smorks another; Olm's right claw,
+ * left claw and head; an NPC coming back after another, like Kephri after the scarabs, joins its first event). When
+ * more than one NPC gets specs, every event is named: "Bork: … · Smorks: …". NPCs nobody specs (the adds) are left
+ * out; a reset with no specs (Bloat's stomp) is kept. Phases without `npc` are one NPC (phase 33).
  */
 export const encounterDrainSummary = (
-  phases: { key: string, label: string, drainLine?: DrainLine, drainReset?: string }[],
+  phases: { key: string, label: string, drainLine?: DrainLine, drainReset?: string, npc?: string }[],
   drain: 'solo' | 'team',
 ): EncounterDrainSummary | undefined => {
   if (!phases.length || !phases.some((p) => p.drainLine)) return undefined;
-  const groups: { reset?: string, phases: typeof phases }[] = [];
-  phases.forEach((p, i) => {
-    if (i === 0 || p.drainReset) groups.push({ reset: i === 0 ? undefined : p.drainReset, phases: [] });
-    groups[groups.length - 1].phases.push(p);
+  const groups: { npc: string, reset?: string, phases: typeof phases }[] = [];
+  const current = new Map<string, number>();
+  phases.forEach((p) => {
+    const npc = p.npc ?? '';
+    const at = current.get(npc);
+    if (at === undefined || p.drainReset) {
+      current.set(npc, groups.length);
+      groups.push({ npc, reset: at === undefined ? undefined : p.drainReset, phases: [p] });
+    } else groups[at].phases.push(p);
   });
-  const events = groups.map((g): EncounterDrainEvent => {
-    const parts = eventParts(g.phases);
+  const withParts = groups.map((g) => ({ ...g, parts: eventParts(g.phases) }));
+  const specced = new Set(withParts.filter((g) => g.parts.length).map((g) => g.npc));
+  const named = specced.size > 1;
+  // the NPCs nobody specs (adds) are left out (an event with no specs of a specced NPC stays: Bloat's stomp); nothing
+  // specced: the first NPC's events ("Start of fight: no specs")
+  const kept = withParts.filter((g) => (specced.size ? specced.has(g.npc) : g.npc === withParts[0].npc));
+  const events = kept.map((g): EncounterDrainEvent => {
+    const { parts } = g;
     let head = drain === 'team' ? 'Start of fight:' : 'Start:';
     if (g.reset) head = `After ${g.reset} (Defence restored), again:`;
+    if (named) head = g.reset ? `${g.npc}, after ${g.reset} (Defence restored), again:` : `${g.npc}:`;
     let text = `${head} no specs`;
     if (parts.length === 1) text = `${head} ${parts[0].text}`;
     else if (parts.length > 1) {
       const list = parts.map((x) => `${x.label}: ${x.text}`).join(' · ');
-      text = g.reset ? `${head} ${list}` : list;
+      text = g.reset || named ? `${head} ${list}` : list;
     }
     return {
-      phaseKey: g.phases[0].key, ...(g.reset ? { reset: g.reset } : {}), parts, head, text,
+      phaseKey: g.phases[0].key, ...(g.reset ? { reset: g.reset } : {}), ...(named ? { npc: g.npc } : {}), parts, head, text,
     };
   });
   return { events, parts: events[0].parts, text: events.map((e) => e.text).join(' · ') };
@@ -454,7 +478,7 @@ export const briefResultText = (line: Pick<DrainLine, 'defAfter' | 'magicDefAfte
 /** Phase 34: one group of the Plan briefing's specs cell: label (when an encounter has several), items, result, repeats. */
 export interface BriefGroup {
   key: string;
-  /** e.g. "Flying shield", "after maze 1" (none for a single start-of-fight line). */
+  /** e.g. "Flying shield", "after maze 1", phase 35b "Bork" / "Smorks" (none for a single start-of-fight line). */
   label?: string;
   items: DrainLineItem[];
   result: string;
@@ -475,7 +499,9 @@ export const encounterBrief = (summary: EncounterDrainSummary): BriefGroup[] => 
   const withParts = summary.events.filter((e) => e.parts.length > 0);
   if (!withParts.length) return [];
   const sig = (p: EncounterDrainPart) => `${p.items.map((i) => `${i.weapon}:${briefText(i)}`).join('|')}|${briefResultText(p.line, p.items)}`;
-  if (withParts.length > 1 && withParts.every((e) => e.parts.length === 1 && sig(e.parts[0]) === sig(withParts[0].parts[0]))) {
+  // phase 35b: "× 3" is the same NPC drained again; two NPCs with the same numbers stay two named groups
+  const oneNpc = withParts.every((e) => e.npc === undefined);
+  if (oneNpc && withParts.length > 1 && withParts.every((e) => e.parts.length === 1 && sig(e.parts[0]) === sig(withParts[0].parts[0]))) {
     const p = withParts[0].parts[0];
     const result = briefResultText(p.line, p.items);
     return [{
@@ -485,7 +511,10 @@ export const encounterBrief = (summary: EncounterDrainSummary): BriefGroup[] => 
   const several = withParts.length > 1 || withParts[0].parts.length > 1;
   return withParts.flatMap((e) => e.parts.map((p) => {
     let label: string | undefined;
-    if (several && e.reset) label = `after ${e.reset}${e.parts.length > 1 ? `, ${p.label}` : ''}`;
+    if (e.npc !== undefined) {
+      // phase 35b: "Bork", "Smorks"; "Elidinis' Warden, P2 core"; "Bork, after the stomp"
+      label = [e.npc, e.reset ? `after ${e.reset}` : '', e.parts.length > 1 ? p.label : ''].filter(Boolean).join(', ');
+    } else if (several && e.reset) label = `after ${e.reset}${e.parts.length > 1 ? `, ${p.label}` : ''}`;
     else if (several) label = e.parts.length > 1 ? p.label : 'start';
     const result = briefResultText(p.line, p.items);
     return {

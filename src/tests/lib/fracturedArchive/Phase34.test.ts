@@ -113,15 +113,16 @@ describe('raid briefing rows (FA, presets kit): the phase 33 encounter lines are
     expect(rows.map((r) => `${r.id} | ${r.specsText}`)).toEqual([
       'archive-guardian | Flying shield: Tonalztics 4 hits → Def 156 · Grounded: Tonalztics 4 hits → Def 156',
       'ezekiel | Elder maul 1 spec + Tonalztics 3 hits → Def 78',
-      'bork-smorks | Elder maul 2 specs + Tonalztics 2 hits → Def 180',
+      // phase 35b: one line per NPC (was Bork's line only)
+      'bork-smorks | Bork: Elder maul 2 specs + Tonalztics 2 hits → Def 180 · Smorks: Elder maul 4 specs + Tonalztics 2 hits → Def 5',
       'moia | Tonalztics 2 hits → Def 117',
       'dreadnoth | Tonalztics 5 hits → Def 0',
       'dagonhai | Tonalztics 3 hits → Def 0',
       'xarth | Tonalztics 2 hits → Def 102',
       'ocellus | P1 at a corner: Tonalztics 2 hits → Def 129 · P3 last quadrant, Deflect Melee: Tonalztics 3 hits → Def 150',
     ]);
-    // the tooltip is phase 33's line, unchanged
-    expect(rows.find((r) => r.id === 'bork-smorks')!.drainText).toBe('Start of fight: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 180 · 99.6%');
+    // the tooltip is phase 33's line, unchanged (phase 35b: Bork + Smorks one line per NPC)
+    expect(rows.find((r) => r.id === 'bork-smorks')!.drainText).toBe('Bork: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 180 · 99.6% · Smorks: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 5');
     expect(rows.find((r) => r.id === 'archive-guardian')!.drainText).toBe('Flying shield: 2 Tonalztics carriers (4 specs) → Def 156 · 98% · Grounded: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 156 · >99.9%');
     expect(rows.find((r) => r.id === 'ocellus')!.drainText).toBe('P1 at a corner: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 129 · >99.9% · P3 last quadrant, Deflect Melee: 2 Tonalztics carriers (4 specs) → Def 150 · 84%');
     // carriers are not repeated in the short form
@@ -229,7 +230,10 @@ describe('render: icons next to every item name', () => {
   });
   test('PlanBriefing: boss image, the loadouts as icons (weapon + items), specs with icons, seconds', () => {
     const kit = kitOf(["Inquisitor's mace (full crush)", 'Twisted bow (Masori)']);
-    const rows = briefingRows(faEncounters(TEAM, 'team'), 'team').slice(0, 4).map((r, i) => ({ ...r, loadouts: i % 2 ? [kit[1].label] : [kit[0].label, kit[1].label] }));
+    const rows = briefingRows(faEncounters(TEAM, 'team'), 'team').slice(0, 4).map((r, i) => {
+      const loadouts = i % 2 ? [kit[1].label] : [kit[0].label, kit[1].label];
+      return { ...r, loadouts, wear: [{ loadouts }] };
+    });
     const d = dom(React.createElement(PlanBriefing, { rows, kit, imageOf: () => 'boss.png' }));
     const trs = Array.from(d.querySelectorAll('[data-testid="plan-briefing-row"]'));
     expect(trs).toHaveLength(4);
@@ -276,7 +280,7 @@ describe('render: icons next to every item name', () => {
     const rows = briefingRows(planned.encounters, 'team');
     expect(rows.map((x) => `${x.label} | ${x.specsText} | ${x.seconds.toFixed(1)} s`)).toEqual([
       'Archive Guardian | Flying shield: Tonalztics 4 hits → Def 156 · Grounded: Tonalztics 4 hits → Def 156 | 182.1 s',
-      'Bork + Smorks | Elder maul 2 specs + Tonalztics 2 hits → Def 180 | 196.5 s',
+      'Bork + Smorks | Bork: Elder maul 2 specs + Tonalztics 2 hits → Def 180 · Smorks: Elder maul 4 specs + Tonalztics 2 hits → Def 5 | 196.5 s',
       'Moia | Tonalztics 2 hits → Def 117 | 71.1 s',
       'Xarth | Tonalztics 2 hits → Def 102 | 186.8 s',
       'Ocellus | P1 at a corner: Tonalztics 2 hits → Def 129 · P3 last quadrant, Deflect Melee: Tonalztics 3 hits → Def 150 | 667.8 s',
@@ -284,7 +288,7 @@ describe('render: icons next to every item name', () => {
     // "Per-phase details": phase 33's encounter lines (before the phase 34 layout)
     expect(rows.map((x) => x.drainText)).toEqual([
       'Flying shield: 2 Tonalztics carriers (4 specs) → Def 156 · 98% · Grounded: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 156 · >99.9%',
-      'Start of fight: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 180 · 99.6%',
+      'Bork: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 180 · 99.6% · Smorks: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 5',
       'Start of fight: 2 Tonalztics carriers (4 specs) → Def 117 · >99.9%',
       'Start of fight: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 102 · >99.9%',
       'P1 at a corner: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 129 · >99.9% · P3 last quadrant, Deflect Melee: 2 Tonalztics carriers (4 specs) → Def 150 · 84%',

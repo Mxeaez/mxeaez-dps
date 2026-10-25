@@ -3,6 +3,33 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 35b — Briefing: one drain line per NPC (2026-10-24)
+
+User (FA plan briefing): "It says Bork + Smorks. But they are separate bosses. I can't tell which I should use
+elder/ralos on". Phase 33 folded every target of an encounter into the first phase's drain line (The Smorks, Def 220
+floor 0, was hidden under Bork's 300 → 180). UI fix, **no number changes** (FA 21:44.4; per-phase strings unchanged).
+
+- **Grouping**: new optional `BestSetupTarget.npc` (types.ts); `phaseNpc(targetKey)` (briefing.ts) = `npc` ?? monster
+  `name`. Same-name targets are one NPC with no data (AG, Bork's phases, Ocellus P1–P3, Kephri, Wardens shield / core,
+  Nylocas forms, Verzik). `npc` set where one name covers different NPCs or is long: Smorks, Obelisk, Olm Right claw /
+  Left claw / Head, Melee / Ranged / Magic vanguard, Small / Large muttadile.
+- **Events** (`encounterDrainSummary`, drainLine.ts): one event per NPC (first-appearance order; an NPC coming back joins
+  its event), plus the `drainReset` events (Sotetseg, Bloat). Unspecced NPCs (adds) get no line. Several specced NPCs →
+  named: "Bork: Elder maul 2 specs + Tonalztics 2 hits → Def 180 · Smorks: Elder maul 4 specs + Tonalztics 2 hits →
+  Def 5" (briefing, two lines); tooltip / per-phase details "Bork: 2 Elder maul carriers … → Def 180 · 99.6% · Smorks: …
+  → Def 5". `encounterBrief` labels per NPC and never merges two NPCs into "× N". Single-NPC encounters unchanged.
+- **Wear** (`wearGroups`; PlanBriefing): one line per NPC ("Bork: [icons]" / "Smorks: [icons]") when the NPCs use
+  different loadouts; NPCs with the same loadouts share a line; otherwise the phase 34 cell. Phone: weapon icon only.
+- **Other multi-NPC encounters** (defaults, Team): ToA Wardens now Obelisk / Elidinis' Warden (P2 shield, P2 core) /
+  Tumeken's Warden lines (the core and P3 lines were folded into the Obelisk's); CoX Olm Right claw / Left claw / Head
+  (was the right claw's only); Kephri, Akkha, Vasa, Vespula, Muttadiles keep one spec line (adds unspecced) and get a
+  per-NPC Wear; Vanguards Wear per Vanguard; AG, Ocellus, Dagon'hai, ToB unchanged. Full table: docs/BEST_SETUP.md
+  *One drain line per NPC (phase 35b)*.
+- Tests: new `src/tests/lib/raids/Phase35b.test.ts` (16); Phase34.test re-pinned (Bork + Smorks line, a render test's
+  rows carry `wear`). Verify: new `scripts/verifyPhase35b.mjs` (all OK; screenshots phase35b-*.png); verifyPhase33 / 34
+  re-pinned to the per-NPC line; verifyPhase29–35 re-run, tracked screenshots they overwrote restored.
+  `yarn test` 1530 (1508 pass / 22 skipped); `RUN_SLOW_TESTS=1` CrossRaid + Phase27-35 + 35b 268/268; tsc, lint clean.
+
 ## Phase 35 — No specs on adds (2026-10-24)
 
 Rule (user): "you obviously aren't going to Ralos or Elder maul spec the little minions that die in a few hits anyway".

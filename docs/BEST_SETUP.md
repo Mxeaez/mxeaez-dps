@@ -850,7 +850,7 @@ differs gets its own line, labelled with the phase (its share dropped). Team:
 | Encounter | Line (FA defaults, party 6: 2 Elder maul + 2 Tonalztics carriers) |
 |---|---|
 | Archive Guardian | Flying shield: 2 Tonalztics carriers (4 specs) → Def 156 · 98% · Grounded: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 156 · >99.9% |
-| Bork + Smorks | Start of fight: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 180 · 99.6% |
+| Bork + Smorks | Start of fight: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 180 · 99.6% (phase 35b: one line per NPC, "Bork: … → Def 180 · 99.6% · Smorks: … → Def 5"; see *One drain line per NPC*) |
 | Moia | Start of fight: 2 Tonalztics carriers (4 specs) → Def 117 · >99.9% |
 | Xarth | Start of fight: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 102 · >99.9% |
 | Ocellus | P1 at a corner: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 129 · >99.9% · P3 last quadrant, Deflect Melee: 2 Tonalztics carriers (4 specs) → Def 150 · 84% |
@@ -1023,6 +1023,68 @@ The fast pins (`CrossRaid`, the raid's first melee / ranged / magic preset): ToA
 161.6; CoX Vasa 20.1 → 22.9, Vespula 23.3 → 24.1, Mystics 44.8 → 52.4, Shamans 32.1 → 37.5, Muttadiles 23.9 → 24.0.
 Search / Summary on the Jelly: Solo and Team now equal None (the 2026-10-22 snapshots below show the old drained
 columns).
+
+### One drain line per NPC (phase 35b)
+
+User, 2026-10-24 (the FA plan briefing): "It says Bork + Smorks. But they are separate bosses. I can't tell which I
+should use elder/ralos on". Phase 33's encounter line started a new drain event only on a Defence reset, so every target
+of an encounter shared the first phase's line: The Smorks (Def 220, floor 0) was hidden under Bork's (300 → 180), and
+the Wear cell listed both NPCs' loadouts without saying which is whose. UI only: **no number changed** (FA 21:44.4; the
+per-phase strings are as before).
+
+**Who is the same NPC.** A new optional target field `npc` (`BestSetupTarget`, src/lib/raids/types.ts); briefing.ts
+`phaseNpc(targetKey)` = the target's `npc`, else its monster `name`. So the phases of one monster are one NPC without
+any data (AG flying / grounded, Bork's armour 8–14 and stunned rows, Ocellus P1 / P2 (the Blade) / P3, Kephri shielded /
+unshielded, Tekton / enraged, the Nylocas Vasilias forms, Verzik P1–P3, Elidinis' Warden shield / core), and `npc` is
+set only where one monster name covers different NPCs or the name is long: The Smorks → "Smorks", the ToA Obelisk →
+"Obelisk", CoX Olm → "Right claw" / "Left claw" / "Head", the Vanguards → "Melee / Ranged / Magic vanguard", the
+Muttadiles → "Small / Large muttadile". This was the least invasive choice: no time-model change, the grouping follows
+the target the phase already names. The Dagon'hai trio is one target (Elder + Monks share stats and one health pool), so
+one line.
+
+**Drain events** (`encounterDrainSummary(phases with npc)`, drainLine.ts): each NPC's phases are its own event, in the
+order the NPCs first appear; an NPC that comes back after another (Kephri after the scarabs, Olm's claws in phases
+2 / 3) joins its first event; a `drainReset` phase still starts a new event of its NPC (Sotetseg's mazes, Bloat's
+stomp). NPCs nobody specs (the phase 35 adds, Vanguards) get no line. When more than one NPC is specced, every event is
+named — briefing "Bork: [maul] **2 specs** [ralos] **2 hits** → Def 180" and "Smorks: [maul] **4 specs** [ralos] **2
+hits** → Def 5" on two lines (tooltip / per-phase details: "Bork: 2 Elder maul carriers (4 specs) + 2 Tonalztics
+carriers (4 specs) → Def 180 · 99.6% · Smorks: … → Def 5"); an NPC with several parts reads "Elidinis' Warden, P2
+shield" / "…, P2 core"; a reset reads "Bork, after the stomp". Two NPCs with the same numbers stay two lines (the "× 3"
+merge is for one NPC drained again). Single-NPC encounters are unchanged (phase 33 / 34 form).
+
+**Wear per NPC** (`wearGroups`, briefing.ts; PlanBriefing.tsx): when the NPCs don't all use the same loadouts, the Wear
+cell has one line per NPC, "Bork: [loadout icons]" / "Smorks: [loadout icons]"; NPCs with the same loadouts share a line
+("Spitting Scarab, Arcane Scarab: …"). One loadout list for everyone keeps the phase 34 cell. Phone width: the weapon
+icon only, as before.
+
+The briefing of every multi-NPC encounter (Plan tab, defaults, Team, the plan's kit; `verifyPhase35b.mjs`):
+
+| Raid | Encounter | Specs at the start | Wear |
+|---|---|---|---|
+| FA | Bork + Smorks | Bork: Elder maul 2 specs + Tonalztics 2 hits → Def 180 · Smorks: Elder maul 4 specs + Tonalztics 2 hits → Def 5 | one loadout (Inquisitor's + Obligator) for both; with Obligator not owned: "Bork: Tumeken's shadow switch …" / "Smorks: Ascension crossbows …" |
+| FA | Archive Guardian | Flying shield: … · Grounded: … (one NPC, two parts, unchanged) | unchanged |
+| FA | Dagon'hai trio | one line (one target) | unchanged |
+| FA | Ocellus | P1 at a corner: … · P3 last quadrant, Deflect Melee: … (one NPC, unchanged) | unchanged |
+| ToA | Kephri | one line (Kephri; the scarabs have no specs) | Kephri: Keris · Spitting Scarab, Arcane Scarab: Twisted bow · Soldier Scarab: Tumeken's shadow |
+| ToA | Akkha | Akkha's praying parts as before (the shadows have no specs) | Akkha: Shadow + ACB + Fang · Akkha's Shadow: ACB |
+| ToA | Wardens | Obelisk: Elder maul 1 spec + Eye of Ayak ≈ 49 magic def → Def 65 · Elidinis' Warden, P2 shield: Eye of Ayak not needed → Def 100 · Elidinis' Warden, P2 core: Elder maul 2 specs → Def 43 · Tumeken's Warden: Elder maul 1 spec + Eye of Ayak ≈ 20 magic def → Def 120 (phase 34 showed the Obelisk and the P2 shield only: the core and P3 lines had the Obelisk's weapons and were folded) | Obelisk, Tumeken's Warden: Shadow · Elidinis' Warden: Shadow + Torva Scythe |
+| CoX | Olm | Right claw: … → Def 36 · Left claw: … → Def 1 · Head: … → Def 0 (was the right claw's line only) | Right claw: Shadow · Left claw: Scythe · Head: Twisted bow |
+| CoX | Vasa / Vespula / Muttadiles | one line (the crystal, portal and small Muttadile have no specs) | per NPC (Glowing crystal / Vasa Nistirio, Vespula / Abyssal portal, Small / Large muttadile) |
+| CoX | Vanguards, Mystics, Shamans | no specs | Vanguards: Melee / Ranged / Magic vanguard; Mystics / Shamans one NPC |
+| ToB | Nylocas (boss forms), Verzik P1–P3, Xarpus, Maiden | one NPC each: unchanged | unchanged |
+| ToB | Sotetseg / Bloat | one NPC with resets: "× 3" / the stomp, unchanged | unchanged |
+
+Not changed: whether drains carry between Olm's phases or from Elidinis' Warden's shield to its core (the model gives
+every phase its own plan from 100% spec energy; phase 36 shares one budget per encounter). The briefing now shows the
+per-NPC lines the planner already computed.
+
+**Checks**: `src/tests/lib/raids/Phase35b.test.ts` (phaseNpc groupings; FA Bork + Smorks → two events named Bork /
+Smorks with Def 180 / Def 5, each the NPC's own phase line; the Wear per NPC; AG one event, two parts; Dagon'hai one
+event; Ocellus one NPC; Sotetseg three reset events "× 3"; Kephri / Wardens / Olm / Vanguards; toy with two NPCs, an
+add and a reset; render: "Bork:" / "Smorks:" spec and Wear lines; slow: FA 21:44.4 and the Bork + Smorks line).
+Phase34.test / verifyPhase33 / 34 re-pinned to the per-NPC Bork + Smorks line. Screenshots
+`docs/screenshots/phase35b-bork-smorks.png` (Obligator not owned: both spec lines and both Wear lines),
+`phase35b-bork-smorks-phone.png`, `phase35b-cox.png`, `phase35b-toa.png`.
 
 ## Routes tab (phase 16: raid time model)
 

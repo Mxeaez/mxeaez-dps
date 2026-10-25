@@ -96,6 +96,12 @@ export interface BestSetupTarget {
   /** Expected TTK isn't meaningful (Ocellus P2: the Blade phase is timed, damage transfers 50% to P3). */
   ttkNotApplicable?: boolean;
   note?: string;
+  /**
+   * Phase 35b: the NPC this target is, as the Plan briefing names it (default: `name`). Targets with the same NPC are
+   * one drain event in the briefing (AG flying / grounded, Bork's armour phases, Ocellus P1–P3); set it where one monster
+   * name covers different NPCs (Olm's claws and head, the three Vanguards, small / large Muttadile) or to shorten the name.
+   */
+  npc?: string;
 }
 
 /** One scaling input shown in the assumptions box of a raid tab; it reads and writes its own assumption field. */

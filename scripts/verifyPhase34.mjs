@@ -20,12 +20,13 @@ import { chromium } from '@playwright/test';
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
 const BRIEFING = [
   'Flying shield: Tonalztics 4 hits → Def 156 · Grounded: Tonalztics 4 hits → Def 156',
-  'Elder maul 2 specs + Tonalztics 2 hits → Def 180',
+  'Bork: Elder maul 2 specs + Tonalztics 2 hits → Def 180 · Smorks: Elder maul 4 specs + Tonalztics 2 hits → Def 5', // phase 35b
   'Tonalztics 2 hits → Def 117',
   'Tonalztics 2 hits → Def 102',
   'P1 at a corner: Tonalztics 2 hits → Def 129 · P3 last quadrant, Deflect Melee: Tonalztics 3 hits → Def 150',
 ];
-const BORK_LINE = 'Start of fight: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 180 · 99.6%';
+// phase 35b: one line per NPC (phase 33: Bork's line only, "Start of fight: … → Def 180 · 99.6%")
+const BORK_LINE = 'Bork: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 180 · 99.6% · Smorks: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 5';
 
 let failures = 0;
 const check = (ok, msg) => {

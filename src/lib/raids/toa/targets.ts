@@ -63,7 +63,7 @@ export const TOA_TARGETS: BestSetupTarget[] = [
     key: 'toa-baba', label: 'Ba-Ba', name: 'Ba-Ba', version: '', raid: 'toa', toaPath: 'baba',
   },
   {
-    key: 'toa-obelisk', label: 'Obelisk (Wardens P1)', name: 'Obelisk (Tombs of Amascut)', version: '', raid: 'toa',
+    key: 'toa-obelisk', label: 'Obelisk (Wardens P1)', name: 'Obelisk (Tombs of Amascut)', version: '', raid: 'toa', npc: 'Obelisk',
   },
   {
     key: 'toa-warden-p2',

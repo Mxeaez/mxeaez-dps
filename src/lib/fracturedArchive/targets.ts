@@ -13,7 +13,7 @@ export const BEST_SETUP_TARGETS: BestSetupTarget[] = [
     key: 'ag-grounded', label: 'Archive Guardian (Grounded)', name: 'Archive Guardian', version: 'Grounded',
   },
   {
-    key: 'smorks', label: 'The Smorks', name: 'The Smorks', version: '',
+    key: 'smorks', label: 'The Smorks', name: 'The Smorks', version: '', npc: 'Smorks',
   },
   {
     key: 'bork',

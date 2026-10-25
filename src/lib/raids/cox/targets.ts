@@ -47,6 +47,7 @@ export const COX_TARGETS: BestSetupTarget[] = [
     label: 'Vanguard (melee)',
     name: 'Vanguard',
     version: 'Melee',
+    npc: 'Melee vanguard',
     raid: 'cox',
     noDrains: 'Vanguards restore drained stats in their shell',
   },
@@ -55,6 +56,7 @@ export const COX_TARGETS: BestSetupTarget[] = [
     label: 'Vanguard (ranged)',
     name: 'Vanguard',
     version: 'Ranged',
+    npc: 'Ranged vanguard',
     raid: 'cox',
     noDrains: 'Vanguards restore drained stats in their shell',
   },
@@ -63,6 +65,7 @@ export const COX_TARGETS: BestSetupTarget[] = [
     label: 'Vanguard (magic)',
     name: 'Vanguard',
     version: 'Magic',
+    npc: 'Magic vanguard',
     raid: 'cox',
     noDrains: 'Vanguards restore drained stats in their shell',
   },
@@ -89,10 +92,10 @@ export const COX_TARGETS: BestSetupTarget[] = [
   // read 2026-10-24): "a small one is on the ground and the large one is lurking in the water ... When the smaller
   // muttadile dies, the larger one emerges".
   {
-    key: 'cox-muttadile-small', label: 'Muttadile (small)', name: 'Muttadile', version: 'Small', raid: 'cox', noDrains: NO_DRAINS_ADDS,
+    key: 'cox-muttadile-small', label: 'Muttadile (small)', name: 'Muttadile', version: 'Small', raid: 'cox', npc: 'Small muttadile', noDrains: NO_DRAINS_ADDS,
   },
   {
-    key: 'cox-muttadile-large', label: 'Muttadile (large)', name: 'Muttadile', version: 'Large', raid: 'cox',
+    key: 'cox-muttadile-large', label: 'Muttadile (large)', name: 'Muttadile', version: 'Large', raid: 'cox', npc: 'Large muttadile',
   },
   // Phase 35: adds (no specs). CoX Strategies (wiki, read 2026-10-24): "A sacrifical chamber filled with at least three
   // Skeletal Mystics (dependent on party size)"; Skeletal Mystic: they "regenerate their stats at a rate of 1 per 25 ticks".
@@ -136,6 +139,7 @@ export const COX_TARGETS: BestSetupTarget[] = [
     label: 'Great Olm left claw (melee hand)',
     name: 'Great Olm',
     version: 'Left claw (Normal)',
+    npc: 'Left claw',
     raid: 'cox',
     note: 'Dragon. Magic and ranged ÷3 (upstream).',
   },
@@ -144,6 +148,7 @@ export const COX_TARGETS: BestSetupTarget[] = [
     label: 'Great Olm right claw (mage hand)',
     name: 'Great Olm',
     version: 'Right claw (Normal)',
+    npc: 'Right claw',
     raid: 'cox',
     note: 'Dragon. Ranged ÷3 (upstream), melee ÷3 (wiki "66% damage mitigation from all non-mage attacks").',
   },
@@ -152,6 +157,7 @@ export const COX_TARGETS: BestSetupTarget[] = [
     label: 'Great Olm head (final phase)',
     name: 'Great Olm',
     version: 'Head (Normal)',
+    npc: 'Head',
     raid: 'cox',
     note: 'Dragon. Only damageable in the final phase. Magic ÷3 (upstream), melee ÷3 (wiki: 66% from all non-ranged).',
   },
