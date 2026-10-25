@@ -3,6 +3,34 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 37c — Reusable review probes (2026-10-25)
+
+**No result changed** (no src/lib file touched; `node scripts/pinHeadlines.mjs --full --check` → no change, 615 s
+alongside the fast suite). Docs:
+BUILDER (*Running things*, the probes rule, reviewer checklist step 2).
+
+- `scripts/probes/` (CLIs; header = usage; exit 1 on a failed check, 2 on bad arguments) over
+  `src/tests/utils/probes.ts` (no Jest import), bundled with esbuild like pinHeadlines (`scripts/probes/bundle.mjs`,
+  `__dirname` defined as src/tests/utils so the fixtures resolve; rebuilt each run, so it times the working tree):
+  - `retime.mjs [names] [--quiet]`: each headline kit from phase37/<name>.json rebuilt as kit loadouts with the plan's
+    ring, carriers / Solo subset, damage specs and surge potions (`finalAssumptions`, generalises crossRaidHeadlines'
+    `recomputed` to faSolo / faNotOwned), `compareRoutes` over the raid's routes vs headlines.json. All six: gap 0.0
+    (bit-equal totals), the pinned route fastest, every encounter = its 0.01 s pin; ~6 s.
+  - `drainOutcome.mjs <encounter> [--plan]`: one encounter of a re-timed headline: events (spec counts), per phase
+    the drain model (Def, floor, magic def, hit chance, energy) and outcome (P(floor), E[def], ranked def, Ayak), your
+    damage specs, per pool start / end energy, regen ticks, spent, start + regen (+ surge) − spent. Fails if the
+    re-time's spec plan differs from the fixture's or a pool overspends; ~1 s. Spot checks by hand: FA Xarth (4 maul +
+    6 Tonalztics, Def 170 → 102, pools 20 / 30 / 0), FA Solo Archive Guardian (100 + 6 ticks + 25 dose − 175 = 10 = end).
+  - `bruteForceKits.mjs <raid> [--pool small|tiny] [--route] [--max-kit] [--ring] [--candidates]`: a reduced Team plan
+    (Phase36 tuning) with `PlanHooks.onKitSpace`, every kit (≤ max(pool size, the planner's kit size)) timed exactly vs
+    the planner's. FA small: 336 kits, gap 0.000000 (= Phase36's slow test), 90 s; FA tiny 90 kits 30 s; ToB tiny gap
+    0, 65 s.
+- Tests: new `Phase37c.test.ts` (11, fast suite, ~45 s: retime of all six + its exit condition, both CLIs run with exit
+  codes, drain outcome Xarth / Solo AG with hand-computed pools, brute force FA tiny on one ring run (camp Lightbearer,
+  first 3 candidates + the planner's)). `yarn test` 1608 (1584 pass / 24 skipped; 620 s, alongside the pin check);
+  tsc, lint clean. No slow suite or
+  verify script (tooling only; nothing they reach changed).
+
 ## Phase 37b — Remember my settings + workflow speed-ups (2026-10-25)
 
 **No result changed** (the phase 37 full-plan fixtures and the new headline fixture reproduce exactly:

@@ -1,4 +1,4 @@
-# Builder / reviewer orientation (phase 37b)
+# Builder / reviewer orientation (phase 37b; probes 37c)
 
 Read this first, then `CLAUDE.md` (commands, rules), `ROADMAP.md` (the phase you are on, decisions) and the top entries
 of `PROGRESS.md`. `docs/BEST_SETUP.md` is the long reference (one section per phase); this page is the map.
@@ -59,6 +59,20 @@ per-phase strings that moved.
   names), `node scripts/verifyAll.mjs` (every `verifyPhase*.mjs`, final reviews), `--jobs N` (default 3), `--keep-screenshots`.
   One line per script, logs in a temp folder, tracked screenshots restored. Scripts with time limits (21, 27, 37) are
   tighter in parallel; re-run a timing failure alone before believing it.
+- Review probes (`scripts/probes/`, phase 37c; logic in `src/tests/utils/probes.ts`, smoke tests in `Phase37c.test.ts`;
+  each exits 1 on a failed check, 2 on bad arguments; usage in each file's header):
+  - `node scripts/probes/retime.mjs [fa toa cox tob faSolo faNotOwned] [--quiet]` — each headline kit (phase37/*.json)
+    re-timed with `compareRoutes` outside the planner vs headlines.json: total, gap, fastest route, per-encounter
+    seconds. Fails on a gap > 0.001 s. All six in ~6 s (no planning: it reads the pins, so after a numbers phase run it
+    once `pinHeadlines --full` has re-pinned; it checks the pinned kit, the slow suites check the live plan).
+  - `node scripts/probes/drainOutcome.mjs <encounter> [--plan <name>]` (no args: the encounters per plan) — one encounter
+    of a re-timed headline: drain events + spec counts, per phase Def / floor / magic def / hit chance / energy /
+    P(floor) / E[def] / ranked def / Ayak / your damage specs, per pool start / end energy, regen ticks, spent. Fails
+    when the spec plan differs from the fixture or a pool overspends. ~1 s.
+  - `node scripts/probes/bruteForceKits.mjs <fa|toa|cox|tob> [--pool small|tiny] [--route <id>|list] [--max-kit N]
+    [--ring camp-one|camp-lightbearer|switch] [--candidates N]` — a reduced Team plan's kit space
+    (`PlanHooks.onKitSpace`), every kit timed exactly vs the planner's kit. Fails when a kit is faster by > 1e-6 s.
+    FA small 90 s (336 kits), FA tiny 30 s, ToB tiny 65 s.
 
 - CI: `.github/workflows/ci.yml` runs the fast suite + lint + tsc on every push / PR to `main-mxeaez` (no slow suites,
   no Playwright); the deploy is still Cloudflare's build on push (docs/DEPLOY.md).
@@ -73,8 +87,8 @@ per-phase strings that moved.
 - **Restore tracked screenshots** the verify scripts overwrite (verifyAll does; by hand: `git checkout -- docs/screenshots/<names>`);
   commit only the screenshots the phase means to change. Leave the user's untracked review screenshots alone.
 - **Don't commit one-off probes** (scratch tests, logs, temp scripts); keep them in the scratchpad. The three reusable
-  probes (brute-force kits, re-time vs headlines.json, drain outcome table) live in `scripts/probes/` once phase 37c
-  lands and are kept working; use them before writing a new one.
+  probes (brute-force kits, re-time vs headlines.json, drain outcome table) live in `scripts/probes/` (see *Running things*)
+  and are kept working: a phase that breaks one fixes it; use them before writing a new one.
 - **Generic User-Agent** for the wiki (`mxeaez-dps (private fork of osrs-dps-calc)`), never personal info.
 - Minimal upstream edits (`docs/UPSTREAM_MERGE.md` lists them); new code in fork files.
 - Small phases (UI / tooling) write a PROGRESS line and the docs they touch; the full docs sweep is the final review's
@@ -130,6 +144,9 @@ per-phase strings that moved.
 
 ### Reviewer checklist (numbers phases)
 1. Read the PROGRESS entry and `git show --stat`; do not re-run what they list as passing.
-2. Run the committed probes (re-time, drain outcome, brute-force kits) and one hand recomputation of a headline encounter.
+2. Run the committed probes: `node scripts/probes/retime.mjs` (all six, gap ≤ 0.001 s), `node scripts/probes/drainOutcome.mjs
+   <encounter>` for the encounter you hand-check (its table is the drain / budget half of the recomputation),
+   `node scripts/probes/bruteForceKits.mjs fa` (gap 0; another raid when the phase touched its kit or time model); plus
+   one hand recomputation of a headline encounter. Write a new probe only for what these cannot show.
 3. Check bit-identity claims with `pinHeadlines --full --check`.
 4. Look at changed screenshots if UI moved; findings as severity, file:line, exact fix; under 1200 words (600 for a re-review).
