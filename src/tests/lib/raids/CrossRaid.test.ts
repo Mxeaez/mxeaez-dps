@@ -7,8 +7,9 @@ import {
 import { BestSetupAssumptions, DEFAULT_ASSUMPTIONS, PresetDef } from '@/lib/fracturedArchive/presets';
 import { drainModel } from '@/lib/fracturedArchive/specs';
 import {
-  compareRoutes, computeRouteComparison, createKitEvaluator, formatDuration, KitLoadout, raidTimeAssumptionsFrom,
+  compareRoutes, computeRouteComparison, createKitEvaluator, formatDuration, KitLoadout, raidTimeAssumptionsFrom, specBudgetFrom,
 } from '@/lib/fracturedArchive/raidTime';
+import { budgetGroups } from '@/lib/fracturedArchive/encounterBudget';
 import {
   comfortSupplies, DEFAULT_CARRIER_MODE, DEFAULT_RING_POLICY, DEFAULT_SPEC_MODE, plan, PlanResult, planAssumptions, planItemByName, ringAssumptions, toPlayerEquipment,
 } from '@/lib/fracturedArchive/planner';
@@ -260,12 +261,16 @@ describe('every raid\'s plan runs (reduced pool)', () => {
 // Tonalztics); ToA 14:12.1 → 14:05.5 (Bring Voidwaker; 1 Elder maul + 1 Eye of Ayak); CoX 7:01.3 → 7:03.6 (Bring Dragon
 // claws; Olm's phases re-drained from one budget: slower; carriers 4 Elder maul + 2 Tonalztics); ToB 7:29.5 → 7:21.2 (Bring Dragon claws; 2 Elder maul + 2
 // Tonalztics).
+// Phase 36 review (one spec bar per party member: with damage specs / doses you are not a carrier, carriers ≤ party − 1;
+// damage specs valued at the hp left at the phase's start; regen on the drained clock): FA 21:04.9 → 21:07.7 (2 Elder
+// maul + 3 Tonalztics); ToA 14:05.5 → 14:07.8 (1 Elder maul + 1 Eye of Ayak, Voidwaker); CoX 7:03.6 → 7:08.7 (3 Elder
+// maul + 1 BGS + 1 Tonalztics, Dragon claws); ToB 7:21.2 → 7:23.4 (1 Elder maul + 2 Tonalztics, Dragon claws).
 const HEADLINES: [string, string, number][] = [
-  ['fractured-archive', '21:04.9', 1264.85],
+  ['fractured-archive', '21:07.7', 1267.67],
   // review 2: Eye of Ayak carriers capped at the mages (1): 13:19.6 → 14:10.6 (1 maul, 1 Tonalztics, 1 Ayak; Ultor)
-  ['toa', '14:05.5', 845.47],
-  ['cox', '7:03.6', 423.6],
-  ['tob', '7:21.2', 441.2],
+  ['toa', '14:07.8', 847.85],
+  ['cox', '7:08.7', 428.67],
+  ['tob', '7:23.4', 443.42],
 ];
 
 // Phase 28: the FA plan without Obligator and Ascension crossbows ("Items I don't own"; phase 26 pinned 25:46.8 with
@@ -278,8 +283,8 @@ const HEADLINES: [string, string, number][] = [
 // via Bork + Smorks; no spec weapon (your last slot is worth 8.5 s of gear).
 // Phase 32 (no blessing; kept ammo): 24:45.3 → 24:34.1; the worn Twisted bow partial switch on the Tumeken's shadow
 // becomes the full Twisted bow (Masori) loadout (Archive Guardian 198.9 → 196.5, Ocellus 775.4 → 767.3 s).
-// Phase 36 (one spec budget per encounter; damage specs; the surge potion): 24:34.1 → 24:05.1
-const ONLY_OWNED_HEADLINE: [string, number] = ['24:05.1', 1445.1];
+// Phase 36 (one spec budget per encounter; damage specs; the surge potion): 24:34.1 → 24:05.1; phase 36 review: 24:11.9
+const ONLY_OWNED_HEADLINE: [string, number] = ['24:11.9', 1451.9];
 const FA_NOT_OWNED = ['Obligator', 'Ascension crossbows'];
 
 /**
@@ -319,6 +324,17 @@ const recomputed = (raid: RaidConfig, res: PlanResult): number => {
     expect(Math.abs(recomputed(raid, res) - total)).toBeLessThan(1e-6);
     expect(res.kit.every((c) => c.equipment.ring?.name === res.ring.ring)).toBe(true);
     expect(res.slots!.used).toBeLessThanOrEqual(28);
+    // phase 36 review: one spec bar per party member — the carriers, plus yours when you damage-spec / drink doses
+    const carriers = Object.values(res.specs.team?.carriers ?? {}).reduce((t, v) => t + v, 0);
+    const mine = (res.specs.damage ?? []).length > 0 || (res.specs.surgePotions ?? 0) > 0 ? 1 : 0;
+    expect(carriers + mine).toBeLessThanOrEqual(raid.defaultAssumptions.partySize);
+    const budget = specBudgetFrom({
+      ...raid.defaultAssumptions,
+      team: { ...raid.defaultAssumptions.team, carriers: { ...raid.defaultAssumptions.team.carriers, ...res.specs.team?.carriers } },
+      damageSpecs: res.specs.damage ?? [],
+      surgePotions: res.specs.surgePotions ?? 0,
+    }, 'team')!;
+    expect(budgetGroups(budget).reduce((t, g) => t + g.count, 0)).toBe(carriers + mine);
   }, 600000);
 
   test(`fractured-archive without ${FA_NOT_OWNED.join(' / ')}: ${ONLY_OWNED_HEADLINE[0]}`, () => {

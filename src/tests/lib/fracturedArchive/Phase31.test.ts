@@ -408,7 +408,8 @@ describe('Solo subset search: ≥ 1 s per extra slot', () => {
 // --- slow: the full FA plans -----------------------------------------------------------------------------------------
 /** Phase 31: FA Solo party 1 (defaults, planner decides). Pinned after the run; see PROGRESS. */
 // phase 36 (one spec budget per encounter; damage specs; the surge potion): 22:01.9 → 21:54.8
-const SOLO_HEADLINE: [string, number] = ['21:54.8', 1314.8];
+// phase 36 review (damage specs at the hp left; regen on the drained clock): 21:54.8 → 21:59.0
+const SOLO_HEADLINE: [string, number] = ['21:59.0', 1319.0];
 
 (process.env.RUN_SLOW_TESTS ? describe : describe.skip)('FA defaults (slow)', () => {
   const full = (patch: Partial<PlanInputs>) => plan({

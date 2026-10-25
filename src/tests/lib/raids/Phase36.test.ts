@@ -3,20 +3,26 @@ import { generateEmptyPlayer } from '@/state';
 import PlayerVsNPCCalc from '@/lib/PlayerVsNPCCalc';
 import { buildTargetMonster, findTarget } from '@/lib/fracturedArchive/bestSetup';
 import {
-  DAMAGE_SPEC_ARMOUR, damageSpecPlayer, damageSpecProfile, damageSpecRanking, netSpecDamage, specCalcNumbers,
-  specSecondsSaved,
+  atHpLeft, bestDamageVariant, DAMAGE_SPEC_ARMOUR, DAMAGE_SPEC_WEAPONS, DamageSpecWeapon, damageSpecPlayer, damageSpecProfile, damageSpecRanking, netSpecDamage,
+  specCalcNumbers, specSecondsSaved,
 } from '@/lib/fracturedArchive/damageSpecs';
 import {
   allocateBudget, AllocationProblem, CARRY_SPEC_ENERGY, dosesAllowed, placeDoses, regenTicks, rowSecondsAfter,
   spendFromGroup, SPEC_MAX_ENERGY, SURGE_COOLDOWN_SECONDS, SURGE_DOSE_ENERGY,
 } from '@/lib/fracturedArchive/specBudget';
 import {
-  budgetedEncounter, capOptions, damageLimited, drainEventsOf, MAX_EVENT_OPTIONS,
+  budgetedEncounter, budgetGroups, capOptions, CLOCK_ROUNDS, damageLimited, drainEventsOf, MAX_EVENT_OPTIONS, rowHpLeft,
 } from '@/lib/fracturedArchive/encounterBudget';
 import {
-  createKitEvaluator, encounterTime, EncounterTime, formatDuration, presetKitLoadout, raidTimeAssumptionsFrom, routeSurgeDoses,
+  compareRoutes, createKitEvaluator, encounterPlan, encounterTime, EncounterTime, formatDuration, KitLoadout, presetKitLoadout,
+  RAID_TIME_DEFAULTS, raidTimeAssumptionsFrom, routesFor, routeSurgeDoses, specBudgetFrom,
 } from '@/lib/fracturedArchive/raidTime';
 import { pickSpecItem } from '@/lib/fracturedArchive/specChoice';
+import {
+  comfortSupplies, DEFAULT_CARRIER_MODE, DEFAULT_RING_POLICY, DEFAULT_SPEC_MODE, plan, planAssumptions, PlanHooks, planItemByName,
+  ringAssumptions, toPlayerEquipment,
+} from '@/lib/fracturedArchive/planner';
+import { applyLoadoutToPlayer } from '@/lib/fracturedArchive/loadout';
 import { raidConfig } from '@/lib/raids';
 import { BestSetupAssumptions } from '@/lib/fracturedArchive/presets';
 import { RaidId, NO_DRAINS_ADDS } from '@/lib/raids/types';
@@ -363,9 +369,9 @@ describe('drain events and Defence resets', () => {
 describe('the spec budget in the time model', () => {
   test('Sotetseg: the three events share one budget per carrier (2 Elder maul + 2 BGS, party 4: 8 specs at most from the start)', () => {
     const e = enc('tob', 'tob-sotetseg', A('tob'));
-    const plan = e.specPlan!;
-    expect(plan.events.map((x) => x.reset ?? '-')).toEqual(['-', 'maze 1', 'maze 2']);
-    const total = (w: 'elderMaul' | 'bgs') => plan.events.reduce((t, x) => t + (x.counts[w] ?? 0), 0);
+    const sp = e.specPlan!;
+    expect(sp.events.map((x) => x.reset ?? '-')).toEqual(['-', 'maze 1', 'maze 2']);
+    const total = (w: 'elderMaul' | 'bgs') => sp.events.reduce((t, x) => t + (x.counts[w] ?? 0), 0);
     // each carrier: 100% + 10% per 30 s of the fight (wall time ≈ the seconds at party 4) → 2 + floor(regen / 50) specs
     const ticks = Math.floor(e.seconds / 30) + 1;
     const most = 2 * (2 + Math.floor((ticks * 10) / 50));
@@ -470,4 +476,243 @@ describe('option cap per event (MAX_EVENT_OPTIONS)', () => {
     // cap 5: + the fastest left (6: 75 s)
     expect(capOptions(kept, (i) => secs[i], (i) => specs[i], 5)).toEqual([0, 2, 4, 5, 6]);
   });
+});
+
+// --- phase 36 review fixes --------------------------------------------------------------------------------------------
+
+describe('review: one spec bar per party member (Team)', () => {
+  test('with damage specs or a Surge potion you are not a carrier: carriers ≤ party − 1, bars = party', () => {
+    const a: BestSetupAssumptions = {
+      ...A('fractured-archive'),
+      partySize: 6,
+      team: {
+        ...A('fractured-archive').team,
+        carriers: {
+          ...A('fractured-archive').team.carriers, elderMaul: 2, tonalztics: 4, dwh: 0, bgs: 0, ayak: 0,
+        },
+      },
+    };
+    const bars = (x: BestSetupAssumptions) => budgetGroups(specBudgetFrom(x, 'team')!).reduce((t, g) => t + g.count, 0);
+    expect(bars(a)).toBe(6);
+    expect(specBudgetFrom(a, 'team')!.carriers).toEqual({ elderMaul: 2, tonalztics: 4 });
+    // the last carriers in teamSpecPlan's order make way for your bar
+    expect(specBudgetFrom({ ...a, damageSpecs: ['zcb'] }, 'team')!.carriers).toEqual({ elderMaul: 2, tonalztics: 3 });
+    expect(bars({ ...a, damageSpecs: ['zcb'] })).toBe(6);
+    expect(bars({ ...a, surgePotions: 1 })).toBe(6);
+    // fewer carriers than the party: nobody is dropped
+    const four = { ...a, team: { ...a.team, carriers: { ...a.team.carriers, tonalztics: 2 } } };
+    expect(specBudgetFrom({ ...four, damageSpecs: ['zcb'] }, 'team')!.carriers).toEqual({ elderMaul: 2, tonalztics: 2 });
+    expect(bars({ ...four, damageSpecs: ['zcb'] })).toBe(5);
+    // Solo: your bar only
+    expect(budgetGroups(specBudgetFrom({ ...a, damageSpecs: ['zcb'] }, 'solo')!)).toHaveLength(1);
+  });
+});
+
+describe('review: damage specs valued at the hp left at the row\'s start', () => {
+  test('rowHpLeft: the NPC\'s damage still to deal in its drain event (a Defence reset starts a new count)', () => {
+    const rows = encounterPlan('archive-guardian', RAID_TIME_DEFAULTS, 6);
+    const left = rowHpLeft(rows);
+    const byKey = Object.fromEntries(rows.map((r) => [r.key, r.damage]));
+    expect(left.get('ag-flying')).toBeCloseTo(byKey['ag-flying'], 9);
+    expect(left.get('ag-grounded')).toBeCloseTo(byKey['ag-grounded'] + byKey['ag-flying'], 9);
+    // the shield row: the kits cap it at the boss's full hp (atHpLeft)
+    expect(left.get('ag-shield')).toBeCloseTo(byKey['ag-shield'] + byKey['ag-grounded'] + byKey['ag-flying'], 9);
+    const sot = rowHpLeft([
+      { key: 'a', targetKey: 'tob-sotetseg', damage: 100 },
+      {
+        key: 'b', targetKey: 'tob-sotetseg', damage: 50, drainReset: 'maze 1',
+      },
+      { key: 'c', targetKey: 'tob-sotetseg', damage: 25 },
+    ]);
+    expect([sot.get('a'), sot.get('b'), sot.get('c')]).toEqual([100, 75, 25]);
+  });
+  test('a Zaryte crossbow spec on the AG\'s last 165 hp: the ruby proc is worth ≤ 36 (a share of 165, not of the full hp)', () => {
+    const a = A('fractured-archive');
+    const m = buildTargetMonster(findTarget('ag-flying'), undefined, 'none', a).monster;
+    const flying = encounterPlan('archive-guardian', RAID_TIME_DEFAULTS, a.partySize).find((r) => r.key === 'ag-flying')!.damage;
+    expect(flying).toBeCloseTo(165, 0);
+    const best = (hp?: number) => bestDamageVariant(damageSpecProfile(atHpLeft(m, hp), 'zcb', a), 14)!.expected;
+    // hp 1: no proc to speak of; the proc's share of the expected damage at 165 hp is ≤ 0.22 × 165 = 36.3
+    expect(best(165) - best(1)).toBeLessThanOrEqual(0.22 * 165 + 1e-6);
+    expect(best(undefined) - best(1)).toBeGreaterThan(50);
+    expect(atHpLeft(m, 1e9)).toBe(m);
+    expect(atHpLeft(m, 164.2).inputs.monsterCurrentHp).toBe(165);
+    // in the time model: a ZCB spec on the flying row is valued at that hp
+    const e = enc('fractured-archive', 'archive-guardian', { ...a, damageSpecs: ['zcb'] });
+    const row = e.phases.find((p) => p.key === 'ag-flying')!;
+    (row.damageSpecs ?? []).filter((d) => d.weapon === 'zcb').forEach((d) => {
+      expect(d.expected).toBeLessThanOrEqual(best(165) + 1e-6);
+    });
+  });
+});
+
+describe('review: regen on the drained clock', () => {
+  test('Archive Guardian (Team, ZCB + Burning claws): re-planned on the clock of its own drained phases', () => {
+    const a: BestSetupAssumptions = { ...A('fractured-archive'), damageSpecs: ['zcb', 'burningClaws'] };
+    const raid = raidConfig('fractured-archive');
+    const ta = raidTimeAssumptionsFrom(a, 'team', raid.defaultTimeSettings, raid.time);
+    const kit = kitOf('fractured-archive', a);
+    const pass = (k: Parameters<typeof raid.time.encounterPass>[1], d: 'none' | 'team' | 'solo', f: number) => raid.time.encounterPass('archive-guardian', k, ta, d, f);
+    const first = pass(kit, 'none', ta.fallbackFightSeconds);
+    const clocks: number[] = [];
+    const r = budgetedEncounter(kit, ta, ta.specBudget!, {
+      drain: 'team',
+      pass,
+      first,
+      fightSeconds: 60,
+      clock0: 0,
+      surge: false,
+      onProblem: (p) => { clocks.push(p.rows[p.rows.length - 1].end); },
+    });
+    expect(clocks.length).toBeGreaterThanOrEqual(2);
+    expect(clocks.length).toBeLessThanOrEqual(CLOCK_ROUNDS + 1);
+    // the first clock is the undrained pass; the later ones the drained plan's phases (shorter: fewer regen ticks)
+    const wall = (secs: number) => (secs * (ta.dpsMultiplier ?? 1)) / ta.partySize;
+    expect(clocks[0]).toBeCloseTo(wall(first.reduce((t, p) => t + p.seconds, 0)), 6);
+    expect(clocks[clocks.length - 1]).toBeLessThan(clocks[0] - 1);
+    // your bar (100% + 10% per 30 s of the drained fight) pays for the damage specs the plan makes
+    const mine = Object.values(r.plan.damage).reduce((t, d) => t + (d.zcb ?? 0) * DAMAGE_SPEC_WEAPONS.zcb.energy + (d.burningClaws ?? 0) * DAMAGE_SPEC_WEAPONS.burningClaws.energy, 0);
+    expect(mine).toBeGreaterThan(0);
+    expect(mine).toBeLessThanOrEqual(100 + 10 * Math.floor(wall(r.seconds) / 30) + 1e-9);
+  });
+});
+
+describe('review: the optimiser\'s fixed spec plan vs the exact per-kit allocation (reduced pool, brute force)', () => {
+  // The planner's optimiser replays one spec plan (the DP on a reference kit); the reported time of a kit is its own
+  // exact allocation. Brute force over every kit of the reduced pool's candidates (up to KIT_MAX loadouts, within the
+  // slots, the plan's carried items, carriers, damage specs and doses) with that exact time: the planner's kit is the
+  // fastest (gap 0).
+  const KIT_MAX = 4;
+  const ROUTE = 'archive-guardian>bork-smorks>moia>xarth>ocellus';
+  (process.env.RUN_SLOW_TESTS ? test : test.skip)(`FA Team, route ${ROUTE}: the planner's kit = the brute-force best`, () => {
+    const raid = raidConfig('fractured-archive');
+    const spaces: Parameters<NonNullable<PlanHooks['onKitSpace']>>[0][] = [];
+    const res = plan({
+      ringPolicy: DEFAULT_RING_POLICY,
+      specMode: DEFAULT_SPEC_MODE,
+      carrierMode: DEFAULT_CARRIER_MODE,
+      basePlayer: generateEmptyPlayer(),
+      assumptions: raid.defaultAssumptions,
+      drain: 'team',
+      settings: raid.defaultTimeSettings,
+      route: ROUTE,
+      pinned: raid.planDefaults.pinned.map((n) => planItemByName(n).id),
+      nonItemSlots: raid.planDefaults.nonItemSlots,
+      supplies: raid.defaultSupplies,
+    }, {
+      model: raid.time,
+      presets: (['melee', 'ranged', 'magic'] as const).map((g) => raid.presets.find((p) => p.group === g)!),
+      search: { weapons: ['Scythe of Vitur', 'Tumeken\'s shadow', 'Twisted bow'], maxPasses: 1 },
+      perGroupWeapons: 1,
+      perWeapon: 1,
+      bases: 1,
+      partners: 1,
+      seeds: 4,
+      maxCandidates: 10,
+    }, { onKitSpace: (x) => { spaces.push(x); } });
+    // camp one ring: one run per ring screened in full; the plan is the chosen ring's run
+    const s = spaces.find((x) => x.ring === res.ring.ring)!;
+    expect(s).toBeDefined();
+    const planned = res.comparison!.routes[res.planned].seconds;
+    expect(s.exactSeconds(s.members)).toBeCloseTo(planned, 6);
+    const n = s.candidates.length;
+    let best = Infinity;
+    let bestKit: number[] = [];
+    let kits = 0;
+    const walk = (from: number, m: number[]) => {
+      if (m.length) {
+        if (s.used(m) <= s.total) {
+          kits += 1;
+          const t = s.exactSeconds(m);
+          if (t < best - 1e-9) {
+            best = t;
+            bestKit = [...m];
+          }
+        }
+      }
+      if (m.length >= KIT_MAX) return;
+      for (let i = from; i < n; i++) walk(i + 1, [...m, i]);
+    };
+    walk(0, []);
+    // eslint-disable-next-line no-console
+    console.log(`brute force: ${kits} kits of ${n} candidates; best ${best.toFixed(4)} (${bestKit.map((i) => s.candidates[i].label).join(' + ')}); planner ${planned.toFixed(4)} (${s.members.map((i) => s.candidates[i].label).join(' + ')}); gap ${(planned - best).toFixed(4)}`);
+    expect(kits).toBeGreaterThan(n);
+    expect(planned - best).toBeLessThanOrEqual(1e-6);
+  }, 3600000);
+});
+
+describe('review: you carry a drain weapon or you damage-spec (Team, one bar each)', () => {
+  // The planner keeps the faster of "you carry, no damage specs / doses" and "you spec, carriers ≤ party − 1". Checked
+  // both ways with the exact time model on the planned kit: the option not taken is never faster.
+  const raid = raidConfig('fractured-archive');
+  const ROUTE = 'archive-guardian>bork-smorks>moia>xarth>ocellus';
+  const planAt = (party: number) => plan({
+    ringPolicy: DEFAULT_RING_POLICY,
+    specMode: DEFAULT_SPEC_MODE,
+    carrierMode: DEFAULT_CARRIER_MODE,
+    basePlayer: generateEmptyPlayer(),
+    assumptions: { ...raid.defaultAssumptions, partySize: party },
+    drain: 'team',
+    settings: raid.defaultTimeSettings,
+    route: ROUTE,
+    pinned: raid.planDefaults.pinned.map((n) => planItemByName(n).id),
+    nonItemSlots: raid.planDefaults.nonItemSlots,
+    supplies: raid.defaultSupplies,
+  }, {
+    model: raid.time,
+    presets: (['melee', 'ranged', 'magic'] as const).map((g) => raid.presets.find((p) => p.group === g)!),
+    search: { weapons: ['Scythe of Vitur', 'Tumeken\'s shadow', 'Twisted bow'], maxPasses: 1 },
+    perGroupWeapons: 1,
+    perWeapon: 1,
+    bases: 1,
+    partners: 1,
+    seeds: 2,
+  });
+  /** The planned kit's exact route time with these carriers / damage specs / doses. */
+  const exactWith = (res: ReturnType<typeof planAt>, party: number, carriers: Record<string, number>, damage: DamageSpecWeapon[], surge: number) => {
+    const ringA = ringAssumptions(planAssumptions({ ...raid.defaultAssumptions, partySize: party }, comfortSupplies(raid.defaultSupplies), raid.planDefaults.pinned.map((n) => planItemByName(n).id)), DEFAULT_RING_POLICY, res.ring.ring ? { name: res.ring.ring } : null);
+    const a: BestSetupAssumptions = {
+      ...ringA,
+      team: {
+        ...ringA.team,
+        carriers: {
+          elderMaul: 0, dwh: 0, bgs: 0, tonalztics: 0, ayak: 0, ...carriers,
+        },
+      },
+      damageSpecs: damage,
+      surgePotions: surge,
+    };
+    const base = generateEmptyPlayer();
+    const loadouts: KitLoadout[] = res.kit.map((c) => {
+      const eq = toPlayerEquipment(c.equipment);
+      return {
+        id: c.key, name: c.label, group: c.group, options: c.options, toPlayer: (m, o) => applyLoadoutToPlayer(base, c.label, c.group, eq, o.style, o.spell, m, a),
+      };
+    });
+    const cmp = compareRoutes(createKitEvaluator(loadouts, a), raidTimeAssumptionsFrom(a, 'team', raid.defaultTimeSettings, raid.time), routesFor({ model: raid.time }).filter((r) => r.id === ROUTE));
+    return cmp.routes[cmp.fastest].seconds;
+  };
+  (process.env.RUN_SLOW_TESTS ? test : test.skip)('party 1: your one bar carries the drain weapon (a damage spec instead is slower); party 6: the reverse', () => {
+    const one = planAt(1);
+    const t1 = one.comparison!.routes[one.planned].seconds;
+    expect(one.specs.damage ?? []).toEqual([]);
+    expect(one.specs.surgePotions ?? 0).toBe(0);
+    const c1 = one.specs.team!.carriers!;
+    expect(Object.values(c1).reduce((t, v) => t + v, 0)).toBe(1);
+    // the same kit with your bar on a Zaryte crossbow / Voidwaker and no carrier: slower
+    expect(exactWith(one, 1, {}, ['zcb'], 0)).toBeGreaterThan(t1);
+    expect(exactWith(one, 1, {}, ['voidwaker'], 0)).toBeGreaterThan(t1);
+    expect(exactWith(one, 1, c1, [], 0)).toBeCloseTo(t1, 6);
+
+    const six = planAt(6);
+    const t6 = six.comparison!.routes[six.planned].seconds;
+    const c6 = six.specs.team!.carriers!;
+    expect((six.specs.damage ?? []).length).toBeGreaterThan(0);
+    expect(Object.values(c6).reduce((t, v) => t + v, 0)).toBeLessThanOrEqual(5);
+    expect(exactWith(six, 6, c6, six.specs.damage ?? [], six.specs.surgePotions ?? 0)).toBeCloseTo(t6, 6);
+    // you carrying instead (one more carrier of each weapon, no items): slower
+    (Object.keys(c6) as (keyof typeof c6)[]).filter((w) => w !== 'ayak').forEach((w) => {
+      expect(exactWith(six, 6, { ...c6, [w]: c6[w] + 1 }, [], 0)).toBeGreaterThan(t6);
+    });
+  }, 3600000);
 });

@@ -17,9 +17,9 @@ import { chromium } from '@playwright/test';
 import { openSections } from './phase34Sections.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
-const FA_TOTAL = process.env.FA_TOTAL || '21:04.9';
-const FA_OWNED_TOTAL = process.env.FA_OWNED_TOTAL || '24:05.1'; // phase 32 (phase 31: 24:45.3)
-const SOLO_TOTAL = process.env.SOLO_TOTAL || '21:54.8';
+const FA_TOTAL = process.env.FA_TOTAL || '21:07.7';
+const FA_OWNED_TOTAL = process.env.FA_OWNED_TOTAL || '24:11.9'; // phase 32 (phase 31: 24:45.3)
+const SOLO_TOTAL = process.env.SOLO_TOTAL || '21:59.0';
 
 let failures = 0;
 const check = (ok, msg) => {

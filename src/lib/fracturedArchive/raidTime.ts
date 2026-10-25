@@ -39,7 +39,7 @@ import { DEFAULT_FIGHT_SECONDS, drainModel, PlannerWeapon } from '@/lib/fracture
 import { DrainLine } from '@/lib/fracturedArchive/drainLine';
 import type { SpecCounts } from '@/lib/fracturedArchive/bestSetup';
 import {
-  DAMAGE_SPEC_WEAPON_IDS, DAMAGE_SPEC_WEAPONS, damageSpecItemName, damageSpecProfile, DamageSpecProfile, DamageSpecWeapon,
+  atHpLeft, DAMAGE_SPEC_WEAPON_IDS, DAMAGE_SPEC_WEAPONS, damageSpecItemName, damageSpecProfile, DamageSpecProfile, DamageSpecWeapon,
 } from '@/lib/fracturedArchive/damageSpecs';
 import { canWeaponHit } from '@/lib/fracturedArchive/hittable';
 import {
@@ -190,6 +190,11 @@ export interface PhaseQuery {
    * the same drains (`specCountsDrainKey`), so its drain line may name other specs.
    */
   outcomeOnly?: boolean;
+  /**
+   * Phase 36 review: the NPC's hp left at the start of the row (`encounterBudget.ts rowHpLeft`); damage specs are valued
+   * at it (`RaidKit.specDamage`: the monster's current hp, capped at its full hp). Undefined = full hp.
+   */
+  hpLeft?: number;
 }
 
 /** The kit's best answer for a phase. */
@@ -438,7 +443,8 @@ export interface RaidTimeModel {
 
 /**
  * Phase 36: the spec budget of the best-setup assumptions: Solo = "Specs I bring" (Eye of Ayak up to its spec count),
- * Team = the carriers that count (the first party-size of them, in `teamSpecPlan`'s order) with their Lightbearer flags;
+ * Team = the carriers that count (the first party-size of them, in `teamSpecPlan`'s order; party − 1 when you bring damage
+ * specs or Surge potions: your bar is yours then) with their Lightbearer flags;
  * your damage spec weapons and Surge potions (Plan: the planner's choice; elsewhere none).
  */
 export const specBudgetFrom = (best: BestSetupAssumptions, drain: DrainStateId): SpecBudgetConfig | undefined => {
@@ -461,7 +467,10 @@ export const specBudgetFrom = (best: BestSetupAssumptions, drain: DrainStateId):
     return { drain, solo, ...common };
   }
   const carriers: Partial<Record<PlannerWeapon, number>> = {};
-  let left = Math.max(0, Math.floor(best.partySize));
+  // review: with damage specs / surge doses your bar is yours (budgetGroups adds it), so you are not a carrier: the
+  // party's other members carry (one bar per party member in all)
+  const mine = common.damage.length > 0 || common.surgePotions > 0;
+  let left = Math.max(0, Math.floor(best.partySize) - (mine ? 1 : 0));
   (Object.keys(best.team.carriers) as PlannerWeapon[]).forEach((w) => {
     const k = Math.min(Math.max(0, Math.floor(best.team.carriers[w] ?? 0)), left);
     if (k > 0) carriers[w] = k;
@@ -903,7 +912,7 @@ export const createKitEvaluator = (loadouts: KitLoadout[], assumptions: BestSetu
     return m;
   };
   return {
-    specDamage: (q, w) => damageSpecProfile(monsterFor(q).monster, w, assumptions),
+    specDamage: (q, w) => damageSpecProfile(atHpLeft(monsterFor(q).monster, q.hpLeft), w, assumptions),
     specHits: (q) => specHitsOf(monsterFor({ ...q, drain: 'none', specs: undefined }).monster, assumptions),
     drainKey: (q) => specCountsDrainKey(findTarget(q.targetKey), q.phase, q.drain, assumptions, q.specs?.counts ?? {}),
     evaluations: () => count,

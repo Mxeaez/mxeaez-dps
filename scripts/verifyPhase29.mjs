@@ -120,7 +120,7 @@ const main = async () => {
   const agDrains = await text(page.locator('[data-testid="plan-phase-row"][data-target="ag-flying"] [data-testid="plan-phase-drains"]').first());
   check(/needs 4 landed hits · 4 specs \(2 carriers\) = 8 attacks, 4 must land · 98%/.test(agDrains), `AG Flying (Team) drain line: "${agDrains}"`);
   const carriers = Object.fromEntries(rows.map((r) => [r.weapon, r.carriers]));
-  check(carriers.elderMaul === 2 && carriers.tonalztics === 4 && rows.length === 2, `planner carriers: ${JSON.stringify(carriers)} (phase 36: 2 Elder maul + 4 Tonalztics)`);
+  check(carriers.elderMaul === 2 && carriers.tonalztics === 3 && rows.length === 2, `planner carriers: ${JSON.stringify(carriers)} (phase 36 review: 2 Elder maul + 3 Tonalztics, you damage-spec; phase 36: 2 + 4)`);
   check(/picked by the planner/.test(await text(page.locator('[data-testid="plan-team-roles"] .font-semibold').first())), 'briefing says "picked by the planner"');
   const steps = page.locator('[data-testid="plan-team-steps"]');
   check(await steps.count() === 1, `${await steps.count() ? await text(steps) : 'no steps line'}`);
@@ -132,7 +132,7 @@ const main = async () => {
   await shot(page, 'team');
   // review 2: Search / Summary now use the plan's carriers (shown in the disabled counts)
   check(/from the last plan/.test((await page.locator('[data-testid="team-carriers-note"]').textContent())), 'carriers note after the plan: "from the last plan"');
-  check(await page.locator('#bs-team-tonalztics').inputValue() === '4' && await page.locator('#bs-team-ayak').inputValue() === '0', `Advanced counts follow the plan: Tonalztics ${await page.locator('#bs-team-tonalztics').inputValue()}, Ayak ${await page.locator('#bs-team-ayak').inputValue()}`);
+  check(await page.locator('#bs-team-tonalztics').inputValue() === '3' && await page.locator('#bs-team-ayak').inputValue() === '0', `Advanced counts follow the plan: Tonalztics ${await page.locator('#bs-team-tonalztics').inputValue()}, Ayak ${await page.locator('#bs-team-ayak').inputValue()}`);
 
   await page.locator('[data-testid="plan-ring-policy"]').selectOption('camp-lightbearer'); // phase 30: with the inputs
   await page.waitForTimeout(300);
@@ -166,8 +166,8 @@ const main = async () => {
   // phase 30 (empty pinned defaults): the brute force over all 32 sets has 1321.34 s for {Elder maul, Tonalztics} (tied
   // with ten other sets pairing Tonalztics with Elder maul or DWH); phase 29: Bring Tonalztics, 22:10.5. Phase 31: a
   // slot is priced at 1 s, so {Tonalztics} 1321.91 wins (Elder maul saves 0.57 s for its slot)
-  // phase 36: + the damage spec weapons and a Surge potion (each ≥ 1 s per slot), 21:54.8
-  check(/^Bring: Tonalztics, Zaryte crossbow, Burning claws, Surge potion$/.test(soloBring) && soloTotal === '21:54.8', `Solo (1 s per slot): Bring Tonalztics + damage specs + Surge potion, 21:54.8 (${soloBring}, ${soloTotal})`);
+  // phase 36: + the damage spec weapons and a Surge potion (each ≥ 1 s per slot), 21:54.8; phase 36 review: 21:59.0
+  check(/^Bring: Tonalztics, Zaryte crossbow, Burning claws, Surge potion$/.test(soloBring) && soloTotal === '21:59.0', `Solo (1 s per slot): Bring Tonalztics + damage specs + Surge potion, 21:54.8 (${soloBring}, ${soloTotal})`);
   const without = page.locator('[data-testid="plan-spec-without"]');
   check(await without.count() === weapons.length, `${await without.count() ? await text(without.first()) : 'no "best without" line'}`);
   const others = await page.locator('[data-testid="plan-spec-rejected"], [data-testid="plan-spec-other"]').evaluateAll((els) => els.map((e) => e.textContent.trim()));

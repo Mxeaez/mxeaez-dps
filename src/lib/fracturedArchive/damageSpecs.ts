@@ -199,6 +199,18 @@ export const specCalcNumbers = (player: Player, monster: Monster): Omit<DamageSp
   };
 };
 
+/**
+ * Phase 36 review: the monster with its current hp at most `hpLeft` (rounded up; the hp left at a row's start), for
+ * the Zaryte crossbow's ruby proc (a share of the current hp). Undefined = unchanged (full hp).
+ */
+export const atHpLeft = (monster: Monster, hpLeft?: number): Monster => {
+  if (hpLeft === undefined || !Number.isFinite(hpLeft)) return monster;
+  const cur = monster.inputs.monsterCurrentHp;
+  const left = Math.max(1, Math.ceil(hpLeft - 1e-9));
+  if (!(left < cur)) return monster;
+  return { ...monster, inputs: { ...monster.inputs, monsterCurrentHp: left } };
+};
+
 const profileCache = new Map<string, DamageSpecProfile>();
 const PROFILE_CACHE_MAX = 20000;
 

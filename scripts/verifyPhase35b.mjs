@@ -15,8 +15,9 @@ import { chromium } from '@playwright/test';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
 // phase 36: one spec budget for Bork and the Smorks (and the planner's 2 Elder maul + 4 Tonalztics carriers)
-const BORK_SPECS = 'Bork: Elder maul 2 specs → Def 180 · Smorks: Tonalztics 10 hits → Def 0';
-const BORK_LINE = 'Bork: 2 Elder maul carriers (4 specs) → Def 180 · 96% · Smorks: 4 Tonalztics carriers (8 specs) → Def 0 · 85%';
+const BORK_SPECS = 'Bork: Elder maul 2 specs → Def 180 · Smorks: Elder maul 1 spec + Tonalztics 9 hits → Def 13'; // phase 36 review
+// phase 36 review: 2 Elder maul + 3 Tonalztics carriers (you damage-spec)
+const BORK_LINE = 'Bork: 2 Elder maul carriers (3 specs) → Def 180 · 86% · Smorks: 1 Elder maul carrier (1 spec) + 3 Tonalztics carriers (6 specs) → Def 13';
 const FA_OTHERS = {
   'archive-guardian': 'Flying shield: Tonalztics 4 hits → Def 156 · Grounded: Tonalztics 4 hits → Def 156',
   moia: 'Tonalztics 2 hits → Def 117',
@@ -71,7 +72,7 @@ const main = async () => {
   // --- FA Plan (Team defaults)
   await openRaidPlan(page, 'fractured-archive');
   const total = await text(page.locator('[data-testid="plan-total"]'));
-  check(total === '21:04.9', `FA Team total ${total} (phase 35: 21:44.4)`);
+  check(total === '21:07.7', `FA Team total ${total} (phase 35: 21:44.4)`);
   let rows = await briefing(page);
   log(rows);
   const bork = rows.find((r) => r.id === 'bork-smorks');

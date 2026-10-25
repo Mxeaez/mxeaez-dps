@@ -182,7 +182,10 @@ describe('ToA / CoX / ToB multi-NPC encounters (default assumptions, presets kit
     // phase 36: "His stats also reset when a new phase starts" (wiki): each claw's later phases are new events
     expect(s.events.map((e) => `${e.npc}${e.reset ? `/${e.reset}` : ''}`)).toEqual(['Right claw', 'Left claw', 'Right claw/phase 1', 'Left claw/phase 1', 'Right claw/phase 2', 'Left claw/phase 2', 'Head']);
     const [row, vRow] = briefingRows([olm, vanguards], 'team');
-    expect(row.specs.map((g) => g.label)[0]).toBe('Right claw');
+    // phase 36 review (regen on the drained clock): the first right claw gets no specs (the energy goes to the left claw
+    // and the later phases), so the first line is the left claw's
+    expect(row.specs.map((g) => g.label)[0]).toBe('Left claw');
+    expect(row.specs.map((g) => g.label)).toContain('Right claw, after phase 1');
     expect(row.specs.map((g) => g.label)).toContain('Head');
     expect(row.wear.map((g) => g.npc)).toEqual(['Right claw', 'Left claw', 'Head']);
     expect(vRow.specsText).toBe('no specs');
@@ -255,7 +258,7 @@ describe('toy: two NPCs and a reset', () => {
 // --- slow: no number changes ---------------------------------------------------------------------------------------
 
 (process.env.RUN_SLOW_TESTS ? describe : describe.skip)('FA default Team plan: total unchanged (slow)', () => {
-  test('21:04.9 (phase 36; was 21:44.4); Bork + Smorks briefing per NPC', () => {
+  test('21:07.7 (phase 36 review; phase 36: 21:04.9); Bork + Smorks briefing per NPC', () => {
     const r = plan({
       basePlayer: generateEmptyPlayer(),
       assumptions: FA.defaultAssumptions,
@@ -270,9 +273,9 @@ describe('toy: two NPCs and a reset', () => {
       carrierMode: 'auto',
     } as PlanInputs);
     const planned = r.comparison!.routes[r.planned];
-    expect(formatDuration(planned.seconds)).toBe('21:04.9'); // phase 36 (was 21:44.4)
+    expect(formatDuration(planned.seconds)).toBe('21:07.7'); // phase 36 review (phase 36: 21:04.9; was 21:44.4)
     const row = briefingRows(planned.encounters, 'team').find((x) => x.id === 'bork-smorks')!;
-    // phase 36: one spec budget for both NPCs (and the planner's 2 Elder maul + 4 Tonalztics carriers)
-    expect(row.specsText).toBe('Bork: Elder maul 2 specs → Def 180 · Smorks: Tonalztics 10 hits → Def 0');
+    // phase 36: one spec budget for both NPCs; review: the planner's 2 Elder maul + 3 Tonalztics carriers (you damage-spec)
+    expect(row.specsText).toBe('Bork: Elder maul 2 specs → Def 180 · Smorks: Elder maul 1 spec + Tonalztics 9 hits → Def 13');
   });
 });

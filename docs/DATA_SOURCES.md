@@ -902,7 +902,7 @@ Amascut"; "Attempting to drink the potion with 100% special attack energy will p
 have no effect." Four doses (Surge potion(1)–(4)); the inventory image `src/public/img/supplies/Surge potion(4).png` is
 the wiki's File:Surge_potion(4).png. Model: +25% (capped at 100%) at most once per encounter, right after your first spec
 there or whenever the bar is below 100%; doses ≥ 300 s apart on the route's clock (the encounters' wall time; travel 0
-s: exact for ToB, conservative for the others), the first may be at the raid start; **unverified** (UNVERIFIED D29).
+s; conservative everywhere: in-room time that isn't DPS time, e.g. Sotetseg's mazes, isn't counted), the first may be at the raid start; **unverified** (UNVERIFIED D29).
 
 **Damage specs** (`src/lib/fracturedArchive/damageSpecs.ts`): the numbers are upstream's (`getSpecCalc()`,
 `getExpectedDamage()`, `getExpectedAttackSpeed()`), which follow the wiki:
@@ -912,7 +912,8 @@ s: exact for ToB, conservative for the others), the first may be at the raid sta
 | Voidwaker | 50% | "deals guaranteed Magic damage between 50-150% of the wielder's maximum melee hit" | accuracy 1, min = max ÷ 2, max + min; rolled as magic (Bork's magic resistance −2 applies, B5) |
 | Dragon claws | 50% | "hits an enemy four times in succession … rolls against the opponent's slash defence" | `dClawDist` (the four-roll cascade) |
 | Burning claws | 35% | "Burning barrage … hits an enemy three times in succession"; "Each of the three hits also has a chance to inflict a burn … One spec can inflict 0, 10, 19, 20, or 29 burn damage" | `burningClawSpec` + `burningClawDoT` (the burn's expected damage counts) |
-| Zaryte crossbow | 75% | "Evoke … provides doubled accuracy for the attack, and guarantees the special effect of any enchanted bolts used, provided that the player lands a successful hit"; ruby bolts "can guarantee that up to 110 damage is dealt" | ×2 accuracy; the bolt effect on every accurate hit (ruby (e): 22% of the monster's **current** hp, max 110 — the planner uses the full hp, generous late in a fight; **unverified**) |
+| Zaryte crossbow | 75% | "Evoke … provides doubled accuracy for the attack, and guarantees the special effect of any enchanted bolts used, provided that the player lands a successful hit"; ruby bolts "can guarantee that up to 110 damage is dealt" | ×2 accuracy; the bolt effect on every accurate hit (ruby (e): 22% of the monster's **current** hp, max 110 — phase 36 review: the planner uses the NPC's hp left at the phase's start, its damage still to deal in the
+drain event; **unverified**, D28) |
 | Crimson kisten | 50% | "four separate accuracy rolls in a single hit. If at least one roll succeeds, the attack deals 70-110% of the player's maximum hit, with additional successful rolls increasing the attack's minimum and maximum hit by 20%" | modelled (phase 25 note). The roadmap's "Kiston" is this item: a **Maggot King** unique, not a Fractured Archive reward |
 
 Not modelled (upstream has no spec): Keris partisan of breaching (no entry in `WEAPON_SPEC_COSTS`), Bone dagger

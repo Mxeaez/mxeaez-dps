@@ -22,8 +22,9 @@ import {
  *
  * - **Rows** = the phases of the encounter's undrained pass, in order, with wall-clock times: the model's seconds ×
  *   team-DPS multiplier ÷ party size (the fight length formula of `drainFightSecondsOf`; = the seconds where the
- *   multiplier is the party size, ToA / CoX / ToB; FA's multiplier 1: the seconds ÷ party). Undrained times are the
- *   longer ones, so regen is credited a little generously (as the phase 23-28 fight length was).
+ *   multiplier is the party size, ToA / CoX / ToB; FA's multiplier 1: the seconds ÷ party). The first plan uses the
+ *   undrained times; it is then re-planned on the clock of its own drained phases (review: the drained fight is
+ *   shorter, so fewer regen ticks), {@link CLOCK_ROUNDS} times at most.
  * - **Drain events** ({@link drainEventsOf}) = per NPC its first phase and every Defence reset (drainLine.ts
  *   `encounterDrainSummary`'s grouping). Adds and other `noDrains` targets get no drain specs; adds
  *   (`NO_DRAINS_ADDS`) get no damage specs either.
@@ -140,6 +141,24 @@ export const drainEventsOf = (rows: { key: string, targetKey: string, drainReset
   return { events, rowEvent };
 };
 
+/**
+ * Phase 36 review: the hp the NPC has left at the START of each row (by key): the damage of its rows in the same drain
+ * event from this row on (`drainEventsOf`: a Defence reset — Olm's next phase, Sotetseg's mazes — starts a new count,
+ * which under-counts the hp of a boss that keeps its hp across a reset: conservative). The kits cap it at the monster's
+ * full hp (the AG shield row: the boss's 550, not the shield's damage). Damage specs are valued at it: the Zaryte
+ * crossbow's ruby proc (a share of the target's current hp) and every spec's expected damage (≤ the hp left).
+ */
+export const rowHpLeft = (rows: { key: string, targetKey: string, drainReset?: string, damage: number }[]): Map<string, number> => {
+  const { events, rowEvent } = drainEventsOf(rows);
+  const out = new Map<string, number>();
+  rows.forEach((r, i) => {
+    const ev = events[rowEvent[i]];
+    const left = ev.rows.filter((j) => j >= i).reduce((t, j) => t + Math.max(0, rows[j].damage || 0), 0);
+    if (left > 0 && !out.has(r.key)) out.set(r.key, left);
+  });
+  return out;
+};
+
 /** The kit with every drained query carrying its drain event's spec counts. */
 export const assignedKit = (
   kit: RaidKit,
@@ -185,8 +204,10 @@ const damageChoices = (
     if (hits[w] === false) return;
     const p = kit.specDamage!(q, w) as DamageSpecProfile | null;
     if (!p) return;
-    const v = bestDamageVariant(p, r.dps);
-    if (!v) return;
+    const v0 = bestDamageVariant(p, r.dps);
+    if (!v0) return;
+    // review: a spec can't deal more than the hp left at the row's start
+    const v = q.hpLeft !== undefined && v0.expected > q.hpLeft ? { ...v0, expected: Math.max(0, q.hpLeft) } : v0;
     const net = netSpecDamage(v, r.dps);
     if (!(net > 1e-9)) return;
     out.push({
@@ -326,11 +347,18 @@ const assignedPass = (
   const assign = alloc.events.map((e) => e.counts);
   const k = assignedKit(kit, rowEvent, npcEvent, assign);
   const rows = ctx.pass(k, ctx.drain, ctx.fightSeconds);
+  const hpLeft = rowHpLeft(rows);
   const queryOf = (r: PhaseTime): PhaseQuery => {
     let e = rowEvent.get(r.key);
     if (e === undefined) e = npcEvent.get(targetNpc(r.targetKey));
     return {
-      targetKey: r.targetKey, phase: r.phase, drain: ctx.drain, fightSeconds: ctx.fightSeconds, rowKey: r.key, specs: { counts: (e !== undefined ? assign[e] : undefined) ?? {} },
+      targetKey: r.targetKey,
+      phase: r.phase,
+      drain: ctx.drain,
+      fightSeconds: ctx.fightSeconds,
+      rowKey: r.key,
+      specs: { counts: (e !== undefined ? assign[e] : undefined) ?? {} },
+      ...(hpLeft.has(r.key) ? { hpLeft: hpLeft.get(r.key) } : {}),
     };
   };
   return { rows, queryOf };
@@ -349,6 +377,9 @@ export const fixedEncounter = (
   return { phases, seconds: sum(phases) };
 };
 
+/** Review: re-plans of an encounter on the drained clock (`budgetedEncounter`). */
+export const CLOCK_ROUNDS = 2;
+
 /** Phase 36: the encounter's best spec plan under the budget (see the module comment) and its phases. */
 export const budgetedEncounter = (
   kit: RaidKit,
@@ -359,16 +390,26 @@ export const budgetedEncounter = (
   const mult = a.dpsMultiplier ?? 1;
   const rows0 = ctx.first;
   const { events: evs, rowEvent } = drainEventsOf(rows0);
-  // clock
-  const rows: BudgetRow[] = [];
-  let t = ctx.clock0;
-  rows0.forEach((r, i) => {
-    const w = wallOf(r.seconds, a);
-    rows.push({
-      key: r.key, event: rowEvent[i], start: t, end: t + w,
+  // clock: the wall-clock start / end of each row, from a pass's phases in order (a phase of the pass that isn't one of
+  // the rows, e.g. a DPS-dependent one, still takes time; a row missing from the pass takes none)
+  const clockOf = (pass: PhaseTime[]): BudgetRow[] => {
+    const at = new Map<string, { start: number, end: number }>();
+    let t = ctx.clock0;
+    pass.forEach((r) => {
+      const w = wallOf(r.seconds, a);
+      const cur = at.get(r.key);
+      at.set(r.key, { start: cur ? cur.start : t, end: t + w });
+      t += w;
     });
-    t += w;
-  });
+    let last = ctx.clock0;
+    return rows0.map((r, i) => {
+      const x = at.get(r.key) ?? { start: last, end: last };
+      last = x.end;
+      return {
+        key: r.key, event: rowEvent[i], start: x.start, end: x.end,
+      };
+    });
+  };
   const groups = budgetGroups(cfg);
   const start = ctx.startState ?? fullPools(groups);
   const hitsOf = rows0.map((r) => (kit.specHits
@@ -440,6 +481,7 @@ export const budgetedEncounter = (
     const assign = events.map((_, j) => (j === ei ? events[ei].options[oi].counts as SpecCounts : {}));
     const kk = assignedKit(kit, rowEventMap, npcEvent, assign, true);
     const rowsP = ctx.pass(kk, ctx.drain, ctx.fightSeconds);
+    const hpLeft = rowHpLeft(rowsP);
     const out = new Map<number, RowOutcome>();
     const lastOfEvent = evs[ei].rows[evs[ei].rows.length - 1];
     let others = 0;
@@ -456,7 +498,13 @@ export const budgetedEncounter = (
         extra = true;
       }
       const q: PhaseQuery = {
-        targetKey: r.targetKey, phase: r.phase, drain: ctx.drain, fightSeconds: ctx.fightSeconds, rowKey: r.key, specs: { counts: assign[ei] },
+        targetKey: r.targetKey,
+        phase: r.phase,
+        drain: ctx.drain,
+        fightSeconds: ctx.fightSeconds,
+        rowKey: r.key,
+        specs: { counts: assign[ei] },
+        ...(hpLeft.has(r.key) ? { hpLeft: hpLeft.get(r.key) } : {}),
       };
       const prev = out.get(idx);
       const damageSpecs = extra ? [] : damageChoices(kk, q, r, cfg.damage, hitsOf[idx], mult);
@@ -485,64 +533,78 @@ export const budgetedEncounter = (
   }))), (oi) => evs[ei].rows.reduce((tt, r) => tt + rowSecondsAfter(rawOutcome(r, oi), {}), 0), (oi) => Object.values(e.options[oi].counts).reduce((x, n) => x + n, 0))));
   const pruned: BudgetEvent[] = events.map((e, ei) => ({ ...e, options: keep[ei].map((oi) => e.options[oi]) }));
   const rowOutcome = (i: number, oi: number): RowOutcome => rawOutcome(i, keep[rowEvent[i]][oi]);
-  const problem: AllocationProblem = {
-    rows, events: pruned, groups, start, damageGroup: MY_POOL, rowOutcome, surge: ctx.surge, keepEnd: cfg.carry,
-  };
-  ctx.onProblem?.(problem, {
-    rows, events, groups, start, damageGroup: MY_POOL, rowOutcome: rawOutcome, surge: ctx.surge,
-  });
-  const result = allocateBudget(problem);
-  const noSpecSeconds = rows.reduce((tt, _, i) => tt + rowOutcome(i, 0).seconds, 0);
-  // top-up: spare energy that changes no seconds still buys reliability — add drain specs (event order, upstream weapon
-  // order) while the plan stays feasible and no slower. The ranking rounds a spec plan's Defence (floor at P ≥ 95%,
-  // else the nearest reachable Defence), so the fewest specs reaching the same ranked Defence can be far less reliable
-  // (Kephri: 1 maul spec ranks at Def 60 at 63%; 4 specs reach it at 98%).
-  const full: AllocationProblem = {
-    rows, events, groups, start, damageGroup: MY_POOL, rowOutcome: rawOutcome, surge: ctx.surge,
-  };
-  const chosen = result.options.map((oi, ei) => keep[ei][oi]);
-  const decisions = { options: chosen, damage: result.rows.map((r) => r.damage), drinkRow: drinkRowOf(result) };
-  let sim = simulateBudget(full, decisions);
+  const noSpecSeconds = rows0.reduce((tt, _, i) => tt + rowOutcome(i, 0).seconds, 0);
   const order: string[] = ['elderMaul', 'dwh', 'tonalztics', 'bgs', 'ayak'];
   const sameCounts = (x: Record<string, number>, y: Record<string, number>) => order.every((w) => (x[w] ?? 0) === (y[w] ?? 0));
-  for (let guard = 0; guard < 200 && sim.feasible; guard++) {
-    let moved = false;
-    for (let ei = 0; ei < events.length && !moved; ei++) {
-      for (const w of order) {
-        const want = { ...events[ei].options[chosen[ei]].counts, [w]: (events[ei].options[chosen[ei]].counts[w] ?? 0) + 1 };
-        const j = events[ei].options.findIndex((o) => sameCounts(o.counts, want));
-        if (j < 0) continue;
-        const trial = simulateBudget(full, { ...decisions, options: chosen.map((c, k) => (k === ei ? j : c)) });
-        if (trial.feasible && trial.seconds <= sim.seconds + 1e-9) {
-          chosen[ei] = j;
-          sim = trial;
-          moved = true;
-          break;
+  const solve = (rows: BudgetRow[]) => {
+    const problem: AllocationProblem = {
+      rows, events: pruned, groups, start, damageGroup: MY_POOL, rowOutcome, surge: ctx.surge, keepEnd: cfg.carry,
+    };
+    ctx.onProblem?.(problem, {
+      rows, events, groups, start, damageGroup: MY_POOL, rowOutcome: rawOutcome, surge: ctx.surge,
+    });
+    const result = allocateBudget(problem);
+    // top-up: spare energy that changes no seconds still buys reliability — add drain specs (event order, upstream
+    // weapon order) while the plan stays feasible and no slower. The ranking rounds a spec plan's Defence (floor at
+    // P ≥ 95%, else the nearest reachable Defence), so the fewest specs reaching the same ranked Defence can be far less
+    // reliable (Kephri: 1 maul spec ranks at Def 60 at 63%; 4 specs reach it at 98%).
+    const full: AllocationProblem = {
+      rows, events, groups, start, damageGroup: MY_POOL, rowOutcome: rawOutcome, surge: ctx.surge,
+    };
+    const chosen = result.options.map((oi, ei) => keep[ei][oi]);
+    const decisions = { options: chosen, damage: result.rows.map((r) => r.damage), drinkRow: drinkRowOf(result) };
+    let sim = simulateBudget(full, decisions);
+    for (let guard = 0; guard < 200 && sim.feasible; guard++) {
+      let moved = false;
+      for (let ei = 0; ei < events.length && !moved; ei++) {
+        for (const w of order) {
+          const want = { ...events[ei].options[chosen[ei]].counts, [w]: (events[ei].options[chosen[ei]].counts[w] ?? 0) + 1 };
+          const j = events[ei].options.findIndex((o) => sameCounts(o.counts, want));
+          if (j < 0) continue;
+          const trial = simulateBudget(full, { ...decisions, options: chosen.map((c, k) => (k === ei ? j : c)) });
+          if (trial.feasible && trial.seconds <= sim.seconds + 1e-9) {
+            chosen[ei] = j;
+            sim = trial;
+            moved = true;
+            break;
+          }
         }
       }
+      if (!moved) break;
     }
-    if (!moved) break;
+    const alloc: EncounterAlloc = {
+      events: evs.map((e, i) => ({
+        npc: e.npc, ...(e.reset ? { reset: e.reset } : {}), firstRowKey: rows0[e.rows[0]].key, counts: events[i].options[chosen[i]].counts as SpecCounts,
+      })),
+      rowEvent: Object.fromEntries(rows0.map((r, i) => [r.key, rowEvent[i]])),
+      damage: Object.fromEntries(result.rows.map((d, i) => [rows0[i].key, d.damage as Partial<Record<DamageSpecWeapon, number>>])
+        .filter(([, d]) => Object.values(d as Record<string, number>).some((n) => n > 0))),
+      surge: ctx.surge,
+    };
+    const specsUsed = chosen.reduce((tt, oi, ei) => tt + Object.values(events[ei].options[oi].counts).reduce((x, n) => x + n, 0), 0)
+      + result.rows.reduce((tt, r) => tt + Object.values(r.damage).reduce((x, n) => x + n, 0), 0);
+    const { rows: finalRows, queryOf } = assignedPass(kit, ctx, alloc);
+    const phases = withDamage(kit, finalRows, alloc.damage, cfg, queryOf, mult);
+    return {
+      phases,
+      seconds: sum(phases),
+      plan: {
+        ...alloc, specs: specsUsed, noSpecSeconds, start, end: sim.feasible ? sim.end : result.end,
+      },
+    };
+  };
+  // review: regen runs on the clock of the drained fight (shorter than the undrained pass the options were timed on):
+  // the first plan on the undrained clock, then re-planned on the clock of the previous plan's phases (drains and damage
+  // specs included) until the plan stops changing (at most CLOCK_ROUNDS re-plans)
+  const planKey = (r: BudgetedEncounter) => JSON.stringify([r.plan.events.map((e) => e.counts), r.plan.damage, r.plan.surge]);
+  let out = solve(clockOf(rows0));
+  for (let round = 0; round < CLOCK_ROUNDS; round++) {
+    const next = solve(clockOf(out.phases));
+    const same = planKey(next) === planKey(out);
+    out = next;
+    if (same) break;
   }
-  const alloc: EncounterAlloc = {
-    events: evs.map((e, i) => ({
-      npc: e.npc, ...(e.reset ? { reset: e.reset } : {}), firstRowKey: rows0[e.rows[0]].key, counts: events[i].options[chosen[i]].counts as SpecCounts,
-    })),
-    rowEvent: Object.fromEntries(rows0.map((r, i) => [r.key, rowEvent[i]])),
-    damage: Object.fromEntries(result.rows.map((d, i) => [rows0[i].key, d.damage as Partial<Record<DamageSpecWeapon, number>>])
-      .filter(([, d]) => Object.values(d as Record<string, number>).some((n) => n > 0))),
-    surge: ctx.surge,
-  };
-  const specsUsed = chosen.reduce((tt, oi, ei) => tt + Object.values(events[ei].options[oi].counts).reduce((x, n) => x + n, 0), 0)
-    + result.rows.reduce((tt, r) => tt + Object.values(r.damage).reduce((x, n) => x + n, 0), 0);
-  const { rows: finalRows, queryOf } = assignedPass(kit, ctx, alloc);
-  const phases = withDamage(kit, finalRows, alloc.damage, cfg, queryOf, mult);
-  return {
-    phases,
-    seconds: sum(phases),
-    plan: {
-      ...alloc, specs: specsUsed, noSpecSeconds, start, end: sim.feasible ? sim.end : result.end,
-    },
-  };
+  return out;
 };
 
 export { CARRY_SPEC_ENERGY };

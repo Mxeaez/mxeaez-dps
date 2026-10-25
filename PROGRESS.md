@@ -3,6 +3,40 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 36 fixes — review follow-ups (2026-10-25)
+
+The independent review recomputed E[spec], net, ticks and the DP (unpruned brute force) and found them correct; these
+fixes change numbers. Docs: BEST_SETUP *Damage specs, surge potion …* (Pools, Clock and regen, Hp left, Review fixes,
+headline table), UNVERIFIED D27 / D28 / D29, DATA_SOURCES *Phase 36*.
+
+- **One spec bar per party member** (blocker): Team plans used party + 1 bars (the carriers up to the party plus your
+  bar for damage specs / doses: FA 7 in a 6-man, CoX 7, ToB 5). With damage specs or a Surge potion you are not a carrier
+  now: `specBudgetFrom` cuts the carriers at party − 1; the item greedy makes room by dropping the carrier whose removal
+  costs least (`fitBars`); afterwards the carriers are re-run greedily with party − 1 and the planner keeps the faster of
+  "you carry a drain weapon, no items" and "you spec" (a note gives both times; the share text covers surge doses too).
+- **Damage specs at the hp left** (`rowHpLeft`, `atHpLeft`, `PhaseQuery.hpLeft`): the ZCB ruby proc was a share of the
+  full hp, so the DP put ZCB specs on the AG's last 165 hp and Bork's last armour phase; now each phase's specs are
+  valued at the NPC's hp left at its start (its damage still to deal in the drain event, capped at the full hp) and no
+  spec's E[damage] exceeds it: FA ZCB specs now on the AG shield (6.28 s), Bork's third phase (6.76 s), Moia, Xarth,
+  Ocellus P1 and P3's last quadrant.
+- **Regen on the drained clock**: the encounter is re-planned on its own drained phases' clock (up to `CLOCK_ROUNDS` = 2
+  re-plans). The AG's Burning claws spec (relying on a regen tick of the 36.7 s undrained clock that the 29.1 s drained
+  fight never reaches) is gone: AG 174.8 → 175.8 s.
+- Headlines (Team defaults): FA 21:04.9 → **21:07.7** (2 Elder maul + 3 Tonalztics; ZCB + Burning claws + a Surge potion,
+  dose at Ocellus; 21:43.8 if you carry), ToA 14:05.5 → **14:07.8** (1 maul + 1 Ayak; Voidwaker), CoX 7:03.6 → **7:08.7**
+  (3 maul + 1 BGS + 1 Tonalztics; Dragon claws), ToB 7:21.2 → **7:23.4** (1 maul + 2 Tonalztics; Dragon claws; Sotetseg:
+  start maul ×2, after each maze Tonalztics ×2). FA Solo 21:54.8 → 21:59.0; FA without Obligator / Ascension 24:05.1 →
+  24:11.9; the user's plan 25:00.0 → 25:15.5 (it had 4 carriers + your bar in a 4-man).
+- Docs report the items' **marginal** values in the final FA plan (ZCB 23.9 s, Surge 3.8 s, Burning claws 2.1 s), the
+  surge cooldown clock as conservative everywhere (in-room non-DPS time isn't counted), and that a dose can't pay for
+  drain specs on the phase it's drunk.
+- **Fixed-plan replay vs exact allocation**: a slow test brute-forces every kit of a reduced FA pool (10 candidates, ≤ 4
+  loadouts, 336 kits) with each kit's own exact allocation: the planner's kit is the best (gap 0.0000 s). New test hook
+  `PlanHooks.onKitSpace`.
+- Tests: Phase36 +7 (bars = party; carriers cut at party − 1; rowHpLeft; ZCB on 165 hp ≤ 36; AG drained clock; carry
+  vs spec at party 1 / 6 (slow); the kit brute force (slow)); CrossRaid asserts bars ≤ party on every headline plan;
+  Phase27 (ToA 881.2, CoX 452.7), 29, 31, 32, 34, 35, 35b and CrossRaid re-pinned; verify scripts re-pinned.
+
 ## Phase 36 — Damage specs, surge potion, one spec budget per encounter (2026-10-25)
 
 Numbers move (full independent review next). Docs: docs/BEST_SETUP.md *Damage specs, surge potion and one spec budget

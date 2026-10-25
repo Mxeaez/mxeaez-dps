@@ -264,7 +264,7 @@ describe('render: icons next to every item name', () => {
 // Phase 36 re-pin: one spec budget per encounter, damage specs (Zaryte crossbow, Burning claws) and a Surge potion move
 // the numbers (21:44.4 → 21:04.9, 6 → 4 free, carriers 2 Elder maul + 4 Tonalztics); the layout is unchanged.
 (process.env.RUN_SLOW_TESTS ? describe : describe.skip)('FA default Team plan: totals and collapsed strings (slow)', () => {
-  test('21:04.9; the briefing; the encounter lines, "Why this kit" and "Spec plan" strings', () => {
+  test('21:07.7; the briefing; the encounter lines, "Why this kit" and "Spec plan" strings', () => {
     const r = plan({
       basePlayer: generateEmptyPlayer(),
       assumptions: FA.defaultAssumptions,
@@ -279,23 +279,24 @@ describe('render: icons next to every item name', () => {
       carrierMode: 'auto', // as the Plan tab sends it (Team carriers: Planner decides)
     } as PlanInputs);
     const planned = r.comparison!.routes[r.planned];
-    expect(formatDuration(planned.seconds)).toBe('21:04.9'); // phase 36 (was 21:44.4)
+    // phase 36 review: 5 carriers (2 Elder maul + 3 Tonalztics) with your damage specs; Smorks gets a maul spec
+    expect(formatDuration(planned.seconds)).toBe('21:07.7'); // phase 36 review (phase 36: 21:04.9; was 21:44.4)
     expect(r.slots!.free).toBe(4);
     const rows = briefingRows(planned.encounters, 'team');
     expect(rows.map((x) => `${x.label} | ${x.specsText} | ${x.seconds.toFixed(1)} s`)).toEqual([
-      'Archive Guardian | Flying shield: Tonalztics 4 hits → Def 156 · Grounded: Tonalztics 4 hits → Def 156 | 174.8 s',
-      'Bork + Smorks | Bork: Elder maul 2 specs → Def 180 · Smorks: Tonalztics 10 hits → Def 0 | 188.0 s',
+      'Archive Guardian | Flying shield: Tonalztics 4 hits → Def 156 · Grounded: Tonalztics 4 hits → Def 156 | 175.8 s',
+      'Bork + Smorks | Bork: Elder maul 2 specs → Def 180 · Smorks: Elder maul 1 spec + Tonalztics 9 hits → Def 13 | 189.8 s',
       'Moia | Tonalztics 2 hits → Def 117 | 65.3 s',
       'Xarth | Tonalztics 2 hits → Def 102 | 181.6 s',
       'Ocellus | P1 at a corner: Tonalztics 2 hits → Def 129 · P3 last quadrant, Deflect Melee: Tonalztics 3 hits → Def 150 | 655.2 s',
     ]);
     // "Per-phase details": phase 33's encounter lines (before the phase 34 layout)
     expect(rows.map((x) => x.drainText)).toEqual([
-      'Flying shield: 4 Tonalztics carriers (8 specs) → Def 156 · >99.9% · Grounded: 2 Elder maul carriers (4 specs) + 4 Tonalztics carriers (8 specs) → Def 156 · >99.9%',
-      'Bork: 2 Elder maul carriers (4 specs) → Def 180 · 96% · Smorks: 4 Tonalztics carriers (8 specs) → Def 0 · 85%',
-      'Start of fight: 4 Tonalztics carriers (8 specs) → Def 117 · >99.9%',
-      'Start of fight: 2 Elder maul carriers (4 specs) + 4 Tonalztics carriers (8 specs) → Def 102 · >99.9%',
-      'P1 at a corner: 2 Elder maul carriers (4 specs) + 4 Tonalztics carriers (8 specs) → Def 129 · >99.9% · P3 last quadrant, Deflect Melee: 4 Tonalztics carriers (8 specs) → Def 150 · 99.7%',
+      'Flying shield: 3 Tonalztics carriers (6 specs) → Def 156 · >99.9% · Grounded: 2 Elder maul carriers (4 specs) + 3 Tonalztics carriers (6 specs) → Def 156 · >99.9%',
+      'Bork: 2 Elder maul carriers (3 specs) → Def 180 · 86% · Smorks: 1 Elder maul carrier (1 spec) + 3 Tonalztics carriers (6 specs) → Def 13',
+      'Start of fight: 3 Tonalztics carriers (6 specs) → Def 117 · >99.9%',
+      'Start of fight: 2 Elder maul carriers (4 specs) + 3 Tonalztics carriers (6 specs) → Def 102 · >99.9%',
+      'P1 at a corner: 2 Elder maul carriers (4 specs) + 3 Tonalztics carriers (6 specs) → Def 129 · >99.9% · P3 last quadrant, Deflect Melee: 3 Tonalztics carriers (6 specs) → Def 150 · 98%',
     ]);
     expect(rows.map((x) => x.loadouts)).toEqual([
       ['Ascension crossbows + diamond (e) (Masori)', "Inquisitor's + Obligator"],
@@ -317,8 +318,8 @@ describe('render: icons next to every item name', () => {
     expect(r.alternatives.map((x) => `${x.label}: ${x.deltaSlots} — ${x.reason}`)).toEqual([
       "melee + ranged + magic: Twisted bow (Masori) / Inquisitor's + Obligator / Ascension crossbows + diamond (e) (Masori) / Tumeken's shadow switch on Inquisitor's + Obligator: 2 — 0.0 s slower",
       "melee + magic: Tumeken's shadow (Ancestral) / Inquisitor's + Obligator / Harmonised Nightmare staff / Harmonised Nightmare staff #4: 3 — 106.2 s slower",
-      "ranged + magic: Tumeken's shadow (Ancestral) / Twisted bow (Masori) / Ascension crossbows + diamond (e) (Masori) / Ascension crossbows + Diamond ascension bolts (e): 4 — 336.4 s slower",
-      "magic: Tumeken's shadow (Ancestral) / Harmonised Nightmare staff / Harmonised Nightmare staff #4: -5 — 925.2 s slower",
+      "ranged + magic: Tumeken's shadow (Ancestral) / Twisted bow (Masori) / Ascension crossbows + diamond (e) (Masori) / Ascension crossbows + Diamond ascension bolts (e): 4 — 336.6 s slower",
+      "magic: Tumeken's shadow (Ancestral) / Harmonised Nightmare staff / Harmonised Nightmare staff #4: -5 — 925.4 s slower",
       "melee: Inquisitor's + Obligator: -9 — cannot clear the route",
       'ranged: Ascension crossbows + diamond (e) (Masori): -9 — cannot clear the route',
     ]);
@@ -326,9 +327,9 @@ describe('render: icons next to every item name', () => {
     r.alternatives.forEach((x) => expect(x.weapons!.length).toBe(x.label.split(': ')[1].split(' / ').length));
     // "Spec plan" / the briefing's Bring and your share
     expect(r.specs.text).toBe('Bring: Zaryte crossbow, Burning claws, Surge potion');
-    expect(r.specs.share!.reason).toBe('your spec energy goes to your Zaryte crossbow / Burning claws specs — let a teammate carry Tonalztics (most needed: 4 carriers)');
+    expect(r.specs.share!.reason).toBe('your spec energy goes to your Zaryte crossbow specs / Burning claws specs / surge doses — let a teammate carry Tonalztics (most needed: 3 carriers)');
     expect(r.specs.team!.steps!.map((st) => `${st.weapon} −${st.saved.toFixed(1)} s`)).toEqual([
-      'tonalztics −219.7 s', 'tonalztics −33.9 s', 'elderMaul −11.5 s', 'tonalztics −4.9 s', 'elderMaul −2.8 s', 'tonalztics −1.4 s',
+      'tonalztics −218.7 s', 'tonalztics −33.8 s', 'elderMaul −11.1 s', 'tonalztics −4.9 s', 'elderMaul −2.8 s',
     ]);
   }, 1800000);
 });

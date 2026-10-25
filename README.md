@@ -28,7 +28,8 @@ What this fork adds on top of upstream:
   (defaults, Team; phase 31: nothing pinned by default, the Saturated heart is magic's kit potion, Dizana's quiver holds a
   second arrow / bolt type for free; phase 32: no zero-value switch items, a loadout without ammo keeps the kit's ammo
   in its slot; phase 35: adds such as Kephri's scarabs or the CoX Mystics get no specs; phase 36: one spec budget per
-  encounter, damage specs and the surge potion): FA 21:04.9, ToA 14:05.5, CoX 7:03.6, ToB 7:21.2.
+  encounter, damage specs and the surge potion; its review: one spec bar per party member): FA 21:07.7, ToA 14:07.8, CoX
+  7:08.7, ToB 7:23.4.
 * **Damage specs and the surge potion** (phase 36): Voidwaker, Dragon / Burning claws, Zaryte crossbow and Crimson
   kisten specs compete with the drains for one spec budget per encounter (100% at each boss, regen on the fight's
   clock); the planner brings a damage spec weapon or a Surge potion when it saves ≥ 1 s per slot and says where to drink

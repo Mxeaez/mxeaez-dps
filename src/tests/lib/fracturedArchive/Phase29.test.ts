@@ -617,7 +617,9 @@ describe('planner: spec modes', () => {
   test('Solo, party 1, planner decides: Bring Tonalztics, ≤ 22:10.5; the ring and the subset are a fixed point', () => {
     const r = full({ drain: 'solo', assumptions: { ...FA.defaultAssumptions, partySize: 1 } });
     expect(r.specs.bring).toEqual(['tonalztics']);
-    expect(total(r)).toBeLessThanOrEqual(1330.53 + 0.05);
+    // phase 36 review (damage specs at the hp left; regen on the drained clock): the bound is the reviewer's phase 29
+    // brute force re-timed by the model since: 1330.53 → 1334.22
+    expect(total(r)).toBeLessThanOrEqual(1334.22 + 0.05);
     expect(r.ring.ring).toBe('Ultor ring');
     // the ring screens timed the chosen subset (no second round needed here, or it converged)
     expect(r.specs.solo!.screenedWith).toEqual(r.specs.bring);
@@ -642,13 +644,16 @@ describe('planner: spec modes', () => {
     expect(Math.abs(total(r) - 1364.55)).toBeLessThanOrEqual(0.01);
   }, 900000);
 
-  test('Team, 6-man: the planner picks 2 Elder maul + 4 Tonalztics (phase 36; was 2 + 2), never slower than the Advanced 2 / 2 / 1 by hand', () => {
+  test('Team, 6-man: the planner picks 2 Elder maul + 3 Tonalztics (phase 36 review; was 2 + 4, 2 + 2), never slower than the Advanced 2 / 2 / 1 by hand', () => {
     const auto = full({ carrierMode: 'auto' });
-    // phase 36 (one spec budget per encounter: Bork and the Smorks share the carriers' energy): 2 Elder maul + 4 Tonalztics
+    // phase 36 (one spec budget per encounter: Bork and the Smorks share the carriers' energy): 2 Elder maul + 4 Tonalztics;
+    // review: you damage-spec, so you are not a carrier — 5 carriers for 6 bars
     expect(auto.specs.team!.carriers).toEqual({
-      elderMaul: 2, dwh: 0, bgs: 0, tonalztics: 4, ayak: 0,
+      elderMaul: 2, dwh: 0, bgs: 0, tonalztics: 3, ayak: 0,
     });
-    expect(auto.specs.team!.steps!.map((x) => x.weapon)).toEqual(['tonalztics', 'tonalztics', 'elderMaul', 'tonalztics', 'elderMaul', 'tonalztics']);
+    const steps = auto.specs.team!.steps!.map((x) => x.weapon);
+    expect(steps.filter((w) => w === 'elderMaul')).toHaveLength(2);
+    expect(steps.filter((w) => w === 'tonalztics')).toHaveLength(3);
     const manual = full({ carrierMode: 'manual' });
     // review 2: the Ayak carrier is capped at the mages (the kit has no magic loadout → 0), with a note
     expect(manual.specs.team!.carriers).toEqual({ ...A.team.carriers, ayak: 0 });
@@ -657,7 +662,8 @@ describe('planner: spec modes', () => {
     // freed slot buys the phase 30 kit (Ascension crossbows + diamond (e) worn, Inquisitor's + Obligator, Twisted bow)
     // phase 36: the planner's carriers are never slower than the Advanced ones (2 / 2 / 1, the Ayak carrier capped)
     expect(total(auto)).toBeLessThanOrEqual(total(manual) + 1e-6);
-    expect(formatDuration(total(manual))).toBe('21:12.4');
-    expect(formatDuration(total(auto))).toBe('21:07.9');
+    // phase 36 review: the Advanced 2 / 2 / 1 with your damage specs: the first 5 carriers count (21:12.4 → 21:12.8)
+    expect(formatDuration(total(manual))).toBe('21:12.8');
+    expect(formatDuration(total(auto))).toBe('21:09.8'); // phase 36 review (phase 36: 21:07.9)
   }, 900000);
 });

@@ -1097,7 +1097,9 @@ assumptions carry a `specBudget`, i.e. Solo / Team drains in the time model and 
 one-boss budget):
 
 - *Pools.* Solo: your spec bar. Team: one bar per carrier (each carrier specs only its weapon; Lightbearer per weapon)
-  plus yours for your damage specs and the surge dose.
+  plus yours for your damage specs and the surge dose — and then you are **not a carrier** (review: one bar per party
+  member, so the carriers are at most the party − 1; `specBudgetFrom` cuts the list there, and the planner keeps the
+  faster of "you carry a drain weapon, no damage specs" and "you damage-spec, carriers ≤ party − 1").
 - *Energy across encounters — decision:* every encounter starts at **100%** (`CARRY_SPEC_ENERGY = false`). In-game the
   bar is not reset between rooms, but the DPS-only time model has no travel / puzzle time, and the time between bosses
   (puzzle rooms, walking, ToB / CoX resupply) usually refills most of a bar (100% takes 300 s); carrying the leftover with
@@ -1111,7 +1113,10 @@ one-boss budget):
   the event it can hit (AG: Tonalztics on the flying shield, the maul when it lands) from the energy then. Every phase of
   the event gets the event's specs that can hit it. Adds (`NO_DRAINS_ADDS`) and other `noDrains` targets get no drain
   specs; adds get no damage specs either.
-- *Clock and regen:* rows = the encounter's phases (its undrained pass), wall time = the model's seconds × team-DPS
+- *Clock and regen:* rows = the encounter's phases; the first plan is timed on the undrained pass, then re-planned on
+  the clock of its own drained phases until it stops changing (at most `CLOCK_ROUNDS` = 2 re-plans; review: the drained
+  fight is shorter — the Archive Guardian 36.7 → 29.1 s of wall time — so a Burning claws spec there relied on a regen
+  tick that never came, ~1 s); wall time = the model's seconds × team-DPS
   multiplier ÷ party size (the `drainFightSecondsOf` formula; = the seconds in ToA / CoX / ToB, ÷ party in the FA);
   +10% per 30 s (15 s with Lightbearer) per bar, credited at each row's end; damage specs on a row may use the row's
   regen; bars are capped at 100% between rows. Regen during an event does **not** feed that event's drains (the old
@@ -1146,6 +1151,13 @@ not on Moia, the flying Guardian, Ocellus's Deflect Melee) deals 0.
   the multiplier = the party size (ToA / CoX / ToB) one player's spec is worth less in a big team; the FA's multiplier
   is 1 (its hp table is the identity), so FA damage specs are worth more. Only on damage-limited phases (seconds =
   damage ÷ (multiplier × DPS)): not Ocellus P2 (fixed length), the Dawnbringer specs, adds.
+- *Hp left (review):* a spec is valued at the NPC's hp left at the phase's start (`rowHpLeft`: its damage still to
+  deal in its drain event, capped by the kit at its full hp — the AG's shield phase counts the boss's 550): the Zaryte
+  crossbow's ruby proc is a share of that hp and no spec's E[damage] exceeds it. Before, the proc used the full hp, so
+  the DP put ZCB specs on the AG's last 165 hp (proc ≤ 36, modelled 6.28 s) and Bork's last armour phase (≤ 375 hp,
+  7.14 s modelled vs 4.56 s); now they go to the AG shield phase (6.28 s) and Bork's third (750 hp, 6.76 s). A Defence
+  reset starts a new count (conservative for a boss that keeps its hp, e.g. Sotetseg); a second ZCB spec on one phase
+  (Solo) is valued at the same start hp (UNVERIFIED D28).
 - *Energy:* the item's spec cost (Voidwaker / claws / kisten 50%, Burning claws 35%, ZCB 75%) from your bar, which in Solo
   is also the drains' bar: the DP splits it between drains and damage specs per encounter.
 - *Bringing one* (planner decides): greedy on the spec budget's route time with the kit, the item saving the most net
@@ -1158,11 +1170,12 @@ not on Moia, the flying Guardian, Ocellus's Deflect Melee) deals 0.
 raid, paused between ToB rooms, not between ToA rooms; "Drinking this would have no effect" at 100%). A 1-slot kit
 candidate of 4 doses: a dose adds 25% to your bar (capped) once per encounter, right after your first spec there or
 whenever the bar is below 100% (the DP picks the moment). Doses are placed per route (`routeSurgeDoses`, `placeDoses`):
-≥ 300 s apart on the route clock (the encounters' wall times without doses; travel 0 s — exact for ToB, conservative
-for the others), the first may be at the raid start, at most 4 per potion, exact (the most time saved). A second potion
+≥ 300 s apart on the route clock (the encounters' wall times without doses; travel 0 s): conservative everywhere —
+in-room time that isn't DPS time (Sotetseg's mazes, Nylocas waves, puzzle rooms) isn't counted, so more doses may fit, the first may be at the raid start, at most 4 per potion, exact (the most time saved). A second potion
 only when the route allows more than 4 doses (`dosesAllowed`) and it saves ≥ 1 s. The Plan shows "Surge dose at:
 Ocellus" with the potion icon and a "dose" marker on those briefing rows; the Search tab's Solo drain box has a "with a
-surge dose" line (the boss's Solo budget + 25%). UNVERIFIED D29.
+surge dose" line (the boss's Solo budget + 25%). Within a phase the drain spends come before the dose, so a dose can't
+pay for drain specs on the phase it's drunk (a small Solo pessimism). UNVERIFIED D29.
 
 Two fixes found on the way: after the damage-spec / surge greedy the optimiser's kit times are re-timed under the new spec
 plan (step 7's "what each loadout saves" / additions used stale times), and `formatDuration` rounds to the tenth before
@@ -1181,15 +1194,15 @@ E[dmg], net, seconds per spec at the current party (net ÷ (multiplier × DPS)),
 
 **Headlines** (Plan tab defaults, Team, camp one ring; CrossRaid):
 
-| Raid | Phase 35b | **Phase 36** | What changed |
-|---|---|---|---|
-| FA | 21:44.4 | **21:04.9** | Bring Zaryte crossbow (−30.7 s, a free slot), a Surge potion (−5.2 s; one dose, at Ocellus) and Burning claws (−3.0 s); your share: none ("your spec energy goes to your Zaryte crossbow / Burning claws specs"); carriers 2 Elder maul + 4 Tonalztics (was 2 + 2); Bork + Smorks: "Bork: Elder maul 2 specs → Def 180 · Smorks: Tonalztics 10 hits → Def 0" from one budget; damage specs on every boss (ZCB ×1-2, Burning claws ×1) |
-| ToA | 14:12.1 | **14:05.5** | Bring Voidwaker (−6.6 s; ×2-4 per boss); carriers 1 Elder maul + 1 Eye of Ayak (unchanged); Kephri's final phase and the Warden's enrage are new drain events (1 maul spec each from the energy left) |
-| CoX | 7:01.3 | **7:03.6** | slower: Olm's hand phases are re-drained from one budget (was a full first round per claw per phase); Bring Dragon claws (a slot from the kit); carriers 4 Elder maul + 2 Tonalztics (was 2 Elder maul + 1 Tonalztics + 1 BGS + 1 Ayak); the option cap (`MAX_EVENT_OPTIONS`, below) costs 0.4 s here (7:03.2 uncapped) for a plan ~45% faster |
-| ToB | 7:29.5 | **7:21.2** | Bring Dragon claws (−8.3 s); carriers 2 Elder maul + 2 Tonalztics; Sotetseg "start: Tonalztics 3 hits → Def 107 · after maze 1: Elder maul 2 specs + Tonalztics 1 hit → Def 100 · after maze 2: the same" (was the full 4 + 4 specs × 3) |
-| FA Solo, party 1 | 22:01.9 | **21:54.8** | the start-of-fight drains have 100% (no fight regen); damage specs / the surge potion where they save ≥ 1 s per slot |
-| FA without Obligator + Ascension crossbows | 24:34.1 | **24:05.1** | damage specs and the shared budget |
-| The user's plan (Phase32.test: party 4, Camp Lightbearer, the user's "don't own" list) | 25:46.3 | **25:00.0** | (also `formatDuration`'s rounding fix: 1499.96 s read "24:60.0") |
+| Raid | Phase 35b | Phase 36 | **Phase 36 review** | What changed |
+|---|---|---|---|---|
+| FA | 21:44.4 | 21:04.9 | **21:07.7** | Bring Zaryte crossbow, a Surge potion (one dose, at Ocellus) and Burning claws — **marginal** values in the final plan (the route with the item removed, everything else kept): ZCB 23.9 s, Surge potion 3.8 s, Burning claws 2.1 s (the greedy's step values, which depend on the order added, were 28.8 / 5.2 / 2.1 s); your share: none ("your spec energy goes to your Zaryte crossbow / Burning claws specs / surge doses"); carriers 2 Elder maul + 3 Tonalztics (review; phase 36 had 2 + 4 = 7 bars in a 6-man; 21:43.8 if you carry instead); Bork + Smorks: "Bork: Elder maul 2 specs → Def 180 · Smorks: Tonalztics 10 hits → Def 0" from one budget; damage specs on every boss (ZCB ×1-2, Burning claws ×1) |
+| ToA | 14:12.1 | 14:05.5 | **14:07.8** | Bring Voidwaker (6.1 s; ×2-4 per boss); carriers 1 Elder maul + 1 Eye of Ayak (unchanged; 14:13.9 if you carry instead); review: the hp left and the drained clock; Kephri's final phase and the Warden's enrage are new drain events (1 maul spec each from the energy left) |
+| CoX | 7:01.3 | 7:03.6 | **7:08.7** | review: carriers 3 Elder maul + 1 BGS + 1 Tonalztics with your Dragon claws (phase 36: 4 + 2 = 7 bars in a 6-man; 7:10.4 if you carry instead) and fewer regen ticks on the drained clock (Olm); phase 36: slower: Olm's hand phases are re-drained from one budget (was a full first round per claw per phase); Bring Dragon claws (a slot from the kit); carriers 4 Elder maul + 2 Tonalztics (was 2 Elder maul + 1 Tonalztics + 1 BGS + 1 Ayak); the option cap (`MAX_EVENT_OPTIONS`, below) costs 0.4 s here (7:03.2 uncapped) for a plan ~45% faster |
+| ToB | 7:29.5 | 7:21.2 | **7:23.4** | Bring Dragon claws (marginal 8.4 s); carriers 1 Elder maul + 2 Tonalztics (review; phase 36: 2 + 2 = 5 bars in a 4-man; 7:29.5 if you carry instead); Sotetseg (review, 3 carriers): start Elder maul 2 specs · after maze 1: Tonalztics 2 specs · after maze 2: Tonalztics 2 specs, your 2 Dragon claws specs at the start (phase 36 with 2 + 2 carriers: "start: Tonalztics 3 hits → Def 107 · after maze 1: Elder maul 2 specs + Tonalztics 1 hit → Def 100 · after maze 2: the same"; phase 35b: the full 4 + 4 specs × 3) |
+| FA Solo, party 1 | 22:01.9 | 21:54.8 | **21:59.0** | the start-of-fight drains have 100% (no fight regen); damage specs / the surge potion where they save ≥ 1 s per slot |
+| FA without Obligator + Ascension crossbows | 24:34.1 | 24:05.1 | **24:11.9** | damage specs and the shared budget |
+| The user's plan (Phase32.test: party 4, Camp Lightbearer, the user's "don't own" list) | 25:46.3 | 25:00.0 | **25:15.5** | review: phase 36 had 4 carriers + your bar in a 4-man; now BGS + 2 Tonalztics (the Elder maul carrier made way; Ocellus 780.5 → 794.7 s), the Onyx bolts switch gave way to a Scythe of Vitur loadout (phase 36: `formatDuration`'s rounding fix, 1499.96 s read "24:60.0") |
 
 Worked examples (one spec, the Search box's numbers: Team drains, the best preset's DPS): FA Xarth, Inquisitor's +
 Obligator 13.917 DPS, multiplier 1: Zaryte crossbow (Rapid, ruby (e)) E 97.95 in 5 ticks, net 97.95 − 13.917 × 5 × 0.6 =
@@ -1198,6 +1211,13 @@ Obligator 13.917 DPS, multiplier 1: Zaryte crossbow (Rapid, ruby (e)) E 97.95 in
 Torva + Obligator 14.416 DPS, multiplier 6: Dragon claws E 66.80, net 32.20, 0.37 s (Voidwaker 10.5: Tekton takes a fifth
 of magic damage; the ZCB can't hit him). ToB Maiden, Torva + Scythe 14.592 DPS, multiplier 4: ZCB E 109.71, net 65.94,
 1.13 s; Dragon claws net 32.85, 0.56 s.
+
+**Review fixes** (2026-10-25): one bar per party member (above, *Pools*); damage specs at the hp left (*Hp left*); regen
+on the drained clock (*Clock and regen*); the item greedy, for Team with auto carriers, makes room for your bar by
+dropping the carrier whose removal costs least (`fitBars`), then the carriers are re-run greedily with party − 1 and the
+faster of that and "you carry" is kept (a note gives both times). A brute force over every kit of a reduced FA pool (10
+candidates, up to 4 loadouts: 336 kits, each timed with its own exact allocation) finds the planner's kit (gap 0.0000 s):
+the optimiser's fixed-plan replay picked the optimum there.
 
 **Checks**: `src/tests/lib/raids/Phase36.test.ts` (E[spec] by hand for Voidwaker and Dragon claws on Xarth and Zebak vs
 upstream; net / seconds on a toy; the DP vs an exhaustive search on toys (Solo two events, with a dose, Team carriers)

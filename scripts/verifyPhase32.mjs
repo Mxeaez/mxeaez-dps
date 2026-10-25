@@ -18,7 +18,7 @@ import { chromium } from '@playwright/test';
 import { openSections } from './phase34Sections.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
-const USER_TOTAL = process.env.USER_TOTAL || '25:00.0';
+const USER_TOTAL = process.env.USER_TOTAL || '25:15.5';
 const USER_TOTAL_PHASE31 = '25:47.4';
 const NOT_OWNED = ['Obligator', "Zorya's tome", 'Rondache', "Inquisitor's great helm", "Inquisitor's hauberk", "Inquisitor's plateskirt", "Inquisitor's mace"];
 const BLESSING = "Rada's blessing 4";
@@ -143,7 +143,9 @@ const main = async () => {
   check(melee.length > 0 && melee.every((l) => l.items.length === 9), `melee switch: ${melee.map((l) => `${l.items.length} items`).join(', ')} (phase 31: 10 with the blessing)`);
   check(total === USER_TOTAL, `user plan total ${total} (expected ${USER_TOTAL}; phase 31: ${USER_TOTAL_PHASE31}); free ${free}: "${freeTitle}"`);
   const onyx = kit.some((l) => l.items.includes('Onyx ascension bolts (e)'));
-  check(free > 0 || onyx, `the freed slot is free (${free}) or bought the Onyx bolts switch (${onyx})`);
+  // phase 36 review: with 3 carriers (you damage-spec) the kit is re-optimised: the slot buys a fourth loadout (Scythe of
+  // Vitur) instead of the Onyx bolts switch
+  check(free > 0 || onyx || kit.length >= 4, `the freed slot is free (${free}), bought the Onyx bolts switch (${onyx}) or a loadout (${kit.length} loadouts)`);
   await checkKept(page, 'user plan');
   await shot(page, 'user-plan');
 
@@ -157,7 +159,7 @@ const main = async () => {
   const faTotal = await text(page.locator('[data-testid="plan-total"]'));
   const faFree = Number(await page.locator('[data-testid="free-slots"]').getAttribute('data-free'));
   // the same kit as phase 31 (21:44.4, 5 free): the Inquisitor's + Obligator switch is 9 items without the blessing
-  check(faTotal === '21:04.9' && faFree === 4, `FA defaults: ${faTotal}, ${faFree} free (phase 31: 21:44.4, 5 free)`);
+  check(faTotal === '21:07.7' && faFree === 4, `FA defaults: ${faTotal}, ${faFree} free (phase 31: 21:44.4, 5 free)`);
   check(!(await kitLoadouts(page)).some((l) => l.items.includes(BLESSING)), 'FA defaults: no blessing in the kit');
   await shot(page, 'fa-defaults');
 
@@ -168,7 +170,7 @@ const main = async () => {
   await page.locator('[data-testid="plan-view"]').waitFor({ timeout: 30000 });
   await waitPlan(page);
   const toaTotal = await text(page.locator('[data-testid="plan-total"]'));
-  check(toaTotal === '14:05.5', `ToA plan total ${toaTotal} (phase 35: 14:12.1; phase 31: 14:04.1)`);
+  check(toaTotal === '14:07.8', `ToA plan total ${toaTotal} (phase 35: 14:12.1; phase 31: 14:04.1)`);
   check(await checkKept(page, 'ToA'), 'ToA: the worn melee set keeps the kit\'s ammo');
   await shot(page, 'kept-ammo');
 

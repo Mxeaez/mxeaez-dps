@@ -267,12 +267,13 @@ describe('ring policy', () => {
    * specs on adds: the scarabs, Akkha's Shadows, CoX Mystics / Shamans / small Muttadile / crystals / portal at full
    * Defence): ToA 872.6 → 879.6, CoX 411.9 → 442.0; FA / ToB unchanged. Phase 36 (one spec budget per encounter; the
    * wiki's Kephri / Warden / Olm Defence resets; Manual specs, no damage specs): ToA 879.6 → 881.1, CoX 442.0 → 448.9,
-   * ToB 455.1 → 457.3 (Sotetseg's thirds share the carriers' energy); FA unchanged.
+   * ToB 455.1 → 457.3 (Sotetseg's thirds share the carriers' energy); FA unchanged. Phase 36 review (regen on the
+   * drained clock): ToA 881.1 → 881.2, CoX 448.9 → 452.7 (Olm's phases: fewer regen ticks); FA / ToB unchanged.
    */
   test.each([
     ['fractured-archive', 1493.8],
-    ['toa', 881.1],
-    ['cox', 448.9],
+    ['toa', 881.2],
+    ['cox', 452.7],
     ['tob', 457.3],
   ] as [RaidConfig['id'], number][])('%s: allow switches reproduces the previous planner (%s s)', (id, seconds) => {
     const r = planned(raidConfig(id), 'switch');
