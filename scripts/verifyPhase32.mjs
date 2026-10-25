@@ -168,7 +168,7 @@ const main = async () => {
   await page.locator('[data-testid="plan-view"]').waitFor({ timeout: 30000 });
   await waitPlan(page);
   const toaTotal = await text(page.locator('[data-testid="plan-total"]'));
-  check(toaTotal === '14:04.1', `ToA plan total ${toaTotal} (phase 31: 14:04.1)`);
+  check(toaTotal === '14:12.1', `ToA plan total ${toaTotal} (phase 35: 14:12.1; phase 31: 14:04.1)`);
   check(await checkKept(page, 'ToA'), 'ToA: the worn melee set keeps the kit\'s ammo');
   await shot(page, 'kept-ammo');
 

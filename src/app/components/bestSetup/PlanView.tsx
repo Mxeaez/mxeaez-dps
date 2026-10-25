@@ -8,6 +8,7 @@ import { PlayerEquipment } from '@/types/Player';
 import Spinner from '@/app/components/Spinner';
 import EquipmentSelect from '@/app/components/player/equipment/EquipmentSelect';
 import { buildTargetMonster, DrainStateId, findTarget } from '@/lib/fracturedArchive/bestSetup';
+import { NO_DRAINS_ADDS } from '@/lib/raids/types';
 import { BestSetupAssumptions, StyleGroup, TeamSpecAssumptions } from '@/lib/fracturedArchive/presets';
 import {
   enumerateRoutes, formatDuration, PhaseTime,
@@ -319,6 +320,10 @@ const PhaseRows: React.FC<{ phases: PhaseTime[], encounter: string, open: boolea
         <td className="px-2">{p.choice?.style ?? ''}</td>
         <td className="px-2" data-testid="plan-phase-drains">
           {p.choice?.drainLine ? <DrainLineView line={p.choice.drainLine} compact /> : ''}
+          {/* phase 35: adds (and other targets drains never apply to) say why there are no specs */}
+          {!p.choice?.drainLine && findTarget(p.targetKey).noDrains === NO_DRAINS_ADDS && (
+            <span title={`No drains: ${NO_DRAINS_ADDS}`} data-testid="plan-phase-no-drains">no specs (adds)</span>
+          )}
         </td>
         <td className="px-2 text-right font-mono" data-testid="plan-phase-dps">{p.dps.toFixed(3)}</td>
         <td className="px-2 text-right font-mono">{fmtS(p.seconds)}</td>

@@ -162,7 +162,8 @@ describe('targets and drain states', () => {
   });
 
   // Phase 14: Solo / Team come from the spec model (specs.ts / teamSpecs.ts, tested in Specs / TeamSpecs.test.ts).
-  test.each(BEST_SETUP_TARGETS.map((t) => t.key))('%s: drain states equal the solo / team spec plans', (key) => {
+  // phase 35: the jellies are adds (no drains; Phase35.test.ts)
+  test.each(BEST_SETUP_TARGETS.filter((t) => !t.noDrains).map((t) => t.key))('%s: drain states equal the solo / team spec plans', (key) => {
     const target = findTarget(key);
     const none = buildTargetMonster(target, undefined, 'none', A);
     const model = drainModel(none.monster, A);

@@ -263,12 +263,14 @@ describe('ring policy', () => {
    * Allow ring switches = the phase 17-26 planner. These reduced-pool totals were checked against the phase 26 planner
    * given the same potions (the kit's: FA 1 Super combat, ToB 1 Super combat + 1 Ranging potion, ToA / CoX none): the
    * same kits and totals to the last digit (A/B run during phase 27). Phase 32 (no Rada's blessing, a loadout without
-   * ammo keeps the kit's ammo in its ammo slot): FA 1533.2 → 1493.8, ToA 879.7 → 872.6; CoX / ToB unchanged.
+   * ammo keeps the kit's ammo in its ammo slot): FA 1533.2 → 1493.8, ToA 879.7 → 872.6; CoX / ToB unchanged. Phase 35 (no
+   * specs on adds: the scarabs, Akkha's Shadows, CoX Mystics / Shamans / small Muttadile / crystals / portal at full
+   * Defence): ToA 872.6 → 879.6, CoX 411.9 → 442.0; FA / ToB unchanged.
    */
   test.each([
     ['fractured-archive', 1493.8],
-    ['toa', 872.6],
-    ['cox', 411.9],
+    ['toa', 879.6],
+    ['cox', 442.0],
     ['tob', 455.1],
   ] as [RaidConfig['id'], number][])('%s: allow switches reproduces the previous planner (%s s)', (id, seconds) => {
     const r = planned(raidConfig(id), 'switch');

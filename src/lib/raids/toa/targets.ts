@@ -1,4 +1,4 @@
-import { BestSetupTarget } from '@/lib/raids/types';
+import { BestSetupTarget, NO_DRAINS_ADDS } from '@/lib/raids/types';
 import {
   AKKHA_FINAL_STAND_PHASE,
   AKKHA_NO_PRAYER_PHASE,
@@ -28,14 +28,17 @@ export const TOA_TARGETS: BestSetupTarget[] = [
   {
     key: 'toa-kephri', label: 'Kephri (Unshielded)', name: 'Kephri', version: 'Aggressive', raid: 'toa', toaPath: 'kephri',
   },
+  // Phase 35: the overlord scarabs are adds (no specs). Kephri (wiki, read 2026-10-24): "The first shield threshold will
+  // cause a single Spitting Scarab to spawn, while the second threshold causes a Soldier and Arcane Scarab"; Spitting /
+  // Soldier / Arcane Scarab: "a monster that is summoned by Kephri". docs/DATA_SOURCES.md *Phase 35*.
   {
-    key: 'toa-spitting-scarab', label: 'Spitting Scarab', name: 'Spitting Scarab', version: '', raid: 'toa', toaPath: 'kephri', noSummary: true,
+    key: 'toa-spitting-scarab', label: 'Spitting Scarab', name: 'Spitting Scarab', version: '', raid: 'toa', toaPath: 'kephri', noSummary: true, noDrains: NO_DRAINS_ADDS,
   },
   {
-    key: 'toa-soldier-scarab', label: 'Soldier Scarab', name: 'Soldier Scarab', version: '', raid: 'toa', toaPath: 'kephri', noSummary: true,
+    key: 'toa-soldier-scarab', label: 'Soldier Scarab', name: 'Soldier Scarab', version: '', raid: 'toa', toaPath: 'kephri', noSummary: true, noDrains: NO_DRAINS_ADDS,
   },
   {
-    key: 'toa-arcane-scarab', label: 'Arcane Scarab', name: 'Arcane Scarab', version: '', raid: 'toa', toaPath: 'kephri', noSummary: true,
+    key: 'toa-arcane-scarab', label: 'Arcane Scarab', name: 'Arcane Scarab', version: '', raid: 'toa', toaPath: 'kephri', noSummary: true, noDrains: NO_DRAINS_ADDS,
   },
   {
     key: 'toa-zebak', label: 'Zebak', name: 'Zebak', version: 'Normal', raid: 'toa', toaPath: 'zebak',
@@ -51,8 +54,10 @@ export const TOA_TARGETS: BestSetupTarget[] = [
     summaryPhases: [AKKHA_NO_PRAYER_PHASE, AKKHA_FINAL_STAND_PHASE],
     note: 'Prays against the style he attacks with; final stand: Protect from Magic + Missiles (melee only).',
   },
+  // Phase 35: an add (no specs). Akkha's Shadow (wiki, read 2026-10-24): "Akkha's Shadows are summoned by Akkha ...
+  // After reaching 80% of his health, he will generate four shadows of himself", one dispelled per 20% threshold.
   {
-    key: 'toa-akkha-shadow', label: 'Akkha\'s Shadow', name: 'Akkha\'s Shadow', version: '', raid: 'toa', toaPath: 'akkha',
+    key: 'toa-akkha-shadow', label: 'Akkha\'s Shadow', name: 'Akkha\'s Shadow', version: '', raid: 'toa', toaPath: 'akkha', noDrains: NO_DRAINS_ADDS,
   },
   {
     key: 'toa-baba', label: 'Ba-Ba', name: 'Ba-Ba', version: '', raid: 'toa', toaPath: 'baba',

@@ -1,4 +1,4 @@
-import { BestSetupTarget } from '@/lib/raids/types';
+import { BestSetupTarget, NO_DRAINS_ADDS } from '@/lib/raids/types';
 import {
   BORK_PHASES, BORK_STUNNED_PHASE, DAGONHAI_PHASES, DAGONHAI_SHIELDED_PHASE, OCELLUS_P1_PHASES, OCELLUS_P3_PHASES,
 } from '@/lib/fracturedArchive/constants';
@@ -30,8 +30,10 @@ export const BEST_SETUP_TARGETS: BestSetupTarget[] = [
   {
     key: 'dreadnoth', label: 'Dreadnoth the Jellied', name: 'Dreadnoth the Jellied', version: '',
   },
+  // Phase 35: an add (no specs; a Search target only, the time model ignores the jellies). Dreadnoth the Jellied (wiki,
+  // read 2026-10-24): "He will periodically summon jellies" (Jelly (Dreadnoth): 61 hp).
   {
-    key: 'jelly', label: 'Jelly (Dreadnoth)', name: 'Jelly (Dreadnoth)', version: '',
+    key: 'jelly', label: 'Jelly (Dreadnoth)', name: 'Jelly (Dreadnoth)', version: '', noDrains: NO_DRAINS_ADDS,
   },
   // Phase 15: Moia is the alternative to Dreadnoth (3rd boss); melee can't reach her
   {

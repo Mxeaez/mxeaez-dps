@@ -856,3 +856,35 @@ Maggot King's other notable drop is the pet (Maggot marquess); no other equipmen
 (`src/lib/fracturedArchive/poolAudit.ts`, docs/BEST_SETUP.md *Pool audit*) found no other missing item; every
 upstream-effect / stat-dominating item not in a pool is in `POOL_EXCLUDED` with a reason (e.g. Crystal blessing / Echo
 boots / V's helm = Demonic Pacts League items; Barbed / Blunt / Bullet / Field arrows = Barbarian Assault only).
+
+### Phase 35 — adds and short-lived targets: no specs (2026-10-24)
+
+Rule (user, 2026-10-24: "you obviously aren't going to Ralos or Elder maul spec the little minions that die in a few
+hits anyway"): these targets carry `noDrains: NO_DRAINS_ADDS` ("adds: not worth a spec", `src/lib/raids/types.ts`), so
+every drain state ranks them at full Defence and no drains are planned on them. The wiki phrase that makes each one an
+add or short-lived (all read 2026-10-24, `?action=raw`, generic User-Agent):
+
+| Target (key) | Raid | Source | Phrase |
+|---|---|---|---|
+| Spitting Scarab (`toa-spitting-scarab`) | ToA | https://oldschool.runescape.wiki/w/Kephri, /Spitting_Scarab | Kephri: "The first shield threshold will cause a single Spitting Scarab to spawn"; Spitting Scarab: "a monster that is summoned by Kephri" |
+| Soldier Scarab (`toa-soldier-scarab`) | ToA | /Kephri, /Soldier_Scarab | "the second threshold causes a Soldier and Arcane Scarab"; "a monster that is summoned by Kephri" |
+| Arcane Scarab (`toa-arcane-scarab`) | ToA | /Kephri, /Arcane_Scarab | as above; "a monster that is summoned by Kephri" |
+| Akkha's Shadow (`toa-akkha-shadow`) | ToA | /Akkha%27s_Shadow | "Akkha's Shadows are summoned by Akkha ... After reaching 80% of his health, he will generate four shadows of himself" (one dispelled per 20%) |
+| Skeletal Mystic (`cox-mystic`) | CoX | /Chambers_of_Xeric/Strategies, /Skeletal_Mystic | "A sacrifical chamber filled with at least three Skeletal Mystics (dependent on party size)"; they "regenerate their stats at a rate of 1 per 25 ticks" |
+| Lizardman shaman (`cox-shaman`) | CoX | /Chambers_of_Xeric/Strategies | "A small room filled with at least two lizardman shamans (dependent on party size, although capped at 4)" |
+| Muttadile (small) (`cox-muttadile-small`) | CoX | /Muttadile | "a small one is on the ground and the large one is lurking in the water ... When the smaller muttadile dies, the larger one emerges" (the large one is the room's boss: keeps drains) |
+| Glowing crystal (`cox-glowing-crystal`) | CoX | /Glowing_crystal | "Four crystal clusters are found within the room ... Vasa will move towards a crystal ... it is important that players neutralise each one as quickly as possible" |
+| Abyssal portal (`cox-abyssal-portal`) | CoX | /Abyssal_portal | "The portal must be destroyed in order to dispel Vespula and her offspring" (the room's last target, after Vespula lands) |
+| Nylocas Ischyros / Toxobolos / Hagios, small / big (`tob-ischyros-*` etc.) | ToB | /Nylocas_Ischyros | "part of the wave prior to the Nylocas Vasilias encounter ... They spawn alongside Nylocas Toxobolos and Nylocas Hagios" (Search targets only; not in the time model) |
+| Jelly (Dreadnoth) (`jelly`) | FA | /Dreadnoth_the_Jellied | "He will periodically summon jellies" (61 hp each; Search target only; the time model ignores the jellies) |
+
+Judgement calls (keep their drains): Ice demon (CoX: the room's only target), Tekton, Vasa, Vespula, the large
+Muttadile, the Olm hands and head (phases of the boss), ToA Obelisk (Wardens P1), the Warden core, Kephri (shielded),
+FA Dagon'hai trio (the encounter's bosses: one health pool), Ocellus P2 (the Blade: a boss phase), The Smorks (fought
+with Bork, 1000+ hp). **Unverified** that nobody specs these adds in practice (community habit, not a wiki rule):
+UNVERIFIED D26.
+
+Found while reading (not modelled; UNVERIFIED F10): the Glowing crystal "heals Vasa and regenerates any drained defence
+levels once he reaches it", and Mod Ash (Discord, 9 July 2026, quoted on /Skeletal_Mystic) gives CoX stat-regeneration
+rates in ticks per level: "Stone guardians - 8 Muttadiles - 15 Vasa Nistirio - 10 Vasa's crystal - 9 Tekton - 15
+LizardShamans - 20 Skeletal mystics - 25 ... Vespula - 10 Vespula's portal - 45 ... Otherwise default should be 100".

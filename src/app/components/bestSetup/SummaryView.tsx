@@ -29,6 +29,7 @@ import { DrainBrief } from '@/app/components/bestSetup/DrainLineView';
 import { briefResultText } from '@/lib/fracturedArchive/drainLine';
 import { scaleMonster } from '@/lib/MonsterScaling';
 import { raidOf, teamDpsMultiplier, teamTimeLabel } from '@/lib/raids';
+import { NO_DRAINS_ADDS } from '@/lib/raids/types';
 import { loadoutUsesUnowned, unownedLabel } from '@/lib/fracturedArchive/ownership';
 import { OnlyOwnedToggle } from '@/app/components/bestSetup/SearchView';
 
@@ -256,6 +257,10 @@ const SummaryView: React.FC<{
                           </button>
                         </div>
                         <div className="text-[11px]" data-testid="summary-drains">
+                          {/* phase 35: targets drains never apply to (adds, Vanguards, Verzik) say so; the reason is the tooltip */}
+                          {target.noDrains && d.id !== 'none' && (
+                            <span className="text-gray-500 dark:text-gray-400" title={cell.drain.plan} data-testid="summary-no-drains">{target.noDrains === NO_DRAINS_ADDS ? 'no specs (adds)' : 'no specs'}</span>
+                          )}
                           {cell.drain.line && cell.drain.line.items.length > 0 && (
                             <DrainBrief
                               items={cell.drain.line.items}

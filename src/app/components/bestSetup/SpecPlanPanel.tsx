@@ -29,9 +29,12 @@ const SpecPlanPanel: React.FC<{
   /** Phase 33: shown instead of an empty line when the Solo drains have no spec weapons. */
   noSpecsNote?: string,
 }> = ({
-  targetKey, phase, drain, assumptions, noSpecsNote,
+  targetKey, phase, drain, assumptions, noSpecsNote: noSpecsNoteIn,
 }) => {
   const target = findTarget(targetKey);
+  // phase 35: a target drains never apply to (adds, Vanguards, Verzik, ...) says so instead of "no spec weapons"
+  const noDrains = !!target.noDrains && drain !== 'none';
+  const noSpecsNote = noDrains ? undefined : noSpecsNoteIn;
   const { state, rec, floor } = useMemo(() => {
     const built = buildTargetMonster(target, phase, drain, assumptions);
     const model = drainModel(built.monster, assumptions);
@@ -56,7 +59,8 @@ const SpecPlanPanel: React.FC<{
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-semibold" title={DRAIN_STATES.find((d) => d.id === drain)?.description}>{`${DRAIN_STATES.find((d) => d.id === drain)?.label} drains:`}</span>
         {noSpecsNote && <span className="text-orange-700 dark:text-orange-300" data-testid="drain-no-specs">{noSpecsNote}</span>}
-        {!noSpecsNote && (state.line
+        {noDrains && <span className="text-orange-700 dark:text-orange-300" data-testid="drain-no-drains">{state.plan}</span>}
+        {!noSpecsNote && !noDrains && (state.line
           ? <DrainBrief items={state.line.items} result={briefResultText(state.line, state.line.items, true)} title={state.line.text} />
           : <span>{state.plan}</span>)}
         {/* the full text stays available (tooltip of the line, and here for tests / copy) */}
@@ -72,7 +76,7 @@ const SpecPlanPanel: React.FC<{
           </div>
           )}
           {/* phase 29 review: a party of 1 has no team (Solo only) */}
-          {assumptions.partySize > 1 && (
+          {assumptions.partySize > 1 && !target.noDrains && (
           <details data-testid="team-table">
             <summary className="cursor-pointer">
               {`Per boss minimum at ${formatProbability(rec.threshold)} (for reference): ${rec.text}`}

@@ -3,6 +3,49 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 35 — No specs on adds (2026-10-24)
+
+Rule (user): "you obviously aren't going to Ralos or Elder maul spec the little minions that die in a few hits anyway".
+Until now every add was its own drain plan with a fresh 100% spec budget, which overstated the drains' value.
+
+- **Targets** (`noDrains: NO_DRAINS_ADDS` = "adds: not worth a spec", `src/lib/raids/types.ts`): ToA Spitting / Soldier /
+  Arcane Scarab, Akkha's Shadow; CoX Skeletal Mystic, Lizardman shaman, Muttadile (small), Glowing crystal, Abyssal
+  portal; ToB the six wave nylocas (Search only); FA Jelly (Search only; the roadmap said "FA: none", but the jellies
+  are 61 hp summoned adds and the time model ignores them, so no headline moves). The wiki phrase per target is in the
+  target's comment and docs/DATA_SOURCES.md *Phase 35*. Existing reasons kept (Vanguards, Bloat after a stomp, Verzik).
+  Judgement calls that keep drains: Ice demon, Tekton, Vasa, Vespula, the large Muttadile, Olm hands / head, ToA
+  Obelisk, Warden core, Kephri (shielded), Dagon'hai, Ocellus P2, The Smorks.
+- **Effect**: the existing `noDrains` path (`buildTargetMonster`) ranks them at full Defence in every drain state, so no
+  drains are planned on them (Solo and Team), the planner's team briefing skips them (`perTarget`), and the greedy
+  carriers gain nothing on them (route time; an add's seconds are identical with / without carriers). UI: Search drain
+  box "No drains: adds: not worth a spec" (it wins over Solo's "no spec weapons" note; no per-boss table for `noDrains`
+  targets), Summary "no specs (adds)" (other `noDrains` targets "no specs"; reason in the tooltip), Plan per-phase rows
+  "no specs (adds)".
+- **Headlines** (defaults, Team, camp one ring): FA **21:44.4** and ToB **7:29.5** unchanged; ToA 14:04.1 → **14:12.1**
+  (same kit; Akkha 138.5 → 144.5 s, the shadows 42.8 → 48.8; Kephri 145.8 → 147.8, the scarabs 17.8 → 19.8; carriers
+  1 Elder maul + 1 Tonalztics + 1 Eye of Ayak → 1 Elder maul + 1 Eye of Ayak; your share Eye of Ayak → Elder maul); CoX
+  6:35.9 → **7:01.3** (Mystics 31.8 → 43.9, Shamans 25.1 → 29.7, Vespula 19.3 → 23.4, Vasa 18.5 → 21.8, Muttadiles
+  21.6 → 22.8, Olm 189.6 → 189.7; carriers 2 Elder maul + 2 Tonalztics + 1 BGS + 1 Ayak → one Tonalztics fewer; your
+  share Tonalztics → Elder maul). Reduced pools, allow switches (`Phase27`): ToA 872.6 → 879.6, CoX 411.9 → 442.0.
+  Re-pinned: CrossRaid (headlines + fast pins), Phase27, verifyPhase23 / 32, README, BEST_SETUP, ROADMAP.
+- **Found, not modelled** (UNVERIFIED F10): the Glowing crystal "regenerates any drained defence levels" of Vasa when he
+  reaches it, and Mod Ash's CoX stat-regeneration rates (Tekton 1 level / 15 ticks, Vasa 10, Vespula 10, Muttadiles 15,
+  ...): CoX drains decay within a room; the model keeps them for the whole room.
+- Tests: new `src/tests/lib/raids/Phase35.test.ts` (every add has the reason; `buildTargetMonster` Solo / Team = the
+  undrained monster; judgement calls still drain; ToA / CoX encounters: add phases take the drains-None seconds with
+  Team and Solo, no drain line; briefing rows; a reduced ToA plan's team briefing / drivers / phases list no add;
+  SpecPlanPanel render; slow: ToA 14:12.1, CoX 7:01.3 with their carriers). Presets.test's per-target drain check skips
+  `noDrains` targets (the Jelly).
+  `yarn test` 1514 (1493 pass / 21 skipped); `RUN_SLOW_TESTS=1` CrossRaid + Phase27-35 all pass (247 + Phase35 56);
+  lint, tsc clean.
+- Playwright: new `scripts/verifyPhase35.mjs` all OK (ToA Search Spitting Scarab Team / Solo: the note, no icons,
+  ranked at Def 80; ToA Plan 14:12.1, briefing / Spec plan without scarab or shadow, the 4 add phase rows "no specs
+  (adds)", Kephri / Akkha still drain; CoX Summary Skeletal Mystic "no specs (adds)", Tekton drains); screenshots
+  `phase35-{search-scarab-team,search-scarab-solo,plan-toa,plan-toa-details,summary-cox}.png`. verifyPhase21 / 23 / 26 /
+  27 / 29-34 all OK (23 / 32 re-pinned to ToA 14:12.1); tracked screenshots restored.
+- Docs: BEST_SETUP *Targets that never get specs (phase 35)*, DATA_SOURCES *Phase 35*, UNVERIFIED D26 (the adds rule)
+  and F10 (CoX drain decay), README, ROADMAP 35 done.
+
 ## Phase 34 — Readability, all three tabs (2026-10-24)
 
 UI only: no number changes. Rule (user): "if it doesn't provide useful information we should hide it" — the default view

@@ -1,4 +1,4 @@
-import { BestSetupTarget, TobMode } from '@/lib/raids/types';
+import { BestSetupTarget, NO_DRAINS_ADDS, TobMode } from '@/lib/raids/types';
 import {
   NYLO_MAGIC_FORM, NYLO_MELEE_FORM, NYLO_RANGED_FORM,
 } from '@/lib/raids/tob/constants';
@@ -46,6 +46,9 @@ export const TOB_VERSIONS: Record<string, VersionByMode> = {
 
 const NO_VERZIK_DRAINS = 'Verzik\'s Defence cannot be lowered ("Verzik Vitur absorbs the defence reduction!")';
 
+// Phase 35: the wave nylocas are adds (no specs; they are Search targets only, not in the time model). Nylocas Ischyros
+// (wiki, read 2026-10-24): "part of the wave prior to the Nylocas Vasilias encounter ... They spawn alongside Nylocas
+// Toxobolos and Nylocas Hagios as they attempt to destroy the pillars".
 const waveNylo = (key: string, name: string, size: 'Small' | 'Big', style: string): BestSetupTarget => ({
   key,
   label: `${name} (${size.toLowerCase()}, ${style} only)`,
@@ -53,6 +56,7 @@ const waveNylo = (key: string, name: string, size: 'Small' | 'Big', style: strin
   version: size,
   raid: 'tob',
   noSummary: true,
+  noDrains: NO_DRAINS_ADDS,
   note: `Nylocas waves: immune to every style but ${style} (Strategies).`,
 });
 

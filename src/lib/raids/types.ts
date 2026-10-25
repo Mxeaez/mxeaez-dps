@@ -61,6 +61,13 @@ export interface TobInputs {
 
 export const DEFAULT_TOB_INPUTS: TobInputs = { mode: 'normal' };
 
+/**
+ * Phase 35: the `noDrains` reason of adds and short-lived targets (ToA scarabs and Akkha's Shadows, CoX Mystics /
+ * Shamans / small Muttadile / Glowing crystals / Abyssal portal, ToB wave nylocas, FA jellies). User, 2026-10-24: "you
+ * obviously aren't going to Ralos or Elder maul spec the little minions that die in a few hits anyway".
+ */
+export const NO_DRAINS_ADDS = 'adds: not worth a spec';
+
 /** A boss / phase the best-setup view can target (Search boss list, Summary rows, time-model phases). */
 export interface BestSetupTarget {
   key: string;
@@ -81,7 +88,9 @@ export interface BestSetupTarget {
   noSummary?: boolean;
   /**
    * Phase 19: drains never apply to this target (the drain state is forced to None), with the reason shown as the
-   * drain plan. CoX Vanguards: "they will restore all drained stats upon retreating into their shell".
+   * drain plan. CoX Vanguards: "they will restore all drained stats upon retreating into their shell". Phase 35: adds
+   * and short-lived targets (`NO_DRAINS_ADDS`) too: nobody specs a minion that dies in a few hits, so no drains (and no
+   * spec energy) are planned on them and they rank at full Defence.
    */
   noDrains?: string;
   /** Expected TTK isn't meaningful (Ocellus P2: the Blade phase is timed, damage transfers 50% to P3). */

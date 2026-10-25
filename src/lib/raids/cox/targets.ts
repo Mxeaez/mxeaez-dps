@@ -1,4 +1,4 @@
-import { BestSetupTarget } from '@/lib/raids/types';
+import { BestSetupTarget, NO_DRAINS_ADDS } from '@/lib/raids/types';
 
 /**
  * Phase 19: Chambers of Xeric targets of the best-setup view (Search boss list, Summary rows, time-model phases). Every
@@ -31,6 +31,8 @@ export const COX_TARGETS: BestSetupTarget[] = [
   {
     key: 'cox-vasa', label: 'Vasa Nistirio', name: 'Vasa Nistirio', version: 'Normal', raid: 'cox',
   },
+  // Phase 35: an add (no specs). Glowing crystal (wiki, read 2026-10-24): "Four crystal clusters are found within the
+  // room ... Vasa will move towards a crystal which visibly brightens" ("neutralise each one as quickly as possible").
   {
     key: 'cox-glowing-crystal',
     label: 'Glowing crystal (Vasa)',
@@ -38,6 +40,7 @@ export const COX_TARGETS: BestSetupTarget[] = [
     version: 'Normal',
     raid: 'cox',
     note: 'Immune to ranged, magic ÷3 (upstream); weak to stab. Not CM-scaled.',
+    noDrains: NO_DRAINS_ADDS,
   },
   {
     key: 'cox-vanguard-melee',
@@ -71,6 +74,8 @@ export const COX_TARGETS: BestSetupTarget[] = [
     raid: 'cox',
     note: 'Flying: immune to melee (upstream) until she lands at 20%.',
   },
+  // Phase 35: no specs (short-lived: the room's last target, a few hits after Vespula lands). Abyssal portal (wiki, read
+  // 2026-10-24): "The portal must be destroyed in order to dispel Vespula and her offspring".
   {
     key: 'cox-abyssal-portal',
     label: 'Abyssal portal (Vespula)',
@@ -78,13 +83,19 @@ export const COX_TARGETS: BestSetupTarget[] = [
     version: 'Normal',
     raid: 'cox',
     note: 'Seven tiles away: immune to melee (upstream). Destroying it ends the room.',
+    noDrains: NO_DRAINS_ADDS,
   },
+  // Phase 35: no specs (the room's first, smaller muttadile; the large one is the boss of the room). Muttadile (wiki,
+  // read 2026-10-24): "a small one is on the ground and the large one is lurking in the water ... When the smaller
+  // muttadile dies, the larger one emerges".
   {
-    key: 'cox-muttadile-small', label: 'Muttadile (small)', name: 'Muttadile', version: 'Small', raid: 'cox',
+    key: 'cox-muttadile-small', label: 'Muttadile (small)', name: 'Muttadile', version: 'Small', raid: 'cox', noDrains: NO_DRAINS_ADDS,
   },
   {
     key: 'cox-muttadile-large', label: 'Muttadile (large)', name: 'Muttadile', version: 'Large', raid: 'cox',
   },
+  // Phase 35: adds (no specs). CoX Strategies (wiki, read 2026-10-24): "A sacrifical chamber filled with at least three
+  // Skeletal Mystics (dependent on party size)"; Skeletal Mystic: they "regenerate their stats at a rate of 1 per 25 ticks".
   {
     key: 'cox-mystic',
     label: 'Skeletal Mystic',
@@ -92,13 +103,17 @@ export const COX_TARGETS: BestSetupTarget[] = [
     version: 'Normal',
     raid: 'cox',
     note: 'Undead (Salve amulet(ei)).',
+    noDrains: NO_DRAINS_ADDS,
   },
+  // Phase 35: adds (no specs). CoX Strategies (wiki, read 2026-10-24): "A small room filled with at least two lizardman
+  // shamans (dependent on party size, although capped at 4)".
   {
     key: 'cox-shaman',
     label: 'Lizardman shaman',
     name: 'Lizardman shaman (Chambers of Xeric)',
     version: 'Normal',
     raid: 'cox',
+    noDrains: NO_DRAINS_ADDS,
   },
   {
     key: 'cox-guardian',

@@ -249,11 +249,17 @@ describe('every raid\'s plan runs (reduced pool)', () => {
 // worn melee set keeps the diamond ascension bolts (e) in its ammo slot: the freed slot carries your share, ToA Eye of
 // Ayak, CoX Tonalztics); ToB 7:30.0 → 7:29.5 (the freed slots turn the Tumeken's shadow partial switch into the full
 // Tumeken's shadow (Ancestral) loadout: Nylocas 41.5 → 41.0 s).
+// Phase 35 (no specs on adds: they rank at full Defence): FA 21:44.4 and ToB 7:29.5 (no adds in their time models);
+// ToA 14:04.1 → 14:12.1 (same kit; Akkha 138.5 → 144.5 s: the 4 shadows 42.8 → 48.8; Kephri 145.8 → 147.8: the overlord
+// scarabs 17.8 → 19.8; the Tonalztics carrier, worth 3.5 s mostly on adds, is dropped: 1 Elder maul + 1 Eye of Ayak; your
+// share Elder maul, was Eye of Ayak); CoX 6:35.9 → 7:01.3 (Mystics 31.8 → 43.9, Shamans 25.1 → 29.7, Vespula 19.3 → 23.4:
+// the portal 12.2 → 15.8, Vasa 18.5 → 21.8: the crystals 5.6 → 8.9, Muttadiles 21.6 → 22.8: the small one 11.0 → 12.3;
+// one Tonalztics carrier fewer: 2 Elder maul, 1 Tonalztics, 1 BGS, 1 Eye of Ayak; your share Elder maul, was Tonalztics).
 const HEADLINES: [string, string, number][] = [
   ['fractured-archive', '21:44.4', 1304.4],
   // review 2: Eye of Ayak carriers capped at the mages (1): 13:19.6 → 14:10.6 (1 maul, 1 Tonalztics, 1 Ayak; Ultor)
-  ['toa', '14:04.1', 844.1],
-  ['cox', '6:35.9', 395.9],
+  ['toa', '14:12.1', 852.1],
+  ['cox', '7:01.3', 421.3],
   ['tob', '7:29.5', 449.5],
 ];
 
@@ -334,17 +340,19 @@ const PINNED_ENCOUNTER_SECONDS: Record<string, Record<string, number>> = {
   'fractured-archive': {
     'archive-guardian': 191.8, 'bork-smorks': 220.8, moia: 68.9, dagonhai: 233.8, ocellus: 776.5,
   },
+  // Phase 35 (no specs on adds): ToA Kephri 153.8 → 155.5, Akkha 160.9 → 161.6; CoX Vasa 20.1 → 22.9, Vespula 23.3 →
+  // 24.1, Mystics 44.8 → 52.4, Shamans 32.1 → 37.5, Muttadiles 23.9 → 24.
   toa: {
-    'toa-kephri': 153.8, 'toa-zebak': 120.8, 'toa-akkha': 160.9, 'toa-baba': 103.1, 'toa-wardens': 349.9,
+    'toa-kephri': 155.5, 'toa-zebak': 120.8, 'toa-akkha': 161.6, 'toa-baba': 103.1, 'toa-wardens': 349.9,
   },
   cox: {
     'cox-tekton': 18.6,
-    'cox-vasa': 20.1,
+    'cox-vasa': 22.9,
     'cox-vanguards': 36.8,
-    'cox-vespula': 23.3,
-    'cox-mystics': 44.8,
-    'cox-shamans': 32.1,
-    'cox-muttadiles': 23.9,
+    'cox-vespula': 24.1,
+    'cox-mystics': 52.4,
+    'cox-shamans': 37.5,
+    'cox-muttadiles': 24,
     'cox-guardians': 36.4,
     'cox-ice-demon': 17.2,
     'cox-olm': 204.4,

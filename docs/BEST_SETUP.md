@@ -978,6 +978,50 @@ no horizontal page scroll at 390 px. The older verify scripts open the sections 
 The upstream top bar is 393 px wide at a 390 px viewport (the main calculator too): not this page's; the check is that
 nothing in the best-setup panel overflows outside a table scroller.
 
+### Targets that never get specs (phase 35: no specs on adds)
+
+User, 2026-10-24: "you obviously aren't going to Ralos or Elder maul spec the little minions that die in a few hits
+anyway". Until phase 35 every add was its own drain plan with a fresh 100% spec budget (Team: the carriers' first
+round; Solo: your energy), which overstated what drains are worth (a Mystics room ranked every mystic at the drained
+Defence of one spec round). Now these targets carry `noDrains` and are ranked at **full Defence** in every drain state
+(Search, Summary, Plan; `buildTargetMonster`, bestSetup.ts):
+
+| Raid | Never specced | Reason (`noDrains`) |
+|---|---|---|
+| ToA | Spitting / Soldier / Arcane Scarab, Akkha's Shadow | "adds: not worth a spec" |
+| CoX | Skeletal Mystic, Lizardman shaman, Muttadile (small), Glowing crystal (Vasa), Abyssal portal (Vespula) | "adds: not worth a spec" |
+| ToB | the six wave nylocas (Ischyros / Toxobolos / Hagios, small / big; Search only) | "adds: not worth a spec" |
+| FA | Jelly (Dreadnoth) (Search only; the time model ignores the jellies) | "adds: not worth a spec" |
+| CoX | Vanguards (phase 19) | "Vanguards restore drained stats in their shell" |
+| ToB | Bloat after a stomp, Verzik P1-P3 (phase 20) | Bloat's Defence "will regenerate to full when it stomps"; "Verzik Vitur absorbs the defence reduction!" |
+
+The wiki phrase per add: docs/DATA_SOURCES.md *Phase 35*. **Judgement calls** (keep their drains): the Ice demon (the
+room's only target), Tekton, Vasa, Vespula, the large Muttadile (the room's boss), Olm's hands and head (phases of the
+boss), ToA's Obelisk (Wardens P1) and the Warden core, Kephri (shielded), the FA Dagon'hai trio (the encounter's
+bosses), Ocellus P2 (the Blade, a boss phase), The Smorks.
+
+**What the user sees.** Search: the drain box reads "No drains: adds: not worth a spec" (also with Solo and no spec
+weapons; no per-boss minimum table). Summary: "no specs (adds)" in the Solo / Team cells (the reason is the tooltip;
+Vanguards / Verzik / Bloat restored say "no specs"). Plan: the add phases' per-phase rows say "no specs (adds)" and
+show no drain icons; the briefing, the encounter drain line, the team briefing's per-boss minimum and the carriers'
+"saves most on" never list an add. The greedy carriers count route time, and an add's seconds are the same with or
+without carriers, so they no longer earn a carrier anything (checked in `Phase35.test.ts`).
+
+**Numbers** (defaults, Team, camp one ring; slow `CrossRaid`, `Phase27`; `verifyPhase23` / `32` / `35`):
+
+| Plan | Phase 34 | **Phase 35** | What moved |
+|---|---|---|---|
+| FA | 21:44.4 | **21:44.4** | — (no adds in the time model) |
+| ToA | 14:04.1 | **14:12.1** | same kit; Akkha 138.5 → 144.5 s (the 4 shadows 42.8 → 48.8), Kephri 145.8 → 147.8 (Spitting 5.9 → 6.8, Soldier 6.0 → 6.6, Arcane 5.9 → 6.4); carriers 1 Elder maul + 1 Tonalztics + 1 Eye of Ayak → 1 Elder maul + 1 Eye of Ayak (the Tonalztics carrier saved 3.5 s, mostly on adds); your share Eye of Ayak → Elder maul |
+| CoX | 6:35.9 | **7:01.3** | same loadouts; Mystics 31.8 → 43.9 s, Shamans 25.1 → 29.7, Vespula 19.3 → 23.4 (portal 12.2 → 15.8, Vespula 7.1 → 7.6: one Tonalztics carrier fewer), Vasa 18.5 → 21.8 (crystal 5.6 → 8.9), Muttadiles 21.6 → 22.8 (small 11.0 → 12.3), Olm 189.6 → 189.7; carriers 2 Elder maul + 2 Tonalztics + 1 BGS + 1 Eye of Ayak → 2 + 1 + 1 + 1; your share Tonalztics → Elder maul |
+| ToB | 7:29.5 | **7:29.5** | — (the wave nylocas are not in the time model) |
+| Reduced pools, allow ring switches (`Phase27`) | ToA 872.6 / CoX 411.9 s | **879.6 / 442.0 s** | — |
+
+The fast pins (`CrossRaid`, the raid's first melee / ranged / magic preset): ToA Kephri 153.8 → 155.5, Akkha 160.9 →
+161.6; CoX Vasa 20.1 → 22.9, Vespula 23.3 → 24.1, Mystics 44.8 → 52.4, Shamans 32.1 → 37.5, Muttadiles 23.9 → 24.0.
+Search / Summary on the Jelly: Solo and Team now equal None (the 2026-10-22 snapshots below show the old drained
+columns).
+
 ## Routes tab (phase 16: raid time model)
 
 **Phase 23: the tab is gone.** Its route table is now part of the Plan tab's results (the *planned* kit timed on every
