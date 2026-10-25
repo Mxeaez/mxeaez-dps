@@ -1,8 +1,9 @@
 # CLAUDE.md
 
 Private fork of the OSRS Wiki DPS calculator adding The Fractured Archive (raid 4) bosses and a best-setup
-finder. Read `ROADMAP.md` (phases, decisions, data gaps) and `PROGRESS.md` (what's done) before starting work.
-Builder / reviewer agents: read `docs/BUILDER.md` first (module map, where pins live, rules, suites, review protocol).
+finder. Builder / reviewer agents: start with `docs/BUILDER.md` only, then read the ONE `ROADMAP.md` row you were
+given and the top 2 `PROGRESS.md` entries (`head -c 6000 PROGRESS.md`). Do not read ROADMAP / PROGRESS / BEST_SETUP /
+UNVERIFIED whole; grep them for the term you need. Older progress entries are in `docs/archive/`.
 
 ## Commands (Windows, PowerShell)
 

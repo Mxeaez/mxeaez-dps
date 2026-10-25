@@ -5,6 +5,6 @@ model: opus
 ---
 Same rules as builder, plus: hand-computed expectations in every new test, headline
 fixtures re-pinned once via scripts/pinHeadlines.mjs, slow suite before commit.
-Read CLAUDE.md and docs/BUILDER.md first. Follow the ROADMAP row exactly. Run only the
+Read docs/BUILDER.md, then ONLY the ROADMAP row you are given and the top 2 PROGRESS entries; grep other docs. Follow the ROADMAP row exactly. Run only the
 verify scripts for what you touched (scripts/verifyAll.mjs <names>), then `yarn lint` last.
 Commit `phase N: ...`; never push. Report in under 800 words.

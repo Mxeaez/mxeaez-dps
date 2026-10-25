@@ -3,7 +3,7 @@
  *
  * Usage: node scripts/verifyAll.mjs [scripts...] [--jobs N] [--base URL] [--keep-screenshots]
  *   scripts            names or paths: verifyPhase37b, scripts/verifyPhase21.mjs, 37b (= verifyPhase37b); default: every
- *                      scripts/verifyPhase*.mjs
+ *                      scripts/verifyPhase*.mjs (scripts/stale/ excluded; --all includes them)
  *   --jobs N           scripts at once (default 3; each launches its own browser — fresh localStorage — and plans in the
  *                      page's helper workers, so time limits inside a script are tighter with more jobs)
  *   --base URL         passed to each script as its base URL (default: each script's own, http://localhost:3001/osrs-dps/)
@@ -40,7 +40,10 @@ const resolveScript = (a) => {
 };
 const scripts = asked.length
   ? asked.map(resolveScript)
-  : readdirSync(path.join(root, 'scripts')).filter((f) => /^verifyPhase.*\.mjs$/.test(f)).sort(natural).map((f) => path.join(root, 'scripts', f));
+  : [...readdirSync(path.join(root, 'scripts')).filter((f) => /^verifyPhase.*\.mjs$/.test(f)).map((f) => path.join(root, 'scripts', f)),
+    ...(process.argv.includes('--all') && existsSync(path.join(root, 'scripts', 'stale'))
+      ? readdirSync(path.join(root, 'scripts', 'stale')).filter((f) => /^verifyPhase.*\.mjs$/.test(f)).map((f) => path.join(root, 'scripts', 'stale', f)) : [])]
+    .sort((a, b) => natural(path.basename(a), path.basename(b)));
 
 const git = (...a) => execFileSync('git', a, { cwd: root, encoding: 'utf8' });
 const modifiedShots = () => git('diff', '--name-only', '--', 'docs/screenshots').split('\n').filter(Boolean);

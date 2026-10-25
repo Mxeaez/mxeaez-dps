@@ -62,7 +62,8 @@ per-phase strings that moved.
 
 - CI: `.github/workflows/ci.yml` runs the fast suite + lint + tsc on every push / PR to `main-mxeaez` (no slow suites,
   no Playwright); the deploy is still Cloudflare's build on push (docs/DEPLOY.md).
-- Known stale verify scripts (fail at HEAD 37 too, checks written for older defaults): verifyPhase13, 14, 16, 17, 18,
+- Stale verify scripts live in `scripts/stale/` (excluded from `verifyAll` unless `--all`). A verify script that fails
+  at HEAD is fixed or retired in the phase that broke it, never left. Stale today: verifyPhase13, 14, 16, 17, 18,
   19, 20, 24, 25. `node scripts/verifyAll.mjs` runs them anyway; judge a phase by the scripts it touched and 21-37b.
 
 ## Rules (the ones that bite)
@@ -71,7 +72,9 @@ per-phase strings that moved.
 - **Never `yarn build` while `yarn dev` runs** (corrupts `.next`); delete `.next` before and after a build.
 - **Restore tracked screenshots** the verify scripts overwrite (verifyAll does; by hand: `git checkout -- docs/screenshots/<names>`);
   commit only the screenshots the phase means to change. Leave the user's untracked review screenshots alone.
-- **Don't commit probes** (scratch tests, logs, temp scripts); keep them in the scratchpad.
+- **Don't commit one-off probes** (scratch tests, logs, temp scripts); keep them in the scratchpad. The three reusable
+  probes (brute-force kits, re-time vs headlines.json, drain outcome table) live in `scripts/probes/` once phase 37c
+  lands and are kept working; use them before writing a new one.
 - **Generic User-Agent** for the wiki (`mxeaez-dps (private fork of osrs-dps-calc)`), never personal info.
 - Minimal upstream edits (`docs/UPSTREAM_MERGE.md` lists them); new code in fork files.
 - Small phases (UI / tooling) write a PROGRESS line and the docs they touch; the full docs sweep is the final review's
@@ -89,3 +92,44 @@ per-phase strings that moved.
    (`recomputed` in `src/tests/utils/crossRaidHeadlines.ts`); it must equal the plan's total.
 4. Bit-identity: a phase that claims "no result changed" must leave `phase37/*.json` and `headlines.json` untouched.
 5. UI: the verify scripts the phase touched (verifyAll), screenshots looked at, not just "OK" lines.
+
+## Workflow rules (audit, 2026-10-25)
+
+- **Read less.** Start here, then the ONE ROADMAP row you were given and the top 2 PROGRESS entries. Grep the long docs.
+- **Briefs** are at most 15 lines: the ROADMAP row number, 3-5 sentences of scope, the files / tests to touch, what must
+  NOT change (e.g. "bit-identical to phase37/*.json"), the agent to use. No rules pasted from CLAUDE.md / this page.
+  Fix-round briefs are "file:line - fix" lists.
+- **Phase sizing.** A ROADMAP row with more than one independent mechanism, or an expected diff over ~30 files, is split
+  before building; the pin re-capture goes in the second half.
+- **Slow suite** only for a phase that changes src/lib maths, pools, planner, time model or specs, only the files the
+  change can reach (CrossRaidHeadlines* for kit / time changes; Phase27 / Phase37 for planner memo / ring changes), once,
+  just before the commit. UI / tooling / docs phases: never. `node scripts/pinHeadlines.mjs --full --check` (~4 min) is
+  the proof of a "no result changed" claim.
+- **Verify scripts**: only the ones the phase touched (`node scripts/verifyAll.mjs 36 37`); the full set at final reviews.
+- **Docs.** Phases that move no number write PROGRESS only. Numbers phases update BEST_SETUP (own section) and
+  DATA_SOURCES / UNVERIFIED only if a source or an unverified field changed. README / ROADMAP only via pinHeadlines or at
+  the final review. PROGRESS entries older than the previous round move to `docs/archive/`.
+- **Fix rounds.** A builder self-check (re-run the named tests + lint, quote the diff in the report) suffices when the
+  fix is wording, UI, a doc, a guard that cannot change a pinned number, or `pinHeadlines --full --check` shows no
+  change. A diff-scoped re-review is required when any pinned total, spec count, hit chance or kit moved, or the fix adds
+  a rule that changes a drain / budget decision.
+- **Reviewers** (numbers phases only) never run the slow suite, the full fast suite, lint or verifyAll unless a number
+  in their own probe disagrees with the builder's; they read `git show --stat` and the PROGRESS entry for what was run.
+  A re-review reads only `git diff <reviewed-commit>..HEAD`, checks each finding is closed, re-runs only the tests of
+  changed files, and re-does the numeric protocol only if the diff touches src/lib maths, pools or the time model.
+  Reviews under 1200 words; re-reviews under 600.
+
+### Builder checklist
+1. Read this page + the one row + top 2 PROGRESS entries; nothing else long.
+2. More than one mechanism or ~30+ files? Stop and propose a split.
+3. Tests with hand-computed expectations first, for every behaviour change.
+4. Numbers phase: change code, `pinHeadlines --full`, read the diff, explain every moved total in PROGRESS.
+5. Reachable slow suite files once, then verifyAll for touched scripts, then tsc, lint last.
+6. PROGRESS entry (+ BEST_SETUP section if numbers moved); no other docs.
+7. Commit `phase N: ...`, never push; report commands run and results in under 600 words.
+
+### Reviewer checklist (numbers phases)
+1. Read the PROGRESS entry and `git show --stat`; do not re-run what they list as passing.
+2. Run the committed probes (re-time, drain outcome, brute-force kits) and one hand recomputation of a headline encounter.
+3. Check bit-identity claims with `pinHeadlines --full --check`.
+4. Look at changed screenshots if UI moved; findings as severity, file:line, exact fix; under 1200 words (600 for a re-review).

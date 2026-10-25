@@ -1,3 +1,4 @@
+// STALE: checks written for pre-phase-29 defaults; fails at HEAD. Run with `node scripts/verifyAll.mjs --all` only.
 /**
  * Phase 16 UI check (not part of the Jest run): the route comparison on /best-setup (raid time model).
  * Phase 23: the Routes tab is merged into Plan: the route table is the Plan result's (the planned kit on every route), the

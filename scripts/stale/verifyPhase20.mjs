@@ -1,3 +1,4 @@
+// STALE: checks written for pre-phase-29 defaults; fails at HEAD. Run with `node scripts/verifyAll.mjs --all` only.
 /**
  * Phase 20 UI check (not part of the Jest run): the Theatre of Blood tab on /best-setup.
  *
