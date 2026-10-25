@@ -1,0 +1,914 @@
+{
+ "cancelled": false,
+ "kit": [
+  {
+   "label": "Ascension crossbows + diamond (e) (Masori)",
+   "kind": "preset",
+   "group": "ranged",
+   "equipment": {
+    "head": {
+     "id": 27235,
+     "name": "Masori mask (f)",
+     "version": "",
+     "slot": "head"
+    },
+    "body": {
+     "id": 27238,
+     "name": "Masori body (f)",
+     "version": "",
+     "slot": "body"
+    },
+    "legs": {
+     "id": 27241,
+     "name": "Masori chaps (f)",
+     "version": "",
+     "slot": "legs"
+    },
+    "cape": {
+     "id": 28951,
+     "name": "Dizana's quiver",
+     "version": "Charged",
+     "slot": "cape"
+    },
+    "neck": {
+     "id": 33639,
+     "name": "Necklace of rupture",
+     "version": "",
+     "slot": "neck"
+    },
+    "hands": {
+     "id": 26235,
+     "name": "Zaryte vambraces",
+     "version": "",
+     "slot": "hands"
+    },
+    "feet": {
+     "id": 31097,
+     "name": "Avernic treads (max)",
+     "version": "",
+     "slot": "feet"
+    },
+    "ring": {
+     "id": 28307,
+     "name": "Ultor ring",
+     "version": "",
+     "slot": "ring"
+    },
+    "weapon": {
+     "id": 34681,
+     "name": "Ascension crossbows",
+     "version": "",
+     "slot": "weapon",
+     "twoHanded": true
+    },
+    "ammo": {
+     "id": 34696,
+     "name": "Diamond ascension bolts (e)",
+     "version": "",
+     "slot": "ammo"
+    }
+   },
+   "options": [
+    {
+     "style": {
+      "name": "Accurate",
+      "type": "ranged",
+      "stance": "Accurate"
+     },
+     "spell": null
+    },
+    {
+     "style": {
+      "name": "Rapid",
+      "type": "ranged",
+      "stance": "Rapid"
+     },
+     "spell": null
+    }
+   ],
+   "source": "preset",
+   "key": "ranged|27235,28951,33639,34696,34681,27238,0,27241,26235,31097,28307"
+  },
+  {
+   "label": "Twisted bow (Masori)",
+   "kind": "preset",
+   "group": "ranged",
+   "equipment": {
+    "head": {
+     "id": 27235,
+     "name": "Masori mask (f)",
+     "version": "",
+     "slot": "head"
+    },
+    "body": {
+     "id": 27238,
+     "name": "Masori body (f)",
+     "version": "",
+     "slot": "body"
+    },
+    "legs": {
+     "id": 27241,
+     "name": "Masori chaps (f)",
+     "version": "",
+     "slot": "legs"
+    },
+    "cape": {
+     "id": 28951,
+     "name": "Dizana's quiver",
+     "version": "Charged",
+     "slot": "cape"
+    },
+    "neck": {
+     "id": 33639,
+     "name": "Necklace of rupture",
+     "version": "",
+     "slot": "neck"
+    },
+    "hands": {
+     "id": 26235,
+     "name": "Zaryte vambraces",
+     "version": "",
+     "slot": "hands"
+    },
+    "feet": {
+     "id": 31097,
+     "name": "Avernic treads (max)",
+     "version": "",
+     "slot": "feet"
+    },
+    "ring": {
+     "id": 28307,
+     "name": "Ultor ring",
+     "version": "",
+     "slot": "ring"
+    },
+    "weapon": {
+     "id": 20997,
+     "name": "Twisted bow",
+     "version": "",
+     "slot": "weapon",
+     "twoHanded": true
+    },
+    "ammo": {
+     "id": 33595,
+     "name": "Seeking dragon arrow",
+     "version": "",
+     "slot": "ammo"
+    }
+   },
+   "options": [
+    {
+     "style": {
+      "name": "Accurate",
+      "type": "ranged",
+      "stance": "Accurate"
+     },
+     "spell": null
+    },
+    {
+     "style": {
+      "name": "Rapid",
+      "type": "ranged",
+      "stance": "Rapid"
+     },
+     "spell": null
+    }
+   ],
+   "source": "preset",
+   "key": "ranged|27235,28951,33639,33595,20997,27238,0,27241,26235,31097,28307"
+  },
+  {
+   "label": "Inquisitor's + Obligator",
+   "kind": "preset",
+   "group": "melee",
+   "equipment": {
+    "cape": {
+     "id": 21295,
+     "name": "Infernal cape",
+     "version": "Normal",
+     "slot": "cape"
+    },
+    "neck": {
+     "id": 29801,
+     "name": "Amulet of rancour",
+     "version": "",
+     "slot": "neck"
+    },
+    "hands": {
+     "id": 22981,
+     "name": "Ferocious gloves",
+     "version": "",
+     "slot": "hands"
+    },
+    "feet": {
+     "id": 31097,
+     "name": "Avernic treads (max)",
+     "version": "",
+     "slot": "feet"
+    },
+    "ring": {
+     "id": 28307,
+     "name": "Ultor ring",
+     "version": "",
+     "slot": "ring"
+    },
+    "head": {
+     "id": 24419,
+     "name": "Inquisitor's great helm",
+     "version": "",
+     "slot": "head"
+    },
+    "body": {
+     "id": 24420,
+     "name": "Inquisitor's hauberk",
+     "version": "",
+     "slot": "body"
+    },
+    "legs": {
+     "id": 24421,
+     "name": "Inquisitor's plateskirt",
+     "version": "",
+     "slot": "legs"
+    },
+    "weapon": {
+     "id": 34715,
+     "name": "Obligator",
+     "version": "Charged",
+     "slot": "weapon",
+     "twoHanded": true
+    }
+   },
+   "options": [
+    {
+     "style": {
+      "name": "Thrust",
+      "type": "crush",
+      "stance": "Accurate"
+     },
+     "spell": null
+    },
+    {
+     "style": {
+      "name": "Thrust",
+      "type": "crush",
+      "stance": "Aggressive"
+     },
+     "spell": null
+    },
+    {
+     "style": {
+      "name": "Smash",
+      "type": "crush",
+      "stance": "Aggressive"
+     },
+     "spell": null
+    }
+   ],
+   "source": "preset",
+   "key": "melee|24419,21295,29801,0,34715,24420,0,24421,22981,31097,28307"
+  }
+ ],
+ "kitMarginal": [
+  {
+   "slots": 1,
+   "seconds": 9.12766200636861
+  },
+  {
+   "slots": 1,
+   "seconds": 55.843800000382544
+  },
+  {
+   "slots": 8,
+   "seconds": "Infinity"
+  }
+ ],
+ "slots": {
+  "total": 28,
+  "supplies": 12,
+  "nonItem": 1,
+  "carriedItems": 23,
+  "wornItems": 10,
+  "minLoadoutItems": 10,
+  "keptAmmo": 0,
+  "inventoryItems": 13,
+  "swapReserve": 0,
+  "quiverAmmo": 1,
+  "used": 25,
+  "free": 3,
+  "overfull": false
+ },
+ "inventory": [
+  {
+   "kind": "supply",
+   "label": "Saradomin brew",
+   "supply": "brew"
+  },
+  {
+   "kind": "supply",
+   "label": "Saradomin brew",
+   "supply": "brew"
+  },
+  {
+   "kind": "supply",
+   "label": "Saradomin brew",
+   "supply": "brew"
+  },
+  {
+   "kind": "supply",
+   "label": "Saradomin brew",
+   "supply": "brew"
+  },
+  {
+   "kind": "supply",
+   "label": "Saradomin brew",
+   "supply": "brew"
+  },
+  {
+   "kind": "supply",
+   "label": "Saradomin brew",
+   "supply": "brew"
+  },
+  {
+   "kind": "supply",
+   "label": "Super restore",
+   "supply": "restore"
+  },
+  {
+   "kind": "supply",
+   "label": "Super restore",
+   "supply": "restore"
+  },
+  {
+   "kind": "supply",
+   "label": "Super restore",
+   "supply": "restore"
+  },
+  {
+   "kind": "supply",
+   "label": "Super restore",
+   "supply": "restore"
+  },
+  {
+   "kind": "supply",
+   "label": "Ranging potion",
+   "supply": "ranging"
+  },
+  {
+   "kind": "supply",
+   "label": "Super combat",
+   "supply": "superCombat"
+  },
+  {
+   "kind": "switch",
+   "label": "Inquisitor's great helm",
+   "item": {
+    "id": 24419,
+    "name": "Inquisitor's great helm",
+    "version": "",
+    "slot": "head"
+   },
+   "group": "melee"
+  },
+  {
+   "kind": "switch",
+   "label": "Infernal cape",
+   "item": {
+    "id": 21295,
+    "name": "Infernal cape",
+    "version": "Normal",
+    "slot": "cape"
+   },
+   "group": "melee"
+  },
+  {
+   "kind": "switch",
+   "label": "Amulet of rancour",
+   "item": {
+    "id": 29801,
+    "name": "Amulet of rancour",
+    "version": "",
+    "slot": "neck"
+   },
+   "group": "melee"
+  },
+  {
+   "kind": "switch",
+   "label": "Obligator",
+   "item": {
+    "id": 34715,
+    "name": "Obligator",
+    "version": "Charged",
+    "slot": "weapon",
+    "twoHanded": true
+   },
+   "group": "melee"
+  },
+  {
+   "kind": "switch",
+   "label": "Inquisitor's hauberk",
+   "item": {
+    "id": 24420,
+    "name": "Inquisitor's hauberk",
+    "version": "",
+    "slot": "body"
+   },
+   "group": "melee"
+  },
+  {
+   "kind": "switch",
+   "label": "Inquisitor's plateskirt",
+   "item": {
+    "id": 24421,
+    "name": "Inquisitor's plateskirt",
+    "version": "",
+    "slot": "legs"
+   },
+   "group": "melee"
+  },
+  {
+   "kind": "switch",
+   "label": "Ferocious gloves",
+   "item": {
+    "id": 22981,
+    "name": "Ferocious gloves",
+    "version": "",
+    "slot": "hands"
+   },
+   "group": "melee"
+  },
+  {
+   "kind": "switch",
+   "label": "Twisted bow",
+   "item": {
+    "id": 20997,
+    "name": "Twisted bow",
+    "version": "",
+    "slot": "weapon",
+    "twoHanded": true
+   },
+   "group": "ranged"
+  },
+  {
+   "kind": "spec",
+   "label": "Tonalztics of Ralos",
+   "item": {
+    "id": 28922,
+    "name": "Tonalztics of Ralos",
+    "version": "Charged",
+    "slot": "weapon"
+   }
+  },
+  {
+   "kind": "spec",
+   "label": "Zaryte crossbow",
+   "item": {
+    "id": 26374,
+    "name": "Zaryte crossbow",
+    "version": "",
+    "slot": "weapon"
+   }
+  },
+  {
+   "kind": "spec",
+   "label": "Burning claws",
+   "item": {
+    "id": 29577,
+    "name": "Burning claws",
+    "version": "",
+    "slot": "weapon",
+    "twoHanded": true
+   }
+  },
+  {
+   "kind": "spec",
+   "label": "Surge potion(4)",
+   "item": {
+    "id": -9101,
+    "name": "Surge potion(4)",
+    "version": "",
+    "slot": "ring"
+   }
+  },
+  {
+   "kind": "non-item",
+   "label": "Rune pouch"
+  },
+  {
+   "kind": "free",
+   "label": "Free slot"
+  },
+  {
+   "kind": "free",
+   "label": "Free slot"
+  },
+  {
+   "kind": "free",
+   "label": "Free slot"
+  }
+ ],
+ "specItems": [
+  {
+   "id": 28922,
+   "name": "Tonalztics of Ralos",
+   "version": "Charged",
+   "slot": "weapon"
+  },
+  {
+   "id": 26374,
+   "name": "Zaryte crossbow",
+   "version": "",
+   "slot": "weapon"
+  },
+  {
+   "id": 29577,
+   "name": "Burning claws",
+   "version": "",
+   "slot": "weapon",
+   "twoHanded": true
+  },
+  {
+   "id": -9101,
+   "name": "Surge potion(4)",
+   "version": "",
+   "slot": "ring"
+  }
+ ],
+ "pinnedItems": [],
+ "comparison": "7ba482c76c651cd8dd4a64e622e05134853371f48ae4787f40e3ca15d055fd12",
+ "planned": 1,
+ "rejected": [],
+ "alternatives": [
+  {
+   "label": "melee + ranged + magic: Tumeken's shadow (Ancestral) / Inquisitor's + Obligator / Harmonised Nightmare staff / Harmonised Nightmare staff #3 / Twisted bow (Masori)",
+   "kind": "alternative",
+   "deltaSeconds": -9.12766200636861,
+   "deltaSlots": 11,
+   "reason": "does not fit (36 of 28 slots)",
+   "weapons": [
+    "Tumeken's shadow",
+    "Obligator",
+    "Harmonised Nightmare staff",
+    "Harmonised Nightmare staff",
+    "Twisted bow"
+   ]
+  },
+  {
+   "label": "melee + magic: Tumeken's shadow (Ancestral) / Inquisitor's + Obligator / Harmonised Nightmare staff / Harmonised Nightmare staff #3",
+   "kind": "alternative",
+   "deltaSeconds": -84.7120567884599,
+   "deltaSlots": 3,
+   "reason": "84.7 s slower",
+   "weapons": [
+    "Tumeken's shadow",
+    "Obligator",
+    "Harmonised Nightmare staff",
+    "Harmonised Nightmare staff"
+   ]
+  },
+  {
+   "label": "ranged + magic: Tumeken's shadow (Ancestral) / Twisted bow (Masori) / Ascension crossbows + diamond (e) (Masori) / Ascension crossbows + onyx (e) (Masori)",
+   "kind": "alternative",
+   "deltaSeconds": -385.3844084812615,
+   "deltaSlots": 1,
+   "reason": "385.4 s slower",
+   "weapons": [
+    "Tumeken's shadow",
+    "Twisted bow",
+    "Ascension crossbows",
+    "Ascension crossbows"
+   ]
+  },
+  {
+   "label": "magic: Tumeken's shadow (Ancestral) / Harmonised Nightmare staff / Harmonised Nightmare staff #3",
+   "kind": "alternative",
+   "deltaSeconds": -863.9388278155002,
+   "deltaSlots": -5,
+   "reason": "863.9 s slower",
+   "weapons": [
+    "Tumeken's shadow",
+    "Harmonised Nightmare staff",
+    "Harmonised Nightmare staff"
+   ]
+  },
+  {
+   "label": "melee: Inquisitor's + Obligator",
+   "kind": "alternative",
+   "deltaSeconds": "-Infinity",
+   "deltaSlots": -9,
+   "reason": "cannot clear the route",
+   "weapons": [
+    "Obligator"
+   ]
+  },
+  {
+   "label": "ranged: Ascension crossbows + diamond (e) (Masori)",
+   "kind": "alternative",
+   "deltaSeconds": "-Infinity",
+   "deltaSlots": -9,
+   "reason": "cannot clear the route",
+   "weapons": [
+    "Ascension crossbows"
+   ]
+  }
+ ],
+ "potions": [
+  {
+   "type": "superCombat",
+   "label": "Super combat",
+   "group": "melee"
+  },
+  {
+   "type": "ranging",
+   "label": "Ranging potion",
+   "group": "ranged"
+  }
+ ],
+ "quiverAmmo": {
+  "id": 33595,
+  "name": "Seeking dragon arrow",
+  "version": "",
+  "slot": "ammo"
+ },
+ "keptAmmo": null,
+ "specs": {
+  "mode": "auto",
+  "drain": "solo",
+  "bring": [
+   "tonalztics"
+  ],
+  "text": "Bring: Tonalztics, Zaryte crossbow, Burning claws, Surge potion",
+  "damage": [
+   "zcb",
+   "burningClaws"
+  ],
+  "surgePotions": 1,
+  "surgeAt": [
+   "Archive Guardian",
+   "Moia"
+  ],
+  "items": [
+   {
+    "item": "Zaryte crossbow",
+    "saved": 20.315754322574776,
+    "slots": 1,
+    "how": "a free slot"
+   },
+   {
+    "item": "Surge potion(4)",
+    "saved": 10.576966211634044,
+    "slots": 1,
+    "how": "a free slot"
+   },
+   {
+    "item": "Burning claws",
+    "saved": 6.0758471374588225,
+    "slots": 1,
+    "how": "a free slot"
+   }
+  ],
+  "solo": {
+   "perWeapon": [
+    {
+     "weapon": "elderMaul",
+     "chosen": false,
+     "deltaSeconds": 0.5691885555897898,
+     "deltaSlots": 1
+    },
+    {
+     "weapon": "dwh",
+     "chosen": false,
+     "deltaSeconds": 0.5691885555897898,
+     "deltaSlots": 1
+    },
+    {
+     "weapon": "bgs",
+     "chosen": false,
+     "deltaSeconds": 0,
+     "deltaSlots": 1
+    },
+    {
+     "weapon": "tonalztics",
+     "chosen": true,
+     "deltaSeconds": 202.76095541932432,
+     "deltaSlots": 1
+    },
+    {
+     "weapon": "ayak",
+     "chosen": false,
+     "deltaSeconds": 0,
+     "deltaSlots": 1
+    }
+   ],
+   "bestRejected": {
+    "weapon": "elderMaul",
+    "chosen": false,
+    "deltaSeconds": 0.5691885555897898,
+    "deltaSlots": 1
+   },
+   "signatures": 16,
+   "pruned": 0,
+   "bestWithout": [
+    {
+     "weapon": "tonalztics",
+     "weapons": [
+      "elderMaul",
+      "ayak"
+     ],
+     "seconds": 1438.923871779933
+    }
+   ],
+   "evaluated": 17,
+   "screenedWith": [
+    "tonalztics"
+   ],
+   "ringRounds": 1
+  },
+  "notes": []
+ },
+ "ring": {
+  "policy": "camp-one",
+  "ring": "Ultor ring",
+  "screened": [
+   {
+    "ring": "Ultor ring",
+    "seconds": 1319.0208018028497,
+    "full": true
+   },
+   {
+    "ring": "Bellator ring",
+    "seconds": 1368.9436689114295,
+    "full": true
+   },
+   {
+    "ring": "Ring of shadows",
+    "seconds": 1423.2389763978726,
+    "full": false,
+    "atLeast": 0
+   },
+   {
+    "ring": "Venator ring",
+    "seconds": 1426.9873034832121,
+    "full": false,
+    "atLeast": 0
+   },
+   {
+    "ring": "Lightbearer",
+    "seconds": 1453.7544352526397,
+    "full": false,
+    "atLeast": 0
+   },
+   {
+    "ring": "Magus ring",
+    "seconds": 1453.7544352526397,
+    "full": false,
+    "atLeast": 0
+   }
+  ]
+ },
+ "matrixDps": {
+  "ag-flying|": 10.846340471598758,
+  "ag-grounded|": 13.06109641218821,
+  "ezekiel|": 14.013762844610529,
+  "moia|": 11.036477579707563,
+  "dagonhai|Shielded (shield gauge)": 13.742889868412762,
+  "ocellus-p1|At a corner": 12.447495453931639,
+  "ocellus-p3|Quadrants 1-3": 12.856185391073009,
+  "ocellus-p3|Last quadrant: Deflect Melee": 8.166997701078248,
+  "ocellus-p3|Last quadrant: Deflect Ranged": 11.082554084919341,
+  "xarth|": 13.91696785949811,
+  "dreadnoth|": 15.559086291142291,
+  "bork|Smorks 100-76% HP (armour 8)": 9.379526486721142,
+  "bork|Smorks 75-51% HP (armour 10)": 8.899361146393035,
+  "bork|Smorks 50-26% HP (armour 12)": 8.289607300614751,
+  "bork|Smorks 25-0% HP (armour 14)": 7.81778359666889,
+  "smorks|": 9.465510123249885
+ },
+ "unusedCarried": [],
+ "excluded": [],
+ "droppedPinned": [],
+ "ownershipNotices": [],
+ "searchRows": "ed221c142a9da519f5dff841dfe4df0c9622f32a984eb345583c6b3afc6da749",
+ "objectiveSeconds": 1319.0208018028497,
+ "fightSeconds": {
+  "archive-guardian": 230,
+  "ezekiel": 229,
+  "moia": 79,
+  "dagonhai": 268,
+  "ocellus": 600,
+  "xarth": 203,
+  "dreadnoth": 151,
+  "bork-smorks": 281
+ },
+ "plannedRoute": {
+  "id": "archive-guardian>ezekiel>moia>xarth>ocellus",
+  "seconds": 1319.0208018028497,
+  "surgeDoses": [
+   "archive-guardian",
+   "moia"
+  ],
+  "encounters": [
+   {
+    "id": "archive-guardian",
+    "seconds": 180.67187314513612,
+    "events": [
+     {
+      "npc": "Archive Guardian",
+      "firstRowKey": "ag-shield",
+      "counts": {
+       "tonalztics": 2
+      }
+     }
+    ],
+    "damage": {
+     "ag-grounded": {
+      "zcb": 1
+     }
+    },
+    "surge": true
+   },
+   {
+    "id": "ezekiel",
+    "seconds": 211.6056110879632,
+    "events": [
+     {
+      "npc": "Ezekiel",
+      "firstRowKey": "ezekiel",
+      "counts": {
+       "tonalztics": 2
+      }
+     }
+    ],
+    "damage": {
+     "ezekiel": {
+      "burningClaws": 2
+     }
+    },
+    "surge": false
+   },
+   {
+    "id": "moia",
+    "seconds": 65.3150638052674,
+    "events": [
+     {
+      "npc": "Moia",
+      "firstRowKey": "moia",
+      "counts": {
+       "tonalztics": 1
+      }
+     }
+    ],
+    "damage": {
+     "moia": {
+      "zcb": 1
+     }
+    },
+    "surge": true
+   },
+   {
+    "id": "xarth",
+    "seconds": 181.61583763619933,
+    "events": [
+     {
+      "npc": "Xarth",
+      "firstRowKey": "xarth",
+      "counts": {
+       "tonalztics": 1
+      }
+     }
+    ],
+    "damage": {
+     "xarth": {
+      "zcb": 1,
+      "burningClaws": 1
+     }
+    },
+    "surge": false
+   },
+   {
+    "id": "ocellus",
+    "seconds": 679.8124161282838,
+    "events": [
+     {
+      "npc": "Ocellus",
+      "firstRowKey": "ocellus-p1",
+      "counts": {
+       "tonalztics": 2
+      }
+     }
+    ],
+    "damage": {
+     "ocellus-p1": {
+      "burningClaws": 1
+     },
+     "ocellus-p3": {
+      "burningClaws": 1
+     },
+     "ocellus-p3-last": {
+      "zcb": 2
+     }
+    },
+    "surge": false
+   }
+  ]
+ }
+}

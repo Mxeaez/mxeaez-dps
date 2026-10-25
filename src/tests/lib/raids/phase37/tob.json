@@ -1,0 +1,1231 @@
+{
+ "cancelled": false,
+ "kit": [
+  {
+   "label": "Ascension crossbows + Onyx ascension bolts (e)",
+   "kind": "search",
+   "group": "ranged",
+   "equipment": {
+    "weapon": {
+     "id": 34681,
+     "name": "Ascension crossbows",
+     "version": "",
+     "slot": "weapon",
+     "twoHanded": true
+    },
+    "head": {
+     "id": 11664,
+     "name": "Void ranger helm",
+     "version": "Normal",
+     "slot": "head"
+    },
+    "body": {
+     "id": 13072,
+     "name": "Elite void top",
+     "version": "Normal",
+     "slot": "body"
+    },
+    "legs": {
+     "id": 13073,
+     "name": "Elite void robe",
+     "version": "Normal",
+     "slot": "legs"
+    },
+    "cape": {
+     "id": 28951,
+     "name": "Dizana's quiver",
+     "version": "Charged",
+     "slot": "cape"
+    },
+    "neck": {
+     "id": 33639,
+     "name": "Necklace of rupture",
+     "version": "",
+     "slot": "neck"
+    },
+    "hands": {
+     "id": 8842,
+     "name": "Void knight gloves",
+     "version": "Normal",
+     "slot": "hands"
+    },
+    "feet": {
+     "id": 31097,
+     "name": "Avernic treads (max)",
+     "version": "",
+     "slot": "feet"
+    },
+    "ring": {
+     "id": 28307,
+     "name": "Ultor ring",
+     "version": "",
+     "slot": "ring"
+    },
+    "ammo": {
+     "id": 34708,
+     "name": "Onyx ascension bolts (e)",
+     "version": "",
+     "slot": "ammo"
+    }
+   },
+   "options": [
+    {
+     "style": {
+      "name": "Rapid",
+      "type": "ranged",
+      "stance": "Rapid"
+     },
+     "spell": null
+    }
+   ],
+   "source": "search: The Maiden of Sugadinti",
+   "key": "ranged|11664,28951,33639,34708,34681,13072,0,13073,8842,31097,28307"
+  },
+  {
+   "label": "Torva helm + Oathplate + Scythe (slash)",
+   "kind": "preset",
+   "group": "melee",
+   "equipment": {
+    "cape": {
+     "id": 21295,
+     "name": "Infernal cape",
+     "version": "Normal",
+     "slot": "cape"
+    },
+    "neck": {
+     "id": 29801,
+     "name": "Amulet of rancour",
+     "version": "",
+     "slot": "neck"
+    },
+    "hands": {
+     "id": 22981,
+     "name": "Ferocious gloves",
+     "version": "",
+     "slot": "hands"
+    },
+    "feet": {
+     "id": 31097,
+     "name": "Avernic treads (max)",
+     "version": "",
+     "slot": "feet"
+    },
+    "ring": {
+     "id": 28307,
+     "name": "Ultor ring",
+     "version": "",
+     "slot": "ring"
+    },
+    "head": {
+     "id": 26382,
+     "name": "Torva full helm",
+     "version": "Restored",
+     "slot": "head"
+    },
+    "body": {
+     "id": 30753,
+     "name": "Oathplate chest",
+     "version": "",
+     "slot": "body"
+    },
+    "legs": {
+     "id": 30756,
+     "name": "Oathplate legs",
+     "version": "",
+     "slot": "legs"
+    },
+    "weapon": {
+     "id": 22325,
+     "name": "Scythe of Vitur",
+     "version": "Charged",
+     "slot": "weapon",
+     "twoHanded": true
+    }
+   },
+   "options": [
+    {
+     "style": {
+      "name": "Reap",
+      "type": "slash",
+      "stance": "Accurate"
+     },
+     "spell": null
+    },
+    {
+     "style": {
+      "name": "Chop",
+      "type": "slash",
+      "stance": "Aggressive"
+     },
+     "spell": null
+    }
+   ],
+   "source": "preset",
+   "key": "melee|26382,21295,29801,0,22325,30753,0,30756,22981,31097,28307"
+  },
+  {
+   "label": "Torva helm + Oathplate + Scythe (slash) + Salve amulet(ei)",
+   "kind": "partial",
+   "group": "melee",
+   "equipment": {
+    "cape": {
+     "id": 21295,
+     "name": "Infernal cape",
+     "version": "Normal",
+     "slot": "cape"
+    },
+    "neck": {
+     "id": 12018,
+     "name": "Salve amulet(ei)",
+     "version": "",
+     "slot": "neck"
+    },
+    "hands": {
+     "id": 22981,
+     "name": "Ferocious gloves",
+     "version": "",
+     "slot": "hands"
+    },
+    "feet": {
+     "id": 31097,
+     "name": "Avernic treads (max)",
+     "version": "",
+     "slot": "feet"
+    },
+    "ring": {
+     "id": 28307,
+     "name": "Ultor ring",
+     "version": "",
+     "slot": "ring"
+    },
+    "head": {
+     "id": 26382,
+     "name": "Torva full helm",
+     "version": "Restored",
+     "slot": "head"
+    },
+    "body": {
+     "id": 30753,
+     "name": "Oathplate chest",
+     "version": "",
+     "slot": "body"
+    },
+    "legs": {
+     "id": 30756,
+     "name": "Oathplate legs",
+     "version": "",
+     "slot": "legs"
+    },
+    "weapon": {
+     "id": 22325,
+     "name": "Scythe of Vitur",
+     "version": "Charged",
+     "slot": "weapon",
+     "twoHanded": true
+    }
+   },
+   "options": [
+    {
+     "style": {
+      "name": "Reap",
+      "type": "slash",
+      "stance": "Accurate"
+     },
+     "spell": null
+    },
+    {
+     "style": {
+      "name": "Chop",
+      "type": "slash",
+      "stance": "Aggressive"
+     },
+     "spell": null
+    }
+   ],
+   "source": "Torva helm + Oathplate + Scythe (slash) with Salve amulet(ei) (neck, from Torva + Salve (ei) + Scythe (slash))",
+   "base": "Torva helm + Oathplate + Scythe (slash)",
+   "partner": "Torva + Salve (ei) + Scythe (slash)",
+   "pieces": [
+    "neck"
+   ],
+   "key": "melee|26382,21295,12018,0,22325,30753,0,30756,22981,31097,28307"
+  },
+  {
+   "label": "Dawnbringer switch +5 on Torva helm + Oathplate + Scythe (slash)",
+   "kind": "partial",
+   "group": "magic",
+   "equipment": {
+    "cape": {
+     "id": 21295,
+     "name": "Infernal cape",
+     "version": "Normal",
+     "slot": "cape"
+    },
+    "neck": {
+     "id": 12002,
+     "name": "Occult necklace",
+     "version": "",
+     "slot": "neck"
+    },
+    "hands": {
+     "id": 31106,
+     "name": "Confliction gauntlets",
+     "version": "",
+     "slot": "hands"
+    },
+    "feet": {
+     "id": 31097,
+     "name": "Avernic treads (max)",
+     "version": "",
+     "slot": "feet"
+    },
+    "ring": {
+     "id": 28307,
+     "name": "Ultor ring",
+     "version": "",
+     "slot": "ring"
+    },
+    "head": {
+     "id": 21018,
+     "name": "Ancestral hat",
+     "version": "",
+     "slot": "head"
+    },
+    "body": {
+     "id": 21021,
+     "name": "Ancestral robe top",
+     "version": "",
+     "slot": "body"
+    },
+    "legs": {
+     "id": 21024,
+     "name": "Ancestral robe bottom",
+     "version": "",
+     "slot": "legs"
+    },
+    "weapon": {
+     "id": 22516,
+     "name": "Dawnbringer",
+     "version": "",
+     "slot": "weapon"
+    },
+    "shield": {
+     "id": 27251,
+     "name": "Elidinis' ward (f)",
+     "version": "",
+     "slot": "shield"
+    }
+   },
+   "options": [
+    {
+     "style": {
+      "name": "Accurate",
+      "type": "magic",
+      "stance": "Accurate"
+     },
+     "spell": null
+    }
+   ],
+   "source": "Torva helm + Oathplate + Scythe (slash) → Dawnbringer: Occult necklace, Confliction gauntlets, Ancestral hat, Ancestral robe top, Ancestral robe bottom",
+   "base": "Torva helm + Oathplate + Scythe (slash)",
+   "partner": "Dawnbringer",
+   "pieces": [
+    "neck",
+    "hands",
+    "head",
+    "body",
+    "legs"
+   ],
+   "key": "magic|21018,21295,12002,0,22516,21021,27251,21024,31106,31097,28307"
+  },
+  {
+   "label": "Tumeken's shadow (Ancestral)",
+   "kind": "preset",
+   "group": "magic",
+   "equipment": {
+    "head": {
+     "id": 21018,
+     "name": "Ancestral hat",
+     "version": "",
+     "slot": "head"
+    },
+    "body": {
+     "id": 21021,
+     "name": "Ancestral robe top",
+     "version": "",
+     "slot": "body"
+    },
+    "legs": {
+     "id": 21024,
+     "name": "Ancestral robe bottom",
+     "version": "",
+     "slot": "legs"
+    },
+    "cape": {
+     "id": 21793,
+     "name": "Imbued Guthix cape",
+     "version": "Normal",
+     "slot": "cape"
+    },
+    "neck": {
+     "id": 12002,
+     "name": "Occult necklace",
+     "version": "",
+     "slot": "neck"
+    },
+    "hands": {
+     "id": 31106,
+     "name": "Confliction gauntlets",
+     "version": "",
+     "slot": "hands"
+    },
+    "feet": {
+     "id": 31097,
+     "name": "Avernic treads (max)",
+     "version": "",
+     "slot": "feet"
+    },
+    "ring": {
+     "id": 28307,
+     "name": "Ultor ring",
+     "version": "",
+     "slot": "ring"
+    },
+    "weapon": {
+     "id": 27275,
+     "name": "Tumeken's shadow",
+     "version": "Charged",
+     "slot": "weapon",
+     "twoHanded": true
+    }
+   },
+   "options": [
+    {
+     "style": {
+      "name": "Accurate",
+      "type": "magic",
+      "stance": "Accurate"
+     },
+     "spell": null
+    },
+    {
+     "style": {
+      "name": "Longrange",
+      "type": "magic",
+      "stance": "Longrange"
+     },
+     "spell": null
+    }
+   ],
+   "source": "preset",
+   "key": "magic|21018,21793,12002,0,27275,21021,0,21024,31106,31097,28307"
+  }
+ ],
+ "kitMarginal": [
+  {
+   "slots": 8,
+   "seconds": 25.124495528946397
+  },
+  {
+   "slots": 1,
+   "seconds": 19.0830360456319
+  },
+  {
+   "slots": 1,
+   "seconds": 3.620595317334903
+  },
+  {
+   "slots": 1,
+   "seconds": 2.4973629738643126
+  },
+  {
+   "slots": 2,
+   "seconds": 15.70086266976864
+  }
+ ],
+ "slots": {
+  "total": 28,
+  "supplies": 9,
+  "nonItem": 1,
+  "carriedItems": 28,
+  "wornItems": 10,
+  "minLoadoutItems": 10,
+  "keptAmmo": 0,
+  "inventoryItems": 18,
+  "swapReserve": 0,
+  "quiverAmmo": 0,
+  "used": 28,
+  "free": 0,
+  "overfull": false
+ },
+ "inventory": [
+  {
+   "kind": "supply",
+   "label": "Saradomin brew",
+   "supply": "brew"
+  },
+  {
+   "kind": "supply",
+   "label": "Saradomin brew",
+   "supply": "brew"
+  },
+  {
+   "kind": "supply",
+   "label": "Saradomin brew",
+   "supply": "brew"
+  },
+  {
+   "kind": "supply",
+   "label": "Saradomin brew",
+   "supply": "brew"
+  },
+  {
+   "kind": "supply",
+   "label": "Super restore",
+   "supply": "restore"
+  },
+  {
+   "kind": "supply",
+   "label": "Super restore",
+   "supply": "restore"
+  },
+  {
+   "kind": "supply",
+   "label": "Super restore",
+   "supply": "restore"
+  },
+  {
+   "kind": "supply",
+   "label": "Ranging potion",
+   "supply": "ranging"
+  },
+  {
+   "kind": "supply",
+   "label": "Super combat",
+   "supply": "superCombat"
+  },
+  {
+   "kind": "potion",
+   "label": "Saturated heart",
+   "item": {
+    "id": -9001,
+    "name": "Saturated heart",
+    "version": "",
+    "slot": "ring"
+   },
+   "group": "magic"
+  },
+  {
+   "kind": "switch",
+   "label": "Torva full helm",
+   "item": {
+    "id": 26382,
+    "name": "Torva full helm",
+    "version": "Restored",
+    "slot": "head"
+   },
+   "group": "melee"
+  },
+  {
+   "kind": "switch",
+   "label": "Infernal cape",
+   "item": {
+    "id": 21295,
+    "name": "Infernal cape",
+    "version": "Normal",
+    "slot": "cape"
+   },
+   "group": "melee"
+  },
+  {
+   "kind": "switch",
+   "label": "Amulet of rancour",
+   "item": {
+    "id": 29801,
+    "name": "Amulet of rancour",
+    "version": "",
+    "slot": "neck"
+   },
+   "group": "melee"
+  },
+  {
+   "kind": "switch",
+   "label": "Scythe of Vitur",
+   "item": {
+    "id": 22325,
+    "name": "Scythe of Vitur",
+    "version": "Charged",
+    "slot": "weapon",
+    "twoHanded": true
+   },
+   "group": "melee"
+  },
+  {
+   "kind": "switch",
+   "label": "Oathplate chest",
+   "item": {
+    "id": 30753,
+    "name": "Oathplate chest",
+    "version": "",
+    "slot": "body"
+   },
+   "group": "melee"
+  },
+  {
+   "kind": "switch",
+   "label": "Oathplate legs",
+   "item": {
+    "id": 30756,
+    "name": "Oathplate legs",
+    "version": "",
+    "slot": "legs"
+   },
+   "group": "melee"
+  },
+  {
+   "kind": "switch",
+   "label": "Ferocious gloves",
+   "item": {
+    "id": 22981,
+    "name": "Ferocious gloves",
+    "version": "",
+    "slot": "hands"
+   },
+   "group": "melee"
+  },
+  {
+   "kind": "switch",
+   "label": "Salve amulet(ei)",
+   "item": {
+    "id": 12018,
+    "name": "Salve amulet(ei)",
+    "version": "",
+    "slot": "neck"
+   },
+   "group": "melee"
+  },
+  {
+   "kind": "switch",
+   "label": "Ancestral hat",
+   "item": {
+    "id": 21018,
+    "name": "Ancestral hat",
+    "version": "",
+    "slot": "head"
+   },
+   "group": "magic"
+  },
+  {
+   "kind": "switch",
+   "label": "Occult necklace",
+   "item": {
+    "id": 12002,
+    "name": "Occult necklace",
+    "version": "",
+    "slot": "neck"
+   },
+   "group": "magic"
+  },
+  {
+   "kind": "switch",
+   "label": "Ancestral robe top",
+   "item": {
+    "id": 21021,
+    "name": "Ancestral robe top",
+    "version": "",
+    "slot": "body"
+   },
+   "group": "magic"
+  },
+  {
+   "kind": "switch",
+   "label": "Elidinis' ward (f)",
+   "item": {
+    "id": 27251,
+    "name": "Elidinis' ward (f)",
+    "version": "",
+    "slot": "shield"
+   },
+   "group": "magic"
+  },
+  {
+   "kind": "switch",
+   "label": "Ancestral robe bottom",
+   "item": {
+    "id": 21024,
+    "name": "Ancestral robe bottom",
+    "version": "",
+    "slot": "legs"
+   },
+   "group": "magic"
+  },
+  {
+   "kind": "switch",
+   "label": "Confliction gauntlets",
+   "item": {
+    "id": 31106,
+    "name": "Confliction gauntlets",
+    "version": "",
+    "slot": "hands"
+   },
+   "group": "magic"
+  },
+  {
+   "kind": "switch",
+   "label": "Imbued Guthix cape",
+   "item": {
+    "id": 21793,
+    "name": "Imbued Guthix cape",
+    "version": "Normal",
+    "slot": "cape"
+   },
+   "group": "magic"
+  },
+  {
+   "kind": "switch",
+   "label": "Tumeken's shadow",
+   "item": {
+    "id": 27275,
+    "name": "Tumeken's shadow",
+    "version": "Charged",
+    "slot": "weapon",
+    "twoHanded": true
+   },
+   "group": "magic"
+  },
+  {
+   "kind": "spec",
+   "label": "Dragon claws",
+   "item": {
+    "id": 13652,
+    "name": "Dragon claws",
+    "version": "",
+    "slot": "weapon",
+    "twoHanded": true
+   }
+  },
+  {
+   "kind": "non-item",
+   "label": "Rune pouch"
+  }
+ ],
+ "specItems": [
+  {
+   "id": 13652,
+   "name": "Dragon claws",
+   "version": "",
+   "slot": "weapon",
+   "twoHanded": true
+  }
+ ],
+ "pinnedItems": [],
+ "comparison": "dc9cff256a71f93af6b754fa9a0c3f9ebc0c967306f33592314ba71d6340bb92",
+ "planned": 0,
+ "rejected": [
+  {
+   "label": "Torva + Scythe (slash)",
+   "kind": "addition",
+   "deltaSeconds": 0.6676903617388916,
+   "deltaSlots": 2,
+   "reason": "needs 2 more slots, 0 free",
+   "weapons": [
+    "Scythe of Vitur"
+   ]
+  },
+  {
+   "label": "Scythe of Vitur",
+   "kind": "addition",
+   "deltaSeconds": 0.38728088742681166,
+   "deltaSlots": 2,
+   "reason": "needs 2 more slots, 0 free",
+   "weapons": [
+    "Scythe of Vitur"
+   ]
+  },
+  {
+   "label": "Scythe of Vitur #5",
+   "kind": "addition",
+   "deltaSeconds": 0.23602381736742473,
+   "deltaSlots": 1,
+   "reason": "needs 1 more slot, 0 free",
+   "weapons": [
+    "Scythe of Vitur"
+   ]
+  }
+ ],
+ "alternatives": [
+  {
+   "label": "Lighter kit: Torva helm + Oathplate + Scythe (slash) / Torva helm + Oathplate + Scythe (slash) + Salve amulet(ei) / Dawnbringer (Ancestral) / Ascension crossbows switch +1 on Tumeken's shadow (Ancestral) / Tumeken's shadow (Ancestral)",
+   "kind": "alternative",
+   "deltaSeconds": -4.304166302761018,
+   "deltaSlots": -6,
+   "reason": "−6 slots for +4.3 s (each freed slot cost < 1 s)",
+   "weapons": [
+    "Scythe of Vitur",
+    "Scythe of Vitur",
+    "Dawnbringer",
+    "Ascension crossbows",
+    "Tumeken's shadow"
+   ]
+  },
+  {
+   "label": "melee + ranged: Torva helm + Oathplate + Scythe (slash) / Ascension crossbows + Onyx ascension bolts (e)",
+   "kind": "alternative",
+   "deltaSeconds": -21.818820960967912,
+   "deltaSlots": -10,
+   "reason": "21.8 s slower",
+   "weapons": [
+    "Scythe of Vitur",
+    "Ascension crossbows"
+   ]
+  },
+  {
+   "label": "melee + magic: Torva helm + Oathplate + Scythe (slash) / Dawnbringer switch +5 on Torva helm + Oathplate + Scythe (slash) / Tumeken's shadow (Ancestral) / Torva + Scythe (slash) / Scythe of Vitur #2",
+   "kind": "alternative",
+   "deltaSeconds": -23.562284405157413,
+   "deltaSlots": -5,
+   "reason": "23.6 s slower",
+   "weapons": [
+    "Scythe of Vitur",
+    "Dawnbringer",
+    "Tumeken's shadow",
+    "Scythe of Vitur",
+    "Scythe of Vitur"
+   ]
+  },
+  {
+   "label": "melee: Torva helm + Oathplate + Scythe (slash) / Torva + Scythe (slash) / Scythe of Vitur #2",
+   "kind": "alternative",
+   "deltaSeconds": -76.12824258667223,
+   "deltaSlots": -14,
+   "reason": "76.1 s slower",
+   "weapons": [
+    "Scythe of Vitur",
+    "Scythe of Vitur",
+    "Scythe of Vitur"
+   ]
+  },
+  {
+   "label": "ranged + magic: Tumeken's shadow (Ancestral) / Dawnbringer switch +5 on Ascension crossbows + diamond (e) (Masori) / Ascension crossbows + Diamond ascension bolts (e) #2 / Ascension crossbows + Onyx ascension bolts (e) / Twisted bow (Masori)",
+   "kind": "alternative",
+   "deltaSeconds": -125.33004364883817,
+   "deltaSlots": -2,
+   "reason": "125.3 s slower",
+   "weapons": [
+    "Tumeken's shadow",
+    "Dawnbringer",
+    "Ascension crossbows",
+    "Ascension crossbows",
+    "Twisted bow"
+   ]
+  },
+  {
+   "label": "ranged: Twisted bow (Masori) / Ascension crossbows + Diamond ascension bolts (e) #2 / Ascension crossbows + Onyx ascension bolts (e)",
+   "kind": "alternative",
+   "deltaSeconds": -297.8902880280602,
+   "deltaSlots": -11,
+   "reason": "297.9 s slower",
+   "weapons": [
+    "Twisted bow",
+    "Ascension crossbows",
+    "Ascension crossbows"
+   ]
+  },
+  {
+   "label": "magic: Eye of Ayak / Dawnbringer / Tumeken's shadow (Ancestral) / Tumeken's shadow",
+   "kind": "alternative",
+   "deltaSeconds": -309.35534972214606,
+   "deltaSlots": -15,
+   "reason": "309.4 s slower",
+   "weapons": [
+    "Eye of Ayak",
+    "Dawnbringer",
+    "Tumeken's shadow",
+    "Tumeken's shadow"
+   ]
+  }
+ ],
+ "potions": [
+  {
+   "type": "superCombat",
+   "label": "Super combat",
+   "group": "melee"
+  },
+  {
+   "type": "ranging",
+   "label": "Ranging potion",
+   "group": "ranged"
+  },
+  {
+   "type": "heart",
+   "label": "Saturated heart",
+   "group": "magic",
+   "heartId": -9001
+  }
+ ],
+ "quiverAmmo": null,
+ "keptAmmo": null,
+ "specs": {
+  "mode": "auto",
+  "drain": "team",
+  "bring": [],
+  "text": "Bring: Dragon claws",
+  "damage": [
+   "dragonClaws"
+  ],
+  "items": [
+   {
+    "item": "Dragon claws",
+    "saved": 6.0299419054437635,
+    "slots": 1,
+    "how": "a slot from the kit (re-optimised)"
+   }
+  ],
+  "team": {
+   "partySize": 4,
+   "mages": 1,
+   "threshold": 0.95,
+   "rows": [
+    {
+     "weapon": "tonalztics",
+     "carriers": 2,
+     "drivers": [
+      "Xarpus (2.5 s)",
+      "Sotetseg (1.3 s)",
+      "Nylocas (0.5 s)",
+      "Pestilent Bloat (0.4 s)"
+     ],
+     "lastSaved": 4.613142875254482
+    },
+    {
+     "weapon": "elderMaul",
+     "carriers": 1,
+     "drivers": [
+      "Xarpus (5.6 s)",
+      "Sotetseg (3.9 s)",
+      "Pestilent Bloat (0.8 s)",
+      "Nylocas (0.3 s)"
+     ],
+     "lastSaved": 10.615387286230487
+    }
+   ],
+   "perTarget": [
+    {
+     "key": "tob-maiden|",
+     "label": "The Maiden of Sugadinti",
+     "group": "The Maiden of Sugadinti",
+     "carriers": {
+      "tonalztics": 2
+     },
+     "pFloor": 0.9977497608587613,
+     "ayak": 0
+    },
+    {
+     "key": "tob-bloat|",
+     "label": "Pestilent Bloat",
+     "group": "Pestilent Bloat",
+     "carriers": {
+      "elderMaul": 1,
+      "bgs": 2
+     },
+     "pFloor": 0.976928830356996,
+     "ayak": null
+    },
+    {
+     "key": "tob-nylo-boss-melee|",
+     "label": "Nylocas Vasilias (melee form)",
+     "group": "Nylocas Vasilias (melee form)",
+     "carriers": {
+      "bgs": 2
+     },
+     "pFloor": 0.9860569082767168,
+     "ayak": 0
+    },
+    {
+     "key": "tob-nylo-boss-ranged|",
+     "label": "Nylocas Vasilias (ranged form)",
+     "group": "Nylocas Vasilias (ranged form)",
+     "carriers": {
+      "tonalztics": 3
+     },
+     "pFloor": 0.9998757383223227,
+     "ayak": 0
+    },
+    {
+     "key": "tob-nylo-boss-magic|",
+     "label": "Nylocas Vasilias (magic form)",
+     "group": "Nylocas Vasilias (magic form)",
+     "carriers": null,
+     "pFloor": 0,
+     "ayak": 0,
+     "note": "no drain weapon can hit here"
+    },
+    {
+     "key": "tob-sotetseg|",
+     "label": "Sotetseg",
+     "group": "Sotetseg",
+     "carriers": {
+      "tonalztics": 2
+     },
+     "pFloor": 0.9583530713337571,
+     "ayak": 2
+    },
+    {
+     "key": "tob-xarpus|",
+     "label": "Xarpus",
+     "group": "Xarpus",
+     "carriers": {
+      "elderMaul": 2,
+      "tonalztics": 2
+     },
+     "pFloor": 0.9645530071885853,
+     "ayak": 0
+    }
+   ],
+   "text": "4-man: 2 Tonalztics, 1 Elder maul",
+   "carriers": {
+    "elderMaul": 1,
+    "dwh": 0,
+    "bgs": 0,
+    "tonalztics": 2,
+    "ayak": 0
+   },
+   "mode": "auto",
+   "steps": [
+    {
+     "weapon": "elderMaul",
+     "saved": 24.398902558786745,
+     "seconds": 461.6663430007863
+    },
+    {
+     "weapon": "tonalztics",
+     "saved": 13.628774159435181,
+     "seconds": 448.0375688413511
+    },
+    {
+     "weapon": "tonalztics",
+     "saved": 4.613142875254482,
+     "seconds": 443.42442596609663
+    }
+   ]
+  },
+  "share": {
+   "weapon": null,
+   "carry": false,
+   "reason": "your spec energy goes to your Dragon claws specs — let a teammate carry Tonalztics (most needed: 2 carriers)",
+   "manual": false
+  },
+  "notes": [
+   "Your spec bar goes to Dragon claws: 3 carriers (party − 1), 7:23.4 vs 7:29.5 if you carry a drain weapon instead."
+  ]
+ },
+ "ring": {
+  "policy": "camp-one",
+  "ring": "Ultor ring",
+  "screened": [
+   {
+    "ring": "Ultor ring",
+    "seconds": 443.42442596609663,
+    "full": true
+   },
+   {
+    "ring": "Bellator ring",
+    "seconds": 445.07103861119685,
+    "full": true
+   },
+   {
+    "ring": "Ring of shadows",
+    "seconds": 458.7412507702585,
+    "full": false,
+    "atLeast": 0
+   },
+   {
+    "ring": "Magus ring",
+    "seconds": 460.2340500879238,
+    "full": false,
+    "atLeast": 0
+   },
+   {
+    "ring": "Venator ring",
+    "seconds": 463.9145379362233,
+    "full": false,
+    "atLeast": 0
+   },
+   {
+    "ring": "Lightbearer",
+    "seconds": 464.1020743625233,
+    "full": false,
+    "atLeast": 0
+   }
+  ]
+ },
+ "matrixDps": {
+  "tob-maiden|": 14.786822332723174,
+  "tob-bloat|": 16.21359593687885,
+  "tob-bloat-restored|": 14.640253924100433,
+  "tob-nylo-boss-melee|": 14.322347590007663,
+  "tob-nylo-boss-ranged|": 14.748705825985047,
+  "tob-nylo-boss-magic|": 11.080277022028898,
+  "tob-sotetseg|": 11.874661128869144,
+  "tob-xarpus|": 14.439339325267454,
+  "tob-verzik-p1|": 4.809027777777778,
+  "tob-verzik-p1|Shield (Dawnbringer with a teammate)": 4.0140762586084975,
+  "tob-verzik-p2|": 9.807197807324965,
+  "tob-verzik-p3|": 11.812509269512383
+ },
+ "unusedCarried": [],
+ "excluded": [],
+ "droppedPinned": [],
+ "ownershipNotices": [],
+ "searchRows": "3aaa899e5f75b9428064f66b33206015d781db822a9247af45dc5f2e498df7b5",
+ "objectiveSeconds": 443.42442596609663,
+ "fightSeconds": null,
+ "plannedRoute": {
+  "id": "tob-maiden>tob-bloat>tob-nylocas>tob-sotetseg>tob-xarpus>tob-verzik",
+  "seconds": 443.42442596609663,
+  "surgeDoses": null,
+  "encounters": [
+   {
+    "id": "tob-maiden",
+    "seconds": 50.67418771256529,
+    "events": [
+     {
+      "npc": "The Maiden of Sugadinti",
+      "firstRowKey": "maiden-100",
+      "counts": {
+       "elderMaul": 2,
+       "tonalztics": 4
+      }
+     }
+    ],
+    "damage": {
+     "maiden-30": {
+      "dragonClaws": 2
+     }
+    },
+    "surge": false
+   },
+   {
+    "id": "tob-bloat",
+    "seconds": 27.029563554678617,
+    "events": [
+     {
+      "npc": "Pestilent Bloat",
+      "firstRowKey": "bloat-first",
+      "counts": {
+       "elderMaul": 2,
+       "tonalztics": 4
+      }
+     },
+     {
+      "npc": "Pestilent Bloat",
+      "reset": "the stomp",
+      "firstRowKey": "bloat-rest",
+      "counts": {}
+     }
+    ],
+    "damage": {
+     "bloat-rest": {
+      "dragonClaws": 2
+     }
+    },
+    "surge": false
+   },
+   {
+    "id": "tob-nylocas",
+    "seconds": 39.81404367817562,
+    "events": [
+     {
+      "npc": "Nylocas Vasilias",
+      "firstRowKey": "vasilias-melee",
+      "counts": {
+       "elderMaul": 2,
+       "tonalztics": 4
+      }
+     }
+    ],
+    "damage": {
+     "vasilias-melee": {
+      "dragonClaws": 2
+     }
+    },
+    "surge": false
+   },
+   {
+    "id": "tob-sotetseg",
+    "seconds": 74.47787234607564,
+    "events": [
+     {
+      "npc": "Sotetseg",
+      "firstRowKey": "sotetseg-1",
+      "counts": {
+       "elderMaul": 2
+      }
+     },
+     {
+      "npc": "Sotetseg",
+      "reset": "maze 1",
+      "firstRowKey": "sotetseg-2",
+      "counts": {
+       "tonalztics": 2
+      }
+     },
+     {
+      "npc": "Sotetseg",
+      "reset": "maze 2",
+      "firstRowKey": "sotetseg-3",
+      "counts": {
+       "tonalztics": 2
+      }
+     }
+    ],
+    "damage": {
+     "sotetseg-1": {
+      "dragonClaws": 2
+     }
+    },
+    "surge": false
+   },
+   {
+    "id": "tob-xarpus",
+    "seconds": 55.705512423629735,
+    "events": [
+     {
+      "npc": "Xarpus",
+      "firstRowKey": "xarpus-p2",
+      "counts": {
+       "elderMaul": 2,
+       "tonalztics": 4
+      }
+     }
+    ],
+    "damage": {
+     "xarpus-p3": {
+      "dragonClaws": 2
+     }
+    },
+    "surge": false
+   },
+   {
+    "id": "tob-verzik",
+    "seconds": 195.72324625097173,
+    "events": [
+     {
+      "npc": "Verzik Vitur",
+      "firstRowKey": "verzik-p1-dawnbringer",
+      "counts": {}
+     }
+    ],
+    "damage": {
+     "verzik-p2": {
+      "dragonClaws": 2
+     },
+     "verzik-p3": {
+      "dragonClaws": 1
+     }
+    },
+    "surge": false
+   }
+  ]
+ }
+}

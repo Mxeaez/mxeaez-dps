@@ -222,6 +222,16 @@ export interface RaidKit {
   specHits?: (q: PhaseQuery) => Record<string, boolean>;
   /** Phase 36: a key of the drains the query's spec counts leave (equal keys = equal DPS); see `specCountsDrainKey`. */
   drainKey?: (q: PhaseQuery) => string;
+  /**
+   * Phase 37 (speed): an exact memo of {@link encounterTime} with this kit. `run` times the encounter with the kit it is
+   * given (the memo hands it a recording view of itself); the memo must return exactly what `run` would.
+   */
+  memoEncounter?: (id: EncounterId, a: RaidTimeAssumptions, opts: EncounterBudgetOptions, run: (k: RaidKit) => EncounterTime) => EncounterTime;
+  /**
+   * Phase 37 (speed): an exact memo of one model pass with this kit (`key`: the encounter, drain state, fight length
+   * and how the kit's queries are rewritten); like `memoEncounter`, it must return exactly what `run` would.
+   */
+  memoPass?: (key: string, a: RaidTimeAssumptions, run: (k: RaidKit) => PhaseTime[]) => PhaseTime[];
 }
 
 export const phaseKey = (targetKey: string, phase?: string): string => `${targetKey}|${phase ?? ''}`;
@@ -655,14 +665,16 @@ export interface EncounterBudgetOptions {
   startState?: PoolState;
 }
 
-export const encounterTime = (id: EncounterId, kit: RaidKit, a: RaidTimeAssumptions, opts: EncounterBudgetOptions = {}): EncounterTime => {
+const encounterTimeOf = (id: EncounterId, kit: RaidKit, a: RaidTimeAssumptions, opts: EncounterBudgetOptions): EncounterTime => {
   const model = modelOf(a);
   const label = model.labels[id] ?? id;
   const fixed = typeof a.fixedFightSeconds === 'number' ? a.fixedFightSeconds : a.fixedFightSeconds?.[id];
   // phase 36: one spec budget per encounter (Solo / Team)
   const budget = a.drain !== 'none' ? a.specBudget : undefined;
   if (budget) {
-    const pass = (k: RaidKit, d: DrainStateId, f: number) => model.encounterPass(id, k, a, d, f);
+    const pass = (k: RaidKit, d: DrainStateId, f: number) => (k.memoPass
+      ? k.memoPass(`${id}|${d}|${f}`, a, (kk) => model.encounterPass(id, kk, a, d, f))
+      : model.encounterPass(id, k, a, d, f));
     const alloc = a.fixedAlloc?.[id];
     if (alloc) {
       const fight = fixed ?? a.fallbackFightSeconds;
@@ -699,6 +711,10 @@ export const encounterTime = (id: EncounterId, kit: RaidKit, a: RaidTimeAssumpti
     id, label, phases, seconds: sumSeconds(phases), drainFightSeconds: fight,
   };
 };
+
+export const encounterTime = (id: EncounterId, kit: RaidKit, a: RaidTimeAssumptions, opts: EncounterBudgetOptions = {}): EncounterTime => (kit.memoEncounter
+  ? kit.memoEncounter(id, a, opts, (k) => encounterTimeOf(id, k, a, opts))
+  : encounterTimeOf(id, kit, a, opts));
 
 export interface RouteTime {
   route: Route;
@@ -890,9 +906,19 @@ export interface KitEvaluator extends RaidKit {
  * (loadout, style option, target, phase, drain reductions), so routes sharing encounters, and two passes that end up
  * with the same drains, cost nothing extra.
  */
-export const createKitEvaluator = (loadouts: KitLoadout[], assumptions: BestSetupAssumptions): KitEvaluator => {
-  const monsters = new Map<string, { monster: Monster, drain: DrainState }>();
-  const evals = new Map<string, number>();
+/**
+ * Phase 37: the memo of kit evaluators that share it (the planner's exact re-times of one run). Valid only for evaluators
+ * with the same assumptions object and loadouts whose `id` means the same loadout (the DPS is per id).
+ */
+export interface KitEvaluatorCache {
+  monsters: Map<string, { monster: Monster, drain: DrainState }>;
+  evals: Map<string, number>;
+}
+
+export const kitEvaluatorCache = (): KitEvaluatorCache => ({ monsters: new Map(), evals: new Map() });
+
+export const createKitEvaluator = (loadouts: KitLoadout[], assumptions: BestSetupAssumptions, cache?: KitEvaluatorCache): KitEvaluator => {
+  const { monsters, evals } = cache ?? kitEvaluatorCache();
   let count = 0;
   const monsterFor = (q: PhaseQuery) => {
     // phase 36: a query with the encounter budget's spec counts gets exactly those specs

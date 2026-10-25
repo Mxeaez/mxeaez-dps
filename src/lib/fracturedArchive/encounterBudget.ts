@@ -159,6 +159,11 @@ export const rowHpLeft = (rows: { key: string, targetKey: string, drainReset?: s
   return out;
 };
 
+/** Phase 37: short ids of `assignedKit`'s rewritings (memo keys); a cleared id is never reused. */
+const REWRITE_IDS = new Map<string, number>();
+const REWRITE_IDS_MAX = 200000;
+let rewriteCount = 0;
+
 /** The kit with every drained query carrying its drain event's spec counts. */
 export const assignedKit = (
   kit: RaidKit,
@@ -173,11 +178,30 @@ export const assignedKit = (
     if (e === undefined) e = npcEvent.get(targetNpc(q.targetKey));
     return { ...q, specs: { counts: (e !== undefined ? assign[e] : undefined) ?? {} }, ...(outcomeOnly ? { outcomeOnly } : {}) };
   };
+  // phase 37: a pass with this kit is the inner kit's pass with the same rewriting (part of the memo key)
+  let rewrite: string | undefined;
+  const rewriteKey = () => {
+    if (rewrite === undefined) {
+      const full = JSON.stringify([Array.from(rowEvent), Array.from(npcEvent), assign, outcomeOnly]);
+      if (REWRITE_IDS.size >= REWRITE_IDS_MAX) REWRITE_IDS.clear();
+      let id = REWRITE_IDS.get(full);
+      if (id === undefined) {
+        rewriteCount += 1;
+        id = rewriteCount;
+        REWRITE_IDS.set(full, id);
+      }
+      rewrite = `r${id}`;
+    }
+    return rewrite;
+  };
   return {
     best: (q) => kit.best(withSpecs(q)),
     ...(kit.specDamage ? { specDamage: (q, w) => kit.specDamage!(withSpecs(q), w) } : {}),
     ...(kit.specHits ? { specHits: (q) => kit.specHits!(q) } : {}),
     ...(kit.drainKey ? { drainKey: (q) => kit.drainKey!(withSpecs(q)) } : {}),
+    ...(kit.memoPass ? {
+      memoPass: (key, a, run) => kit.memoPass!(`${rewriteKey()}|${key}`, a, (inner) => run(assignedKit(inner, rowEvent, npcEvent, assign, outcomeOnly))),
+    } : {}),
   };
 };
 

@@ -25,6 +25,25 @@ export const phaseNpc = (targetKey: string): string => {
   }
 };
 
+/** Phase 37: the target's `noDrains` reason (adds and other targets never specced), if any. */
+const phaseNoDrains = (targetKey: string): string | undefined => {
+  try {
+    return findTarget(targetKey).noDrains;
+  } catch {
+    return undefined;
+  }
+};
+
+/** Phase 37: an encounter's phases as `encounterDrainSummary` reads them (NPC, Defence resets, adds). */
+export const drainSummaryPhases = (phases: EncounterTime['phases']) => phases.map((p) => ({
+  key: p.key,
+  label: p.label,
+  drainLine: p.choice?.drainLine,
+  drainReset: p.drainReset,
+  npc: phaseNpc(p.targetKey),
+  noDrains: phaseNoDrains(p.targetKey),
+}));
+
 /** Phase 35b: the Wear cell's loadouts of one or more NPCs (`npc` undefined: the encounter's only group). */
 export interface WearGroup {
   /** e.g. "Bork", "Spitting Scarab, Soldier Scarab". */
@@ -98,9 +117,7 @@ export const damageText = (d: BriefingRow['damage']): string => d.map((x) => `${
 
 export const briefingRows = (encounters: EncounterTime[], drain: DrainStateId, surgeDoses: string[] = []): BriefingRow[] => encounters.map((e) => {
   const loadouts = Array.from(new Set(e.phases.map((p) => p.choice?.loadout).filter((l): l is string => !!l)));
-  const summary = drain === 'none' ? undefined : encounterDrainSummary(e.phases.map((p) => ({
-    key: p.key, label: p.label, drainLine: p.choice?.drainLine, drainReset: p.drainReset, npc: phaseNpc(p.targetKey),
-  })), drain);
+  const summary = drain === 'none' ? undefined : encounterDrainSummary(drainSummaryPhases(e.phases), drain);
   const specs = summary ? encounterBrief(summary) : [];
   return {
     id: e.id,

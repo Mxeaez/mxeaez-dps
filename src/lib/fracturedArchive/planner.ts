@@ -1,4 +1,5 @@
 import { EquipmentPiece, Player, PlayerEquipment } from '@/types/Player';
+import { Monster } from '@/types/Monster';
 import Potion from '@/enums/Potion';
 import {
   AmmoApplicability, ammoApplicability, availableEquipment, getCanonicalItemId,
@@ -34,6 +35,7 @@ import {
   FA_TIME_MODEL,
   formatDuration,
   KitChoice,
+  kitEvaluatorCache,
   KitLoadout,
   PhaseQuery,
   phaseKey,
@@ -44,6 +46,7 @@ import {
   Route,
   RouteComparison,
   routesFor,
+  specCountsKey,
   specHitsOf,
 } from '@/lib/fracturedArchive/raidTime';
 import { scaleMonster } from '@/lib/MonsterScaling';
@@ -51,6 +54,7 @@ import {
   atHpLeft, DAMAGE_SPEC_WEAPON_IDS, DAMAGE_SPEC_WEAPONS, damageSpecItemName, damageSpecLabel, damageSpecProfile, DamageSpecWeapon,
 } from '@/lib/fracturedArchive/damageSpecs';
 import { EncounterAlloc, encounterWallSeconds } from '@/lib/fracturedArchive/encounterBudget';
+import { createKitMemo } from '@/lib/fracturedArchive/kitMemo';
 import { dosesAllowed, SURGE_DOSES_PER_POTION } from '@/lib/fracturedArchive/specBudget';
 import { raidBase } from '@/lib/raids/base';
 import { TimeSettings } from '@/lib/raids/types';
@@ -626,11 +630,24 @@ const SPEC_ITEM_NAMES = Object.fromEntries(SPEC_CANDIDATES.map((w) => {
 const specWeaponOf = (it: { name: string }): PlannerWeapon | undefined => SPEC_CANDIDATES.find((w) => SPEC_ITEM_NAMES[w] === it.name);
 
 /** One ring run of the planner (internal). */
-interface RingRun {
+/** One ring's run of the planner: a screen (seconds only) or a full run (the plan). */
+export interface RingRun {
   seconds: number;
   ms: number;
   result?: PlanResult;
+  /** Phase 37 (a screen run by a helper worker): the Solo spec subset the screens use after it. */
+  screenSubset?: PlannerWeapon[] | null;
 }
+
+/** Phase 37: a helper worker's ring run (`planRingRun`): its key, the run, the search rows it used. */
+export interface RingRunResult {
+  key: string;
+  run: RingRun;
+  searchRows: Record<string, SearchRow[]>;
+}
+
+/** Phase 37: the key of a ring run (`PlanHooks.ringRuns`): the ring's item id (null = rings as searched), screen or full. */
+export const ringRunKey = (ring: number | null, screen: boolean, subset: PlannerWeapon[] | null = null): string => `${ring ?? 'none'}|${screen ? 'screen' : 'full'}|${subset ? subset.join('+') : ''}`;
 
 /** The equipment as the calculator holds it: every slot set (null when empty), blowpipe darts kept. */
 export const toPlayerEquipment = (eq: PlanEquipment): Partial<PlayerEquipment> => Object.fromEntries(ALL_SLOTS.map((slot) => {
@@ -1310,6 +1327,14 @@ export interface PlanHooks {
   onProgress?: (p: PlanProgress) => void;
   shouldCancel?: () => boolean;
   /**
+   * Phase 37: ring runs already made (by `ringRunKey`; the page's helper workers run the camp-one ring screens and
+   * full runs in parallel): taken instead of running them. They must come from `planRingRun` with the same inputs.
+   */
+  ringRuns?: Record<string, RingRun>;
+  /** Phase 37 (`planRingRun`): run only this ring (by item id; null = rings as searched) and report it to `onRingRun`. */
+  onlyRing?: { ring: number | null, screen: boolean, screenSubset?: PlannerWeapon[] | null };
+  onRingRun?: (run: RingRun) => void;
+  /**
    * Phase 36 review (tests): the final kit space — the candidates, a kit's slots with the plan's carried items, the
    * slots, and a kit's exact route time (createKitEvaluator + compareRoutes under the plan's final spec plan inputs).
    */
@@ -1395,6 +1420,11 @@ export interface PlanResult {
     objectiveSeconds: number;
     /** Kits re-timed exactly before picking the winner. */
     retimed: number;
+    /**
+     * Phase 37: the ring run's encounter / pass memos (kitMemo.ts): remembered results reused (hits) and runs made —
+     * deterministic, so the tests catch a memo that stops working whatever the machine's load.
+     */
+    memo?: { encounterHits: number, encounterRuns: number, passHits: number, passRuns: number };
     /** Solo: fight length (s) per encounter the drains were planned with in the matrix. */
     fightSeconds?: Partial<Record<EncounterId, number>>;
     ms: { search: number, matrix: number, optimise: number, total: number };
@@ -1607,7 +1637,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
   // phase 27: one run of steps 2-7 per ring (`ring` = the camped ring on every candidate; null = rings as searched).
   // `screen`: full candidates only (no partial switches), fewer seeds, one exact re-time, no explanations — ranks the
   // rings of "Camp one ring" before the full runs.
-  const runRing = (ring: PlanItem | null, screen: boolean): RingRun => {
+  const computeRing = (ring: PlanItem | null, screen: boolean): RingRun => {
     const tRing = Date.now();
     const ringA = ringAssumptions(planA, policy, ring);
     // phase 29 (Solo, planner decides): a subset's drains = the Solo plan of those weapons ("My specs" of the subset);
@@ -1727,9 +1757,14 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     // built with exactly those specs; its DPS column (lazily per candidate) is keyed by the drained monster's stats, so
     // counts that land on the same Defence share their DPS. Drains "None" queries are the no-specs state.
     const allocMemo = new Map<string, { monster: ReturnType<typeof monstersAt>[number], tag: string }>();
+    // phase 37: the same lookup by the counts themselves (skips the drain key, the replays' hot path)
+    const allocByCounts = new Map<string, { monster: ReturnType<typeof monstersAt>[number], tag: string }>();
     const allocMonster = (q: PhaseQuery) => {
       const counts = q.drain === 'none' ? {} : (q.specs?.counts ?? {});
       const pk = phaseKey(q.targetKey, q.phase);
+      const ck = `${pk}|${specCountsKey(counts)}`;
+      const known = allocByCounts.get(ck);
+      if (known) return known;
       // counts that leave the same drains share the monster (its drain line is not used here)
       const k = `${pk}|${specCountsDrainKey(findTarget(q.targetKey), q.phase, drain, ringA, counts)}`;
       let v = allocMemo.get(k);
@@ -1739,6 +1774,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         v = { monster: m, tag: `${pk}#${JSON.stringify([s.skills, s.defensive, m.inputs.phase ?? ''])}` };
         allocMemo.set(k, v);
       }
+      allocByCounts.set(ck, v);
       return v;
     };
     const allocCols = new Map<string, Float64Array>();
@@ -1755,8 +1791,18 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     };
     const specDamageMemo = new Map<string, ReturnType<typeof damageSpecProfile>>();
     const specHitsMemo = new Map<string, Record<string, boolean>>();
+    const drainKeyMemo = new Map<string, string>();
     const budgetKitParts: Pick<RaidKit, 'specDamage' | 'specHits' | 'drainKey'> = {
-      drainKey: (q) => specCountsDrainKey(findTarget(q.targetKey), q.phase, q.drain, ringA, q.specs?.counts ?? {}),
+      drainKey: (q) => {
+        // phase 37: memoised by the counts (specCountsDrainKey builds a JSON key per call)
+        const k = `${phaseKey(q.targetKey, q.phase)}|${q.drain}|${specCountsKey(q.specs?.counts)}`;
+        let dk = drainKeyMemo.get(k);
+        if (dk === undefined) {
+          dk = specCountsDrainKey(findTarget(q.targetKey), q.phase, q.drain, ringA, q.specs?.counts ?? {});
+          drainKeyMemo.set(k, dk);
+        }
+        return dk;
+      },
       specDamage: (q, w) => {
         const { monster, tag } = allocMonster(q);
         const m = atHpLeft(monster, q.hpLeft);
@@ -1770,25 +1816,34 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         return specHitsMemo.get(pk)!;
       },
     };
-    const matrixKit = (members: number[], table: number[][] = dps, budget = false): RaidKit => (budget ? {
-      best: (q) => {
-        const { monster, tag } = allocMonster(q);
-        let bi = -1;
-        let bd = 0;
-        for (const m of members) {
-          const d = allocDps(tag, monster, m);
-          if (bi < 0 || d > bd) {
-            bi = m;
-            bd = d;
-          }
+    // the kit's pick on a drain state (by its tag): the highest DPS member, the first on ties; -1 = no member
+    const pickOf = (tag: string, monster: ReturnType<typeof monstersAt>[number], members: number[]): number => {
+      let bi = -1;
+      let bd = 0;
+      for (const m of members) {
+        const d = allocDps(tag, monster, m);
+        if (bi < 0 || d > bd) {
+          bi = m;
+          bd = d;
         }
-        if (bi < 0) return null;
-        return {
-          loadout: candidates[bi].label, style: '-', group: candidates[bi].group, dps: bd,
-        };
+      }
+      return bi;
+    };
+    const pickChoice = (bi: number, tag: string, monster: ReturnType<typeof monstersAt>[number]): KitChoice | null => (bi < 0 ? null : {
+      loadout: candidates[bi].label, style: '-', group: candidates[bi].group, dps: allocDps(tag, monster, bi),
+    });
+    // phase 37: the budget kits memoise their encounter times and model passes exactly (kitMemo.ts): a kit answers
+    // through the drain state's tag (allocMonster) and its pick there; the rest (budgetKitParts) is the same for every kit
+    const kitMemo = createKitMemo<Monster>({
+      ask: (q) => {
+        const { monster, tag } = allocMonster(q);
+        return { id: tag, state: monster };
       },
-      ...budgetKitParts,
-    } : {
+      pick: (monster, tag, members) => pickOf(tag, monster, members),
+      choice: (bi, monster, tag) => pickChoice(bi, tag, monster),
+      parts: budgetKitParts,
+    });
+    const matrixKit = (members: number[], table: number[][] = dps, budget = false): RaidKit => (budget ? kitMemo.kit(members) : {
       best: (q) => {
         const col = colIx.get(phaseKey(q.targetKey, q.phase));
         if (col === undefined) throw new Error(`Planner: phase ${phaseKey(q.targetKey, q.phase)} not in the matrix`);
@@ -2655,12 +2710,14 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       if (finalists.length < (screen ? 1 : RETIME_TOP) && !finalists.some((f) => [...f.members].sort((a, b) => a - b).join(',') === k)) finalists.push(x);
     });
     let chosen = finalists[0];
-    let evaluator = createKitEvaluator(kitLoadoutsOf(chosen.members), assumptions);
+    // phase 37: the re-timed kits share their DPS memo (same assumptions; a loadout's id is its candidate key)
+    const exactCache = kitEvaluatorCache();
+    let evaluator = createKitEvaluator(kitLoadoutsOf(chosen.members), assumptions, exactCache);
     let comparison = compareRoutes(evaluator, exactA, routes);
     let exactEvaluations = evaluator.evaluations();
     const exactSeconds = (c: RouteComparison) => (c.fastest >= 0 ? c.routes[c.fastest].seconds : Infinity);
     for (const f of finalists.slice(1)) {
-      const ev = createKitEvaluator(kitLoadoutsOf(f.members), assumptions);
+      const ev = createKitEvaluator(kitLoadoutsOf(f.members), assumptions, exactCache);
       const cmp = compareRoutes(ev, exactA, routes);
       exactEvaluations += ev.evaluations();
       if (exactSeconds(cmp) < exactSeconds(comparison) - EPS) {
@@ -2891,6 +2948,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         kitsEvaluated: opt.kitsEvaluated,
         objectiveSeconds: chosen.time,
         retimed: finalists.length,
+        memo: { ...kitMemo.stats },
         ...(soloFight ? { fightSeconds: soloFight } : {}),
         ms: {
           search: tSearch - t0, matrix: tMatrix - tRing, optimise: tOpt - tMatrix, total: tEnd - t0,
@@ -2899,12 +2957,31 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     };
     return { seconds: exactSeconds(comparison), ms: tEnd - tRing, result };
   };
+  // phase 37: ring runs computed elsewhere (the page's helper workers, `planRingRun`) are taken as they are; a run is
+  // deterministic given the inputs, its ring, screen or full, and (Solo screens) the subset the first screen picked
+  const runRing = (ring: PlanItem | null, screen: boolean): RingRun => {
+    const pre = hooks.ringRuns?.[ringRunKey(ring?.id ?? null, screen, screen ? screenSubset : null)];
+    if (pre) {
+      if (screen && !screenSubset && pre.screenSubset) screenSubset = [...pre.screenSubset];
+      return pre;
+    }
+    return computeRing(ring, screen);
+  };
 
   // phase 27: the ring policy. Switch: one run, rings as searched. Camp Lightbearer: one run, Lightbearer on every
   // candidate. Camp one ring: every owned CAMP_RINGS ring is screened (full candidates only); the best-screened ring
   // gets the full run, which gives g = its screen − full time; then every ring whose screen is within
   // RING_GUARD_FACTOR × g of the best full time gets the full run too (review fix); the fastest exact route wins.
   try {
+    if (hooks.onlyRing) {
+      // phase 37: one ring run for the page's helper workers (planRingRun)
+      const { ring: ringId, screen, screenSubset: sub } = hooks.onlyRing;
+      screenSubset = sub ? [...sub] : null;
+      const it = ringId === null ? null : (campRingItems(notOwned).find((x) => x.id === ringId) ?? pinnedPlanItem(ringId) ?? null);
+      const run = computeRing(it, screen);
+      hooks.onRingRun?.({ ...run, ...(screen ? { screenSubset: screenSubset ? [...screenSubset] : null } : {}) });
+      return { ...emptyResult(searchRows), cancelled: false };
+    }
     if (policy !== 'camp-one') {
       const only = policy === 'camp-lightbearer' ? planItemByName('Lightbearer') : null;
       return runRing(only, false).result!;
@@ -2979,6 +3056,23 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     if (e instanceof PlanCancelled) return emptyResult(searchRows);
     throw e;
   }
+};
+
+/**
+ * Phase 37: one ring run of a plan (a camp-one ring screen or full run), for a helper worker; with the search rows the
+ * run used (the main plan can take them). `plan(inputs, tuning, { ringRuns })` with these runs gives exactly the plan
+ * it would compute alone.
+ */
+export const planRingRun = (
+  inputs: PlanInputs,
+  tuning: PlanTuning,
+  which: { ring: number | null, screen: boolean, screenSubset?: PlannerWeapon[] | null },
+  hooks: Pick<PlanHooks, 'shouldCancel'> = {},
+): RingRunResult | null => {
+  let run: RingRun | null = null;
+  const res = plan(inputs, tuning, { ...hooks, onlyRing: which, onRingRun: (r) => { run = r; } });
+  if (!run) return null;
+  return { key: ringRunKey(which.ring, which.screen, which.screen ? which.screenSubset ?? null : null), run, searchRows: res.searchRows };
 };
 
 /** The player of a kit loadout against a monster, with its best style option there (for "Load into calculator"). */

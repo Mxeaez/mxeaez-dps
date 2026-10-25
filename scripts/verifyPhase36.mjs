@@ -3,7 +3,7 @@
  *
  * Usage (dev server running): node scripts/verifyPhase36.mjs [baseUrl]
  * - Search, FA Xarth (Team): the "Specs (damage)" box lists the five damage spec weapons, best first (seconds per spec
- *   descending), each with E[dmg], net, s / spec and its energy; Voidwaker's E[dmg] is 54.0. Solo: the drain box has a
+ *   descending; phase 37: by gain per 100% energy), each with avg damage, gain, time saved, cost; Voidwaker's avg is 54.0. Solo: the drain box has a
  *   "with a surge dose" line. Screenshots docs/screenshots/phase36-search-xarth.png, phase36-search-solo.png.
  * - Plan, FA (Team defaults): the total (EXPECT.fa), "Surge dose at: …" with the potion icon, the briefing rows show your
  *   damage specs ("You: [icon] ×N") and the dose; the Bring line names the damage spec weapons; the inventory holds the
@@ -56,10 +56,17 @@ const main = async () => {
   })));
   rows.forEach((r) => console.log(`     ${r.w}: ${r.cells.join(' | ')}`));
   check(rows.length === 5, `Specs box: 5 damage spec weapons (${rows.map((r) => r.w).join(', ')})`);
-  check(rows.every((r, i) => i === 0 || rows[i - 1].saved >= r.saved), 'best first (seconds per spec)');
+  // phase 37 (user): plain-word headers with tooltips, a "Gain per 100% energy" column, the default order
+  const heads = await page.locator('[data-testid="spec-damage-table"] th').evaluateAll((els) => els.map((e) => ({ t: e.textContent.trim(), title: e.getAttribute('title') || '' })));
+  check(heads.map((h) => h.t).join(' | ') === 'Weapon | Avg damage | Gain over normal hits | Time saved | Cost | Gain per 100% energy', `headers: ${heads.map((h) => h.t).join(' | ')}`);
+  check(heads.slice(1).every((h) => h.title.length > 10), 'every number column has a tooltip');
+  const perEnergy = await page.locator('[data-testid="spec-damage-row"]').evaluateAll((els) => els.map((e) => Number(e.dataset.perEnergy)));
+  check(perEnergy.every((x, i) => i === 0 || perEnergy[i - 1] >= x), `best first (gain per 100% energy: ${perEnergy.join(', ')})`);
   const vw = rows.find((r) => r.w === 'voidwaker');
-  check(vw?.cells[1] === '54.0', `Voidwaker E[dmg] ${vw?.cells[1]} (54.0: max 54 → 27-81)`);
-  check(rows.every((r) => /%$/.test(r.cells[4])), 'each row shows its energy');
+  check(vw?.cells[1] === '54.0', `Voidwaker avg damage ${vw?.cells[1]} (54.0: max 54 → 27-81)`);
+  check(vw && Math.abs(Number(vw.cells[5]) - (Number(vw.cells[2]) / Number(vw.cells[4].replace('%', ''))) * 100) < 0.11, `Voidwaker gain per 100% = gain ÷ cost × 100 (${vw?.cells[5]})`);
+  check(rows.every((r) => /%$/.test(r.cells[4])), 'each row shows its cost');
+  check(rows.every((r) => / s$|—/.test(r.cells[3])), 'each row keeps its time saved');
   await page.mouse.move(0, 0);
   await page.locator('[data-testid="search-view"]').screenshot({ path: 'docs/screenshots/phase36-search-xarth.png' });
 

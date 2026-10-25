@@ -3,6 +3,72 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 37 — Performance + final review, round 5 (2026-10-25)
+
+**No result changed.** The plans of HEAD 7864dacc (phase 36 fixes) were captured before any change
+(`src/tests/lib/raids/phase37/*.json`: FA, ToA, CoX, ToB headlines, FA Solo party 1, FA without Obligator / Ascension
+crossbows, the four reduced Phase27 plans) and every one is reproduced field for field (kit, carriers, items, spec plans,
+every route / encounter time, inventory, strings; only DPS-evaluation counts and timings differ): FA 21:07.7, ToA
+14:07.8, CoX 7:08.7, ToB 7:23.4, FA Solo 21:59.0, FA without Obligator / Ascension 24:11.9, the user's plan 25:15.5,
+reduced 1493.8 / 881.2 / 452.7 / 457.3. Docs: BEST_SETUP *Performance (phase 37)*.
+
+- **Profile** (Node `--cpu-prof`, FA headline, 43 s with the profiler): `encounterTime` from the optimiser's replays and
+  the carrier / item greedies 65%; inside it `specCountsDrainKey`'s JSON key per query 19%, the DP's model passes per
+  (event, option) 23%, the DP 5% (CoX 22%), DPS of new drain states 13%; search 12%; ring screens 31% of the plan; the
+  exact re-times each had their own DPS memo.
+- **Exact speed-ups**, measured in Node one at a time (FA 29.3 s at HEAD): (1) drain-state lookups memoised by the spec
+  counts before the JSON drain key (FA → 26.4 s); (2) exact encounter / pass memos (`traceMemo.ts`, `kitMemo.ts`,
+  `RaidKit.memoEncounter` / `memoPass`): a remembered run is reused only by a kit that picks the same member on every
+  drain state the run asked about, keyed by the encounter, assumptions, spec plan and options (a pass without the spec
+  budget, so carrier / item / surge changes reuse passes); keys interned by identity (FA → 21.6 s, ToB 64.3 → 28.2,
+  CoX 122.5 → 77.9 → 63.7 with (3)); (3) the exact re-times share one DPS memo (`kitEvaluatorCache`); (4) the DP's
+  state key lists its pools once per row; (5) **parallel camp-one ring runs** in the browser (`parallelRings.ts`,
+  `planRingRun`, `PlanHooks.ringRuns`; helpers = cores − 1, at most 8, none below 4 cores): every ring's screen, then
+  the best rings' full runs with the screens' search rows; the main plan takes them (a Node test builds the plan from
+  helper runs through the worker JSON — `encodeRingRuns` keeps Infinity — and gets the same plan). Tried and dropped:
+  starting the full runs with the screens (each searching: slower on the loaded machine). Not applied: a DP memo per
+  problem (repeats are 1.1 of CoX's 16.9 s of DP), a lower `MAX_EVENT_OPTIONS`, the one-event DP shortcut (< 1% of the
+  time once passes are memoised).
+- **Times** (dev machine, 20 threads; it also runs games, so the times vary ±50% with their load). Node, one thread, at
+  rest: FA 29.3 → 21.6 s, ToA 64.6 → 35.6, ToB 64.3 → 25.1, CoX 122.5 → 62.5, FA Solo 81.9 → 41.5, FA without
+  Obligator / Ascension 140.0 → 61.2 (under the games' load, same minute: FA 55.4 → 34.5). Browser (verifyPhase21, 8
+  helpers), quiet: FA 18.4-19.1 s, ToA 16.5, ToB 21.2, CoX 38.3 (phase 36: ~38 / 51 / 72 / 112 s); under load the same
+  run read FA 55, ToA 49, ToB 62, CoX 111 s; the last run (some load) FA 22.7, ToA 19.5, ToB 26.4, CoX 46.2 s. verifyPhase21's limit 240 → 150 s, verifyPhase27's re-plan 60 → 20 s
+  (16.8 s).
+- **Slow suites** (`RUN_SLOW_TESTS=1` CrossRaid + Phase27-37, Jest in parallel, `--coverage=false`): 997 s at HEAD (16.6
+  min; CrossRaid the long pole at 991 s) → **726 s** (12.1 min, 321 / 321; the long pole is now
+  CrossRaidHeadlinesCox at 720 s). CrossRaid's slow headline tests moved unchanged to `CrossRaidHeadlines.test.ts` (FA,
+  ToA, ToB) and `CrossRaidHeadlinesCox.test.ts` (CoX, FA without Obligator / Ascension; shared code in
+  src/tests/utils/crossRaid*.ts) so they run in parallel workers; the bit-identity checks of the headline plans sit in
+  those tests and Phase31's Solo test (each plan planned once). Two runs in between, with the old file layout and the
+  machine busy with games, took 1118 / 1178 s.
+- **Specs (damage) box** (user add-on): plain headers with tooltips — Avg damage, Gain over normal hits, Time saved, Cost —
+  and a new **Gain per 100% energy** (gain ÷ cost × 100, `gainPerFullBar`), the default order; numbers unchanged
+  (Xarth: ZCB 74.9, Kisten 60.6, Dragon claws 55.5, Burning claws 46.4, Voidwaker 41.2).
+- **Drain summary fix** (user, FA party 4: Bork got no specs and the briefing showed one unlabelled Smorks line): names
+  and lines come from the drainable NPCs (a drain line on a non-`noDrains` target), specced or not — "Bork: no specs ·
+  Smorks: Tonalztics 8 hits + BGS 2 specs → Def 48"; a named NPC's event without specs is in the short line too (CoX
+  Olm "Right claw, after phase 1: no specs", ToA "Elidinis' Warden: no specs"); adds stay out. Display only
+  (`drainSummaryPhases` in briefing.ts passes `noDrains`); Phase35b re-pinned for those two lines.
+- **Final review, round 5**: BEST_SETUP (Reading the Plan tab: the phase 36 additions; Specs box table; 35b fix;
+  Performance section), UNVERIFIED (D21-D29, B10, E9, F7, G7 all have in-game checks; no new row: the speed-ups
+  approximate nothing; D28's check names "Avg damage"), README (headlines = CrossRaid; the Specs box; plan times),
+  ROADMAP (37 done, a phase 37 decision; the coordinator's round 6 table and "Future work (round 7)" kept as found),
+  UPSTREAM_MERGE round 5 (phases 33-36 touched no upstream file; phase 37 +7 lines in `CalcWorkerTypes.ts`; nothing to
+  send upstream; `formatDuration`'s fix is fork-only), DEPLOY unchanged, `git grep -i` for the owner's email empty.
+- Tests: new `Phase37.test.ts` (trace memo; memoised = unmemoised kits on FA / ToB / ToA for carriers, items, surge,
+  Solo, hp left, members, a fixed plan and a random sequence; shared re-time memo; DP key; Specs box render;
+  Bork no-specs toy; parallel helpers = the plan alone (6 helpers; slow: 3 helpers, auto carriers, Solo subset); the
+  reduced plans = the fixtures, with memo counters); the headline slow tests (CrossRaidHeadlines*, Phase31 Solo) compare
+  their plans with the fixtures, check the memo counters (`stats.memo`, new, deterministic: `memoWithin` ±20%) and a
+  catastrophe-only CPU budget (5× each plan's time alone: wall and CPU times were 3-9× a plan alone in the parallel slow
+  run, so tight time budgets failed there); Phase35b re-pinned.
+  `yarn test` 1580 (1556 pass / 24 skipped); `RUN_SLOW_TESTS=1` CrossRaid + Phase27-37 321 / 321; tsc, lint clean. Verify: new `verifyPhase37.mjs` (Specs box headers / order, CoX plan with "rings in
+  parallel", Olm's "no specs" lines; screenshots phase37-*.png), verifyPhase36 re-pinned to the new headers;
+  verifyPhase21 / 23 / 26 / 27 / 29-37 all OK (verifyPhase34 found the six-column Specs table 432 px wide at 390 px: it
+  now scrolls inside its box; verifyPhase27's re-plan 15.4 s; with the machine busy it read 50 s once); tracked
+  screenshots they overwrote restored.
+
 ## Phase 36 fixes — review follow-ups (2026-10-25)
 
 The independent review recomputed E[spec], net, ticks and the DP (unpruned brute force) and found them correct; these

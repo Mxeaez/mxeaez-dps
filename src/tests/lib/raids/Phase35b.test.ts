@@ -171,9 +171,13 @@ describe('ToA / CoX / ToB multi-NPC encounters (default assumptions, presets kit
     const s = summaryOf(w);
     // phase 36: one spec budget: Elidinis' Warden's P2 gets no specs (the energy goes to the Obelisk and P3), and the
     // enrage resets the Defence (wiki): a second Tumeken's Warden event
-    expect(s.events.map((e) => e.npc)).toEqual(['Obelisk', 'Tumeken\'s Warden', 'Tumeken\'s Warden']);
+    // Phase 37 fix: Elidinis' Warden is listed with "no specs" (it was dropped, so it read as not part of the plan)
+    expect(s.events.map((e) => e.npc)).toEqual(['Obelisk', 'Elidinis\' Warden', 'Tumeken\'s Warden', 'Tumeken\'s Warden']);
+    expect(s.events[1].parts).toEqual([]);
+    expect(s.events[1].text).toBe('Elidinis\' Warden: no specs');
     const [row] = briefingRows([w], 'team');
-    expect(row.specs.map((g) => g.label)).toEqual(['Obelisk', 'Tumeken\'s Warden', 'Tumeken\'s Warden, after the enrage']);
+    expect(row.specs.map((g) => g.label)).toEqual(['Obelisk', 'Elidinis\' Warden', 'Tumeken\'s Warden', 'Tumeken\'s Warden, after the enrage']);
+    expect(row.specs[1].text).toBe('Elidinis\' Warden: no specs');
   });
 
   test('CoX Olm: right claw, left claw and head are three lines (and three Wear lines); Vanguards: no specs, Wear per Vanguard', () => {
@@ -183,8 +187,12 @@ describe('ToA / CoX / ToB multi-NPC encounters (default assumptions, presets kit
     expect(s.events.map((e) => `${e.npc}${e.reset ? `/${e.reset}` : ''}`)).toEqual(['Right claw', 'Left claw', 'Right claw/phase 1', 'Left claw/phase 1', 'Right claw/phase 2', 'Left claw/phase 2', 'Head']);
     const [row, vRow] = briefingRows([olm, vanguards], 'team');
     // phase 36 review (regen on the drained clock): the first right claw gets no specs (the energy goes to the left claw
-    // and the later phases), so the first line is the left claw's
-    expect(row.specs.map((g) => g.label)[0]).toBe('Left claw');
+    // and the later phases); phase 37 fix: the short line says so, like the full text ("Right claw: no specs")
+    expect(row.specs.map((g) => g.label).slice(0, 2)).toEqual(['Right claw', 'Left claw']);
+    expect(row.specs[0].text).toBe('Right claw: no specs');
+    expect(s.text).toContain('Right claw: no specs');
+    // every event of the full text is in the short line (no-spec events included), in the same order
+    expect(row.specs.length).toBe(s.events.reduce((t, e) => t + Math.max(1, e.parts.length), 0));
     expect(row.specs.map((g) => g.label)).toContain('Right claw, after phase 1');
     expect(row.specs.map((g) => g.label)).toContain('Head');
     expect(row.wear.map((g) => g.npc)).toEqual(['Right claw', 'Left claw', 'Head']);

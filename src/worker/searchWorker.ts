@@ -14,7 +14,8 @@ import {
 import { WORKER_JSON_REPLACER, WORKER_JSON_REVIVER } from '@/utils';
 import { runGearSearch } from '@/lib/fracturedArchive/search';
 import { computeRouteComparison } from '@/lib/fracturedArchive/raidTime';
-import { plan } from '@/lib/fracturedArchive/planner';
+import { plan, planRingRun, RingRun } from '@/lib/fracturedArchive/planner';
+import { decodeRingRuns, encodeRingRuns } from '@/lib/fracturedArchive/parallelRings';
 import { raidOf } from '@/lib/raids';
 
 /**
@@ -23,7 +24,8 @@ import { raidOf } from '@/lib/raids';
  * response per request) and because the page cancels a search by terminating this worker (the search is one
  * synchronous loop, so a "cancel" message could not be read until it finished). Client: searchWorkerClient.ts.
  * Phase 16: also WorkerRequestType.RAID_ROUTES (the Routes tab: per-phase searches + route times), same protocol.
- * Phase 17: WorkerRequestType.RAID_PLAN (the Plan tab: searches, DPS matrix, kit optimiser), same protocol.
+ * Phase 17: WorkerRequestType.RAID_PLAN (the Plan tab: searches, DPS matrix, kit optimiser), same protocol. Phase 37:
+ * with `ring`, one ring run of the plan (a helper of searchWorkerClient.ts's parallel camp-one rings).
  * Phase 18: every request is for the raid of its `assumptions.raid` (the search picks its presets / pool from it; the
  * routes and the planner get that raid's time model here, since models aren't serialisable).
  */
@@ -33,12 +35,19 @@ self.onmessage = (evt: MessageEvent<string>) => {
     const sequenceId = parsed.sequenceId || 0;
     const res = { type: WorkerRequestType.RAID_PLAN, sequenceId } as RaidPlanResponse;
     try {
-      res.payload = plan(parsed.data, { model: raidOf(parsed.data.assumptions).time }, {
-        onProgress: (progress) => {
-          const msg: RaidPlanProgressMessage = { type: WorkerRequestType.RAID_PLAN, sequenceId, progress };
-          self.postMessage(JSON.stringify(msg, WORKER_JSON_REPLACER));
-        },
-      });
+      const tuning = { model: raidOf(parsed.data.assumptions).time };
+      if (parsed.ring) {
+        // phase 37: a helper worker: one ring run of the plan (searchWorkerClient.ts runs the camp-one rings in parallel)
+        res.ringRun = encodeRingRuns(planRingRun(parsed.data, tuning, parsed.ring));
+      } else {
+        res.payload = plan(parsed.data, tuning, {
+          ...(parsed.ringRuns ? { ringRuns: decodeRingRuns<Record<string, RingRun>>(parsed.ringRuns) } : {}),
+          onProgress: (progress) => {
+            const msg: RaidPlanProgressMessage = { type: WorkerRequestType.RAID_PLAN, sequenceId, progress };
+            self.postMessage(JSON.stringify(msg, WORKER_JSON_REPLACER));
+          },
+        });
+      }
     } catch (e: unknown) {
       console.error(e);
       res.error = e instanceof Error ? e.message : `Unknown error type: ${e}`;

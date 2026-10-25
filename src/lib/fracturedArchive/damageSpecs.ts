@@ -301,6 +301,11 @@ export interface DamageSpecRow {
  * `dps`, the most seconds saved per spec first (ties: more net damage, then the weapon order); weapons that can't hit
  * last.
  */
+/** Phase 37: a spec's gain over normal hits per 100% spec energy (net ÷ cost × 100; 0 if it can't hit or costs nothing). */
+export const gainPerFullBar = (r: Pick<DamageSpecRow, 'net' | 'energy' | 'canHit'>): number => (r.canHit && r.energy > 0
+  ? (r.net / r.energy) * 100
+  : 0);
+
 export const damageSpecRanking = (
   monster: Monster,
   assumptions: BestSetupAssumptions,

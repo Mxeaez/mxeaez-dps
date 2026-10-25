@@ -913,8 +913,10 @@ section open).
    weapon the other specs make unnecessary ("not needed") is left out of the short line. Carriers are not repeated (the
    Spec plan's team briefing says them). Several parts (AG flying / grounded, Ocellus P1 / P3) get a small label each;
    Sotetseg's three identical drain events read once with **× 3**; an event with no specs (Bloat after the stomp) is left
-   out. The full phase 33 line ("Start of fight: 2 Elder maul carriers (4 specs) + …") is the tooltip. **Seconds**.
-3. **Bring: [icons]** and **Your share** (Team) — the actions.
+   out. The full phase 33 line ("Start of fight: 2 Elder maul carriers (4 specs) + …") is the tooltip. Phase 36 adds
+   your damage specs per row ("You: [icon] ×N") and a "dose" marker on the rows that get a surge dose. **Seconds**.
+3. **Bring: [icons]** and **Your share** (Team) — the actions (phase 36: "Surge dose at: [icon] Ocellus" under Bring
+   when the kit carries a Surge potion).
 4. A warning when an "always brought" item is in no loadout (with the button that removes it).
 5. **The kit**: the worn grid (and its name, with the weapon icon) and the 28-slot inventory.
 6. Closed sections:
@@ -1051,6 +1053,14 @@ hits** → Def 5" on two lines (tooltip / per-phase details: "Bork: 2 Elder maul
 carriers (4 specs) → Def 180 · 99.6% · Smorks: … → Def 5"); an NPC with several parts reads "Elidinis' Warden, P2
 shield" / "…, P2 core"; a reset reads "Bork, after the stomp". Two NPCs with the same numbers stay two lines (the "× 3"
 merge is for one NPC drained again). Single-NPC encounters are unchanged (phase 33 / 34 form).
+
+*Phase 37 fix* (user, FA party 4: the budget gave Bork no specs and everything to The Smorks; the briefing showed one
+unlabelled "[Tonalztics] 8 hits · [BGS] 2 specs → Def 48" and Bork's line was gone): the names and lines come from the
+NPCs that can be drained (a drain line on a phase whose target has no `noDrains`), specced or not, so the line reads
+"Bork: no specs · Smorks: Tonalztics 8 hits + BGS 2 specs → Def 48" in the briefing (Bork's group shows "no specs") and
+the tooltip alike; a named NPC's event without specs is in the short line too, as in the full text (CoX Olm: "Right
+claw: no specs", ToA Wardens: "Elidinis' Warden: no specs"). Adds and other `noDrains` targets still get no line;
+an unnamed event without specs (Bloat after the stomp) stays out of the short line. Display only, no number changes.
 
 **Wear per NPC** (`wearGroups`, briefing.ts; PlanBriefing.tsx): when the NPCs don't all use the same loadouts, the Wear
 cell has one line per NPC, "Bork: [loadout icons]" / "Smorks: [loadout icons]"; NPCs with the same loadouts share a line
@@ -1189,8 +1199,19 @@ reported times are the exact re-time with the DP on the exact kit. Solo subsets:
 kit; subsets with the same drains on every phase are one candidate.
 
 **Per-boss view** (Search tab, `SpecDamageBox.tsx`, damageSpecs.ts `damageSpecRanking`): a "Specs (damage)" box under the
-results lists every damage spec weapon on the selected boss / phase / drain state against the top row's DPS, best first:
-E[dmg], net, seconds per spec at the current party (net ÷ (multiplier × DPS)), energy; a weapon that can't hit is greyed.
+results lists every damage spec weapon on the selected boss / phase / drain state against the top row's DPS; a weapon
+that can't hit is greyed and listed last. Phase 37 (user, 2026-10-25: "E[dmg]", "net", "s / spec" read as statistics
+shorthand) — plain headers, each with a tooltip, the numbers unchanged:
+
+| Column | Tooltip / meaning |
+|---|---|
+| **Avg damage** (was E[dmg]) | average damage of one spec, hits and misses included (upstream's spec calc) |
+| **Gain over normal hits** (was net) | average spec damage minus what your normal attacks would have dealt in the spec's N ticks (the row's tooltip gives N) |
+| **Time saved** (was s / spec) | seconds one spec saves at the team's DPS (gain ÷ (multiplier × DPS)) |
+| **Cost** (was energy) | spec energy |
+| **Gain per 100% energy** (new, bold) | gain ÷ cost × 100 (`gainPerFullBar`): the number to compare weapons by when energy is the limit — the default order (phase 36 sorted by time saved, which favours expensive specs) |
+
+FA Xarth, Team (13.917 DPS): Zaryte crossbow gain 56.2 at 75% → 74.9 per 100%; Voidwaker 20.6 at 50% → 41.2.
 
 **Headlines** (Plan tab defaults, Team, camp one ring; CrossRaid):
 
@@ -1225,6 +1246,74 @@ and on real encounters (ToB Sotetseg Team, every option combination; FA Xarth So
 dose placement; the 1 s / slot rule; adds; Sotetseg's shared budget; never slower than no specs; the carry flag),
 re-pinned tests of phases 27-35b and CrossRaid; `scripts/verifyPhase36.mjs` (Search Specs box on Xarth, the Solo surge
 line, the FA Plan's surge dose and damage specs, ToB Sotetseg), screenshots `docs/screenshots/phase36-*.png`.
+
+### Performance (phase 37)
+
+Phase 36's per-encounter budget made plans 3-5× slower. Phase 37 makes them fast again **without changing any result**:
+every plan the tests pin (the four headlines and FA without Obligator / Ascension crossbows in CrossRaid's slow headline
+tests, now `CrossRaidHeadlines.test.ts` / `CrossRaidHeadlinesCox.test.ts` so they run in parallel; FA Solo in Phase31's;
+the four reduced Phase27 plans in `Phase37.test.ts`) is compared with the plan captured at HEAD 7864dacc before any
+change (`src/tests/lib/raids/phase37/*.json`, `src/tests/utils/phase37.ts`) — the kit, carriers, items, spec plans,
+every route and encounter time, the inventory and every string (only the run statistics — DPS evaluation counts and
+timings — differ). A regression of the memos is caught by their counters (`stats.memo`: encounters / passes computed
+and reused, deterministic; `memoWithin` allows 20% more runs, 20% fewer hits) and, for a catastrophe only, a CPU-time
+budget of 5× each plan's phase 37 time alone (`cpuSeconds`; wall and even CPU times are 3-4× a plan's alone while Jest
+runs the slow suites in parallel, more when the machine is busy).
+
+**Where the time went** (Node `--cpu-prof`, FA headline at HEAD, 43 s with the profiler): the optimiser's replays and the
+carrier / item greedies call `encounterTime` for every kit (65% of the time); inside, `specCountsDrainKey` built a JSON
+key per query (19%), the model passes per (event, option) of the DP (23%), the DP itself (5%; CoX: 22%), the DPS of
+new drain states (`allocDps`, 13%), the search (12%), the ring screens (31% of the plan: six rings), the exact re-times
+(each kit its own DPS memo).
+
+**What changed** (each exact):
+
+1. *Drain-state lookups by the spec counts* (planner.ts `allocMonster`, `budgetKitParts.drainKey`): the drain state of a
+   query is memoised by its phase and spec counts before the JSON drain key is built (the same monster as before, by
+   the same key on a miss). FA 29 → 26 s.
+2. *Encounter and pass memos* (`traceMemo.ts`, `kitMemo.ts`; raidTime.ts `RaidKit.memoEncounter` / `memoPass`): the
+   planner's kits differ only in their members, and a kit answers a query only through the drain state's member pick
+   (the highest-DPS member, the first on ties); spec damage, which weapons hit and drain keys are the same for every
+   kit. An encounter time (or one model pass of the DP) is remembered with the picks of every drain state the run asked
+   about, in order (a tree per key); a kit that gives the same pick to each of those questions gets the remembered
+   result — a deterministic run with the same answers asks the same questions, so it is the result the run would
+   compute. Keys: the encounter, the assumptions (carriers, Lightbearer flags, damage specs, surge potions, party, drain
+   state, fight lengths), the fixed spec plan, the budget options; for a pass, its drain state, fight length and how
+   the budget rewrote the queries (`assignedKit`), without the spec budget (a pass never reads it), so a carrier set,
+   item or surge change reuses the passes. Assumptions and spec plans are keyed by identity (never mutated once timed).
+   FA 26 → 22 s, ToB 64 → 28 s, CoX 122 → 78 s.
+3. *Exact re-times share one DPS memo* (raidTime.ts `kitEvaluatorCache`): the RETIME_TOP kits of a ring run have the
+   same assumptions, so a loadout's DPS on a monster is computed once (`stats.evaluations` counts each once now).
+4. *The DP's state key* lists the pools that can still spend per row once (specBudget.ts `keyGroups`), not per state.
+5. *Parallel ring runs in the browser* (`parallelRings.ts`, searchWorkerClient.ts `startRaidPlan`): with Camp one ring
+   and ≥ 4 cores, helper workers (cores − 1, at most 8) run every ring's screen, then the full runs of the best screened
+   rings (as many as there are helpers, at least two; with the screens' search rows, so they don't search again —
+   starting them with the screens, each searching, was slower on a loaded machine), each a `planRingRun`; the main plan
+   takes them
+   (`PlanHooks.ringRuns`, by ring, screen / full and — Solo, planner decides — the subset the first screen picked) and
+   runs anything else the ring guard asks for itself. A ring run is deterministic given its inputs, so the plan is the
+   one it computes alone (`Phase37.test.ts` builds a plan from helper runs passed through the worker JSON). Runs travel
+   with `encodeRingRuns` (keeps Infinity; plain worker JSON turns it into null). The progress line reads "rings in
+   parallel (N workers)". Below 4 cores, one worker as before.
+
+Not applied: memoising the DP per problem (repeats are 1.1 of CoX's 16.9 s of DP: the expensive problems are distinct);
+lowering `MAX_EVENT_OPTIONS` (no other value is free); skipping the DP for one-event encounters (their DP takes < 1% of
+the time: the passes per option, now memoised, were the cost). Checked, no change needed: a worker computes a damage
+spec's numbers (`damageSpecProfile`, the expensive spec calc) once per drained monster and hp (its module cache is
+keyed by the monster, so every ring run and kit shares it; the planner's per-run memo sits in front; a helper worker
+has its own); the Search tab's Specs box computes its rows in the page, once per boss / drain state.
+
+| Plan (defaults, Team, camp one ring) | Node, phase 36 | Node, phase 37 | Browser, phase 36 | Browser, phase 37 |
+|---|---|---|---|---|
+| FA 21:07.7 | 29.3 s | 21.6 s | ~38 s | 19.1 s |
+| ToA 14:07.8 | 64.6 s | 35.6 s | ~51 s | 16.5 s |
+| ToB 7:23.4 | 64.3 s | 25.1 s | ~72 s | 21.2 s |
+| CoX 7:08.7 | 122.5 s | 62.5 s | ~112 s | 38.3 s |
+| FA Solo, party 1 (21:59.0) | 81.9 s | 41.5 s | | |
+| FA without Obligator / Ascension (24:11.9) | 140.0 s | 61.2 s | | |
+
+(Dev machine: 20 hardware threads; Node = one thread, no helpers; browser = verifyPhase21, 8 helpers. The phase 36
+browser times are PROGRESS's. On a 4-core machine the browser gets 3 helpers and less of the parallel gain.)
 
 ## Routes tab (phase 16: raid time model)
 

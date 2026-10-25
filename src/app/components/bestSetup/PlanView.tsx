@@ -55,7 +55,7 @@ import {
 } from '@/lib/fracturedArchive/loadoutIcons';
 import { ItemIcon, ItemNames, LoadoutIconRow } from '@/app/components/bestSetup/ItemIcons';
 import PlanBriefing from '@/app/components/bestSetup/PlanBriefing';
-import { briefingRows, phaseNpc } from '@/lib/fracturedArchive/briefing';
+import { briefingRows, drainSummaryPhases } from '@/lib/fracturedArchive/briefing';
 import DrainLineView from '@/app/components/bestSetup/DrainLineView';
 import {
   encounterDrainSummary, encounterItemText, encounterResultText, EncounterDrainSummary,
@@ -1143,9 +1143,7 @@ const PlanView: React.FC<{
                     const time = secs(e.seconds);
                     const loadouts = Array.from(new Set(e.phases.map((p) => p.choice?.loadout).filter(Boolean)));
                     const styles = Array.from(new Set(e.phases.map((p) => p.choice?.group).filter(Boolean)));
-                    const drains = drain === 'none' ? undefined : encounterDrainSummary(e.phases.map((p) => ({
-                      key: p.key, label: p.label, drainLine: p.choice?.drainLine, drainReset: p.drainReset, npc: phaseNpc(p.targetKey),
-                    })), drain);
+                    const drains = drain === 'none' ? undefined : encounterDrainSummary(drainSummaryPhases(e.phases), drain);
                     return (
                       <React.Fragment key={e.id}>
                         <tr className="border-t border-body-300 dark:border-dark-400" data-testid="plan-encounter-row" data-encounter={e.id}>

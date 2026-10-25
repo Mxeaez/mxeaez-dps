@@ -95,8 +95,9 @@ const runPlan = async (page, raid) => {
   console.log(`     ${raid} plan (${secs.toFixed(1)} s): ${headline}; free ${free}`);
   kit.forEach((k) => console.log(`       ${k.text.slice(0, 150)}`));
   // phase 27: ≤ 150 s — camp one ring (the default) screens six rings, then plans the best one or two in full;
-  // phase 36: ≤ 240 s (the spec budget's DP; CoX's Olm is the slow one)
-  check(secs <= 240, `${raid}: plan ran in ≤ 240 s (${secs.toFixed(1)} s)`);
+  // phase 36: ≤ 240 s (the spec budget's DP; CoX's Olm is the slow one); phase 37 (exact memos, parallel ring runs):
+  // back to ≤ 150 s (FA 19 s, ToA 17 s, ToB 21 s, CoX 38 s on the dev machine)
+  check(secs <= 150, `${raid}: plan ran in ≤ 150 s (${secs.toFixed(1)} s)`);
   check(cells === 28, `${raid}: 28 inventory cells (${cells})`);
   check(headline.includes(exp.team), `${raid}: team label "${exp.team}"`);
   check(kit.every((k) => k.slots === undefined || k.saves === '∞' || Number(k.saves) + 1e-9 >= Math.max(1, Number(k.slots))), `${raid}: every kit loadout saves ≥ max(1 s, 1 s per slot)`);

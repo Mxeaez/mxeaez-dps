@@ -33,7 +33,10 @@ What this fork adds on top of upstream:
 * **Damage specs and the surge potion** (phase 36): Voidwaker, Dragon / Burning claws, Zaryte crossbow and Crimson
   kisten specs compete with the drains for one spec budget per encounter (100% at each boss, regen on the fight's
   clock); the planner brings a damage spec weapon or a Surge potion when it saves ≥ 1 s per slot and says where to drink
-  the doses; the Search tab lists every damage spec's value on the selected boss ("Specs (damage)").
+  the doses; the Search tab lists every damage spec's value on the selected boss ("Specs (damage)": average damage, gain
+  over normal hits, time saved, cost, best gain per 100% energy first).
+* **Plans in under a minute** (phase 37): exact memos of the planner's encounter times and passes, and the camp-one ring
+  runs spread over parallel workers (FA ~19 s, ToA ~17 s, ToB ~21 s, CoX ~38 s on a 20-thread machine), same results.
 * **Times assume N players at your DPS** (the "Players assumed at your DPS" input under Advanced; the page says "times assume N players at your DPS"):
   N defaults to the party size in ToA / CoX / ToB, where upstream scales boss hp with it, and to 1 in the Fractured
   Archive, whose hp scaling is unknown.

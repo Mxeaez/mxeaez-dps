@@ -11,6 +11,7 @@ import {
   RouteComparisonProgress, RouteComparisonRequest, RouteComparisonResult,
 } from '@/lib/fracturedArchive/raidTime';
 import { PlanInputs, PlanProgress, PlanResult } from '@/lib/fracturedArchive/planner';
+import { PlannerWeapon } from '@/lib/fracturedArchive/specs';
 
 /**
  * Requests
@@ -93,6 +94,10 @@ export interface RaidRoutesRequest extends WorkerRequest<WorkerRequestType.RAID_
 
 export interface RaidPlanRequest extends WorkerRequest<WorkerRequestType.RAID_PLAN> {
   data: PlanInputs,
+  /** Phase 37: ring runs made by helper workers (`PlanHooks.ringRuns`), `encodeRingRuns`'d. */
+  ringRuns?: string,
+  /** Phase 37: a helper worker: run only this ring (`planRingRun`); the response carries `ringRun`. */
+  ring?: { ring: number | null, screen: boolean, screenSubset?: PlannerWeapon[] | null },
 }
 
 export type CalcRequestsUnion =
@@ -160,6 +165,8 @@ export interface RaidRoutesProgressMessage {
 
 export interface RaidPlanResponse extends WorkerResponse<WorkerRequestType.RAID_PLAN> {
   payload: PlanResult,
+  /** Phase 37: a helper worker's ring run (a `RingRunResult` or null, `encodeRingRuns`'d). */
+  ringRun?: string,
 }
 
 /** Interim message of a RAID_PLAN request. */

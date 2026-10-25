@@ -101,8 +101,8 @@ const main = async () => {
   await waitPlan(page);
   const replan = (Date.now() - t0) / 1000;
   console.log(`     re-plan after a supplies change: ${replan.toFixed(1)} s`);
-  // phase 36: ≤ 60 s (was 20 s: the spec budget's DP re-runs with the kit)
-  check(replan <= 60, `re-plan ≤ 60 s (${replan.toFixed(1)} s)`);
+  // phase 36: ≤ 60 s (was 20 s: the spec budget's DP re-runs with the kit); phase 37: back to ≤ 20 s
+  check(replan <= 20, `re-plan ≤ 20 s (${replan.toFixed(1)} s)`);
   await page.locator('#plan-supply-brew').fill('6');
   await waitPlan(page);
   check(camp.cells.length === 28, '28 inventory cells');

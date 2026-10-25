@@ -208,8 +208,11 @@ export const allocateBudget = (p: AllocationProblem): AllocationResult => {
   p.events.forEach((e) => e.options.forEach((o) => o.spends.forEach((s) => {
     if (s.specs > 0) lastSpend.set(s.group, Math.max(lastSpend.get(s.group) ?? -1, s.row));
   })));
-  const keyAt = (i: number, s: PoolState) => Object.keys(s).sort()
-    .filter((g) => p.keepEnd || g === dmgGroup || (lastSpend.get(g) ?? -1) >= i)
+  // phase 37 (speed): every state has the start's pools (spends and regen only replace them), so the pools in a row's
+  // key are fixed per row
+  const poolIds = Object.keys(p.start).sort();
+  const keyGroups = p.rows.map((_, i) => poolIds.filter((g) => p.keepEnd || g === dmgGroup || (lastSpend.get(g) ?? -1) >= i));
+  const keyAt = (i: number, s: PoolState) => keyGroups[i]
     .map((g) => `${g}:${s[g].map((e) => Math.round(e * 1000) / 1000).join(',')}`)
     .join(';');
   const eventAt = new Map<number, number[]>();

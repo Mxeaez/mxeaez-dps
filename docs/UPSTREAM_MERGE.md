@@ -29,6 +29,14 @@ subset search, the quiver / kept-ammo slot rules and the drain-line wording are 
 planner); the `getCanonicalItemId` reverse map below was round 3. The planner calls upstream's `ammoApplicability`
 and `getCanonicalItemId` (phase 32) as they are.
 
+**Round 5 (phases 33-37, reviewed in phase 37)**: phases 33-36 changed no upstream file (still 20 files, +334 / −29 at
+7864dacc); phase 37 adds 7 lines to `src/worker/CalcWorkerTypes.ts` (optional `ringRuns` / `ring` on the RAID_PLAN
+request and `ringRun` on its response: the parallel ring runs), so **+341 / −29**. Everything else is in our own files
+(`fracturedArchive/*` — the new `traceMemo.ts`, `kitMemo.ts`, `parallelRings.ts` —, `bestSetup/*`, `raids/*`,
+`searchWorker.ts`, `searchWorkerClient.ts`). Nothing new to send upstream: `formatDuration`'s rounding fix (phase 36,
+"24:60.0") is in our raidTime.ts, the spec budget, damage specs, surge potion and the planner's memos / parallel ring
+runs are fork-only planner code (upstream has no planner). The Specs box reads upstream's `getSpecCalc()` as it is.
+
 ## How to merge
 
 ```
@@ -79,7 +87,7 @@ values (Bork's flat armour comes from the phase input, so the generated 0 is exp
 | `src/enums/Prayer.ts` | 16 / 1 | **Zeal = 21** | **High if upstream adds a prayer**: it will likely take id 21 too. Renumber Zeal to the next free id. Saved loadouts that stored 21 then need a one-time fix (only Zeal users) |
 | `src/enums/EquipmentCategory.ts`, `src/utils.ts` | 1 + 20 / 1 | Extending Chain Mace category + styles; CDN URL and shortlink env flags; phase 25: `getCdnImage` turns `%27` into a literal `'` (the deployed site 307-redirects `%27`) | Medium if upstream adds the Obligator itself. Then drop ours and keep `getObligatorAttackSpeed` / thrust logic only if upstream lacks it |
 | `src/types/Player.ts` | 6 / 1 | `buffs.elementalFragments` | Low |
-| `src/worker/CalcWorkerTypes.ts` | 64 / 0 | `BEST_SETUP_SEARCH`, `RAID_ROUTES` (phase 16), `RAID_PLAN` (phase 17) request types (they run in our own `searchWorker.ts`); phase 13 removed `BEST_SETUP` and its handler, so `worker.ts` is unchanged from upstream | Low–medium (enum additions at the end) |
+| `src/worker/CalcWorkerTypes.ts` | 73 / 0 | `BEST_SETUP_SEARCH`, `RAID_ROUTES` (phase 16), `RAID_PLAN` (phase 17) request types (they run in our own `searchWorker.ts`); phase 26: `notOwned`; phase 37: the RAID_PLAN ring-run fields; phase 13 removed `BEST_SETUP` and its handler, so `worker.ts` is unchanged from upstream | Low–medium (enum additions at the end) |
 | `src/app/components/monster/MonsterContainer.tsx` | 12 / 2 | party size 2–8 + hint for raid bosses | Low |
 | `DefensiveReductions.tsx`, `player/Combat.tsx`, `TopBar.tsx` | 2, 2, 12 | drain-preset buttons, fragment toggle, "Best setup" button | Low |
 | `Footer.tsx`, `ShareModal.tsx`, `InitialLoad.tsx`, `layout.tsx` | 11, 17, 1, 3 | fork branding, shortlinks off | Low–medium (branding text; keep ours) |

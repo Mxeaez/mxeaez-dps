@@ -396,7 +396,7 @@ const eventParts = (phases: { key: string, label: string, drainLine?: DrainLine 
  * out; a reset with no specs (Bloat's stomp) is kept. Phases without `npc` are one NPC (phase 33).
  */
 export const encounterDrainSummary = (
-  phases: { key: string, label: string, drainLine?: DrainLine, drainReset?: string, npc?: string }[],
+  phases: { key: string, label: string, drainLine?: DrainLine, drainReset?: string, npc?: string, noDrains?: string }[],
   drain: 'solo' | 'team',
 ): EncounterDrainSummary | undefined => {
   if (!phases.length || !phases.some((p) => p.drainLine)) return undefined;
@@ -411,11 +411,14 @@ export const encounterDrainSummary = (
     } else groups[at].phases.push(p);
   });
   const withParts = groups.map((g) => ({ ...g, parts: eventParts(g.phases) }));
-  const specced = new Set(withParts.filter((g) => g.parts.length).map((g) => g.npc));
-  const named = specced.size > 1;
-  // the NPCs nobody specs (adds) are left out (an event with no specs of a specced NPC stays: Bloat's stomp); nothing
-  // specced: the first NPC's events ("Start of fight: no specs")
-  const kept = withParts.filter((g) => (specced.size ? specced.has(g.npc) : g.npc === withParts[0].npc));
+  // phase 37 fix: the NPCs that can be drained (a drain line on a phase without `noDrains`), specced or not — since
+  // phase 36 the budget may give one of them nothing (FA party 4: Bork no specs, everything on The Smorks), which must
+  // read "Bork: no specs · Smorks: …", not an unlabelled Smorks line; plus any NPC that got specs (inputs without
+  // `noDrains`). Adds (`noDrains`) are left out; an event with no specs of a kept NPC stays (Bloat's stomp); nothing
+  // drainable: the first NPC's events ("Start of fight: no specs")
+  const drainable = new Set(withParts.filter((g) => g.parts.length || g.phases.some((p) => p.drainLine && !p.noDrains)).map((g) => g.npc));
+  const named = drainable.size > 1;
+  const kept = withParts.filter((g) => (drainable.size ? drainable.has(g.npc) : g.npc === withParts[0].npc));
   const events = kept.map((g): EncounterDrainEvent => {
     const { parts } = g;
     let head = drain === 'team' ? 'Start of fight:' : 'Start:';
@@ -493,11 +496,21 @@ const groupText = (label: string | undefined, items: DrainLineItem[], result: st
 /**
  * Phase 34: the briefing's compact form of an encounter's drain events (encounterDrainSummary): one group per part;
  * when every event with specs has one part and the same numbers (Sotetseg's three events), one group "× 3". Events with
- * no specs are left out (the tooltip keeps the full text). [] when nothing is specced.
+ * no specs are left out (the tooltip keeps the full text), except a named NPC's (phase 37: "Bork: no specs"). [] when
+ * nothing is specced.
  */
 export const encounterBrief = (summary: EncounterDrainSummary): BriefGroup[] => {
   const withParts = summary.events.filter((e) => e.parts.length > 0);
   if (!withParts.length) return [];
+  // phase 37 fix: a named NPC's event with no specs (the budget gave it none) reads "Bork: no specs" / "Right claw,
+  // after phase 1: no specs", as in the full text; an unnamed one (Bloat after the stomp) stays out
+  const noSpecs = (e: EncounterDrainEvent): BriefGroup[] => {
+    if (e.npc === undefined || e.parts.length) return [];
+    const label = [e.npc, e.reset ? `after ${e.reset}` : ''].filter(Boolean).join(', ');
+    return [{
+      key: e.phaseKey, label, items: [], result: '', times: 1, text: `${label}: no specs`,
+    }];
+  };
   const sig = (p: EncounterDrainPart) => `${p.items.map((i) => `${i.weapon}:${briefText(i)}`).join('|')}|${briefResultText(p.line, p.items)}`;
   // phase 35b: "× 3" is the same NPC drained again; two NPCs with the same numbers stay two named groups
   const oneNpc = withParts.every((e) => e.npc === undefined);
@@ -509,7 +522,7 @@ export const encounterBrief = (summary: EncounterDrainSummary): BriefGroup[] => 
     }];
   }
   const several = withParts.length > 1 || withParts[0].parts.length > 1;
-  return withParts.flatMap((e) => e.parts.map((p) => {
+  return summary.events.flatMap((e) => (!e.parts.length ? noSpecs(e) : e.parts.map((p) => {
     let label: string | undefined;
     if (e.npc !== undefined) {
       // phase 35b: "Bork", "Smorks"; "Elidinis' Warden, P2 core"; "Bork, after the stomp"
@@ -520,5 +533,5 @@ export const encounterBrief = (summary: EncounterDrainSummary): BriefGroup[] => 
     return {
       key: p.phaseKey, label, items: p.items, result, times: 1, text: groupText(label, p.items, result, 1),
     };
-  }));
+  })));
 };

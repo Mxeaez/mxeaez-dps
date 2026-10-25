@@ -1,0 +1,1474 @@
+{
+ "cancelled": false,
+ "kit": [
+  {
+   "label": "Torva + Scythe (slash)",
+   "kind": "preset",
+   "group": "melee",
+   "equipment": {
+    "cape": {
+     "id": 21295,
+     "name": "Infernal cape",
+     "version": "Normal",
+     "slot": "cape"
+    },
+    "neck": {
+     "id": 29801,
+     "name": "Amulet of rancour",
+     "version": "",
+     "slot": "neck"
+    },
+    "hands": {
+     "id": 22981,
+     "name": "Ferocious gloves",
+     "version": "",
+     "slot": "hands"
+    },
+    "feet": {
+     "id": 31097,
+     "name": "Avernic treads (max)",
+     "version": "",
+     "slot": "feet"
+    },
+    "ring": {
+     "id": 28307,
+     "name": "Ultor ring",
+     "version": "",
+     "slot": "ring"
+    },
+    "head": {
+     "id": 26382,
+     "name": "Torva full helm",
+     "version": "Restored",
+     "slot": "head"
+    },
+    "body": {
+     "id": 26384,
+     "name": "Torva platebody",
+     "version": "Restored",
+     "slot": "body"
+    },
+    "legs": {
+     "id": 26386,
+     "name": "Torva platelegs",
+     "version": "Restored",
+     "slot": "legs"
+    },
+    "weapon": {
+     "id": 22325,
+     "name": "Scythe of Vitur",
+     "version": "Charged",
+     "slot": "weapon",
+     "twoHanded": true
+    }
+   },
+   "options": [
+    {
+     "style": {
+      "name": "Reap",
+      "type": "slash",
+      "stance": "Accurate"
+     },
+     "spell": null
+    },
+    {
+     "style": {
+      "name": "Chop",
+      "type": "slash",
+      "stance": "Aggressive"
+     },
+     "spell": null
+    },
+    {
+     "style": {
+      "name": "Jab",
+      "type": "crush",
+      "stance": "Aggressive"
+     },
+     "spell": null
+    }
+   ],
+   "source": "preset",
+   "key": "melee|26382,21295,29801,0,22325,26384,0,26386,22981,31097,28307"
+  },
+  {
+   "label": "Ascension crossbows + diamond (e) (Masori)",
+   "kind": "preset",
+   "group": "ranged",
+   "equipment": {
+    "head": {
+     "id": 27235,
+     "name": "Masori mask (f)",
+     "version": "",
+     "slot": "head"
+    },
+    "body": {
+     "id": 27238,
+     "name": "Masori body (f)",
+     "version": "",
+     "slot": "body"
+    },
+    "legs": {
+     "id": 27241,
+     "name": "Masori chaps (f)",
+     "version": "",
+     "slot": "legs"
+    },
+    "cape": {
+     "id": 28951,
+     "name": "Dizana's quiver",
+     "version": "Charged",
+     "slot": "cape"
+    },
+    "neck": {
+     "id": 33639,
+     "name": "Necklace of rupture",
+     "version": "",
+     "slot": "neck"
+    },
+    "hands": {
+     "id": 26235,
+     "name": "Zaryte vambraces",
+     "version": "",
+     "slot": "hands"
+    },
+    "feet": {
+     "id": 31097,
+     "name": "Avernic treads (max)",
+     "version": "",
+     "slot": "feet"
+    },
+    "ring": {
+     "id": 28307,
+     "name": "Ultor ring",
+     "version": "",
+     "slot": "ring"
+    },
+    "weapon": {
+     "id": 34681,
+     "name": "Ascension crossbows",
+     "version": "",
+     "slot": "weapon",
+     "twoHanded": true
+    },
+    "ammo": {
+     "id": 34696,
+     "name": "Diamond ascension bolts (e)",
+     "version": "",
+     "slot": "ammo"
+    }
+   },
+   "options": [
+    {
+     "style": {
+      "name": "Accurate",
+      "type": "ranged",
+      "stance": "Accurate"
+     },
+     "spell": null
+    },
+    {
+     "style": {
+      "name": "Rapid",
+      "type": "ranged",
+      "stance": "Rapid"
+     },
+     "spell": null
+    }
+   ],
+   "source": "preset",
+   "key": "ranged|27235,28951,33639,34696,34681,27238,0,27241,26235,31097,28307"
+  },
+  {
+   "label": "Dragon pickaxe",
+   "kind": "search",
+   "group": "melee",
+   "equipment": {
+    "weapon": {
+     "id": 11920,
+     "name": "Dragon pickaxe",
+     "version": "",
+     "slot": "weapon"
+    },
+    "head": {
+     "id": 24419,
+     "name": "Inquisitor's great helm",
+     "version": "",
+     "slot": "head"
+    },
+    "body": {
+     "id": 24420,
+     "name": "Inquisitor's hauberk",
+     "version": "",
+     "slot": "body"
+    },
+    "legs": {
+     "id": 24421,
+     "name": "Inquisitor's plateskirt",
+     "version": "",
+     "slot": "legs"
+    },
+    "cape": {
+     "id": 21295,
+     "name": "Infernal cape",
+     "version": "Normal",
+     "slot": "cape"
+    },
+    "neck": {
+     "id": 29801,
+     "name": "Amulet of rancour",
+     "version": "",
+     "slot": "neck"
+    },
+    "hands": {
+     "id": 22981,
+     "name": "Ferocious gloves",
+     "version": "",
+     "slot": "hands"
+    },
+    "feet": {
+     "id": 31097,
+     "name": "Avernic treads (max)",
+     "version": "",
+     "slot": "feet"
+    },
+    "ring": {
+     "id": 28307,
+     "name": "Ultor ring",
+     "version": "",
+     "slot": "ring"
+    },
+    "shield": {
+     "id": 22322,
+     "name": "Avernic defender",
+     "version": "Normal",
+     "slot": "shield"
+    }
+   },
+   "options": [
+    {
+     "style": {
+      "name": "Smash",
+      "type": "crush",
+      "stance": "Aggressive"
+     },
+     "spell": null
+    }
+   ],
+   "source": "search: Guardian",
+   "key": "melee|24419,21295,29801,0,11920,24420,22322,24421,22981,31097,28307"
+  },
+  {
+   "label": "Tumeken's shadow (Ancestral)",
+   "kind": "preset",
+   "group": "magic",
+   "equipment": {
+    "head": {
+     "id": 21018,
+     "name": "Ancestral hat",
+     "version": "",
+     "slot": "head"
+    },
+    "body": {
+     "id": 21021,
+     "name": "Ancestral robe top",
+     "version": "",
+     "slot": "body"
+    },
+    "legs": {
+     "id": 21024,
+     "name": "Ancestral robe bottom",
+     "version": "",
+     "slot": "legs"
+    },
+    "cape": {
+     "id": 21793,
+     "name": "Imbued Guthix cape",
+     "version": "Normal",
+     "slot": "cape"
+    },
+    "neck": {
+     "id": 12002,
+     "name": "Occult necklace",
+     "version": "",
+     "slot": "neck"
+    },
+    "hands": {
+     "id": 31106,
+     "name": "Confliction gauntlets",
+     "version": "",
+     "slot": "hands"
+    },
+    "feet": {
+     "id": 31097,
+     "name": "Avernic treads (max)",
+     "version": "",
+     "slot": "feet"
+    },
+    "ring": {
+     "id": 28307,
+     "name": "Ultor ring",
+     "version": "",
+     "slot": "ring"
+    },
+    "weapon": {
+     "id": 27275,
+     "name": "Tumeken's shadow",
+     "version": "Charged",
+     "slot": "weapon",
+     "twoHanded": true
+    }
+   },
+   "options": [
+    {
+     "style": {
+      "name": "Accurate",
+      "type": "magic",
+      "stance": "Accurate"
+     },
+     "spell": null
+    },
+    {
+     "style": {
+      "name": "Longrange",
+      "type": "magic",
+      "stance": "Longrange"
+     },
+     "spell": null
+    }
+   ],
+   "source": "preset",
+   "key": "magic|21018,21793,12002,0,27275,21021,0,21024,31106,31097,28307"
+  },
+  {
+   "label": "Emberlight",
+   "kind": "search",
+   "group": "melee",
+   "equipment": {
+    "weapon": {
+     "id": 29589,
+     "name": "Emberlight",
+     "version": "",
+     "slot": "weapon"
+    },
+    "head": {
+     "id": 26382,
+     "name": "Torva full helm",
+     "version": "Restored",
+     "slot": "head"
+    },
+    "body": {
+     "id": 26384,
+     "name": "Torva platebody",
+     "version": "Restored",
+     "slot": "body"
+    },
+    "legs": {
+     "id": 26386,
+     "name": "Torva platelegs",
+     "version": "Restored",
+     "slot": "legs"
+    },
+    "cape": {
+     "id": 21295,
+     "name": "Infernal cape",
+     "version": "Normal",
+     "slot": "cape"
+    },
+    "neck": {
+     "id": 29801,
+     "name": "Amulet of rancour",
+     "version": "",
+     "slot": "neck"
+    },
+    "hands": {
+     "id": 22981,
+     "name": "Ferocious gloves",
+     "version": "",
+     "slot": "hands"
+    },
+    "feet": {
+     "id": 31097,
+     "name": "Avernic treads (max)",
+     "version": "",
+     "slot": "feet"
+    },
+    "ring": {
+     "id": 28307,
+     "name": "Ultor ring",
+     "version": "",
+     "slot": "ring"
+    },
+    "shield": {
+     "id": 22322,
+     "name": "Avernic defender",
+     "version": "Normal",
+     "slot": "shield"
+    }
+   },
+   "options": [
+    {
+     "style": {
+      "name": "Chop",
+      "type": "slash",
+      "stance": "Accurate"
+     },
+     "spell": null
+    }
+   ],
+   "source": "search: Ice demon",
+   "key": "melee|26382,21295,29801,0,29589,26384,22322,26386,22981,31097,28307"
+  },
+  {
+   "label": "Ascension crossbows + Diamond ascension bolts (e) #2",
+   "kind": "search",
+   "group": "ranged",
+   "equipment": {
+    "weapon": {
+     "id": 34681,
+     "name": "Ascension crossbows",
+     "version": "",
+     "slot": "weapon",
+     "twoHanded": true
+    },
+    "head": {
+     "id": 27235,
+     "name": "Masori mask (f)",
+     "version": "",
+     "slot": "head"
+    },
+    "body": {
+     "id": 27238,
+     "name": "Masori body (f)",
+     "version": "",
+     "slot": "body"
+    },
+    "legs": {
+     "id": 27241,
+     "name": "Masori chaps (f)",
+     "version": "",
+     "slot": "legs"
+    },
+    "cape": {
+     "id": 28951,
+     "name": "Dizana's quiver",
+     "version": "Charged",
+     "slot": "cape"
+    },
+    "neck": {
+     "id": 12018,
+     "name": "Salve amulet(ei)",
+     "version": "",
+     "slot": "neck"
+    },
+    "hands": {
+     "id": 26235,
+     "name": "Zaryte vambraces",
+     "version": "",
+     "slot": "hands"
+    },
+    "feet": {
+     "id": 31097,
+     "name": "Avernic treads (max)",
+     "version": "",
+     "slot": "feet"
+    },
+    "ring": {
+     "id": 28307,
+     "name": "Ultor ring",
+     "version": "",
+     "slot": "ring"
+    },
+    "ammo": {
+     "id": 34696,
+     "name": "Diamond ascension bolts (e)",
+     "version": "",
+     "slot": "ammo"
+    }
+   },
+   "options": [
+    {
+     "style": {
+      "name": "Rapid",
+      "type": "ranged",
+      "stance": "Rapid"
+     },
+     "spell": null
+    },
+    {
+     "style": {
+      "name": "Accurate",
+      "type": "ranged",
+      "stance": "Accurate"
+     },
+     "spell": null
+    }
+   ],
+   "source": "search: Skeletal Mystic",
+   "key": "ranged|27235,28951,12018,34696,34681,27238,0,27241,26235,31097,28307"
+  }
+ ],
+ "kitMarginal": [
+  {
+   "slots": 1,
+   "seconds": 100.17406848573665
+  },
+  {
+   "slots": 1,
+   "seconds": 6.583087012627516
+  },
+  {
+   "slots": 4,
+   "seconds": "Infinity"
+  },
+  {
+   "slots": 7,
+   "seconds": 376.4043034477808
+  },
+  {
+   "slots": 1,
+   "seconds": 13.172277934732222
+  },
+  {
+   "slots": 1,
+   "seconds": 7.135454322899136
+  }
+ ],
+ "slots": {
+  "total": 28,
+  "supplies": 5,
+  "nonItem": 1,
+  "carriedItems": 32,
+  "wornItems": 9,
+  "minLoadoutItems": 10,
+  "keptAmmo": 1,
+  "inventoryItems": 22,
+  "swapReserve": 0,
+  "quiverAmmo": 0,
+  "used": 28,
+  "free": 0,
+  "overfull": false
+ },
+ "inventory": [
+  {
+   "kind": "supply",
+   "label": "Saradomin brew",
+   "supply": "brew"
+  },
+  {
+   "kind": "supply",
+   "label": "Saradomin brew",
+   "supply": "brew"
+  },
+  {
+   "kind": "supply",
+   "label": "Super restore",
+   "supply": "restore"
+  },
+  {
+   "kind": "supply",
+   "label": "Super restore",
+   "supply": "restore"
+  },
+  {
+   "kind": "supply",
+   "label": "Other",
+   "supply": "other"
+  },
+  {
+   "kind": "switch",
+   "label": "Inquisitor's great helm",
+   "item": {
+    "id": 24419,
+    "name": "Inquisitor's great helm",
+    "version": "",
+    "slot": "head"
+   },
+   "group": "melee"
+  },
+  {
+   "kind": "switch",
+   "label": "Dragon pickaxe",
+   "item": {
+    "id": 11920,
+    "name": "Dragon pickaxe",
+    "version": "",
+    "slot": "weapon"
+   },
+   "group": "melee"
+  },
+  {
+   "kind": "switch",
+   "label": "Inquisitor's hauberk",
+   "item": {
+    "id": 24420,
+    "name": "Inquisitor's hauberk",
+    "version": "",
+    "slot": "body"
+   },
+   "group": "melee"
+  },
+  {
+   "kind": "switch",
+   "label": "Avernic defender",
+   "item": {
+    "id": 22322,
+    "name": "Avernic defender",
+    "version": "Normal",
+    "slot": "shield"
+   },
+   "group": "melee"
+  },
+  {
+   "kind": "switch",
+   "label": "Inquisitor's plateskirt",
+   "item": {
+    "id": 24421,
+    "name": "Inquisitor's plateskirt",
+    "version": "",
+    "slot": "legs"
+   },
+   "group": "melee"
+  },
+  {
+   "kind": "switch",
+   "label": "Emberlight",
+   "item": {
+    "id": 29589,
+    "name": "Emberlight",
+    "version": "",
+    "slot": "weapon"
+   },
+   "group": "melee"
+  },
+  {
+   "kind": "switch",
+   "label": "Masori mask (f)",
+   "item": {
+    "id": 27235,
+    "name": "Masori mask (f)",
+    "version": "",
+    "slot": "head"
+   },
+   "group": "ranged"
+  },
+  {
+   "kind": "switch",
+   "label": "Dizana's quiver",
+   "item": {
+    "id": 28951,
+    "name": "Dizana's quiver",
+    "version": "Charged",
+    "slot": "cape"
+   },
+   "group": "ranged"
+  },
+  {
+   "kind": "switch",
+   "label": "Necklace of rupture",
+   "item": {
+    "id": 33639,
+    "name": "Necklace of rupture",
+    "version": "",
+    "slot": "neck"
+   },
+   "group": "ranged"
+  },
+  {
+   "kind": "switch",
+   "label": "Ascension crossbows",
+   "item": {
+    "id": 34681,
+    "name": "Ascension crossbows",
+    "version": "",
+    "slot": "weapon",
+    "twoHanded": true
+   },
+   "group": "ranged"
+  },
+  {
+   "kind": "switch",
+   "label": "Masori body (f)",
+   "item": {
+    "id": 27238,
+    "name": "Masori body (f)",
+    "version": "",
+    "slot": "body"
+   },
+   "group": "ranged"
+  },
+  {
+   "kind": "switch",
+   "label": "Masori chaps (f)",
+   "item": {
+    "id": 27241,
+    "name": "Masori chaps (f)",
+    "version": "",
+    "slot": "legs"
+   },
+   "group": "ranged"
+  },
+  {
+   "kind": "switch",
+   "label": "Zaryte vambraces",
+   "item": {
+    "id": 26235,
+    "name": "Zaryte vambraces",
+    "version": "",
+    "slot": "hands"
+   },
+   "group": "ranged"
+  },
+  {
+   "kind": "switch",
+   "label": "Salve amulet(ei)",
+   "item": {
+    "id": 12018,
+    "name": "Salve amulet(ei)",
+    "version": "",
+    "slot": "neck"
+   },
+   "group": "ranged"
+  },
+  {
+   "kind": "switch",
+   "label": "Ancestral hat",
+   "item": {
+    "id": 21018,
+    "name": "Ancestral hat",
+    "version": "",
+    "slot": "head"
+   },
+   "group": "magic"
+  },
+  {
+   "kind": "switch",
+   "label": "Imbued Guthix cape",
+   "item": {
+    "id": 21793,
+    "name": "Imbued Guthix cape",
+    "version": "Normal",
+    "slot": "cape"
+   },
+   "group": "magic"
+  },
+  {
+   "kind": "switch",
+   "label": "Occult necklace",
+   "item": {
+    "id": 12002,
+    "name": "Occult necklace",
+    "version": "",
+    "slot": "neck"
+   },
+   "group": "magic"
+  },
+  {
+   "kind": "switch",
+   "label": "Tumeken's shadow",
+   "item": {
+    "id": 27275,
+    "name": "Tumeken's shadow",
+    "version": "Charged",
+    "slot": "weapon",
+    "twoHanded": true
+   },
+   "group": "magic"
+  },
+  {
+   "kind": "switch",
+   "label": "Ancestral robe top",
+   "item": {
+    "id": 21021,
+    "name": "Ancestral robe top",
+    "version": "",
+    "slot": "body"
+   },
+   "group": "magic"
+  },
+  {
+   "kind": "switch",
+   "label": "Ancestral robe bottom",
+   "item": {
+    "id": 21024,
+    "name": "Ancestral robe bottom",
+    "version": "",
+    "slot": "legs"
+   },
+   "group": "magic"
+  },
+  {
+   "kind": "switch",
+   "label": "Confliction gauntlets",
+   "item": {
+    "id": 31106,
+    "name": "Confliction gauntlets",
+    "version": "",
+    "slot": "hands"
+   },
+   "group": "magic"
+  },
+  {
+   "kind": "spec",
+   "label": "Dragon claws",
+   "item": {
+    "id": 13652,
+    "name": "Dragon claws",
+    "version": "",
+    "slot": "weapon",
+    "twoHanded": true
+   }
+  },
+  {
+   "kind": "non-item",
+   "label": "Rune pouch"
+  }
+ ],
+ "specItems": [
+  {
+   "id": 13652,
+   "name": "Dragon claws",
+   "version": "",
+   "slot": "weapon",
+   "twoHanded": true
+  }
+ ],
+ "pinnedItems": [],
+ "comparison": "09f122650859562f0b7bd3ce61eecb1d7d038b3c4d0b9040b801d7214f2ba94e",
+ "planned": 0,
+ "rejected": [
+  {
+   "label": "Twisted bow + Seeking dragon arrow",
+   "kind": "addition",
+   "deltaSeconds": 3.774239631750959,
+   "deltaSlots": 5,
+   "reason": "needs 5 more slots, 0 free",
+   "weapons": [
+    "Twisted bow"
+   ]
+  },
+  {
+   "label": "Twisted bow + Dragon arrow",
+   "kind": "addition",
+   "deltaSeconds": 3.647978893053221,
+   "deltaSlots": 5,
+   "reason": "needs 5 more slots, 0 free",
+   "weapons": [
+    "Twisted bow"
+   ]
+  },
+  {
+   "label": "Twisted bow (Masori)",
+   "kind": "addition",
+   "deltaSeconds": 1.7982982555926696,
+   "deltaSlots": 1,
+   "reason": "needs 1 more slot, 0 free",
+   "weapons": [
+    "Twisted bow"
+   ]
+  }
+ ],
+ "alternatives": [
+  {
+   "label": "Lighter kit: Ascension crossbows + diamond (e) (Masori) / Dragon pickaxe (Torva) / Tumeken's shadow (Ancestral) / Torva + Scythe (slash) / Emberlight / Ascension crossbows + Diamond ascension bolts (e) #2",
+   "kind": "alternative",
+   "deltaSeconds": -0.9299216393302459,
+   "deltaSlots": -3,
+   "reason": "−3 slots for +0.9 s (each freed slot cost < 1 s)",
+   "weapons": [
+    "Ascension crossbows",
+    "Dragon pickaxe",
+    "Tumeken's shadow",
+    "Scythe of Vitur",
+    "Emberlight",
+    "Ascension crossbows"
+   ]
+  },
+  {
+   "label": "melee + ranged: Dragon pickaxe / Dragon hunter crossbow + ruby (e) (Masori) / Torva + Scythe (slash) / Emberlight / Ascension crossbows + Diamond ascension bolts (e) #2 / Ascension crossbows + diamond (e) (Masori) / Torva + Obligator",
+   "kind": "alternative",
+   "deltaSeconds": -281.66800924333705,
+   "deltaSlots": -4,
+   "reason": "281.7 s slower",
+   "weapons": [
+    "Dragon pickaxe",
+    "Dragon hunter crossbow",
+    "Scythe of Vitur",
+    "Emberlight",
+    "Ascension crossbows",
+    "Ascension crossbows",
+    "Obligator"
+   ]
+  },
+  {
+   "label": "magic: Tumeken's shadow (Ancestral)",
+   "kind": "alternative",
+   "deltaSeconds": "-Infinity",
+   "deltaSlots": -21,
+   "reason": "cannot clear the route",
+   "weapons": [
+    "Tumeken's shadow"
+   ]
+  },
+  {
+   "label": "melee + magic: Scythe of Vitur #2 + Torva platelegs / Tumeken's shadow switch on Scythe of Vitur #2",
+   "kind": "alternative",
+   "deltaSeconds": "-Infinity",
+   "deltaSlots": -19,
+   "reason": "cannot clear the route",
+   "weapons": [
+    "Scythe of Vitur",
+    "Tumeken's shadow"
+   ]
+  },
+  {
+   "label": "melee: Scythe of Vitur #2 + Torva platelegs",
+   "kind": "alternative",
+   "deltaSeconds": "-Infinity",
+   "deltaSlots": -21,
+   "reason": "cannot clear the route",
+   "weapons": [
+    "Scythe of Vitur"
+   ]
+  },
+  {
+   "label": "ranged + magic: Ascension crossbows + diamond (e) (Masori) + Void ranger helm / Tumeken's shadow switch on Ascension crossbows + diamond (e) (Masori)",
+   "kind": "alternative",
+   "deltaSeconds": "-Infinity",
+   "deltaSlots": -19,
+   "reason": "cannot clear the route",
+   "weapons": [
+    "Ascension crossbows",
+    "Tumeken's shadow"
+   ]
+  },
+  {
+   "label": "ranged: Ascension crossbows + diamond (e) (Masori) + Void ranger helm",
+   "kind": "alternative",
+   "deltaSeconds": "-Infinity",
+   "deltaSlots": -21,
+   "reason": "cannot clear the route",
+   "weapons": [
+    "Ascension crossbows"
+   ]
+  }
+ ],
+ "potions": [],
+ "quiverAmmo": null,
+ "keptAmmo": {
+  "id": 34696,
+  "name": "Diamond ascension bolts (e)",
+  "version": "",
+  "slot": "ammo"
+ },
+ "specs": {
+  "mode": "auto",
+  "drain": "team",
+  "bring": [],
+  "text": "Bring: Dragon claws",
+  "damage": [
+   "dragonClaws"
+  ],
+  "items": [
+   {
+    "item": "Dragon claws",
+    "saved": 1.1941913822577703,
+    "slots": 1,
+    "how": "a slot from the kit (re-optimised)"
+   }
+  ],
+  "team": {
+   "partySize": 6,
+   "mages": 1,
+   "threshold": 0.95,
+   "rows": [
+    {
+     "weapon": "elderMaul",
+     "carriers": 3,
+     "drivers": [
+      "Great Olm (5.0 s)",
+      "Tekton (1.3 s)"
+     ],
+     "lastSaved": 6.2943689047732505
+    },
+    {
+     "weapon": "tonalztics",
+     "carriers": 1,
+     "drivers": [
+      "Great Olm (5.3 s)",
+      "Vespula (0.5 s)",
+      "Ice demon (0.1 s)",
+      "Vasa Nistirio (0.1 s)",
+      "Muttadiles (0.1 s)"
+     ],
+     "lastSaved": 6.105689162174599
+    },
+    {
+     "weapon": "bgs",
+     "carriers": 1,
+     "drivers": [
+      "Great Olm (1.5 s)",
+      "Tekton (1.5 s)"
+     ],
+     "lastSaved": 2.9641932861850364
+    }
+   ],
+   "perTarget": [
+    {
+     "key": "cox-tekton|",
+     "label": "Tekton",
+     "group": "Tekton",
+     "carriers": null,
+     "pFloor": 0,
+     "ayak": 0,
+     "note": "no team of ≤ 6 carriers reaches 95% from the first round (best single weapon: 6 BGS → 83%)"
+    },
+    {
+     "key": "cox-tekton-enraged|",
+     "label": "Tekton (enraged)",
+     "group": "Tekton (enraged)",
+     "carriers": null,
+     "pFloor": 0,
+     "ayak": 0,
+     "note": "no team of ≤ 6 carriers reaches 95% from the first round (best single weapon: 6 BGS → 49%)"
+    },
+    {
+     "key": "cox-vasa|",
+     "label": "Vasa Nistirio",
+     "group": "Vasa Nistirio",
+     "carriers": {
+      "tonalztics": 3
+     },
+     "pFloor": 0.9998791722927685,
+     "ayak": null
+    },
+    {
+     "key": "cox-vespula|",
+     "label": "Vespula",
+     "group": "Vespula",
+     "carriers": {
+      "tonalztics": 3
+     },
+     "pFloor": 0.9979704485472438,
+     "ayak": 3
+    },
+    {
+     "key": "cox-muttadile-large|",
+     "label": "Muttadile (large)",
+     "group": "Muttadile (large)",
+     "carriers": {
+      "tonalztics": 3
+     },
+     "pFloor": 0.9997325206382657,
+     "ayak": 4
+    },
+    {
+     "key": "cox-guardian|",
+     "label": "Guardian",
+     "group": "Guardian",
+     "carriers": null,
+     "pFloor": 0,
+     "ayak": 0,
+     "note": "no drain weapon can hit here"
+    },
+    {
+     "key": "cox-ice-demon|",
+     "label": "Ice demon",
+     "group": "Ice demon",
+     "carriers": {
+      "tonalztics": 2
+     },
+     "pFloor": 0.9919538179381503,
+     "ayak": 4
+    },
+    {
+     "key": "cox-olm-right|",
+     "label": "Great Olm right claw (mage hand)",
+     "group": "Great Olm right claw (mage hand)",
+     "carriers": null,
+     "pFloor": 0,
+     "ayak": 2,
+     "note": "no team of ≤ 6 carriers reaches 95% from the first round (best single weapon: 6 Tonalztics → 29%)"
+    },
+    {
+     "key": "cox-olm-left|",
+     "label": "Great Olm left claw (melee hand)",
+     "group": "Great Olm left claw (melee hand)",
+     "carriers": {
+      "elderMaul": 2,
+      "tonalztics": 2
+     },
+     "pFloor": 0.9510687456531403,
+     "ayak": null
+    },
+    {
+     "key": "cox-olm-head|",
+     "label": "Great Olm head (final phase)",
+     "group": "Great Olm head (final phase)",
+     "carriers": {
+      "tonalztics": 2
+     },
+     "pFloor": 0.9937979857684685,
+     "ayak": null
+    }
+   ],
+   "text": "6-man: 3 Elder maul, 1 Tonalztics, 1 BGS",
+   "carriers": {
+    "elderMaul": 3,
+    "dwh": 0,
+    "bgs": 1,
+    "tonalztics": 1,
+    "ayak": 0
+   },
+   "mode": "auto",
+   "steps": [
+    {
+     "weapon": "elderMaul",
+     "saved": 28.640182790043298,
+     "seconds": 460.53820647633756
+    },
+    {
+     "weapon": "elderMaul",
+     "saved": 13.992917827503447,
+     "seconds": 446.5452886488341
+    },
+    {
+     "weapon": "tonalztics",
+     "saved": 8.632418156102858,
+     "seconds": 437.91287049273126
+    },
+    {
+     "weapon": "elderMaul",
+     "saved": 6.275148346839671,
+     "seconds": 431.6377221458916
+    },
+    {
+     "weapon": "bgs",
+     "saved": 2.9641932861850364,
+     "seconds": 428.67352885970655
+    }
+   ]
+  },
+  "share": {
+   "weapon": null,
+   "carry": false,
+   "reason": "your spec energy goes to your Dragon claws specs — let a teammate carry Elder maul (most needed: 3 carriers)",
+   "manual": false
+  },
+  "notes": [
+   "Your spec bar goes to Dragon claws: 5 carriers (party − 1), 7:08.7 vs 7:10.4 if you carry a drain weapon instead."
+  ]
+ },
+ "ring": {
+  "policy": "camp-one",
+  "ring": "Ultor ring",
+  "screened": [
+   {
+    "ring": "Ultor ring",
+    "seconds": 428.67352885970655,
+    "full": true
+   },
+   {
+    "ring": "Bellator ring",
+    "seconds": 433.42599144789415,
+    "full": true
+   },
+   {
+    "ring": "Magus ring",
+    "seconds": 437.60702765594726,
+    "full": false,
+    "atLeast": 0
+   },
+   {
+    "ring": "Ring of shadows",
+    "seconds": 437.9359958470658,
+    "full": false,
+    "atLeast": 0
+   },
+   {
+    "ring": "Venator ring",
+    "seconds": 440.77666149492745,
+    "full": false,
+    "atLeast": 0
+   },
+   {
+    "ring": "Lightbearer",
+    "seconds": 441.89069137992436,
+    "full": false,
+    "atLeast": 0
+   }
+  ]
+ },
+ "matrixDps": {
+  "cox-tekton|": 13.530955374981692,
+  "cox-tekton-enraged|": 11.651847898284078,
+  "cox-glowing-crystal|": 9.386117773768646,
+  "cox-vasa|": 15.108503643194735,
+  "cox-vanguard-melee|": 11.0915159493267,
+  "cox-vanguard-ranged|": 10.61443488118333,
+  "cox-vanguard-magic|": 11.851002183627653,
+  "cox-vespula|": 14.979430287203213,
+  "cox-abyssal-portal|": 10.526329154645039,
+  "cox-mystic|": 12.147891368659058,
+  "cox-shaman|": 12.78147616768151,
+  "cox-muttadile-small|": 13.601075127920224,
+  "cox-muttadile-large|": 15.153999473635617,
+  "cox-guardian|": 9.409502999030305,
+  "cox-ice-demon|": 14.028660183605453,
+  "cox-olm-right|": 11.387579265412377,
+  "cox-olm-left|": 14.993925426740592,
+  "cox-olm-head|": 15.078173089567484
+ },
+ "unusedCarried": [],
+ "excluded": [],
+ "droppedPinned": [],
+ "ownershipNotices": [],
+ "searchRows": "e49fb656e539cae4db972788d36cd10f569d5bf7c3a165adcaec088829cc755b",
+ "objectiveSeconds": 428.67352885970655,
+ "fightSeconds": null,
+ "plannedRoute": {
+  "id": "cox-tekton>cox-vasa>cox-vanguards>cox-vespula>cox-mystics>cox-shamans>cox-muttadiles>cox-guardians>cox-ice-demon>cox-olm",
+  "seconds": 428.67352885970655,
+  "surgeDoses": null,
+  "encounters": [
+   {
+    "id": "cox-tekton",
+    "seconds": 13.76038435360601,
+    "events": [
+     {
+      "npc": "Tekton",
+      "firstRowKey": "tekton",
+      "counts": {
+       "elderMaul": 6,
+       "bgs": 2
+      }
+     }
+    ],
+    "damage": {
+     "tekton-enraged": {
+      "dragonClaws": 2
+     }
+    },
+    "surge": false
+   },
+   {
+    "id": "cox-vasa",
+    "seconds": 21.038909794659588,
+    "events": [
+     {
+      "npc": "Glowing crystal",
+      "firstRowKey": "vasa-crystals",
+      "counts": {}
+     },
+     {
+      "npc": "Vasa Nistirio",
+      "firstRowKey": "vasa",
+      "counts": {
+       "elderMaul": 6,
+       "bgs": 2,
+       "tonalztics": 2
+      }
+     }
+    ],
+    "damage": {
+     "vasa": {
+      "dragonClaws": 2
+     }
+    },
+    "surge": false
+   },
+   {
+    "id": "cox-vanguards",
+    "seconds": 31.145100673029837,
+    "events": [
+     {
+      "npc": "Melee vanguard",
+      "firstRowKey": "vanguard-melee",
+      "counts": {}
+     },
+     {
+      "npc": "Ranged vanguard",
+      "firstRowKey": "vanguard-ranged",
+      "counts": {}
+     },
+     {
+      "npc": "Magic vanguard",
+      "firstRowKey": "vanguard-magic",
+      "counts": {}
+     }
+    ],
+    "damage": {
+     "vanguard-ranged": {
+      "dragonClaws": 2
+     }
+    },
+    "surge": false
+   },
+   {
+    "id": "cox-vespula",
+    "seconds": 23.419805311485717,
+    "events": [
+     {
+      "npc": "Vespula",
+      "firstRowKey": "vespula",
+      "counts": {
+       "tonalztics": 2
+      }
+     },
+     {
+      "npc": "Abyssal portal",
+      "firstRowKey": "vespula-portal",
+      "counts": {}
+     }
+    ],
+    "damage": {},
+    "surge": false
+   },
+   {
+    "id": "cox-mystics",
+    "seconds": 43.90336702461023,
+    "events": [
+     {
+      "npc": "Skeletal Mystic",
+      "firstRowKey": "mystics",
+      "counts": {}
+     }
+    ],
+    "damage": {},
+    "surge": false
+   },
+   {
+    "id": "cox-shamans",
+    "seconds": 29.73052525504415,
+    "events": [
+     {
+      "npc": "Lizardman shaman (Chambers of Xeric)",
+      "firstRowKey": "shamans",
+      "counts": {}
+     }
+    ],
+    "damage": {},
+    "surge": false
+   },
+   {
+    "id": "cox-muttadiles",
+    "seconds": 22.529722679581695,
+    "events": [
+     {
+      "npc": "Small muttadile",
+      "firstRowKey": "muttadile-small",
+      "counts": {}
+     },
+     {
+      "npc": "Large muttadile",
+      "firstRowKey": "muttadile-large",
+      "counts": {
+       "elderMaul": 6,
+       "bgs": 2,
+       "tonalztics": 2
+      }
+     }
+    ],
+    "damage": {
+     "muttadile-large": {
+      "dragonClaws": 2
+     }
+    },
+    "surge": false
+   },
+   {
+    "id": "cox-guardians",
+    "seconds": 35.42517956237273,
+    "events": [
+     {
+      "npc": "Guardian (Chambers of Xeric)",
+      "firstRowKey": "guardians",
+      "counts": {}
+     }
+    ],
+    "damage": {},
+    "surge": false
+   },
+   {
+    "id": "cox-ice-demon",
+    "seconds": 6.65304684209309,
+    "events": [
+     {
+      "npc": "Ice demon",
+      "firstRowKey": "ice-demon",
+      "counts": {
+       "elderMaul": 6,
+       "bgs": 2,
+       "tonalztics": 2
+      }
+     }
+    ],
+    "damage": {},
+    "surge": false
+   },
+   {
+    "id": "cox-olm",
+    "seconds": 201.06748736322348,
+    "events": [
+     {
+      "npc": "Right claw",
+      "firstRowKey": "olm-p1-right",
+      "counts": {
+       "tonalztics": 1
+      }
+     },
+     {
+      "npc": "Left claw",
+      "firstRowKey": "olm-p1-left",
+      "counts": {
+       "elderMaul": 2
+      }
+     },
+     {
+      "npc": "Right claw",
+      "reset": "phase 1",
+      "firstRowKey": "olm-p2-right",
+      "counts": {}
+     },
+     {
+      "npc": "Left claw",
+      "reset": "phase 1",
+      "firstRowKey": "olm-p2-left",
+      "counts": {
+       "elderMaul": 2,
+       "bgs": 1
+      }
+     },
+     {
+      "npc": "Right claw",
+      "reset": "phase 2",
+      "firstRowKey": "olm-p3-right",
+      "counts": {}
+     },
+     {
+      "npc": "Left claw",
+      "reset": "phase 2",
+      "firstRowKey": "olm-p3-left",
+      "counts": {
+       "elderMaul": 2,
+       "bgs": 1
+      }
+     },
+     {
+      "npc": "Head",
+      "firstRowKey": "olm-head",
+      "counts": {
+       "tonalztics": 2
+      }
+     }
+    ],
+    "damage": {
+     "olm-p1-left": {
+      "dragonClaws": 2
+     }
+    },
+    "surge": false
+   }
+  ]
+ }
+}

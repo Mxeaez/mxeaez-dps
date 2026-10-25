@@ -32,6 +32,9 @@ import {
 } from '@/lib/fracturedArchive/planner';
 import { formatDuration } from '@/lib/fracturedArchive/raidTime';
 import {
+  cpuSeconds, memoWithin, normalised, phase37Fixture,
+} from '@/tests/utils/phase37';
+import {
   BestSetupAssumptions, PresetDef, PRESETS, StyleGroup,
 } from '@/lib/fracturedArchive/presets';
 import { searchSpecSubsets, SHARE_MAX_SLOT_SECONDS, weaponDeltaText } from '@/lib/fracturedArchive/specChoice';
@@ -421,7 +424,12 @@ const SOLO_HEADLINE: [string, number] = ['21:59.0', 1319.0];
   }, { model: FA.time });
 
   test('Solo, party 1, planner decides: Bring Tonalztics (Elder maul saves < 1 s for its slot)', () => {
-    const r = full({ drain: 'solo', assumptions: { ...FA.defaultAssumptions, partySize: 1 } });
+    const { result: r, seconds: cpu } = cpuSeconds(() => full({ drain: 'solo', assumptions: { ...FA.defaultAssumptions, partySize: 1 } }));
+    // phase 37: bit-identical to the phase 36 planner's plan; memo counters near the recorded ones; a catastrophe-only
+    // CPU budget (5× its 41 s alone; src/tests/utils/phase37.ts, CrossRaid's PHASE37_FIXTURE)
+    expect(memoWithin(r, 'faSolo')).toBe(true);
+    expect(cpu).toBeLessThan(205);
+    expect(normalised(r)).toEqual(phase37Fixture('faSolo'));
     expect(r.specs.bring).toEqual(['tonalztics']);
     expect(formatDuration(total(r))).toBe(SOLO_HEADLINE[0]);
     expect(Math.abs(total(r) - SOLO_HEADLINE[1])).toBeLessThanOrEqual(0.05);

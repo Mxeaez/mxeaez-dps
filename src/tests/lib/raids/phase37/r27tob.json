@@ -1,0 +1,1039 @@
+{
+ "cancelled": false,
+ "kit": [
+  {
+   "label": "Scythe of Vitur #4",
+   "kind": "search",
+   "group": "melee",
+   "equipment": {
+    "weapon": {
+     "id": 22325,
+     "name": "Scythe of Vitur",
+     "version": "Charged",
+     "slot": "weapon",
+     "twoHanded": true
+    },
+    "head": {
+     "id": 26382,
+     "name": "Torva full helm",
+     "version": "Restored",
+     "slot": "head"
+    },
+    "body": {
+     "id": 30753,
+     "name": "Oathplate chest",
+     "version": "",
+     "slot": "body"
+    },
+    "legs": {
+     "id": 30756,
+     "name": "Oathplate legs",
+     "version": "",
+     "slot": "legs"
+    },
+    "cape": {
+     "id": 21295,
+     "name": "Infernal cape",
+     "version": "Normal",
+     "slot": "cape"
+    },
+    "neck": {
+     "id": 29801,
+     "name": "Amulet of rancour",
+     "version": "",
+     "slot": "neck"
+    },
+    "hands": {
+     "id": 22981,
+     "name": "Ferocious gloves",
+     "version": "",
+     "slot": "hands"
+    },
+    "feet": {
+     "id": 31097,
+     "name": "Avernic treads (max)",
+     "version": "",
+     "slot": "feet"
+    },
+    "ring": {
+     "id": 28307,
+     "name": "Ultor ring",
+     "version": "",
+     "slot": "ring"
+    }
+   },
+   "options": [
+    {
+     "style": {
+      "name": "Chop",
+      "type": "slash",
+      "stance": "Aggressive"
+     },
+     "spell": null
+    }
+   ],
+   "source": "search: Sotetseg",
+   "key": "melee|26382,21295,29801,0,22325,30753,0,30756,22981,31097,28307"
+  },
+  {
+   "label": "Scythe of Vitur #4 + Salve amulet(ei)",
+   "kind": "partial",
+   "group": "melee",
+   "equipment": {
+    "weapon": {
+     "id": 22325,
+     "name": "Scythe of Vitur",
+     "version": "Charged",
+     "slot": "weapon",
+     "twoHanded": true
+    },
+    "head": {
+     "id": 26382,
+     "name": "Torva full helm",
+     "version": "Restored",
+     "slot": "head"
+    },
+    "body": {
+     "id": 30753,
+     "name": "Oathplate chest",
+     "version": "",
+     "slot": "body"
+    },
+    "legs": {
+     "id": 30756,
+     "name": "Oathplate legs",
+     "version": "",
+     "slot": "legs"
+    },
+    "cape": {
+     "id": 21295,
+     "name": "Infernal cape",
+     "version": "Normal",
+     "slot": "cape"
+    },
+    "neck": {
+     "id": 12018,
+     "name": "Salve amulet(ei)",
+     "version": "",
+     "slot": "neck"
+    },
+    "hands": {
+     "id": 22981,
+     "name": "Ferocious gloves",
+     "version": "",
+     "slot": "hands"
+    },
+    "feet": {
+     "id": 31097,
+     "name": "Avernic treads (max)",
+     "version": "",
+     "slot": "feet"
+    },
+    "ring": {
+     "id": 28307,
+     "name": "Ultor ring",
+     "version": "",
+     "slot": "ring"
+    }
+   },
+   "options": [
+    {
+     "style": {
+      "name": "Chop",
+      "type": "slash",
+      "stance": "Aggressive"
+     },
+     "spell": null
+    }
+   ],
+   "source": "Scythe of Vitur #4 with Salve amulet(ei) (neck, from Scythe of Vitur #2)",
+   "base": "Scythe of Vitur #4",
+   "partner": "Scythe of Vitur #2",
+   "pieces": [
+    "neck"
+   ],
+   "key": "melee|26382,21295,12018,0,22325,30753,0,30756,22981,31097,28307"
+  },
+  {
+   "label": "Tumeken's shadow (Ancestral)",
+   "kind": "preset",
+   "group": "magic",
+   "equipment": {
+    "head": {
+     "id": 21018,
+     "name": "Ancestral hat",
+     "version": "",
+     "slot": "head"
+    },
+    "body": {
+     "id": 21021,
+     "name": "Ancestral robe top",
+     "version": "",
+     "slot": "body"
+    },
+    "legs": {
+     "id": 21024,
+     "name": "Ancestral robe bottom",
+     "version": "",
+     "slot": "legs"
+    },
+    "cape": {
+     "id": 21793,
+     "name": "Imbued Guthix cape",
+     "version": "Normal",
+     "slot": "cape"
+    },
+    "neck": {
+     "id": 12002,
+     "name": "Occult necklace",
+     "version": "",
+     "slot": "neck"
+    },
+    "hands": {
+     "id": 31106,
+     "name": "Confliction gauntlets",
+     "version": "",
+     "slot": "hands"
+    },
+    "feet": {
+     "id": 31097,
+     "name": "Avernic treads (max)",
+     "version": "",
+     "slot": "feet"
+    },
+    "ring": {
+     "id": 28313,
+     "name": "Magus ring",
+     "version": "",
+     "slot": "ring"
+    },
+    "weapon": {
+     "id": 27275,
+     "name": "Tumeken's shadow",
+     "version": "Charged",
+     "slot": "weapon",
+     "twoHanded": true
+    }
+   },
+   "options": [
+    {
+     "style": {
+      "name": "Accurate",
+      "type": "magic",
+      "stance": "Accurate"
+     },
+     "spell": null
+    },
+    {
+     "style": {
+      "name": "Longrange",
+      "type": "magic",
+      "stance": "Longrange"
+     },
+     "spell": null
+    }
+   ],
+   "source": "preset",
+   "key": "magic|21018,21793,12002,0,27275,21021,0,21024,31106,31097,28313"
+  },
+  {
+   "label": "Twisted bow switch +2 on Tumeken's shadow (Ancestral)",
+   "kind": "partial",
+   "group": "ranged",
+   "equipment": {
+    "head": {
+     "id": 21018,
+     "name": "Ancestral hat",
+     "version": "",
+     "slot": "head"
+    },
+    "body": {
+     "id": 27238,
+     "name": "Masori body (f)",
+     "version": "",
+     "slot": "body"
+    },
+    "legs": {
+     "id": 27241,
+     "name": "Masori chaps (f)",
+     "version": "",
+     "slot": "legs"
+    },
+    "cape": {
+     "id": 21793,
+     "name": "Imbued Guthix cape",
+     "version": "Normal",
+     "slot": "cape"
+    },
+    "neck": {
+     "id": 12002,
+     "name": "Occult necklace",
+     "version": "",
+     "slot": "neck"
+    },
+    "hands": {
+     "id": 31106,
+     "name": "Confliction gauntlets",
+     "version": "",
+     "slot": "hands"
+    },
+    "feet": {
+     "id": 31097,
+     "name": "Avernic treads (max)",
+     "version": "",
+     "slot": "feet"
+    },
+    "ring": {
+     "id": 28313,
+     "name": "Magus ring",
+     "version": "",
+     "slot": "ring"
+    },
+    "weapon": {
+     "id": 20997,
+     "name": "Twisted bow",
+     "version": "",
+     "slot": "weapon",
+     "twoHanded": true
+    },
+    "ammo": {
+     "id": 33595,
+     "name": "Seeking dragon arrow",
+     "version": "",
+     "slot": "ammo"
+    }
+   },
+   "options": [
+    {
+     "style": {
+      "name": "Accurate",
+      "type": "ranged",
+      "stance": "Accurate"
+     },
+     "spell": null
+    },
+    {
+     "style": {
+      "name": "Rapid",
+      "type": "ranged",
+      "stance": "Rapid"
+     },
+     "spell": null
+    }
+   ],
+   "source": "Tumeken's shadow (Ancestral) → Twisted bow (Masori): Masori body (f), Masori chaps (f)",
+   "base": "Tumeken's shadow (Ancestral)",
+   "partner": "Twisted bow (Masori)",
+   "pieces": [
+    "body",
+    "legs"
+   ],
+   "key": "ranged|21018,21793,12002,33595,20997,27238,0,27241,31106,31097,28313"
+  }
+ ],
+ "kitMarginal": [
+  {
+   "slots": 1,
+   "seconds": 24.629722160746667
+  },
+  {
+   "slots": 1,
+   "seconds": 3.9145161939705417
+  },
+  {
+   "slots": 3,
+   "seconds": 19.058035139355866
+  },
+  {
+   "slots": 4,
+   "seconds": 20.114744132573037
+  }
+ ],
+ "slots": {
+  "total": 28,
+  "supplies": 9,
+  "nonItem": 1,
+  "carriedItems": 25,
+  "wornItems": 9,
+  "minLoadoutItems": 10,
+  "keptAmmo": 1,
+  "inventoryItems": 15,
+  "swapReserve": 0,
+  "quiverAmmo": 0,
+  "used": 25,
+  "free": 3,
+  "overfull": false
+ },
+ "inventory": [
+  {
+   "kind": "supply",
+   "label": "Saradomin brew",
+   "supply": "brew"
+  },
+  {
+   "kind": "supply",
+   "label": "Saradomin brew",
+   "supply": "brew"
+  },
+  {
+   "kind": "supply",
+   "label": "Saradomin brew",
+   "supply": "brew"
+  },
+  {
+   "kind": "supply",
+   "label": "Saradomin brew",
+   "supply": "brew"
+  },
+  {
+   "kind": "supply",
+   "label": "Super restore",
+   "supply": "restore"
+  },
+  {
+   "kind": "supply",
+   "label": "Super restore",
+   "supply": "restore"
+  },
+  {
+   "kind": "supply",
+   "label": "Super restore",
+   "supply": "restore"
+  },
+  {
+   "kind": "supply",
+   "label": "Ranging potion",
+   "supply": "ranging"
+  },
+  {
+   "kind": "supply",
+   "label": "Super combat",
+   "supply": "superCombat"
+  },
+  {
+   "kind": "potion",
+   "label": "Saturated heart",
+   "item": {
+    "id": -9001,
+    "name": "Saturated heart",
+    "version": "",
+    "slot": "ring"
+   },
+   "group": "magic"
+  },
+  {
+   "kind": "switch",
+   "label": "Salve amulet(ei)",
+   "item": {
+    "id": 12018,
+    "name": "Salve amulet(ei)",
+    "version": "",
+    "slot": "neck"
+   },
+   "group": "melee"
+  },
+  {
+   "kind": "switch",
+   "label": "Ancestral hat",
+   "item": {
+    "id": 21018,
+    "name": "Ancestral hat",
+    "version": "",
+    "slot": "head"
+   },
+   "group": "ranged"
+  },
+  {
+   "kind": "switch",
+   "label": "Imbued Guthix cape",
+   "item": {
+    "id": 21793,
+    "name": "Imbued Guthix cape",
+    "version": "Normal",
+    "slot": "cape"
+   },
+   "group": "ranged"
+  },
+  {
+   "kind": "switch",
+   "label": "Occult necklace",
+   "item": {
+    "id": 12002,
+    "name": "Occult necklace",
+    "version": "",
+    "slot": "neck"
+   },
+   "group": "ranged"
+  },
+  {
+   "kind": "switch",
+   "label": "Twisted bow",
+   "item": {
+    "id": 20997,
+    "name": "Twisted bow",
+    "version": "",
+    "slot": "weapon",
+    "twoHanded": true
+   },
+   "group": "ranged"
+  },
+  {
+   "kind": "switch",
+   "label": "Masori body (f)",
+   "item": {
+    "id": 27238,
+    "name": "Masori body (f)",
+    "version": "",
+    "slot": "body"
+   },
+   "group": "ranged"
+  },
+  {
+   "kind": "switch",
+   "label": "Masori chaps (f)",
+   "item": {
+    "id": 27241,
+    "name": "Masori chaps (f)",
+    "version": "",
+    "slot": "legs"
+   },
+   "group": "ranged"
+  },
+  {
+   "kind": "switch",
+   "label": "Confliction gauntlets",
+   "item": {
+    "id": 31106,
+    "name": "Confliction gauntlets",
+    "version": "",
+    "slot": "hands"
+   },
+   "group": "ranged"
+  },
+  {
+   "kind": "switch",
+   "label": "Magus ring",
+   "item": {
+    "id": 28313,
+    "name": "Magus ring",
+    "version": "",
+    "slot": "ring"
+   },
+   "group": "ranged"
+  },
+  {
+   "kind": "switch",
+   "label": "Tumeken's shadow",
+   "item": {
+    "id": 27275,
+    "name": "Tumeken's shadow",
+    "version": "Charged",
+    "slot": "weapon",
+    "twoHanded": true
+   },
+   "group": "magic"
+  },
+  {
+   "kind": "switch",
+   "label": "Ancestral robe top",
+   "item": {
+    "id": 21021,
+    "name": "Ancestral robe top",
+    "version": "",
+    "slot": "body"
+   },
+   "group": "magic"
+  },
+  {
+   "kind": "switch",
+   "label": "Ancestral robe bottom",
+   "item": {
+    "id": 21024,
+    "name": "Ancestral robe bottom",
+    "version": "",
+    "slot": "legs"
+   },
+   "group": "magic"
+  },
+  {
+   "kind": "spec",
+   "label": "Elder maul",
+   "item": {
+    "id": 21003,
+    "name": "Elder maul",
+    "version": "",
+    "slot": "weapon",
+    "twoHanded": true
+   }
+  },
+  {
+   "kind": "spec",
+   "label": "Eye of Ayak",
+   "item": {
+    "id": 31113,
+    "name": "Eye of Ayak",
+    "version": "Charged",
+    "slot": "weapon"
+   }
+  },
+  {
+   "kind": "non-item",
+   "label": "Rune pouch"
+  },
+  {
+   "kind": "free",
+   "label": "Free slot"
+  },
+  {
+   "kind": "free",
+   "label": "Free slot"
+  },
+  {
+   "kind": "free",
+   "label": "Free slot"
+  }
+ ],
+ "specItems": [
+  {
+   "id": 21003,
+   "name": "Elder maul",
+   "version": "",
+   "slot": "weapon",
+   "twoHanded": true
+  },
+  {
+   "id": 31113,
+   "name": "Eye of Ayak",
+   "version": "Charged",
+   "slot": "weapon"
+  }
+ ],
+ "pinnedItems": [
+  {
+   "id": -9001,
+   "name": "Saturated heart",
+   "version": "",
+   "slot": "ring"
+  }
+ ],
+ "comparison": "70a7da8d800cfc4822b325da1bcc177b28a29b35206c525a1d88975ac4bc5c3b",
+ "planned": 0,
+ "rejected": [
+  {
+   "label": "Twisted bow + Seeking dragon arrow",
+   "kind": "addition",
+   "deltaSeconds": 2.884670755771083,
+   "deltaSlots": 7,
+   "reason": "needs 7 more slots, 3 free",
+   "weapons": [
+    "Twisted bow"
+   ]
+  },
+  {
+   "label": "Twisted bow (Masori)",
+   "kind": "addition",
+   "deltaSeconds": 1.584673749595538,
+   "deltaSlots": 5,
+   "reason": "needs 5 more slots, 3 free",
+   "weapons": [
+    "Twisted bow"
+   ]
+  },
+  {
+   "label": "Twisted bow + Seeking dragon arrow #2",
+   "kind": "addition",
+   "deltaSeconds": 1.3967434154014882,
+   "deltaSlots": 6,
+   "reason": "needs 6 more slots, 3 free",
+   "weapons": [
+    "Twisted bow"
+   ]
+  }
+ ],
+ "alternatives": [
+  {
+   "label": "Lighter kit: Scythe of Vitur #4 / Scythe of Vitur #4 + Salve amulet(ei) / Tumeken's shadow (Ancestral) / Twisted bow switch on Tumeken's shadow (Ancestral)",
+   "kind": "alternative",
+   "deltaSeconds": -1.2604192330317687,
+   "deltaSlots": -2,
+   "reason": "−2 slots for +1.3 s (each freed slot cost < 1 s)",
+   "weapons": [
+    "Scythe of Vitur",
+    "Scythe of Vitur",
+    "Tumeken's shadow",
+    "Twisted bow"
+   ]
+  },
+  {
+   "label": "melee + ranged: Scythe of Vitur #4 / Twisted bow + Seeking dragon arrow / Scythe of Vitur #2",
+   "kind": "alternative",
+   "deltaSeconds": -13.679964851941804,
+   "deltaSlots": 0,
+   "reason": "13.7 s slower",
+   "weapons": [
+    "Scythe of Vitur",
+    "Twisted bow",
+    "Scythe of Vitur"
+   ]
+  },
+  {
+   "label": "melee + magic: Scythe of Vitur #4 / Tumeken's shadow (Ancestral) / Scythe of Vitur / Scythe of Vitur #2",
+   "kind": "alternative",
+   "deltaSeconds": -18.40779294077953,
+   "deltaSlots": -1,
+   "reason": "18.4 s slower",
+   "weapons": [
+    "Scythe of Vitur",
+    "Tumeken's shadow",
+    "Scythe of Vitur",
+    "Scythe of Vitur"
+   ]
+  },
+  {
+   "label": "melee: Scythe of Vitur #4 / Scythe of Vitur / Scythe of Vitur #2",
+   "kind": "alternative",
+   "deltaSeconds": -68.12793513558535,
+   "deltaSlots": -9,
+   "reason": "68.1 s slower",
+   "weapons": [
+    "Scythe of Vitur",
+    "Scythe of Vitur",
+    "Scythe of Vitur"
+   ]
+  },
+  {
+   "label": "ranged + magic: Twisted bow (Masori) / Tumeken's shadow (Ancestral) / Tumeken's shadow / Twisted bow + Seeking dragon arrow / Twisted bow + Seeking dragon arrow #2",
+   "kind": "alternative",
+   "deltaSeconds": -450.62148606615386,
+   "deltaSlots": 0,
+   "reason": "450.6 s slower",
+   "weapons": [
+    "Twisted bow",
+    "Tumeken's shadow",
+    "Tumeken's shadow",
+    "Twisted bow",
+    "Twisted bow"
+   ]
+  },
+  {
+   "label": "ranged: Twisted bow (Masori) / Twisted bow + Seeking dragon arrow #3 / Twisted bow + Seeking dragon arrow",
+   "kind": "alternative",
+   "deltaSeconds": -567.3769680842286,
+   "deltaSlots": -8,
+   "reason": "567.4 s slower",
+   "weapons": [
+    "Twisted bow",
+    "Twisted bow",
+    "Twisted bow"
+   ]
+  },
+  {
+   "label": "magic: Tumeken's shadow (Ancestral) / Tumeken's shadow",
+   "kind": "alternative",
+   "deltaSeconds": -597.9783115083042,
+   "deltaSlots": -13,
+   "reason": "598.0 s slower",
+   "weapons": [
+    "Tumeken's shadow",
+    "Tumeken's shadow"
+   ]
+  }
+ ],
+ "potions": [
+  {
+   "type": "superCombat",
+   "label": "Super combat",
+   "group": "melee"
+  },
+  {
+   "type": "ranging",
+   "label": "Ranging potion",
+   "group": "ranged"
+  },
+  {
+   "type": "heart",
+   "label": "Saturated heart",
+   "group": "magic",
+   "heartId": -9001
+  }
+ ],
+ "quiverAmmo": null,
+ "keptAmmo": {
+  "id": 33595,
+  "name": "Seeking dragon arrow",
+  "version": "",
+  "slot": "ammo"
+ },
+ "specs": {
+  "mode": "manual",
+  "drain": "team",
+  "bring": [
+   "elderMaul",
+   "ayak"
+  ],
+  "text": "Bring: Elder maul, Eye of Ayak",
+  "team": {
+   "partySize": 4,
+   "mages": 1,
+   "threshold": 0.95,
+   "rows": [
+    {
+     "weapon": "elderMaul",
+     "carriers": 2,
+     "drivers": [
+      "Sotetseg (1.6 s)",
+      "Xarpus (0.8 s)",
+      "The Maiden of Sugadinti (0.3 s)"
+     ],
+     "lastSaved": 2.718703681298962
+    },
+    {
+     "weapon": "bgs",
+     "carriers": 2,
+     "drivers": [
+      "Sotetseg (1.2 s)",
+      "Xarpus (0.6 s)",
+      "The Maiden of Sugadinti (0.3 s)"
+     ],
+     "lastSaved": 2.058944244111842
+    }
+   ],
+   "perTarget": [
+    {
+     "key": "tob-maiden|",
+     "label": "The Maiden of Sugadinti",
+     "group": "The Maiden of Sugadinti",
+     "carriers": {
+      "tonalztics": 2
+     },
+     "pFloor": 0.9977497608587613,
+     "ayak": 0
+    },
+    {
+     "key": "tob-bloat|",
+     "label": "Pestilent Bloat",
+     "group": "Pestilent Bloat",
+     "carriers": {
+      "elderMaul": 1,
+      "bgs": 2
+     },
+     "pFloor": 0.976928830356996,
+     "ayak": null
+    },
+    {
+     "key": "tob-nylo-boss-melee|",
+     "label": "Nylocas Vasilias (melee form)",
+     "group": "Nylocas Vasilias (melee form)",
+     "carriers": {
+      "bgs": 2
+     },
+     "pFloor": 0.9860569082767168,
+     "ayak": 0
+    },
+    {
+     "key": "tob-nylo-boss-ranged|",
+     "label": "Nylocas Vasilias (ranged form)",
+     "group": "Nylocas Vasilias (ranged form)",
+     "carriers": {
+      "tonalztics": 3
+     },
+     "pFloor": 0.9998757383223227,
+     "ayak": 0
+    },
+    {
+     "key": "tob-nylo-boss-magic|",
+     "label": "Nylocas Vasilias (magic form)",
+     "group": "Nylocas Vasilias (magic form)",
+     "carriers": null,
+     "pFloor": 0,
+     "ayak": 0,
+     "note": "no drain weapon can hit here"
+    },
+    {
+     "key": "tob-sotetseg|",
+     "label": "Sotetseg",
+     "group": "Sotetseg",
+     "carriers": {
+      "tonalztics": 2
+     },
+     "pFloor": 0.9583530713337571,
+     "ayak": 2
+    },
+    {
+     "key": "tob-xarpus|",
+     "label": "Xarpus",
+     "group": "Xarpus",
+     "carriers": {
+      "elderMaul": 2,
+      "tonalztics": 2
+     },
+     "pFloor": 0.9645530071885853,
+     "ayak": 0
+    }
+   ],
+   "text": "4-man: 2 Elder maul, 2 BGS",
+   "carriers": {
+    "elderMaul": 2,
+    "dwh": 0,
+    "bgs": 2,
+    "tonalztics": 0,
+    "ayak": 0
+   },
+   "mode": "manual"
+  },
+  "share": {
+   "weapon": null,
+   "carry": false,
+   "reason": "you bring the weapons ticked under \"Specs I bring\"",
+   "manual": true
+  },
+  "notes": []
+ },
+ "ring": {
+  "policy": "switch",
+  "ring": null,
+  "screened": []
+ },
+ "matrixDps": {
+  "tob-maiden|": 14.439339325267454,
+  "tob-bloat|": 16.22948828044227,
+  "tob-bloat-restored|": 14.640253924100433,
+  "tob-nylo-boss-melee|": 14.439339325267454,
+  "tob-nylo-boss-ranged|": 12.015484621616434,
+  "tob-nylo-boss-magic|": 11.425972705095074,
+  "tob-sotetseg|": 11.874661128869144,
+  "tob-xarpus|": 14.415940978215497,
+  "tob-verzik-p1|": 4.0140762586084975,
+  "tob-verzik-p1|Shield (Dawnbringer with a teammate)": 4.0140762586084975,
+  "tob-verzik-p2|": 9.85218483918074,
+  "tob-verzik-p3|": 11.812509269512383
+ },
+ "unusedCarried": [],
+ "excluded": [],
+ "droppedPinned": [],
+ "ownershipNotices": [],
+ "searchRows": "66b4030d87dc3f75c1969f77824b507a0e2ed36bcf0b4cc07cb6bb4b79841be1",
+ "objectiveSeconds": 457.26602152578386,
+ "fightSeconds": null,
+ "plannedRoute": {
+  "id": "tob-maiden>tob-bloat>tob-nylocas>tob-sotetseg>tob-xarpus>tob-verzik",
+  "seconds": 457.26602152578386,
+  "surgeDoses": null,
+  "encounters": [
+   {
+    "id": "tob-maiden",
+    "seconds": 53.01489096945375,
+    "events": [
+     {
+      "npc": "The Maiden of Sugadinti",
+      "firstRowKey": "maiden-100",
+      "counts": {
+       "elderMaul": 4,
+       "bgs": 4
+      }
+     }
+    ],
+    "damage": {},
+    "surge": false
+   },
+   {
+    "id": "tob-bloat",
+    "seconds": 27.92941869080125,
+    "events": [
+     {
+      "npc": "Pestilent Bloat",
+      "firstRowKey": "bloat-first",
+      "counts": {
+       "elderMaul": 4,
+       "bgs": 4
+      }
+     },
+     {
+      "npc": "Pestilent Bloat",
+      "reset": "the stomp",
+      "firstRowKey": "bloat-rest",
+      "counts": {}
+     }
+    ],
+    "damage": {},
+    "surge": false
+   },
+   {
+    "id": "tob-nylocas",
+    "seconds": 43.30030371508331,
+    "events": [
+     {
+      "npc": "Nylocas Vasilias",
+      "firstRowKey": "vasilias-melee",
+      "counts": {
+       "elderMaul": 4,
+       "bgs": 4
+      }
+     }
+    ],
+    "damage": {},
+    "surge": false
+   },
+   {
+    "id": "tob-sotetseg",
+    "seconds": 75.87686593579204,
+    "events": [
+     {
+      "npc": "Sotetseg",
+      "firstRowKey": "sotetseg-1",
+      "counts": {
+       "elderMaul": 1
+      }
+     },
+     {
+      "npc": "Sotetseg",
+      "reset": "maze 1",
+      "firstRowKey": "sotetseg-2",
+      "counts": {
+       "elderMaul": 3
+      }
+     },
+     {
+      "npc": "Sotetseg",
+      "reset": "maze 2",
+      "firstRowKey": "sotetseg-3",
+      "counts": {
+       "bgs": 4
+      }
+     }
+    ],
+    "damage": {},
+    "surge": false
+   },
+   {
+    "id": "tob-xarpus",
+    "seconds": 56.903153338350016,
+    "events": [
+     {
+      "npc": "Xarpus",
+      "firstRowKey": "xarpus-p2",
+      "counts": {
+       "elderMaul": 4,
+       "bgs": 4
+      }
+     }
+    ],
+    "damage": {},
+    "surge": false
+   },
+   {
+    "id": "tob-verzik",
+    "seconds": 200.24138887630352,
+    "events": [
+     {
+      "npc": "Verzik Vitur",
+      "firstRowKey": "verzik-p1-dawnbringer",
+      "counts": {}
+     }
+    ],
+    "damage": {},
+    "surge": false
+   }
+  ]
+ }
+}

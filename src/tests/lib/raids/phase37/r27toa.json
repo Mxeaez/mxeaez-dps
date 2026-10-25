@@ -1,0 +1,1050 @@
+{
+ "cancelled": false,
+ "kit": [
+  {
+   "label": "Tumeken's shadow (Ancestral)",
+   "kind": "preset",
+   "group": "magic",
+   "equipment": {
+    "head": {
+     "id": 21018,
+     "name": "Ancestral hat",
+     "version": "",
+     "slot": "head"
+    },
+    "body": {
+     "id": 21021,
+     "name": "Ancestral robe top",
+     "version": "",
+     "slot": "body"
+    },
+    "legs": {
+     "id": 21024,
+     "name": "Ancestral robe bottom",
+     "version": "",
+     "slot": "legs"
+    },
+    "cape": {
+     "id": 21793,
+     "name": "Imbued Guthix cape",
+     "version": "Normal",
+     "slot": "cape"
+    },
+    "neck": {
+     "id": 12002,
+     "name": "Occult necklace",
+     "version": "",
+     "slot": "neck"
+    },
+    "hands": {
+     "id": 31106,
+     "name": "Confliction gauntlets",
+     "version": "",
+     "slot": "hands"
+    },
+    "feet": {
+     "id": 31097,
+     "name": "Avernic treads (max)",
+     "version": "",
+     "slot": "feet"
+    },
+    "ring": {
+     "id": 28313,
+     "name": "Magus ring",
+     "version": "",
+     "slot": "ring"
+    },
+    "weapon": {
+     "id": 27275,
+     "name": "Tumeken's shadow",
+     "version": "Charged",
+     "slot": "weapon",
+     "twoHanded": true
+    }
+   },
+   "options": [
+    {
+     "style": {
+      "name": "Accurate",
+      "type": "magic",
+      "stance": "Accurate"
+     },
+     "spell": null
+    },
+    {
+     "style": {
+      "name": "Longrange",
+      "type": "magic",
+      "stance": "Longrange"
+     },
+     "spell": null
+    }
+   ],
+   "source": "preset",
+   "key": "magic|21018,21793,12002,0,27275,21021,0,21024,31106,31097,28313"
+  },
+  {
+   "label": "Scythe of Vitur #3",
+   "kind": "search",
+   "group": "melee",
+   "equipment": {
+    "weapon": {
+     "id": 22325,
+     "name": "Scythe of Vitur",
+     "version": "Charged",
+     "slot": "weapon",
+     "twoHanded": true
+    },
+    "head": {
+     "id": 30750,
+     "name": "Oathplate helm",
+     "version": "",
+     "slot": "head"
+    },
+    "body": {
+     "id": 30753,
+     "name": "Oathplate chest",
+     "version": "",
+     "slot": "body"
+    },
+    "legs": {
+     "id": 30756,
+     "name": "Oathplate legs",
+     "version": "",
+     "slot": "legs"
+    },
+    "cape": {
+     "id": 21295,
+     "name": "Infernal cape",
+     "version": "Normal",
+     "slot": "cape"
+    },
+    "neck": {
+     "id": 29801,
+     "name": "Amulet of rancour",
+     "version": "",
+     "slot": "neck"
+    },
+    "hands": {
+     "id": 22981,
+     "name": "Ferocious gloves",
+     "version": "",
+     "slot": "hands"
+    },
+    "feet": {
+     "id": 31097,
+     "name": "Avernic treads (max)",
+     "version": "",
+     "slot": "feet"
+    },
+    "ring": {
+     "id": 28316,
+     "name": "Bellator ring",
+     "version": "",
+     "slot": "ring"
+    }
+   },
+   "options": [
+    {
+     "style": {
+      "name": "Reap",
+      "type": "slash",
+      "stance": "Accurate"
+     },
+     "spell": null
+    }
+   ],
+   "source": "search: Zebak",
+   "key": "melee|30750,21295,29801,0,22325,30753,0,30756,22981,31097,28316"
+  },
+  {
+   "label": "Twisted bow switch +6 on Scythe of Vitur #3",
+   "kind": "partial",
+   "group": "ranged",
+   "equipment": {
+    "weapon": {
+     "id": 20997,
+     "name": "Twisted bow",
+     "version": "",
+     "slot": "weapon",
+     "twoHanded": true
+    },
+    "head": {
+     "id": 27235,
+     "name": "Masori mask (f)",
+     "version": "",
+     "slot": "head"
+    },
+    "body": {
+     "id": 27238,
+     "name": "Masori body (f)",
+     "version": "",
+     "slot": "body"
+    },
+    "legs": {
+     "id": 27241,
+     "name": "Masori chaps (f)",
+     "version": "",
+     "slot": "legs"
+    },
+    "cape": {
+     "id": 28951,
+     "name": "Dizana's quiver",
+     "version": "Charged",
+     "slot": "cape"
+    },
+    "neck": {
+     "id": 33639,
+     "name": "Necklace of rupture",
+     "version": "",
+     "slot": "neck"
+    },
+    "hands": {
+     "id": 26235,
+     "name": "Zaryte vambraces",
+     "version": "",
+     "slot": "hands"
+    },
+    "feet": {
+     "id": 31097,
+     "name": "Avernic treads (max)",
+     "version": "",
+     "slot": "feet"
+    },
+    "ring": {
+     "id": 28316,
+     "name": "Bellator ring",
+     "version": "",
+     "slot": "ring"
+    },
+    "ammo": {
+     "id": 33595,
+     "name": "Seeking dragon arrow",
+     "version": "",
+     "slot": "ammo"
+    }
+   },
+   "options": [
+    {
+     "style": {
+      "name": "Accurate",
+      "type": "ranged",
+      "stance": "Accurate"
+     },
+     "spell": null
+    },
+    {
+     "style": {
+      "name": "Rapid",
+      "type": "ranged",
+      "stance": "Rapid"
+     },
+     "spell": null
+    }
+   ],
+   "source": "Scythe of Vitur #3 → Twisted bow (Masori): Masori body (f), Masori chaps (f), Necklace of rupture, Zaryte vambraces, Dizana's quiver, Masori mask (f)",
+   "base": "Scythe of Vitur #3",
+   "partner": "Twisted bow (Masori)",
+   "pieces": [
+    "body",
+    "legs",
+    "neck",
+    "hands",
+    "cape",
+    "head"
+   ],
+   "key": "ranged|27235,28951,33639,33595,20997,27238,0,27241,26235,31097,28316"
+  }
+ ],
+ "kitMarginal": [
+  {
+   "slots": 8,
+   "seconds": "Infinity"
+  },
+  {
+   "slots": 7,
+   "seconds": "Infinity"
+  },
+  {
+   "slots": 7,
+   "seconds": 11.771011069061387
+  }
+ ],
+ "slots": {
+  "total": 28,
+  "supplies": 8,
+  "nonItem": 1,
+  "carriedItems": 29,
+  "wornItems": 9,
+  "minLoadoutItems": 10,
+  "keptAmmo": 1,
+  "inventoryItems": 19,
+  "swapReserve": 0,
+  "quiverAmmo": 0,
+  "used": 28,
+  "free": 0,
+  "overfull": false
+ },
+ "inventory": [
+  {
+   "kind": "supply",
+   "label": "Super restore",
+   "supply": "restore"
+  },
+  {
+   "kind": "supply",
+   "label": "Super restore",
+   "supply": "restore"
+  },
+  {
+   "kind": "supply",
+   "label": "Super restore",
+   "supply": "restore"
+  },
+  {
+   "kind": "supply",
+   "label": "Super restore",
+   "supply": "restore"
+  },
+  {
+   "kind": "supply",
+   "label": "Super restore",
+   "supply": "restore"
+  },
+  {
+   "kind": "supply",
+   "label": "Super restore",
+   "supply": "restore"
+  },
+  {
+   "kind": "supply",
+   "label": "Other",
+   "supply": "other"
+  },
+  {
+   "kind": "supply",
+   "label": "Other",
+   "supply": "other"
+  },
+  {
+   "kind": "switch",
+   "label": "Oathplate helm",
+   "item": {
+    "id": 30750,
+    "name": "Oathplate helm",
+    "version": "",
+    "slot": "head"
+   },
+   "group": "melee"
+  },
+  {
+   "kind": "switch",
+   "label": "Infernal cape",
+   "item": {
+    "id": 21295,
+    "name": "Infernal cape",
+    "version": "Normal",
+    "slot": "cape"
+   },
+   "group": "melee"
+  },
+  {
+   "kind": "switch",
+   "label": "Amulet of rancour",
+   "item": {
+    "id": 29801,
+    "name": "Amulet of rancour",
+    "version": "",
+    "slot": "neck"
+   },
+   "group": "melee"
+  },
+  {
+   "kind": "switch",
+   "label": "Scythe of Vitur",
+   "item": {
+    "id": 22325,
+    "name": "Scythe of Vitur",
+    "version": "Charged",
+    "slot": "weapon",
+    "twoHanded": true
+   },
+   "group": "melee"
+  },
+  {
+   "kind": "switch",
+   "label": "Oathplate chest",
+   "item": {
+    "id": 30753,
+    "name": "Oathplate chest",
+    "version": "",
+    "slot": "body"
+   },
+   "group": "melee"
+  },
+  {
+   "kind": "switch",
+   "label": "Oathplate legs",
+   "item": {
+    "id": 30756,
+    "name": "Oathplate legs",
+    "version": "",
+    "slot": "legs"
+   },
+   "group": "melee"
+  },
+  {
+   "kind": "switch",
+   "label": "Ferocious gloves",
+   "item": {
+    "id": 22981,
+    "name": "Ferocious gloves",
+    "version": "",
+    "slot": "hands"
+   },
+   "group": "melee"
+  },
+  {
+   "kind": "switch",
+   "label": "Bellator ring",
+   "item": {
+    "id": 28316,
+    "name": "Bellator ring",
+    "version": "",
+    "slot": "ring"
+   },
+   "group": "melee"
+  },
+  {
+   "kind": "switch",
+   "label": "Masori mask (f)",
+   "item": {
+    "id": 27235,
+    "name": "Masori mask (f)",
+    "version": "",
+    "slot": "head"
+   },
+   "group": "ranged"
+  },
+  {
+   "kind": "switch",
+   "label": "Dizana's quiver",
+   "item": {
+    "id": 28951,
+    "name": "Dizana's quiver",
+    "version": "Charged",
+    "slot": "cape"
+   },
+   "group": "ranged"
+  },
+  {
+   "kind": "switch",
+   "label": "Necklace of rupture",
+   "item": {
+    "id": 33639,
+    "name": "Necklace of rupture",
+    "version": "",
+    "slot": "neck"
+   },
+   "group": "ranged"
+  },
+  {
+   "kind": "switch",
+   "label": "Twisted bow",
+   "item": {
+    "id": 20997,
+    "name": "Twisted bow",
+    "version": "",
+    "slot": "weapon",
+    "twoHanded": true
+   },
+   "group": "ranged"
+  },
+  {
+   "kind": "switch",
+   "label": "Masori body (f)",
+   "item": {
+    "id": 27238,
+    "name": "Masori body (f)",
+    "version": "",
+    "slot": "body"
+   },
+   "group": "ranged"
+  },
+  {
+   "kind": "switch",
+   "label": "Masori chaps (f)",
+   "item": {
+    "id": 27241,
+    "name": "Masori chaps (f)",
+    "version": "",
+    "slot": "legs"
+   },
+   "group": "ranged"
+  },
+  {
+   "kind": "switch",
+   "label": "Zaryte vambraces",
+   "item": {
+    "id": 26235,
+    "name": "Zaryte vambraces",
+    "version": "",
+    "slot": "hands"
+   },
+   "group": "ranged"
+  },
+  {
+   "kind": "spec",
+   "label": "Elder maul",
+   "item": {
+    "id": 21003,
+    "name": "Elder maul",
+    "version": "",
+    "slot": "weapon",
+    "twoHanded": true
+   }
+  },
+  {
+   "kind": "spec",
+   "label": "Eye of Ayak",
+   "item": {
+    "id": 31113,
+    "name": "Eye of Ayak",
+    "version": "Charged",
+    "slot": "weapon"
+   }
+  },
+  {
+   "kind": "pinned",
+   "label": "Lightbearer",
+   "item": {
+    "id": 25975,
+    "name": "Lightbearer",
+    "version": "",
+    "slot": "ring"
+   }
+  },
+  {
+   "kind": "pinned",
+   "label": "Zaryte crossbow",
+   "item": {
+    "id": 26374,
+    "name": "Zaryte crossbow",
+    "version": "",
+    "slot": "weapon"
+   }
+  },
+  {
+   "kind": "non-item",
+   "label": "Rune pouch"
+  }
+ ],
+ "specItems": [
+  {
+   "id": 21003,
+   "name": "Elder maul",
+   "version": "",
+   "slot": "weapon",
+   "twoHanded": true
+  },
+  {
+   "id": 31113,
+   "name": "Eye of Ayak",
+   "version": "Charged",
+   "slot": "weapon"
+  }
+ ],
+ "pinnedItems": [
+  {
+   "id": 25975,
+   "name": "Lightbearer",
+   "version": "",
+   "slot": "ring"
+  },
+  {
+   "id": 26374,
+   "name": "Zaryte crossbow",
+   "version": "",
+   "slot": "weapon"
+  }
+ ],
+ "comparison": "02c0d1a59d7680c6738403a2b8dc9bb3292797f11c342040a416814d5b7b6405",
+ "planned": 0,
+ "rejected": [
+  {
+   "label": "Scythe of Vitur #2",
+   "kind": "addition",
+   "deltaSeconds": 2.6577402787966093,
+   "deltaSlots": 4,
+   "reason": "needs 4 more slots, 0 free",
+   "weapons": [
+    "Scythe of Vitur"
+   ]
+  },
+  {
+   "label": "Scythe of Vitur #5",
+   "kind": "addition",
+   "deltaSeconds": 2.6577402787966093,
+   "deltaSlots": 4,
+   "reason": "needs 4 more slots, 0 free",
+   "weapons": [
+    "Scythe of Vitur"
+   ]
+  },
+  {
+   "label": "Scythe of Vitur",
+   "kind": "addition",
+   "deltaSeconds": 1.9396551724137225,
+   "deltaSlots": 4,
+   "reason": "needs 4 more slots, 0 free",
+   "weapons": [
+    "Scythe of Vitur"
+   ]
+  }
+ ],
+ "alternatives": [
+  {
+   "label": "melee + magic: Tumeken's shadow (Ancestral) / Scythe of Vitur #3",
+   "kind": "alternative",
+   "deltaSeconds": -11.771011069061387,
+   "deltaSlots": -7,
+   "reason": "11.8 s slower",
+   "weapons": [
+    "Tumeken's shadow",
+    "Scythe of Vitur"
+   ]
+  },
+  {
+   "label": "magic: Tumeken's shadow (Ancestral)",
+   "kind": "alternative",
+   "deltaSeconds": "-Infinity",
+   "deltaSlots": -15,
+   "reason": "cannot clear the route",
+   "weapons": [
+    "Tumeken's shadow"
+   ]
+  },
+  {
+   "label": "melee + ranged: Twisted bow (Masori) / Scythe of Vitur switch on Twisted bow (Masori)",
+   "kind": "alternative",
+   "deltaSeconds": "-Infinity",
+   "deltaSlots": -14,
+   "reason": "cannot clear the route",
+   "weapons": [
+    "Twisted bow",
+    "Scythe of Vitur"
+   ]
+  },
+  {
+   "label": "melee: Scythe of Vitur #3 + Inquisitor's great helm",
+   "kind": "alternative",
+   "deltaSeconds": "-Infinity",
+   "deltaSlots": -15,
+   "reason": "cannot clear the route",
+   "weapons": [
+    "Scythe of Vitur"
+   ]
+  },
+  {
+   "label": "ranged + magic: Twisted bow (Masori) / Tumeken's shadow switch on Twisted bow (Masori)",
+   "kind": "alternative",
+   "deltaSeconds": "-Infinity",
+   "deltaSlots": -14,
+   "reason": "cannot clear the route",
+   "weapons": [
+    "Twisted bow",
+    "Tumeken's shadow"
+   ]
+  },
+  {
+   "label": "ranged: Twisted bow (Masori)",
+   "kind": "alternative",
+   "deltaSeconds": "-Infinity",
+   "deltaSlots": -15,
+   "reason": "cannot clear the route",
+   "weapons": [
+    "Twisted bow"
+   ]
+  }
+ ],
+ "potions": [],
+ "quiverAmmo": null,
+ "keptAmmo": {
+  "id": 33595,
+  "name": "Seeking dragon arrow",
+  "version": "",
+  "slot": "ammo"
+ },
+ "specs": {
+  "mode": "manual",
+  "drain": "team",
+  "bring": [
+   "elderMaul",
+   "ayak"
+  ],
+  "text": "Bring: Elder maul, Eye of Ayak",
+  "team": {
+   "partySize": 6,
+   "mages": 1,
+   "threshold": 0.95,
+   "rows": [
+    {
+     "weapon": "elderMaul",
+     "carriers": 2,
+     "drivers": [],
+     "lastSaved": 0
+    },
+    {
+     "weapon": "tonalztics",
+     "carriers": 2,
+     "drivers": [],
+     "lastSaved": 0
+    },
+    {
+     "weapon": "ayak",
+     "carriers": 1,
+     "drivers": [
+      "Wardens (11.9 s)",
+      "Kephri (8.9 s)",
+      "Ba-Ba (6.3 s)",
+      "Akkha (0.9 s)"
+     ],
+     "lastSaved": 27.84378453208592
+    }
+   ],
+   "perTarget": [
+    {
+     "key": "toa-kephri-shielded|",
+     "label": "Kephri (Shielded)",
+     "group": "Kephri (Shielded)",
+     "carriers": {
+      "elderMaul": 2
+     },
+     "pFloor": 0.9812929657754723,
+     "ayak": null
+    },
+    {
+     "key": "toa-kephri|",
+     "label": "Kephri (Unshielded)",
+     "group": "Kephri (Unshielded)",
+     "carriers": {
+      "elderMaul": 2
+     },
+     "pFloor": 0.9812929657754723,
+     "ayak": null
+    },
+    {
+     "key": "toa-zebak|",
+     "label": "Zebak",
+     "group": "Zebak",
+     "carriers": {
+      "tonalztics": 1
+     },
+     "pFloor": 0.9592195620763954,
+     "ayak": null
+    },
+    {
+     "key": "toa-akkha|Final stand (Protect from Magic + Missiles)",
+     "label": "Akkha (Final stand (Protect from Magic + Missiles))",
+     "group": "Akkha",
+     "carriers": {
+      "bgs": 2
+     },
+     "pFloor": 0.9778415029728906,
+     "ayak": 0
+    },
+    {
+     "key": "toa-akkha|Praying Melee",
+     "label": "Akkha (Praying Melee)",
+     "group": "Akkha",
+     "carriers": {
+      "tonalztics": 1
+     },
+     "pFloor": 0.998685325571287,
+     "ayak": 2
+    },
+    {
+     "key": "toa-akkha|Praying Ranged",
+     "label": "Akkha (Praying Ranged)",
+     "group": "Akkha",
+     "carriers": {
+      "bgs": 2
+     },
+     "pFloor": 0.9778415029728906,
+     "ayak": 2
+    },
+    {
+     "key": "toa-akkha|Praying Magic",
+     "label": "Akkha (Praying Magic)",
+     "group": "Akkha",
+     "carriers": {
+      "tonalztics": 1
+     },
+     "pFloor": 0.998685325571287,
+     "ayak": 0
+    },
+    {
+     "key": "toa-baba|",
+     "label": "Ba-Ba",
+     "group": "Ba-Ba",
+     "carriers": {
+      "tonalztics": 2
+     },
+     "pFloor": 0.9912883919881271,
+     "ayak": null
+    },
+    {
+     "key": "toa-obelisk|",
+     "label": "Obelisk (Wardens P1)",
+     "group": "Obelisk (Wardens P1)",
+     "carriers": {
+      "tonalztics": 2
+     },
+     "pFloor": 0.9816707568096232,
+     "ayak": 3
+    },
+    {
+     "key": "toa-warden-p3|",
+     "label": "Tumeken's Warden P3",
+     "group": "Tumeken's Warden P3",
+     "carriers": {
+      "tonalztics": 1
+     },
+     "pFloor": 0.9616421800632027,
+     "ayak": 2
+    },
+    {
+     "key": "toa-warden-p3-enraged|",
+     "label": "Tumeken's Warden P3 (enraged)",
+     "group": "Tumeken's Warden P3 (enraged)",
+     "carriers": {
+      "elderMaul": 2
+     },
+     "pFloor": 0.9738165128434997,
+     "ayak": 2
+    },
+    {
+     "key": "toa-warden-p2|Praying Melee + Ranged",
+     "label": "Elidinis' Warden P2 (Praying Melee + Ranged)",
+     "group": "Elidinis' Warden P2",
+     "carriers": null,
+     "pFloor": 0,
+     "ayak": 0,
+     "note": "no drain weapon can hit here"
+    },
+    {
+     "key": "toa-warden-core|",
+     "label": "Warden core (P2)",
+     "group": "Warden core (P2)",
+     "carriers": {
+      "bgs": 1
+     },
+     "pFloor": 1,
+     "ayak": 0
+    }
+   ],
+   "text": "6-man: 2 Elder maul, 2 Tonalztics, 1 Eye of Ayak",
+   "carriers": {
+    "elderMaul": 2,
+    "dwh": 0,
+    "bgs": 0,
+    "tonalztics": 2,
+    "ayak": 1
+   },
+   "mode": "manual"
+  },
+  "share": {
+   "weapon": null,
+   "carry": false,
+   "reason": "you bring the weapons ticked under \"Specs I bring\"",
+   "manual": true
+  },
+  "notes": []
+ },
+ "ring": {
+  "policy": "switch",
+  "ring": null,
+  "screened": []
+ },
+ "matrixDps": {
+  "toa-kephri-shielded|": 8.978688829663302,
+  "toa-spitting-scarab|": 13.512919373010053,
+  "toa-soldier-scarab|": 13.876909867373767,
+  "toa-arcane-scarab|": 14.243752849337392,
+  "toa-kephri|": 8.978688829663302,
+  "toa-zebak|": 10.933995336547946,
+  "toa-akkha-shadow|": 12.840594480596106,
+  "toa-akkha|Final stand (Protect from Magic + Missiles)": 7.912481065871496,
+  "toa-akkha|Praying Melee": 13.020302351135584,
+  "toa-akkha|Praying Ranged": 13.020302351135584,
+  "toa-akkha|Praying Magic": 7.912481065871496,
+  "toa-baba|": 8.473693226486764,
+  "toa-obelisk|": 13.002331564081635,
+  "toa-warden-p3|": 12.49271961193711,
+  "toa-warden-p3-enraged|": 12.49271961193711,
+  "toa-warden-p2|Praying Melee + Ranged": 14.166666666666668,
+  "toa-warden-core|": 29
+ },
+ "unusedCarried": [
+  {
+   "id": 25975,
+   "name": "Lightbearer",
+   "version": "",
+   "slot": "ring"
+  },
+  {
+   "id": 26374,
+   "name": "Zaryte crossbow",
+   "version": "",
+   "slot": "weapon"
+  }
+ ],
+ "excluded": [],
+ "droppedPinned": [],
+ "ownershipNotices": [],
+ "searchRows": "f2bfcd2689add459e319f95c13fe9c28bd4e86fdc1dd240bd5a6f7585e2819cd",
+ "objectiveSeconds": 882.822419785135,
+ "fightSeconds": null,
+ "plannedRoute": {
+  "id": "toa-kephri>toa-zebak>toa-akkha>toa-baba>toa-wardens",
+  "seconds": 881.1754736385269,
+  "surgeDoses": null,
+  "encounters": [
+   {
+    "id": "toa-kephri",
+    "seconds": 157.08552681655888,
+    "events": [
+     {
+      "npc": "Kephri",
+      "firstRowKey": "kephri-shield",
+      "counts": {
+       "elderMaul": 4,
+       "tonalztics": 4,
+       "ayak": 2
+      }
+     },
+     {
+      "npc": "Spitting Scarab",
+      "firstRowKey": "kephri-spitting",
+      "counts": {}
+     },
+     {
+      "npc": "Soldier Scarab",
+      "firstRowKey": "kephri-soldier",
+      "counts": {}
+     },
+     {
+      "npc": "Arcane Scarab",
+      "firstRowKey": "kephri-arcane",
+      "counts": {}
+     },
+     {
+      "npc": "Kephri",
+      "reset": "the final phase",
+      "firstRowKey": "kephri-final",
+      "counts": {}
+     }
+    ],
+    "damage": {},
+    "surge": false
+   },
+   {
+    "id": "toa-zebak",
+    "seconds": 121.94383592578794,
+    "events": [
+     {
+      "npc": "Zebak",
+      "firstRowKey": "zebak",
+      "counts": {
+       "elderMaul": 4,
+       "tonalztics": 4,
+       "ayak": 2
+      }
+     }
+    ],
+    "damage": {},
+    "surge": false
+   },
+   {
+    "id": "toa-akkha",
+    "seconds": 154.90415103688784,
+    "events": [
+     {
+      "npc": "Akkha",
+      "firstRowKey": "akkha-Praying Melee",
+      "counts": {
+       "elderMaul": 4,
+       "tonalztics": 4,
+       "ayak": 2
+      }
+     },
+     {
+      "npc": "Akkha's Shadow",
+      "firstRowKey": "akkha-shadows",
+      "counts": {}
+     }
+    ],
+    "damage": {},
+    "surge": false
+   },
+   {
+    "id": "toa-baba",
+    "seconds": 103.06407253492486,
+    "events": [
+     {
+      "npc": "Ba-Ba",
+      "firstRowKey": "baba",
+      "counts": {
+       "elderMaul": 4,
+       "tonalztics": 4,
+       "ayak": 2
+      }
+     }
+    ],
+    "damage": {},
+    "surge": false
+   },
+   {
+    "id": "toa-wardens",
+    "seconds": 344.1778873243674,
+    "events": [
+     {
+      "npc": "Obelisk",
+      "firstRowKey": "wardens-p1",
+      "counts": {
+       "elderMaul": 4,
+       "tonalztics": 4,
+       "ayak": 2
+      }
+     },
+     {
+      "npc": "Elidinis' Warden",
+      "firstRowKey": "wardens-p2-shield",
+      "counts": {}
+     },
+     {
+      "npc": "Tumeken's Warden",
+      "firstRowKey": "wardens-p3",
+      "counts": {
+       "elderMaul": 2,
+       "tonalztics": 2,
+       "ayak": 1
+      }
+     },
+     {
+      "npc": "Tumeken's Warden",
+      "reset": "the enrage",
+      "firstRowKey": "wardens-p3-enraged",
+      "counts": {
+       "elderMaul": 2,
+       "tonalztics": 2,
+       "ayak": 1
+      }
+     }
+    ],
+    "damage": {},
+    "surge": false
+   }
+  ]
+ }
+}
