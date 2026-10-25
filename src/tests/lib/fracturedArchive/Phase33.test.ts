@@ -360,9 +360,13 @@ describe('drain events (Defence restored mid-fight)', () => {
       items: [{ ...drainLineItem(w, 4, 0.8), perCarrier: 2, bringsResult: '98%' }], defAfter: def, magicDefAfter: 0, text: 'plan',
     });
     const s = encounterDrainSummary([
-      { key: 'a', label: 'A', drainLine: line('elderMaul', 100), drainReset: 'ignored' },
+      {
+        key: 'a', label: 'A', drainLine: line('elderMaul', 100), drainReset: 'ignored',
+      },
       { key: 'b', label: 'B', drainLine: line('elderMaul', 101) },
-      { key: 'c', label: 'C (50%)', drainLine: line('elderMaul', 102), drainReset: 'the wave' },
+      {
+        key: 'c', label: 'C (50%)', drainLine: line('elderMaul', 102), drainReset: 'the wave',
+      },
       { key: 'd', label: 'D', drainLine: line('tonalztics', 103) },
     ], 'team')!;
     expect(s.events.map((ev) => [ev.phaseKey, ev.reset])).toEqual([['a', undefined], ['c', 'the wave']]);
