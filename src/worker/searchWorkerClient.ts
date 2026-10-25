@@ -15,7 +15,7 @@ import { GearSearchProgress, GearSearchResult } from '@/lib/fracturedArchive/sea
 import { RouteComparisonProgress, RouteComparisonResult } from '@/lib/fracturedArchive/raidTime';
 import { PlanProgress, PlanResult, RingRunResult } from '@/lib/fracturedArchive/planner';
 import {
-  decodeRingRuns, encodeRingRuns, parallelRingRuns, parallelRingsApply,
+  decodeRingRuns, encodeRingRuns, parallelPlanStats, parallelRingRuns, parallelRingsApply, ringProgressDone,
 } from '@/lib/fracturedArchive/parallelRings';
 
 /** A running gear search (phase 9) in its own worker. `cancel()` terminates the worker. */
@@ -196,8 +196,8 @@ export const startRaidPlan = (
       let inputs = data;
       let ringRuns: string | undefined;
       const slots = helperSlots();
+      const t0 = Date.now();
       if (slots >= 2 && parallelRingsApply(data)) {
-        const t0 = Date.now();
         const runs = await parallelRingRuns(data, async (which, searchRows) => {
           const res = await planWorker({
             type: WorkerRequestType.RAID_PLAN, data: searchRows ? { ...data, searchRows } : data, ring: which,
@@ -206,7 +206,7 @@ export const startRaidPlan = (
         }, slots, (done, total) => {
           if (!settled) {
             onProgress({
-              stage: 'rings', done, total, label: `rings in parallel (${slots} workers, ${((Date.now() - t0) / 1000).toFixed(0)} s)`,
+              stage: 'rings', done: ringProgressDone(done, total), total, label: `rings in parallel (${slots} workers, ${((Date.now() - t0) / 1000).toFixed(0)} s)`,
             });
           }
         });
@@ -219,7 +219,11 @@ export const startRaidPlan = (
       }, (p) => { if (!settled) onProgress(p); }, workers);
       if (settled) return;
       settled = true;
-      resolve(res.payload);
+      // phase 37b: with helpers, the footer shows the job's searches and wall time (parallelPlanStats)
+      resolve(ringRuns && res.payload.stats ? {
+        ...res.payload,
+        stats: parallelPlanStats(res.payload.stats, Object.keys(data.searchRows ?? {}).length, Object.keys(res.payload.searchRows ?? {}).length, Date.now() - t0),
+      } : res.payload);
     })().catch((e: Error) => {
       if (settled) return;
       settled = true;

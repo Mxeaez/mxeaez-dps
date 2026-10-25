@@ -40,7 +40,7 @@ const main = async () => {
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1400, height: 1100 } });
   await page.goto(`${BASE}best-setup`, { waitUntil: 'load', timeout: 120000 });
-  await page.evaluate(() => localStorage.removeItem('mxeaez-dps:not-owned'));
+  await page.evaluate(() => { localStorage.removeItem('mxeaez-dps:not-owned'); localStorage.removeItem('mxeaez-dps:settings:v1'); });
   await page.reload({ waitUntil: 'load', timeout: 120000 });
   await page.locator('[data-testid="raid-tab-fractured-archive"]').waitFor({ timeout: 120000 });
   await page.locator('[data-testid="raid-tab-fractured-archive"]').click();

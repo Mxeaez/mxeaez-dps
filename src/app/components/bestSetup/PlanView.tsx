@@ -82,6 +82,7 @@ import handsSlot from '@/public/img/slots/hands.png';
 import feetSlot from '@/public/img/slots/feet.png';
 import ringSlot from '@/public/img/slots/ring.png';
 import { isOwned } from '@/lib/fracturedArchive/ownership';
+import { defaultPinnedIds, PlanInputSettings } from '@/lib/raids/settings';
 import {
   bestWithoutText, describeNeed, specWeaponLabel, weaponDeltaText,
 } from '@/lib/fracturedArchive/specChoice';
@@ -542,9 +543,12 @@ const PlanView: React.FC<{
   onSpecMode?: (m: SpecMode) => void,
   /** Phase 33: the "Bring" of a "Planner decides" plan (Solo: the chosen weapons; Team: your share), for the chips. */
   onSpecs?: (bring: PlannerWeapon[]) => void,
+  /** Phase 37b: the saved Plan inputs to start from (defaults when not given), and where every change is reported. */
+  initialInputs?: PlanInputSettings,
+  onInputs?: (p: PlanInputSettings) => void,
 }> = ({
   assumptions, drain, raid, timeSettings, notOwned: notOwnedProp, onLightbearer, onCarriers,
-  specMode: specModeProp, onSpecMode, onSpecs,
+  specMode: specModeProp, onSpecMode, onSpecs, initialInputs, onInputs,
 }) => {
   const notOwnedKey = JSON.stringify(notOwnedProp ?? []);
   const notOwned = useMemo(() => JSON.parse(notOwnedKey) as string[], [notOwnedKey]);
@@ -553,24 +557,26 @@ const PlanView: React.FC<{
   // phase 21: per-raid defaults (src/lib/raids/planDefaults.ts); the view is remounted on a raid change
   // the pinned heart (magic boost) follows the Assumptions box's Heart; another magic potion there = no heart pinned
   const selectedHeart = heartByPotion(assumptions.potions.magic);
-  const defaultPinned = useMemo(() => raid.planDefaults.pinned.map((n) => planItemByName(n).id)
-    .flatMap((id) => {
-      if (!heartById(id)) return [id];
-      return selectedHeart ? [selectedHeart.id] : [];
-    }), [raid, selectedHeart]);
-  const [route, setRoute] = useState('all');
+  const defaultPinned = useMemo(() => defaultPinnedIds(raid, assumptions.potions.magic), [raid, assumptions.potions.magic]);
+  // phase 37b: the inputs start from the saved ones (src/lib/raids/settings.ts)
+  const [route, setRoute] = useState(initialInputs?.route ?? 'all');
   // phase 27: comfort supplies only (the kit's potions are derived by the planner); the ring policy (Advanced)
-  const [supplies, setSupplies] = useState<SupplyCounts>(raid.defaultSupplies);
-  const [ringPolicy, setRingPolicy] = useState<RingPolicy>(DEFAULT_RING_POLICY);
+  const [supplies, setSupplies] = useState<SupplyCounts>(initialInputs?.supplies ?? raid.defaultSupplies);
+  const [ringPolicy, setRingPolicy] = useState<RingPolicy>(initialInputs?.ringPolicy ?? DEFAULT_RING_POLICY);
   // phase 29: who picks the spec weapons; mages in the party (undefined = auto: 1 if the kit has a magic loadout)
   const [ownSpecMode, setOwnSpecMode] = useState<SpecMode>(DEFAULT_SPEC_MODE);
   const specMode = specModeProp ?? ownSpecMode;
   const setSpecMode = onSpecMode ?? setOwnSpecMode;
   // phase 33: the per-phase rows of the encounter table (one toggle for the table, closed by default)
   const [phaseDetails, setPhaseDetails] = useState(false);
-  const [mages, setMages] = useState<number | undefined>(undefined);
-  const [nonItem, setNonItem] = useState(raid.planDefaults.nonItemSlots);
-  const [pinned, setPinned] = useState<number[]>(defaultPinned);
+  const [mages, setMages] = useState<number | undefined>(initialInputs ? initialInputs.mages : undefined);
+  const [nonItem, setNonItem] = useState(initialInputs?.nonItem ?? raid.planDefaults.nonItemSlots);
+  const [pinned, setPinned] = useState<number[]>(initialInputs?.pinned ?? defaultPinned);
+  useEffect(() => {
+    onInputs?.({
+      route, supplies, ringPolicy, nonItem, pinned, ...(mages !== undefined ? { mages } : {}),
+    });
+  }, [onInputs, route, supplies, ringPolicy, mages, nonItem, pinned]);
   // a new Heart in the Assumptions box replaces the pinned one (or removes it); the first render keeps the defaults
   const lastHeart = useRef(selectedHeart);
   useEffect(() => {

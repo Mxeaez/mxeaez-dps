@@ -14,6 +14,7 @@
  * Screenshots docs/screenshots/phase26-*.png.
  */
 import { chromium } from '@playwright/test';
+import { headlineTotal } from './headlines.mjs';
 import { openSections } from './phase34Sections.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
@@ -113,7 +114,7 @@ const main = async () => {
   await page.locator('[data-testid="plan-compare-max"]').click();
   await page.locator('[data-testid="plan-max-line"]').waitFor({ timeout: 600000 });
   const maxLine = (await page.locator('[data-testid="plan-max-line"]').innerText()).trim();
-  check(maxLine === `Best possible with everything: 21:07.7 (yours: ${total})`, `"${maxLine}"`); // phase 30: 21:53.0 → 21:44.4
+  check(maxLine === `Best possible with everything: ${headlineTotal('fa')} (yours: ${total})`, `"${maxLine}"`); // phase 30: 21:53.0 → 21:44.4
   await shot(page, 'plan-excluded');
 
   // --- reload: persisted

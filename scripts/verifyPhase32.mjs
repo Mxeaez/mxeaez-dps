@@ -15,6 +15,7 @@
  * Screenshots docs/screenshots/phase32-*.png.
  */
 import { chromium } from '@playwright/test';
+import { headlineTotal } from './headlines.mjs';
 import { openSections } from './phase34Sections.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
@@ -77,7 +78,7 @@ const main = async () => {
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1500, height: 1300 } });
   await page.goto(`${BASE}best-setup`, { waitUntil: 'load', timeout: 120000 });
-  await page.evaluate(() => localStorage.removeItem('mxeaez-dps:not-owned'));
+  await page.evaluate(() => { localStorage.removeItem('mxeaez-dps:not-owned'); localStorage.removeItem('mxeaez-dps:settings:v1'); });
   await page.reload({ waitUntil: 'load', timeout: 120000 });
   await page.locator('[data-testid="raid-tab-fractured-archive"]').waitFor({ timeout: 120000 });
   await page.locator('[data-testid="raid-tab-fractured-archive"]').click();
@@ -121,7 +122,7 @@ const main = async () => {
   await page.locator('[data-testid="drain-team"]').click();
 
   // --- the user's plan
-  await page.evaluate((l) => localStorage.setItem('mxeaez-dps:not-owned', JSON.stringify(l)), NOT_OWNED);
+  await page.evaluate((l) => { localStorage.removeItem('mxeaez-dps:settings:v1'); localStorage.setItem('mxeaez-dps:not-owned', JSON.stringify(l)); }, NOT_OWNED);
   await page.reload({ waitUntil: 'load', timeout: 120000 });
   await page.locator('[data-testid="raid-tab-fractured-archive"]').click();
   await page.locator('#bs-party').fill('4');
@@ -150,7 +151,7 @@ const main = async () => {
   await shot(page, 'user-plan');
 
   // --- FA defaults (6-man): a melee worn set, if the plan has one, keeps the ranged switch's ammo
-  await page.evaluate(() => localStorage.removeItem('mxeaez-dps:not-owned'));
+  await page.evaluate(() => { localStorage.removeItem('mxeaez-dps:not-owned'); localStorage.removeItem('mxeaez-dps:settings:v1'); });
   await page.reload({ waitUntil: 'load', timeout: 120000 });
   await page.locator('[data-testid="raid-tab-fractured-archive"]').click();
   await page.locator('[data-testid="plan-tab"]').click();
@@ -159,7 +160,7 @@ const main = async () => {
   const faTotal = await text(page.locator('[data-testid="plan-total"]'));
   const faFree = Number(await page.locator('[data-testid="free-slots"]').getAttribute('data-free'));
   // the same kit as phase 31 (21:44.4, 5 free): the Inquisitor's + Obligator switch is 9 items without the blessing
-  check(faTotal === '21:07.7' && faFree === 4, `FA defaults: ${faTotal}, ${faFree} free (phase 31: 21:44.4, 5 free)`);
+  check(faTotal === headlineTotal('fa') && faFree === 4, `FA defaults: ${faTotal}, ${faFree} free (phase 31: 21:44.4, 5 free)`);
   check(!(await kitLoadouts(page)).some((l) => l.items.includes(BLESSING)), 'FA defaults: no blessing in the kit');
   await shot(page, 'fa-defaults');
 
@@ -170,7 +171,7 @@ const main = async () => {
   await page.locator('[data-testid="plan-view"]').waitFor({ timeout: 30000 });
   await waitPlan(page);
   const toaTotal = await text(page.locator('[data-testid="plan-total"]'));
-  check(toaTotal === '14:07.8', `ToA plan total ${toaTotal} (phase 35: 14:12.1; phase 31: 14:04.1)`);
+  check(toaTotal === headlineTotal('toa'), `ToA plan total ${toaTotal} (phase 35: 14:12.1; phase 31: 14:04.1)`);
   check(await checkKept(page, 'ToA'), 'ToA: the worn melee set keeps the kit\'s ammo');
   await shot(page, 'kept-ammo');
 

@@ -16,6 +16,7 @@
  * Screenshots docs/screenshots/phase34-check-*.png (the before / after set: scripts/phase34Shots.mjs).
  */
 import { chromium } from '@playwright/test';
+import { headlineTotal } from './headlines.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
 const BRIEFING = [
@@ -85,7 +86,7 @@ const main = async () => {
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1400, height: 1100 } });
   await page.goto(`${BASE}best-setup`, { waitUntil: 'load', timeout: 120000 });
-  await page.evaluate(() => localStorage.removeItem('mxeaez-dps:not-owned'));
+  await page.evaluate(() => { localStorage.removeItem('mxeaez-dps:not-owned'); localStorage.removeItem('mxeaez-dps:settings:v1'); });
   await page.reload({ waitUntil: 'load', timeout: 120000 });
   await page.locator('[data-testid="raid-tab-fractured-archive"]').waitFor({ timeout: 120000 });
   await page.locator('[data-testid="raid-tab-fractured-archive"]').click();
@@ -115,7 +116,7 @@ const main = async () => {
   await page.locator('[data-testid="plan-tab"]').click();
   await waitPlan(page);
   const total = await text(page.locator('[data-testid="plan-total"]'));
-  check(total === '21:07.7', `FA Team total ${total} (phase 33: 21:44.4)`);
+  check(total === headlineTotal('fa'), `FA Team total ${total} (phase 33: 21:44.4)`);
   const rows = await page.locator('[data-testid="plan-briefing-row"]').evaluateAll((els) => els.map((e) => ({
     id: e.dataset.encounter,
     specs: e.dataset.specs,

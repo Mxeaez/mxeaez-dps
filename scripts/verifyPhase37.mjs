@@ -10,6 +10,7 @@
  *   tooltip does. Screenshot docs/screenshots/phase37-plan-cox.png.
  */
 import { chromium } from '@playwright/test';
+import { headlineTotal } from './headlines.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
 
@@ -30,7 +31,7 @@ const main = async () => {
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1400, height: 1100 } });
   await page.goto(`${BASE}best-setup`, { waitUntil: 'load', timeout: 120000 });
-  await page.evaluate(() => localStorage.removeItem('mxeaez-dps:not-owned'));
+  await page.evaluate(() => { localStorage.removeItem('mxeaez-dps:not-owned'); localStorage.removeItem('mxeaez-dps:settings:v1'); });
   await page.reload({ waitUntil: 'load', timeout: 120000 });
   await page.locator('[data-testid="raid-tab-fractured-archive"]').waitFor({ timeout: 120000 });
   await page.locator('[data-testid="raid-tab-fractured-archive"]').click();
@@ -76,7 +77,7 @@ const main = async () => {
   const secs = (Date.now() - tPlan) / 1000;
   check(!!parallelSeen, `progress: "${parallelSeen}"`);
   const total = await text(page.locator('[data-testid="plan-total"]'));
-  check(total === '7:08.7', `CoX total ${total} (7:08.7, unchanged)`);
+  check(total === headlineTotal('cox'), `CoX total ${total} (the headline fixture: ${headlineTotal('cox')})`);
   check(secs <= 60, `CoX plan in ≤ 60 s (${secs.toFixed(1)} s)`);
   const olm = page.locator('[data-testid="plan-briefing-row"][data-encounter="cox-olm"]');
   const groups = await olm.locator('[data-testid="plan-briefing-group"]').evaluateAll((els) => els.map((e) => e.dataset.text));

@@ -12,6 +12,7 @@
  * Screenshots docs/screenshots/phase35b-*.png.
  */
 import { chromium } from '@playwright/test';
+import { headlineTotal } from './headlines.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
 // phase 36: one spec budget for Bork and the Smorks (and the planner's 2 Elder maul + 4 Tonalztics carriers)
@@ -65,14 +66,14 @@ const main = async () => {
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1400, height: 1100 } });
   await page.goto(`${BASE}best-setup`, { waitUntil: 'load', timeout: 120000 });
-  await page.evaluate(() => localStorage.removeItem('mxeaez-dps:not-owned'));
+  await page.evaluate(() => { localStorage.removeItem('mxeaez-dps:not-owned'); localStorage.removeItem('mxeaez-dps:settings:v1'); });
   await page.reload({ waitUntil: 'load', timeout: 120000 });
   await page.locator('[data-testid="raid-tab-fractured-archive"]').waitFor({ timeout: 120000 });
 
   // --- FA Plan (Team defaults)
   await openRaidPlan(page, 'fractured-archive');
   const total = await text(page.locator('[data-testid="plan-total"]'));
-  check(total === '21:07.7', `FA Team total ${total} (phase 35: 21:44.4)`);
+  check(total === headlineTotal('fa'), `FA Team total ${total} (phase 35: 21:44.4)`);
   let rows = await briefing(page);
   log(rows);
   const bork = rows.find((r) => r.id === 'bork-smorks');
@@ -85,7 +86,7 @@ const main = async () => {
   check(enc === BORK_LINE, `per-phase details encounter line: "${enc}"`);
 
   // --- FA with Obligator not owned: Bork and the Smorks get different loadouts → labelled Wear
-  await page.evaluate(() => localStorage.setItem('mxeaez-dps:not-owned', JSON.stringify(['Obligator'])));
+  await page.evaluate(() => { localStorage.removeItem('mxeaez-dps:settings:v1'); localStorage.setItem('mxeaez-dps:not-owned', JSON.stringify(['Obligator'])); });
   await page.reload({ waitUntil: 'load', timeout: 120000 });
   await page.locator('[data-testid="raid-tab-fractured-archive"]').waitFor({ timeout: 120000 });
   await openRaidPlan(page, 'fractured-archive');
@@ -112,7 +113,7 @@ const main = async () => {
     await page.locator('[data-testid="plan-briefing"]').screenshot({ path: 'docs/screenshots/phase35b-bork-smorks-phone.png' });
   }
   await page.setViewportSize({ width: 1400, height: 1100 });
-  await page.evaluate(() => localStorage.removeItem('mxeaez-dps:not-owned'));
+  await page.evaluate(() => { localStorage.removeItem('mxeaez-dps:not-owned'); localStorage.removeItem('mxeaez-dps:settings:v1'); });
   await page.reload({ waitUntil: 'load', timeout: 120000 });
   await page.locator('[data-testid="raid-tab-fractured-archive"]').waitFor({ timeout: 120000 });
 

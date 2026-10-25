@@ -33,6 +33,13 @@ export interface KitMemo {
   stats: { encounterHits: number, encounterRuns: number, passHits: number, passRuns: number };
 }
 
+/**
+ * Phase 37b: the JSON of a memo key. Plain JSON writes Infinity, -Infinity and NaN as null, so two keys that differ only
+ * there would collide; they are tagged objects here ({ nonFinite: 'Infinity' }).
+ */
+export const memoKeyJson = (x: unknown): string => JSON.stringify(x, (_k: string, v: unknown) => (
+  typeof v === 'number' && !Number.isFinite(v) ? { nonFinite: String(v) } : v));
+
 export const createKitMemo = <S>(o: KitMemoOptions<S>): KitMemo => {
   type Q = { id: string, state: S };
   const encounters = new TraceMemo<Q, EncounterTime>(o.maxNodes);
@@ -63,11 +70,11 @@ export const createKitMemo = <S>(o: KitMemoOptions<S>): KitMemo => {
   const allocKeys = new WeakMap<object, string>();
   const encounterKey = (id: EncounterId, a: RaidTimeAssumptions, opts: EncounterBudgetOptions) => {
     const alloc = a.fixedAlloc?.[id];
-    return `${id}|${objectKey(assumptionKeys, a, (x) => JSON.stringify([{ ...x, model: undefined, fixedAlloc: undefined }, x.model?.id ?? null]))}|${
-      alloc ? objectKey(allocKeys, alloc, (x) => JSON.stringify(x)) : ''}|${JSON.stringify(opts)}`;
+    return `${id}|${objectKey(assumptionKeys, a, (x) => memoKeyJson([{ ...x, model: undefined, fixedAlloc: undefined }, x.model?.id ?? null]))}|${
+      alloc ? objectKey(allocKeys, alloc, (x) => memoKeyJson(x)) : ''}|${memoKeyJson(opts)}`;
   };
   // a model pass reads the kit's answers, never the spec budget or plan
-  const passKey = (key: string, a: RaidTimeAssumptions) => `${key}|${objectKey(passAssumptionKeys, a, (x) => JSON.stringify([{
+  const passKey = (key: string, a: RaidTimeAssumptions) => `${key}|${objectKey(passAssumptionKeys, a, (x) => memoKeyJson([{
     ...x, model: undefined, fixedAlloc: undefined, specBudget: undefined,
   }, x.model?.id ?? null]))}`;
   const answerOf = (members: number[]) => (q: Q) => o.pick(q.state, q.id, members);

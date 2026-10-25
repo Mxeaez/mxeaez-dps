@@ -1,4 +1,4 @@
-# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14; Routes tab phase 16; Plan tab phase 17; raid tabs + ToA phase 18; CoX phase 19; ToB phase 20; per-raid Plan defaults + dedupe phase 21; UI cleanup phase 23; "Items I don't own" phase 26; potions from the kit + ring policy phase 27; Plan tab polish phase 30; quiver ammo + heart as magic's potion phase 31; zero-value switch items + drain-line units phase 32; specs follow the plan + one drain line per encounter phase 33; readability phase 34; damage specs, surge potion and one spec budget per encounter phase 36)
+# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14; Routes tab phase 16; Plan tab phase 17; raid tabs + ToA phase 18; CoX phase 19; ToB phase 20; per-raid Plan defaults + dedupe phase 21; UI cleanup phase 23; "Items I don't own" phase 26; potions from the kit + ring policy phase 27; Plan tab polish phase 30; quiver ammo + heart as magic's potion phase 31; zero-value switch items + drain-line units phase 32; specs follow the plan + one drain line per encounter phase 33; readability phase 34; damage specs, surge potion and one spec budget per encounter phase 36; remembered settings and the headline fixture phase 37b)
 
 `/best-setup` (dev: http://localhost:3001/osrs-dps/best-setup; "Best setup" button in the top bar, "Calculator" leads
 back). Tabs, in order: **Search** (the default, phase 9/12, see the end of this file) searches a pool of end-game items
@@ -74,6 +74,38 @@ presentation only; the numbers are unchanged except the Solo fight length (below
 request and its handler deleted). The presets stay: they seed the search and give the "vs best preset" column / the
 Summary's "best preset" reference; `computeBestSetup` / `evaluatePreset` stay as tested library code
 (`Presets.test.ts`).
+
+## Remember my settings (phase 37b)
+
+Every best-setup input is remembered in this browser (localStorage, key `mxeaez-dps:settings:v1`) and restored when
+the page loads: per raid, the Assumptions box (party size and the raid inputs — ToA raid / path levels, CoX Challenge
+Mode, ToB mode — potions / heart, Zeal, Specs I bring + mode, Lightbearer), Advanced (team carriers + mode + "carriers
+use Lightbearer", elemental fragments, floor threshold, players at your DPS, spec-energy priority, the time-model
+settings), the Drains selector (None / Solo / Team, as chosen: a party of 1 still shows Solo), and the Plan tab's
+inputs (Spec weapons, Route, comfort supplies, rune pouch, Rings, Mages in party, Items I always bring); plus the active
+raid tab. Plan results, the Search / Plan / Summary tab and the chosen boss are not stored. "Items I don't own" keeps its
+own keys (below). Code: `src/lib/raids/settings.ts` (pure), `BestSetup.tsx` (holds every raid's settings, writes them
+through on each change), `PlanView.tsx` (starts from the saved Plan inputs, reports changes). The Plan tab's inputs now
+also survive leaving the tab and coming back (they used to reset), and each raid keeps its own Drains / spec mode / time
+settings across raid-tab switches.
+
+- **Stored JSON**: `{ "version": 1, "raid": "toa", "raids": { "<raid id>": { "assumptions", "time", "drain",
+  "specMode", "plan": { "route", "supplies", "ringPolicy", "mages", "nonItem", "pinned" } } } }`, holding **only the
+  values that differ from the defaults** (a later change of a default still reaches inputs you never touched); a raid
+  with nothing changed has no entry; the key is removed when nothing differs at all.
+- **Restore** (`validateRaidSettings`): every field is checked on its own — a value of the wrong type or out of range
+  (party size outside the raid's range, an unknown route or ring policy, a potion that doesn't exist, a pinned id that
+  is no item, supplies above 28, ...) falls back to that input's default; unknown keys are ignored; a missing part keeps
+  its defaults; another `version`, unreadable JSON or blocked storage → every default. The page renders after the
+  settings are read (one "Loading…" frame: the site is a static export, so storage is read after mount).
+- **Reset** (Assumptions box): every input of this raid back to its defaults — Advanced, Drains and the Plan tab
+  included (it used to reset the assumptions only) — and its saved entry removed. **Reset all saved settings** (the ?
+  help): every raid back to its defaults and the key deleted; the raid tab stays where you are and "Items I don't own"
+  is kept.
+- Checks: `Phase37b.test.ts` (round trip, version mismatch / corrupt JSON → defaults, partial and invalid data, Reset,
+  only differences stored), `scripts/verifyPhase37b.mjs` (set FA party 4, Solo, brews 5, a route, Allow switches and
+  ToA raid level 300; reload: all kept, ToA tab active; Reset; Reset all; screenshot `phase37b-settings.png`). Verify
+  scripts start from a fresh browser, so they still see the defaults.
 
 ## Items I don't own (phase 26)
 
@@ -1256,7 +1288,8 @@ the four reduced Phase27 plans in `Phase37.test.ts`) is compared with the plan c
 change (`src/tests/lib/raids/phase37/*.json`, `src/tests/utils/phase37.ts`) — the kit, carriers, items, spec plans,
 every route and encounter time, the inventory and every string (only the run statistics — DPS evaluation counts and
 timings — differ). A regression of the memos is caught by their counters (`stats.memo`: encounters / passes computed
-and reused, deterministic; `memoWithin` allows 20% more runs, 20% fewer hits) and, for a catastrophe only, a CPU-time
+and reused, deterministic; `memoWithin` allows 20% more runs, 20% fewer hits; phase 37b: encounter runs and pass runs
+bounded separately, so a lost pass memo fails even when the encounter memo makes up the sum) and, for a catastrophe only, a CPU-time
 budget of 5× each plan's phase 37 time alone (`cpuSeconds`; wall and even CPU times are 3-4× a plan's alone while Jest
 runs the slow suites in parallel, more when the machine is busy).
 
@@ -1314,6 +1347,36 @@ has its own); the Search tab's Specs box computes its rows in the page, once per
 
 (Dev machine: 20 hardware threads; Node = one thread, no helpers; browser = verifyPhase21, 8 helpers. The phase 36
 browser times are PROGRESS's. On a 4-core machine the browser gets 3 helpers and less of the parallel gain.)
+
+**Phase 37b review nits** (no result changed; the phase 37 fixtures still match): memo keys write non-finite numbers as
+tagged objects (`kitMemo.ts` `memoKeyJson`; plain JSON wrote Infinity / NaN as null, so such keys could collide);
+`encodeRingRuns` keeps -0; with helper workers the plan footer shows the whole job's new searches and wall time
+(`parallelPlanStats`: the returned plan is a helper's ring run, whose own search had the screens' rows, and the main
+plan's clock started after the helpers), and the "Trying rings N / M" progress stops at M (`ringProgressDone`).
+
+### Re-pinning the headlines (phase 37b)
+
+The headline plans (four Team defaults, FA Solo party 1, FA without Obligator / Ascension crossbows) are pinned once,
+in `src/tests/fixtures/headlines.json`: per plan the total (text + seconds), route, ring, kit loadouts, free slots,
+carriers, "Bring", your spec items, your share, surge doses and each encounter's seconds. Everything that checks a
+headline reads it: the slow tests (`CrossRaidHeadlines*.test.ts` compare the whole summary; Phase31's Solo; Phase34 /
+35 / 35b's totals, free slots and carriers), the verify scripts (`scripts/headlines.mjs` → `headlineTotal('fa')`)
+and the README table (between the `headlines:start` / `headlines:end` markers; `Phase37b.test.ts` checks it matches,
+and that the fixture is the summary of the phase 37 full-plan fixtures). Cases and summary:
+`src/tests/utils/headlines.ts`.
+
+After a phase that moves numbers:
+
+1. `node scripts/pinHeadlines.mjs --full` (plans all six in Node in child processes, `--jobs 3` by default, ~2 min
+   with `--jobs 6` on the dev machine; `--full` also rewrites `src/tests/lib/raids/phase37/<name>.json`, the
+   bit-identical guard; name plans to re-pin only those: `node scripts/pinHeadlines.mjs cox`; `--check` writes
+   nothing and exits 1 on a difference; `--readme` only rewrites the README table).
+2. Review `git diff src/tests/fixtures/headlines.json README.md`: every moved total, kit, carrier or encounter is
+   explained in PROGRESS (and the per-phase history comments in the tests, if you keep them).
+3. Run the slow suites; re-pin the per-phase strings (briefing lines, drain lines) that moved; update the memo counters
+   (`PHASE37_MEMO`) if the memos' work changed.
+
+A phase that claims no number changed must leave both fixtures untouched (`--check` exits 0).
 
 ## Routes tab (phase 16: raid time model)
 

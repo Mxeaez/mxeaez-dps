@@ -42,6 +42,7 @@ import { PlannerWeapon } from '@/lib/fracturedArchive/specs';
 import {
   CHAMBERS_OF_XERIC_RAID, FRACTURED_ARCHIVE_RAID, RaidConfig, THEATRE_OF_BLOOD_RAID, TOMBS_OF_AMASCUT_RAID,
 } from '@/lib/raids';
+import { headline, headlineOf } from '@/tests/utils/headlines';
 
 // Phase 31: (1) Dizana's quiver holds a second arrow / bolt type at no inventory cost; (2) the Saturated heart is
 // magic's kit potion (one slot when the kit has a magic loadout, FA / ToB), not a pinned item; (3) the Solo spec-subset
@@ -412,7 +413,8 @@ describe('Solo subset search: ≥ 1 s per extra slot', () => {
 /** Phase 31: FA Solo party 1 (defaults, planner decides). Pinned after the run; see PROGRESS. */
 // phase 36 (one spec budget per encounter; damage specs; the surge potion): 22:01.9 → 21:54.8
 // phase 36 review (damage specs at the hp left; regen on the drained clock): 21:54.8 → 21:59.0
-const SOLO_HEADLINE: [string, number] = ['21:59.0', 1319.0];
+// phase 37b: from src/tests/fixtures/headlines.json (scripts/pinHeadlines.mjs re-pins it)
+const SOLO_HEADLINE: [string, number] = [headline('faSolo').total, headline('faSolo').seconds];
 
 (process.env.RUN_SLOW_TESTS ? describe : describe.skip)('FA defaults (slow)', () => {
   const full = (patch: Partial<PlanInputs>) => plan({
@@ -432,7 +434,8 @@ const SOLO_HEADLINE: [string, number] = ['21:59.0', 1319.0];
     expect(normalised(r)).toEqual(phase37Fixture('faSolo'));
     expect(r.specs.bring).toEqual(['tonalztics']);
     expect(formatDuration(total(r))).toBe(SOLO_HEADLINE[0]);
-    expect(Math.abs(total(r) - SOLO_HEADLINE[1])).toBeLessThanOrEqual(0.05);
+    expect(Math.abs(total(r) - SOLO_HEADLINE[1])).toBeLessThanOrEqual(1e-6);
+    expect(headlineOf('faSolo', r)).toEqual(headline('faSolo'));
     // every weapon not brought saves < 1 s per slot (or costs time)
     r.specs.solo!.perWeapon.filter((d) => !d.chosen).forEach((d) => expect(d.deltaSeconds).toBeLessThan(d.deltaSlots * SHARE_MAX_SLOT_SECONDS));
     // the slot count = the exhaustive count of the returned kit (heart and spec weapons carried)

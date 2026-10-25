@@ -1,5 +1,5 @@
 import {
-  campRingItems, PlanInputs, RingRun, RingRunResult,
+  campRingItems, PlanInputs, PlanResult, RingRun, RingRunResult,
 } from '@/lib/fracturedArchive/planner';
 import { PlannerWeapon } from '@/lib/fracturedArchive/specs';
 import { normaliseNotOwned } from '@/lib/fracturedArchive/ownership';
@@ -91,11 +91,31 @@ export const parallelRingRuns = async (
 };
 
 /**
+ * Phase 37b: the footer statistics of a plan made with helper workers. The returned plan is a helper's ring run (its
+ * own search took the rows the screens found: 0 new searches) and the main plan's clock starts after the helpers, so
+ * the job's figures replace them: `searches` = the search rows the job added to the ones the page supplied, `ms.total`
+ * = the whole job's wall time (helpers + main plan). The per-stage times stay the chosen ring run's.
+ */
+export const parallelPlanStats = (
+  stats: PlanResult['stats'],
+  suppliedRows: number,
+  finalRows: number,
+  wallMs: number,
+): PlanResult['stats'] => ({
+  ...stats,
+  searches: Math.max(stats.searches, finalRows - suppliedRows),
+  ms: { ...stats.ms, total: Math.max(stats.ms.total, wallMs) },
+});
+
+/** Phase 37b: the parallel ring runs' progress (done < total, so the label's "done + 1" never passes the total). */
+export const ringProgressDone = (done: number, total: number): number => Math.max(0, Math.min(done, total - 1));
+
+/**
  * Ring runs between workers: the worker JSON (Maps, Sets) plus non-finite numbers kept (plain JSON turns Infinity into
- * null, and the ring screens compare seconds that can be Infinity).
+ * null, and the ring screens compare seconds that can be Infinity); phase 37b: and -0 (plain JSON writes 0).
  */
 export const encodeRingRuns = (x: unknown): string => JSON.stringify(x, (k: string, v: unknown) => {
-  if (typeof v === 'number' && !Number.isFinite(v)) return { _dataType: 'Number', n: String(v) };
+  if (typeof v === 'number' && (!Number.isFinite(v) || Object.is(v, -0))) return { _dataType: 'Number', n: Object.is(v, -0) ? '-0' : String(v) };
   return WORKER_JSON_REPLACER(k, v as never);
 });
 

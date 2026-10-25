@@ -13,6 +13,9 @@ import {
   cpuSeconds, memoWithin, normalised, phase37Fixture,
 } from '@/tests/utils/phase37';
 import { planFor } from '@/tests/utils/crossRaid';
+import {
+  FA_NOT_OWNED, headline, HeadlineName, headlineOf,
+} from '@/tests/utils/headlines';
 
 // Phase 37: CrossRaid's slow headline tests, moved here unchanged so two test files (CrossRaidHeadlines.test.ts: FA,
 // ToA, ToB; CrossRaidHeadlinesCox.test.ts: CoX and FA without Obligator / Ascension) run them in parallel Jest workers.
@@ -69,13 +72,13 @@ import { planFor } from '@/tests/utils/crossRaid';
 // damage specs valued at the hp left at the phase's start; regen on the drained clock): FA 21:04.9 → 21:07.7 (2 Elder
 // maul + 3 Tonalztics); ToA 14:05.5 → 14:07.8 (1 Elder maul + 1 Eye of Ayak, Voidwaker); CoX 7:03.6 → 7:08.7 (3 Elder
 // maul + 1 BGS + 1 Tonalztics, Dragon claws); ToB 7:21.2 → 7:23.4 (1 Elder maul + 2 Tonalztics, Dragon claws).
-export const HEADLINES: [string, string, number][] = [
-  ['fractured-archive', '21:07.7', 1267.67],
-  // review 2: Eye of Ayak carriers capped at the mages (1): 13:19.6 → 14:10.6 (1 maul, 1 Tonalztics, 1 Ayak; Ultor)
-  ['toa', '14:07.8', 847.85],
-  ['cox', '7:08.7', 428.67],
-  ['tob', '7:23.4', 443.42],
-];
+// Phase 37b: the totals (and the rest of each headline: kit, carriers, items, encounters) come from
+// src/tests/fixtures/headlines.json; `node scripts/pinHeadlines.mjs` re-pins them after a numbers phase.
+export const HEADLINE_NAME: Record<string, HeadlineName> = {
+  'fractured-archive': 'fa', toa: 'toa', cox: 'cox', tob: 'tob',
+};
+export const HEADLINES: [string, string, number][] = Object.entries(HEADLINE_NAME)
+  .map(([id, n]) => [id, headline(n).total, headline(n).seconds]);
 
 // Phase 28: the FA plan without Obligator and Ascension crossbows ("Items I don't own"; phase 26 pinned 25:46.8 with
 // switches and the old potions, before phase 27). Phase 28 (camp one ring, potions from the kit): 25:24.5, camping
@@ -88,8 +91,8 @@ export const HEADLINES: [string, string, number][] = [
 // Phase 32 (no blessing; kept ammo): 24:45.3 → 24:34.1; the worn Twisted bow partial switch on the Tumeken's shadow
 // becomes the full Twisted bow (Masori) loadout (Archive Guardian 198.9 → 196.5, Ocellus 775.4 → 767.3 s).
 // Phase 36 (one spec budget per encounter; damage specs; the surge potion): 24:34.1 → 24:05.1; phase 36 review: 24:11.9
-export const ONLY_OWNED_HEADLINE: [string, number] = ['24:11.9', 1451.9];
-export const FA_NOT_OWNED = ['Obligator', 'Ascension crossbows'];
+export const ONLY_OWNED_HEADLINE: [string, number] = [headline('faNotOwned').total, headline('faNotOwned').seconds];
+export { FA_NOT_OWNED };
 
 /**
  * Phase 28: the total re-computed outside the planner from the returned kit: each kit loadout as a KitLoadout
@@ -139,8 +142,10 @@ export const headlineTests = (ids: string[], notOwned: boolean): void => (proces
       expect(memoWithin(res, PHASE37_FIXTURE[id][0])).toBe(true);
       expect(cpu).toBeLessThan(PHASE37_FIXTURE[id][1]);
       const total = res.comparison!.routes[res.planned].seconds;
-      expect(Math.abs(total - seconds)).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(total - seconds)).toBeLessThanOrEqual(1e-6);
       expect(formatDuration(total)).toBe(text);
+      // phase 37b: the whole headline (kit, ring, carriers, items, your share, encounters) = the fixture
+      expect(headlineOf(HEADLINE_NAME[id], res)).toEqual(headline(HEADLINE_NAME[id]));
       // phase 28: independent re-computation, the camped ring on every loadout, within 28 slots
       expect(Math.abs(recomputed(raid, res) - total)).toBeLessThan(1e-6);
       expect(res.kit.every((c) => c.equipment.ring?.name === res.ring.ring)).toBe(true);
@@ -169,7 +174,8 @@ export const headlineTests = (ids: string[], notOwned: boolean): void => (proces
       expect(cpu).toBeLessThan(305);
       const total = res.comparison!.routes[res.planned].seconds;
       expect(formatDuration(total)).toBe(ONLY_OWNED_HEADLINE[0]);
-      expect(Math.abs(total - ONLY_OWNED_HEADLINE[1])).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(total - ONLY_OWNED_HEADLINE[1])).toBeLessThanOrEqual(1e-6);
+      expect(headlineOf('faNotOwned', res)).toEqual(headline('faNotOwned'));
       expect(Math.abs(recomputed(raid, res) - total)).toBeLessThan(1e-6);
       expect(res.kit.some((c) => Object.values(c.equipment).some((it) => it && FA_NOT_OWNED.includes(it.name)))).toBe(false);
       expect(total).toBeGreaterThan(HEADLINES[0][2]);

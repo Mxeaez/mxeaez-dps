@@ -13,6 +13,7 @@
  * Screenshots docs/screenshots/phase33-*.png.
  */
 import { chromium } from '@playwright/test';
+import { headlineTotal } from './headlines.mjs';
 import { openSections } from './phase34Sections.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
@@ -63,7 +64,7 @@ const main = async () => {
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1500, height: 1300 } });
   await page.goto(`${BASE}best-setup`, { waitUntil: 'load', timeout: 120000 });
-  await page.evaluate(() => localStorage.removeItem('mxeaez-dps:not-owned'));
+  await page.evaluate(() => { localStorage.removeItem('mxeaez-dps:not-owned'); localStorage.removeItem('mxeaez-dps:settings:v1'); });
   await page.reload({ waitUntil: 'load', timeout: 120000 });
   await page.locator('[data-testid="raid-tab-fractured-archive"]').waitFor({ timeout: 120000 });
   await page.locator('[data-testid="raid-tab-fractured-archive"]').click();
@@ -91,7 +92,7 @@ const main = async () => {
   await page.locator('[data-testid="plan-view"]').waitFor({ timeout: 30000 });
   await waitPlan(page);
   const total = await text(page.locator('[data-testid="plan-total"]'));
-  check(total === '21:07.7', `FA Team total ${total} (phase 32: 21:44.4)`);
+  check(total === headlineTotal('fa'), `FA Team total ${total} (phase 32: 21:44.4)`);
   const bork = await encLine(page, 'bork-smorks');
   check(bork.data === BORK_LINE && bork.shown.replace(' Smorks: ', ' · Smorks: ') === BORK_LINE, `Bork + Smorks: "${bork.shown}"`);
   check(await page.locator('[data-testid="plan-phase-toggle"]').getAttribute('aria-expanded') === 'false', 'per-phase details closed by default');
@@ -137,7 +138,7 @@ const main = async () => {
   await waitPlan(page);
   const soloTotal = await text(page.locator('[data-testid="plan-total"]'));
   const soloBring = await page.locator('[data-testid="plan-specs"]').getAttribute('data-bring');
-  check(soloTotal === '21:59.0' && soloBring === 'tonalztics', `Solo party 1: ${soloTotal}, Bring ${soloBring} (phase 32: 22:01.9, Tonalztics)`);
+  check(soloTotal === headlineTotal('faSolo') && soloBring === 'tonalztics', `Solo party 1: ${soloTotal}, Bring ${soloBring} (phase 32: 22:01.9, Tonalztics)`);
   const c2 = await chips(page);
   check(JSON.stringify(chipsOn(c2)) === '["tonalztics"]', `chips after the Solo plan: [${chipsOn(c2)}]`);
   const soloIds = await page.locator('[data-testid="plan-encounter-row"]').evaluateAll((els) => els.map((e) => e.dataset.encounter));
@@ -180,7 +181,7 @@ const main = async () => {
   await page.locator('[data-testid="plan-view"]').waitFor({ timeout: 30000 });
   await waitPlan(page);
   const tobTotal = await text(page.locator('[data-testid="plan-total"]'));
-  check(tobTotal === '7:23.4', `ToB plan total ${tobTotal} (phase 32: 7:29.5)`);
+  check(tobTotal === headlineTotal('tob'), `ToB plan total ${tobTotal} (phase 32: 7:29.5)`);
   const soteRow = page.locator('[data-testid="plan-encounter-row"][data-encounter="tob-sotetseg"] [data-testid="plan-encounter-drains"]');
   const soteEvents = Number(await soteRow.getAttribute('data-events'));
   const soteParts = (await soteRow.locator('[data-testid="plan-encounter-drain-part"]').allInnerTexts()).map((l) => l.replace(/\s+/g, ' ').trim());

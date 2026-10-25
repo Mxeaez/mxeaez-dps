@@ -15,6 +15,7 @@ import { RaidConfig, raidConfig } from '@/lib/raids';
 import { NO_DRAINS_ADDS } from '@/lib/raids/types';
 import { INITIAL_MONSTER_INPUTS } from '@/lib/Monsters';
 import SpecPlanPanel from '@/app/components/bestSetup/SpecPlanPanel';
+import { headline } from '@/tests/utils/headlines';
 
 // Phase 35: adds and short-lived targets get no specs (user, 2026-10-24: "you obviously aren't going to Ralos or Elder
 // maul spec the little minions that die in a few hits anyway"). They carry `noDrains: NO_DRAINS_ADDS`, so every drain
@@ -260,12 +261,9 @@ describe('ToA plan (reduced pool): the spec plan and briefing list no add target
   test.each([
     // phase 36 (one spec budget per encounter, damage specs, surge): ToA 14:12.1 → 14:05.5, CoX 7:01.3 → 7:03.6
     // phase 36 review (carriers ≤ party − 1 with your damage specs; hp left; drained clock): ToA → 14:07.8, CoX → 7:08.7
-    ['toa', '14:07.8', 847.85, {
-      elderMaul: 1, dwh: 0, bgs: 0, tonalztics: 0, ayak: 1,
-    }],
-    ['cox', '7:08.7', 428.67, {
-      elderMaul: 3, dwh: 0, bgs: 1, tonalztics: 1, ayak: 0,
-    }],
+    // phase 37b: total, seconds and carriers from src/tests/fixtures/headlines.json (scripts/pinHeadlines.mjs)
+    ['toa', headline('toa').total, headline('toa').seconds, headline('toa').carriers!],
+    ['cox', headline('cox').total, headline('cox').seconds, headline('cox').carriers!],
   ] as [RaidConfig['id'], string, number, Record<string, number>][])('%s: %s', (id, text, seconds, carriers) => {
     const raid = raidConfig(id);
     const res = plan({

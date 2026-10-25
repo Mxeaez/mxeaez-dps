@@ -22,7 +22,7 @@ import {
 import {
   ayakExpectedDrain, drainModel, PlannerWeapon, SPEC_WEAPONS, specProfile,
 } from '@/lib/fracturedArchive/specs';
-import { DEFAULT_SPEC_MODE, SpecMode } from '@/lib/fracturedArchive/planner';
+import { SpecMode } from '@/lib/fracturedArchive/planner';
 import { subsetOfMySpecs, withPlanSpecs } from '@/lib/fracturedArchive/specChoice';
 import { resolveItem } from '@/lib/fracturedArchive/loadout';
 import SpecPlanPanel from '@/app/components/bestSetup/SpecPlanPanel';
@@ -39,6 +39,9 @@ import ZealImg from '@/public/img/prayers/Zeal.png';
 import {
   loadNotOwned, loadOnlyOwned, saveNotOwned, saveOnlyOwned,
 } from '@/lib/fracturedArchive/ownership';
+import {
+  clearSettings, defaultSettings, loadSettings, PlanInputSettings, RaidSettings, resetRaidSettings, saveSettings, SavedSettings,
+} from '@/lib/raids/settings';
 
 // Fractured Archive "Best setup" view (phase 8; "Search" tab phase 9). Phase 12: Search is the default tab; item icons.
 // Phase 13: the "Per boss" preset table was removed (the presets still seed the search and give the "vs best preset"
@@ -56,6 +59,8 @@ import {
 // editable chips.
 // Phase 34 (readability): the potion / Heart pickers show icons (IconSelect, relevant choices first, the rest under
 // "more"); Elemental fragments moved to Advanced; the Ayak hint and the "from the last plan" notes are tooltips.
+// Phase 37b: every input (Assumptions, Advanced, Drains, the Plan tab's inputs) and the raid tab are remembered per raid
+// in localStorage (src/lib/raids/settings.ts); "Reset" clears the raid's, the ? help has "Reset all saved settings".
 // Docs: docs/BEST_SETUP.md.
 
 /** Phase 34: a potion as an icon-select option. */
@@ -90,7 +95,7 @@ export const GLOSSARY: [string, string][] = [
   ['Carriers', 'Teammates who bring a drain weapon and spec it at the start (Team drains). The party size above is shared; carriers beyond it don\'t count.'],
 ];
 
-const Glossary: React.FC = () => {
+const Glossary: React.FC<{ onResetAll?: () => void }> = ({ onResetAll }) => {
   const [open, setOpen] = useState(false);
   return (
     <span className="relative">
@@ -112,7 +117,23 @@ const Glossary: React.FC = () => {
               {text}
             </div>
           ))}
-          <button type="button" className="underline self-end" onClick={() => setOpen(false)}>close</button>
+          <div className="flex justify-between items-center mt-1">
+            {onResetAll ? (
+              <button
+                type="button"
+                className="underline text-red-700 dark:text-red-300"
+                data-testid="settings-reset-all"
+                title="Every raid's inputs back to the defaults and the remembered settings deleted (Items I don't own is kept)"
+                onClick={() => {
+                  onResetAll();
+                  setOpen(false);
+                }}
+              >
+                Reset all saved settings
+              </button>
+            ) : <span />}
+            <button type="button" className="underline" onClick={() => setOpen(false)}>close</button>
+          </div>
         </div>
       )}
     </span>
@@ -228,9 +249,12 @@ const AssumptionsBox: React.FC<{
   specMode?: SpecMode,
   onSpecMode?: (m: SpecMode) => void,
   planBring?: PlannerWeapon[] | null,
+  /** Phase 37b: every input of this raid back to its defaults (saved settings cleared); "Reset all" in the ? help. */
+  onReset: () => void,
+  onResetAll?: () => void,
 }> = ({
   raid, value, onChange, ayakHint, timeSettings, onTimeSettings, notOwned, onNotOwned, lightbearerLock, planCarriers,
-  specMode = 'manual', onSpecMode, planBring,
+  specMode = 'manual', onSpecMode, planBring, onReset, onResetAll,
 }) => {
   // phase 33: "Planner decides": the chips mirror the last plan's "Bring" (read-only); none before a plan has run
   const plannerSpecs = specMode === 'auto';
@@ -250,8 +274,8 @@ const AssumptionsBox: React.FC<{
           Assumptions
         </span>
         <span className="flex-1" />
-        <button type="button" className="underline" title="Back to this raid's defaults (every input, Advanced included)" onClick={() => onChange(raid.defaultAssumptions)}>Reset</button>
-        <Glossary />
+        <button type="button" className="underline" title="Back to this raid's defaults: every input (Advanced, Drains and the Plan tab's inputs included); its remembered settings are cleared" data-testid="assumptions-reset" onClick={onReset}>Reset</button>
+        <Glossary onResetAll={onResetAll} />
       </div>
       <ScalingInputs raid={raid} value={value} onChange={onChange} />
       <div className="flex flex-wrap gap-x-4 gap-y-2 items-center">
@@ -506,22 +530,34 @@ const tabClass = (active: boolean) => `px-3 py-1 rounded text-sm border ${active
  */
 const RaidBestSetup: React.FC<{
   raid: RaidConfig,
-  assumptions: BestSetupAssumptions,
-  setAssumptions: (a: BestSetupAssumptions) => void,
+  /** Phase 37b: this raid's inputs (held and saved by the page). */
+  settings: RaidSettings,
+  update: (patch: Partial<RaidSettings>) => void,
+  /** Phase 37b: bumped by a reset (the Plan tab's inputs start again from `settings.plan`). */
+  generation: number,
+  onReset: () => void,
+  onResetAll: () => void,
   raidTabs: React.ReactNode,
   notOwned: string[],
   setNotOwned: (names: string[]) => void,
   onlyOwned: boolean,
   setOnlyOwned: (on: boolean) => void,
 }> = ({
-  raid, assumptions, setAssumptions, raidTabs, notOwned, setNotOwned, onlyOwned, setOnlyOwned,
+  raid, settings, update, generation, onReset, onResetAll, raidTabs, notOwned, setNotOwned, onlyOwned, setOnlyOwned,
 }) => {
   const [mode, setMode] = useState<'summary' | 'search' | 'plan'>('search');
+  // phase 37b: the inputs are the page's saved settings (assumptions, time model, drains, spec mode, plan inputs)
+  const {
+    assumptions, time: timeSettings, drain: chosenDrain, specMode,
+  } = settings;
+  const setAssumptions = useCallback((a: BestSetupAssumptions) => update({ assumptions: a }), [update]);
   // phase 23: the time-model settings live in the Advanced box (they were the Routes tab's); the Plan tab uses them
-  const [timeSettings, setTimeSettings] = useState<TimeSettings>(raid.defaultTimeSettings);
+  const setTimeSettings = useCallback((t: TimeSettings) => update({ time: t }), [update]);
+  const setDrain = useCallback((d: DrainStateId) => update({ drain: d }), [update]);
+  const setSpecMode = useCallback((m: SpecMode) => update({ specMode: m }), [update]);
+  const setPlanInputs = useCallback((p: PlanInputSettings) => update({ plan: p }), [update]);
   const [chosenKey, setTargetKey] = useState(raid.targets[0].key);
   const [phase, setPhase] = useState<string | undefined>(undefined);
-  const [chosenDrain, setDrain] = useState<DrainStateId>('team');
   // phase 29: a party of 1 has no team: Team drains become Solo (your own specs)
   const soloParty = assumptions.partySize <= 1;
   const drain: DrainStateId = soloParty && chosenDrain === 'team' ? 'solo' : chosenDrain;
@@ -529,9 +565,13 @@ const RaidBestSetup: React.FC<{
   const [planLightbearer, setPlanLightbearer] = useState<LightbearerLock | null>(null);
   // phase 29 review 2: the last plan's carriers ("Planner decides"); Search / Summary use them
   const [planCarriers, setPlanCarriers] = useState<TeamSpecAssumptions['carriers'] | null>(null);
-  // phase 33: who picks the spec weapons (the Plan tab's "Spec weapons" and the chips' mode), and the last plan's "Bring"
-  const [specMode, setSpecMode] = useState<SpecMode>(DEFAULT_SPEC_MODE);
+  // phase 33: the last plan's "Bring" (who picks the spec weapons is a saved setting, `specMode`)
   const [planBring, setPlanBring] = useState<PlannerWeapon[] | null>(null);
+  // phase 37b: a reset forgets the last plan's carriers and "Bring" too
+  const forgetPlan = () => {
+    setPlanCarriers(null);
+    setPlanBring(null);
+  };
   const searchA = useMemo(
     () => withPlanSpecs(withPlanCarriers(assumptions, planCarriers), planBring, specMode === 'manual'),
     [assumptions, planCarriers, planBring, specMode],
@@ -616,6 +656,14 @@ const RaidBestSetup: React.FC<{
             specMode={specMode}
             onSpecMode={setSpecMode}
             planBring={planBring}
+            onReset={() => {
+              forgetPlan();
+              onReset();
+            }}
+            onResetAll={() => {
+              forgetPlan();
+              onResetAll();
+            }}
           />
 
           {mode === 'search' && (
@@ -695,7 +743,7 @@ const RaidBestSetup: React.FC<{
             />
           )}
           {mode === 'plan' && drainButtons}
-          {mode === 'plan' && <PlanView assumptions={assumptions} drain={drain} raid={raid} timeSettings={timeSettings} notOwned={notOwned} onLightbearer={setPlanLightbearer} onCarriers={setPlanCarriers} specMode={specMode} onSpecMode={setSpecMode} onSpecs={setPlanBring} />}
+          {mode === 'plan' && <PlanView key={generation} assumptions={assumptions} drain={drain} raid={raid} timeSettings={timeSettings} notOwned={notOwned} onLightbearer={setPlanLightbearer} onCarriers={setPlanCarriers} specMode={specMode} onSpecMode={setSpecMode} onSpecs={setPlanBring} initialInputs={settings.plan} onInputs={setPlanInputs} />}
 
           <div className="text-[11px] text-gray-500 dark:text-gray-400">
             {`Same calculation as the main calculator. ${raid.hpNote} ${teamTimeLabel(teamDpsMultiplier(assumptions))}. Prayers: ${Object.values(GROUP_PRAYER).join(' / ')}. See docs/BEST_SETUP.md for caveats.`}
@@ -708,16 +756,37 @@ const RaidBestSetup: React.FC<{
 
 /** /best-setup: raid tabs, each raid with its own assumptions (kept while switching tabs). */
 const BestSetup: React.FC = () => {
-  const [raidId, setRaidId] = useState<RaidId>(RAIDS[0].id);
-  const [assumptionsBy, setAssumptionsBy] = useState<Record<string, BestSetupAssumptions>>(
-    () => Object.fromEntries(RAIDS.map((r) => [r.id, r.defaultAssumptions])),
-  );
+  // phase 37b: every raid's inputs and the raid tab, remembered in localStorage (read after mount: the page is a static
+  // export, so the view waits for them; written through on every change)
+  const [settings, setSettings] = useState<SavedSettings>(defaultSettings);
+  const [loaded, setLoaded] = useState(false);
+  const [generation, setGeneration] = useState(0);
+  const raidId = settings.raid;
+  const setRaidId = (id: RaidId) => setSettings((s) => ({ ...s, raid: id }));
   // phase 26: global, kept in localStorage (read after mount: the page is a static export)
   const [notOwned, setNotOwnedState] = useState<string[]>([]);
   const [onlyOwned, setOnlyOwnedState] = useState(false);
   useEffect(() => {
     setNotOwnedState(loadNotOwned());
     setOnlyOwnedState(loadOnlyOwned());
+    setSettings(loadSettings());
+    setLoaded(true);
+  }, []);
+  useEffect(() => {
+    if (loaded) saveSettings(settings);
+  }, [loaded, settings]);
+  // bound to the raid on screen (a late update from a raid view never lands on another raid)
+  const update = useCallback((patch: Partial<RaidSettings>) => setSettings((s) => ({
+    ...s, raids: { ...s.raids, [raidId]: { ...s.raids[raidId], ...patch } },
+  })), [raidId]);
+  const resetRaid = useCallback(() => {
+    setSettings((s) => resetRaidSettings(s, s.raid));
+    setGeneration((g) => g + 1);
+  }, []);
+  const resetAll = useCallback(() => {
+    clearSettings();
+    setSettings((s) => ({ ...defaultSettings(), raid: s.raid }));
+    setGeneration((g) => g + 1);
   }, []);
   const setNotOwned = useCallback((names: string[]) => {
     setNotOwnedState(names);
@@ -743,12 +812,16 @@ const BestSetup: React.FC = () => {
       ))}
     </div>
   );
+  if (!loaded) return <div className="max-w-[1420px] mx-auto mt-4 px-2 text-sm" data-testid="settings-loading">Loading…</div>;
   return (
     <RaidBestSetup
       key={raid.id}
       raid={raid}
-      assumptions={assumptionsBy[raid.id]}
-      setAssumptions={(a) => setAssumptionsBy((m) => ({ ...m, [raid.id]: a }))}
+      settings={settings.raids[raid.id]}
+      update={update}
+      generation={generation}
+      onReset={resetRaid}
+      onResetAll={resetAll}
       raidTabs={raidTabs}
       notOwned={notOwned}
       setNotOwned={setNotOwned}

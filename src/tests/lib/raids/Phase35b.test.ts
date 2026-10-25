@@ -19,6 +19,7 @@ import {
 import { FRACTURED_ARCHIVE_RAID, raidConfig } from '@/lib/raids';
 import { RaidId } from '@/lib/raids/types';
 import PlanBriefing from '@/app/components/bestSetup/PlanBriefing';
+import { headline } from '@/tests/utils/headlines';
 
 // Phase 35b (UI fix, no number changes): the Plan briefing shows one drain line per NPC of an encounter ("Bork: … ·
 // Smorks: …"; phase 33 folded The Smorks into Bork's line) and names the loadouts per NPC when the NPCs use different
@@ -266,7 +267,7 @@ describe('toy: two NPCs and a reset', () => {
 // --- slow: no number changes ---------------------------------------------------------------------------------------
 
 (process.env.RUN_SLOW_TESTS ? describe : describe.skip)('FA default Team plan: total unchanged (slow)', () => {
-  test('21:07.7 (phase 36 review; phase 36: 21:04.9); Bork + Smorks briefing per NPC', () => {
+  test(`${headline('fa').total} (the headline fixture; phase 36 review: 21:07.7); Bork + Smorks briefing per NPC`, () => {
     const r = plan({
       basePlayer: generateEmptyPlayer(),
       assumptions: FA.defaultAssumptions,
@@ -281,7 +282,7 @@ describe('toy: two NPCs and a reset', () => {
       carrierMode: 'auto',
     } as PlanInputs);
     const planned = r.comparison!.routes[r.planned];
-    expect(formatDuration(planned.seconds)).toBe('21:07.7'); // phase 36 review (phase 36: 21:04.9; was 21:44.4)
+    expect(formatDuration(planned.seconds)).toBe(headline('fa').total); // phase 37b: the fixture (phase 36 review: 21:07.7)
     const row = briefingRows(planned.encounters, 'team').find((x) => x.id === 'bork-smorks')!;
     // phase 36: one spec budget for both NPCs; review: the planner's 2 Elder maul + 3 Tonalztics carriers (you damage-spec)
     expect(row.specsText).toBe('Bork: Elder maul 2 specs → Def 180 · Smorks: Elder maul 1 spec + Tonalztics 9 hits → Def 13');

@@ -1,0 +1,45 @@
+# Phase 37b: the fork's CI (fast suite + lint + types) on every push / PR to main-mxeaez. The deploy is still Cloudflare
+# Pages' own build on push (docs/DEPLOY.md); the slow suites (RUN_SLOW_TESTS) and the Playwright verify scripts run
+# locally only (docs/BUILDER.md). Upstream's main.yml only runs on `main`.
+name: CI (fast suite, lint, types)
+
+on:
+  push:
+    branches:
+      - main-mxeaez
+  pull_request:
+    branches:
+      - main-mxeaez
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js (.nvmrc, the Cloudflare build's 22.23.4)
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+      - name: Cache the yarn cache and node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.yarn/berry/cache
+            node_modules
+          key: yarn-${{ runner.os }}-node22-${{ hashFiles('yarn.lock', '.yarnrc.yml') }}
+          restore-keys: |
+            yarn-${{ runner.os }}-node22-
+      - name: Install
+        run: node .yarn/releases/yarn-4.9.2.cjs install --immutable
+      - name: Lint
+        run: node .yarn/releases/yarn-4.9.2.cjs lint
+      - name: Types
+        run: npx tsc --noEmit
+      - name: Fast test suite (no RUN_SLOW_TESTS)
+        run: node .yarn/releases/yarn-4.9.2.cjs test --coverage=false --maxWorkers=2

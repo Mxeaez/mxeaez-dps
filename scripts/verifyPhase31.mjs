@@ -14,12 +14,13 @@
  * Screenshots docs/screenshots/phase31-*.png.
  */
 import { chromium } from '@playwright/test';
+import { headlineTotal } from './headlines.mjs';
 import { openSections } from './phase34Sections.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
-const FA_TOTAL = process.env.FA_TOTAL || '21:07.7';
-const FA_OWNED_TOTAL = process.env.FA_OWNED_TOTAL || '24:11.9'; // phase 32 (phase 31: 24:45.3)
-const SOLO_TOTAL = process.env.SOLO_TOTAL || '21:59.0';
+const FA_TOTAL = process.env.FA_TOTAL || headlineTotal('fa');
+const FA_OWNED_TOTAL = process.env.FA_OWNED_TOTAL || headlineTotal('faNotOwned'); // phase 32 (phase 31: 24:45.3)
+const SOLO_TOTAL = process.env.SOLO_TOTAL || headlineTotal('faSolo');
 
 let failures = 0;
 const check = (ok, msg) => {
@@ -82,7 +83,7 @@ const main = async () => {
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1500, height: 1300 } });
   await page.goto(`${BASE}best-setup`, { waitUntil: 'load', timeout: 120000 });
-  await page.evaluate(() => localStorage.removeItem('mxeaez-dps:not-owned'));
+  await page.evaluate(() => { localStorage.removeItem('mxeaez-dps:not-owned'); localStorage.removeItem('mxeaez-dps:settings:v1'); });
   await page.reload({ waitUntil: 'load', timeout: 120000 });
   await page.locator('[data-testid="raid-tab-fractured-archive"]').waitFor({ timeout: 120000 });
   await page.locator('[data-testid="raid-tab-fractured-archive"]').click();
@@ -103,7 +104,7 @@ const main = async () => {
   await shot(page, 'fa-quiver');
 
   // --- FA without Obligator / Ascension crossbows (a magic kit: the heart)
-  await page.evaluate(() => localStorage.setItem('mxeaez-dps:not-owned', JSON.stringify(['Obligator', 'Ascension crossbows'])));
+  await page.evaluate(() => { localStorage.removeItem('mxeaez-dps:settings:v1'); localStorage.setItem('mxeaez-dps:not-owned', JSON.stringify(['Obligator', 'Ascension crossbows'])); });
   await page.reload({ waitUntil: 'load', timeout: 120000 });
   await page.locator('[data-testid="raid-tab-fractured-archive"]').click();
   await page.locator('[data-testid="plan-tab"]').click();
@@ -114,7 +115,7 @@ const main = async () => {
   const owned = await checkKit(page, 'FA owned');
   check(owned.magic, 'FA owned: a magic loadout (the heart case)');
   await shot(page, 'fa-heart');
-  await page.evaluate(() => localStorage.removeItem('mxeaez-dps:not-owned'));
+  await page.evaluate(() => { localStorage.removeItem('mxeaez-dps:not-owned'); localStorage.removeItem('mxeaez-dps:settings:v1'); });
   await page.reload({ waitUntil: 'load', timeout: 120000 });
   await page.locator('[data-testid="raid-tab-fractured-archive"]').click();
 

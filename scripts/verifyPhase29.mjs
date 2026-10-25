@@ -19,6 +19,7 @@
  * Screenshots docs/screenshots/phase29-*.png.
  */
 import { chromium } from '@playwright/test';
+import { headlineTotal } from './headlines.mjs';
 import { openSections } from './phase34Sections.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
@@ -59,7 +60,7 @@ const main = async () => {
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1500, height: 1300 } });
   await page.goto(`${BASE}best-setup`, { waitUntil: 'load', timeout: 120000 });
-  await page.evaluate(() => localStorage.removeItem('mxeaez-dps:not-owned'));
+  await page.evaluate(() => { localStorage.removeItem('mxeaez-dps:not-owned'); localStorage.removeItem('mxeaez-dps:settings:v1'); });
   await page.reload({ waitUntil: 'load', timeout: 120000 });
   await page.locator('[data-testid="raid-tab-fractured-archive"]').waitFor({ timeout: 120000 });
   await page.locator('[data-testid="raid-tab-fractured-archive"]').click();
@@ -167,7 +168,7 @@ const main = async () => {
   // with ten other sets pairing Tonalztics with Elder maul or DWH); phase 29: Bring Tonalztics, 22:10.5. Phase 31: a
   // slot is priced at 1 s, so {Tonalztics} 1321.91 wins (Elder maul saves 0.57 s for its slot)
   // phase 36: + the damage spec weapons and a Surge potion (each ≥ 1 s per slot), 21:54.8; phase 36 review: 21:59.0
-  check(/^Bring: Tonalztics, Zaryte crossbow, Burning claws, Surge potion$/.test(soloBring) && soloTotal === '21:59.0', `Solo (1 s per slot): Bring Tonalztics + damage specs + Surge potion, 21:54.8 (${soloBring}, ${soloTotal})`);
+  check(/^Bring: Tonalztics, Zaryte crossbow, Burning claws, Surge potion$/.test(soloBring) && soloTotal === headlineTotal('faSolo'), `Solo (1 s per slot): Bring Tonalztics + damage specs + Surge potion, 21:54.8 (${soloBring}, ${soloTotal})`);
   const without = page.locator('[data-testid="plan-spec-without"]');
   check(await without.count() === weapons.length, `${await without.count() ? await text(without.first()) : 'no "best without" line'}`);
   const others = await page.locator('[data-testid="plan-spec-rejected"], [data-testid="plan-spec-other"]').evaluateAll((els) => els.map((e) => e.textContent.trim()));

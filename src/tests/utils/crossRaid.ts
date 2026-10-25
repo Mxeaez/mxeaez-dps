@@ -1,7 +1,7 @@
 import { generateEmptyPlayer } from '@/state';
 import { PresetDef } from '@/lib/fracturedArchive/presets';
 import {
-  DEFAULT_CARRIER_MODE, DEFAULT_RING_POLICY, DEFAULT_SPEC_MODE, plan, PlanResult, planItemByName,
+  DEFAULT_CARRIER_MODE, DEFAULT_RING_POLICY, DEFAULT_SPEC_MODE, plan, PlanInputs, PlanResult, planItemByName, PlanTuning,
 } from '@/lib/fracturedArchive/planner';
 import { RaidConfig } from '@/lib/raids';
 
@@ -18,7 +18,8 @@ export const kitPresets = (raid: RaidConfig): PresetDef[] => [
   ...groupPresets(raid), ...raid.presets.filter((p) => p.name.includes('pickaxe')),
 ];
 
-export const planFor = (raid: RaidConfig, reduced: boolean, notOwned: string[] = []): PlanResult => plan({
+/** The plan inputs of planFor (phase 37b: shared with the headline fixture, src/tests/utils/headlines.ts). */
+export const planInputsFor = (raid: RaidConfig, reduced: boolean, notOwned: string[] = []): PlanInputs => ({
   ...(notOwned.length ? { notOwned } : {}),
   // phase 27: the full (headline) plan uses the Plan tab's default ring policy (camp one ring); the reduced one switches
   // phase 29: and the Plan tab's default spec mode (the planner decides: Team = your share of the team's carriers)
@@ -32,7 +33,9 @@ export const planFor = (raid: RaidConfig, reduced: boolean, notOwned: string[] =
   pinned: raid.planDefaults.pinned.map((n) => planItemByName(n).id),
   nonItemSlots: raid.planDefaults.nonItemSlots,
   supplies: raid.defaultSupplies,
-}, reduced ? {
+});
+
+export const planTuningFor = (raid: RaidConfig, reduced: boolean): PlanTuning => (reduced ? {
   model: raid.time,
   presets: kitPresets(raid),
   search: { weapons: ['Scythe of Vitur', 'Tumeken\'s shadow', 'Twisted bow'], maxPasses: 1 },
@@ -42,3 +45,8 @@ export const planFor = (raid: RaidConfig, reduced: boolean, notOwned: string[] =
   partners: 1,
   seeds: 2,
 } : { model: raid.time });
+
+export const planFor = (raid: RaidConfig, reduced: boolean, notOwned: string[] = []): PlanResult => plan(
+  planInputsFor(raid, reduced, notOwned),
+  planTuningFor(raid, reduced),
+);

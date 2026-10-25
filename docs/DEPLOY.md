@@ -3,6 +3,8 @@
 The site is a fully static Next.js export (`output: 'export'`) served at the root of **https://dps.mxeaez.com**.
 Cloudflare Pages builds it from the public GitHub repo `Mxeaez/mxeaez-dps` on every push.
 
+CI (phase 37b): `.github/workflows/ci.yml` runs on every push / PR to `main-mxeaez` — install, lint, `tsc --noEmit` and the fast Jest suite on Node 22.23.4 (no slow suites, no Playwright). It gates nothing: the deploy is still Cloudflare's own build on push.
+
 ## What the build produces
 
 `yarn build` = `next build` (static export into `out/`, using `.env.production`) followed by

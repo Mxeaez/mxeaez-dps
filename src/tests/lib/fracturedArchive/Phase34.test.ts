@@ -25,6 +25,7 @@ import { FRACTURED_ARCHIVE_RAID, raidConfig } from '@/lib/raids';
 import PlanBriefing, { KitLoadoutIcons } from '@/app/components/bestSetup/PlanBriefing';
 import { DrainBrief } from '@/app/components/bestSetup/DrainLineView';
 import { ItemNames } from '@/app/components/bestSetup/ItemIcons';
+import { headline } from '@/tests/utils/headlines';
 
 // Phase 34 (readability, UI only): the short drain form (icon + one bold number), the Plan tab's raid briefing, the
 // potion pickers with icons, item icons next to item names, and the drain-line rewording ("swings" → "attacks"). No
@@ -264,7 +265,7 @@ describe('render: icons next to every item name', () => {
 // Phase 36 re-pin: one spec budget per encounter, damage specs (Zaryte crossbow, Burning claws) and a Surge potion move
 // the numbers (21:44.4 → 21:04.9, 6 → 4 free, carriers 2 Elder maul + 4 Tonalztics); the layout is unchanged.
 (process.env.RUN_SLOW_TESTS ? describe : describe.skip)('FA default Team plan: totals and collapsed strings (slow)', () => {
-  test('21:07.7; the briefing; the encounter lines, "Why this kit" and "Spec plan" strings', () => {
+  test(`${headline('fa').total}; the briefing; the encounter lines, "Why this kit" and "Spec plan" strings`, () => {
     const r = plan({
       basePlayer: generateEmptyPlayer(),
       assumptions: FA.defaultAssumptions,
@@ -280,8 +281,9 @@ describe('render: icons next to every item name', () => {
     } as PlanInputs);
     const planned = r.comparison!.routes[r.planned];
     // phase 36 review: 5 carriers (2 Elder maul + 3 Tonalztics) with your damage specs; Smorks gets a maul spec
-    expect(formatDuration(planned.seconds)).toBe('21:07.7'); // phase 36 review (phase 36: 21:04.9; was 21:44.4)
-    expect(r.slots!.free).toBe(4);
+    // phase 37b: total and free slots from src/tests/fixtures/headlines.json (phase 36 review: 21:07.7, 4 free)
+    expect(formatDuration(planned.seconds)).toBe(headline('fa').total);
+    expect(r.slots!.free).toBe(headline('fa').freeSlots);
     const rows = briefingRows(planned.encounters, 'team');
     expect(rows.map((x) => `${x.label} | ${x.specsText} | ${x.seconds.toFixed(1)} s`)).toEqual([
       'Archive Guardian | Flying shield: Tonalztics 4 hits → Def 156 · Grounded: Tonalztics 4 hits → Def 156 | 175.8 s',

@@ -87,24 +87,46 @@ export const cpuSeconds = <T>(f: () => T): { result: T, seconds: number } => {
 
 /**
  * Phase 37: the memo counters of each pinned plan's chosen ring run (`stats.memo`, deterministic): runs (encounters and
- * passes actually computed) and hits (remembered results reused). `memoWithin` allows 20% more runs and 20% fewer hits,
- * so a memo that stops working fails whatever the machine's load.
+ * passes actually computed) and hits (remembered results reused). `memoWithin` allows 20% more encounter runs, 20% more
+ * pass runs (phase 37b: bounded separately, so a lost pass memo fails even when the encounter memo makes up for it) and
+ * 20% fewer hits in all, so a memo that stops working fails whatever the machine's load.
  */
-export const PHASE37_MEMO: Record<string, { runs: number, hits: number }> = {
-  r27fa: { runs: 1048 + 1126, hits: 14200 + 175 },
-  r27toa: { runs: 1009 + 1217, hits: 10261 + 317 },
-  r27tob: { runs: 1678 + 1809, hits: 58898 + 222 },
-  r27cox: { runs: 1546 + 3268, hits: 39314 + 3475 },
-  fa: { runs: 10648 + 10445, hits: 444976 + 9904 },
-  toa: { runs: 32784 + 10825, hits: 544791 + 24576 },
-  tob: { runs: 25001 + 23772, hits: 1335979 + 5729 },
-  cox: { runs: 43236 + 39222, hits: 1122494 + 27158 },
-  faSolo: { runs: 91778 + 38942, hits: 3464758 + 56722 },
-  faNotOwned: { runs: 58528 + 10474, hits: 1579384 + 59896 },
+export type MemoCounters = { encounterRuns: number, passRuns: number, encounterHits: number, passHits: number };
+export const PHASE37_MEMO: Record<string, MemoCounters> = {
+  r27fa: {
+    encounterRuns: 1048, passRuns: 1126, encounterHits: 14200, passHits: 175,
+  },
+  r27toa: {
+    encounterRuns: 1009, passRuns: 1217, encounterHits: 10261, passHits: 317,
+  },
+  r27tob: {
+    encounterRuns: 1678, passRuns: 1809, encounterHits: 58898, passHits: 222,
+  },
+  r27cox: {
+    encounterRuns: 1546, passRuns: 3268, encounterHits: 39314, passHits: 3475,
+  },
+  fa: {
+    encounterRuns: 10648, passRuns: 10445, encounterHits: 444976, passHits: 9904,
+  },
+  toa: {
+    encounterRuns: 32784, passRuns: 10825, encounterHits: 544791, passHits: 24576,
+  },
+  tob: {
+    encounterRuns: 25001, passRuns: 23772, encounterHits: 1335979, passHits: 5729,
+  },
+  cox: {
+    encounterRuns: 43236, passRuns: 39222, encounterHits: 1122494, passHits: 27158,
+  },
+  faSolo: {
+    encounterRuns: 91778, passRuns: 38942, encounterHits: 3464758, passHits: 56722,
+  },
+  faNotOwned: {
+    encounterRuns: 58528, passRuns: 10474, encounterHits: 1579384, passHits: 59896,
+  },
 };
-export const memoWithin = (r: PlanResult, name: string): boolean => {
-  const m = r.stats.memo;
-  const want = PHASE37_MEMO[name];
+export const memoCountersWithin = (m: MemoCounters | undefined, want: MemoCounters | undefined): boolean => {
   if (!m || !want) return false;
-  return m.encounterRuns + m.passRuns <= want.runs * 1.2 && m.encounterHits + m.passHits >= want.hits * 0.8;
+  return m.encounterRuns <= want.encounterRuns * 1.2 && m.passRuns <= want.passRuns * 1.2
+    && m.encounterHits + m.passHits >= (want.encounterHits + want.passHits) * 0.8;
 };
+export const memoWithin = (r: PlanResult, name: string): boolean => memoCountersWithin(r.stats.memo, PHASE37_MEMO[name]);
