@@ -4,7 +4,7 @@ import {
   DrainModel, PlannerWeapon, SPEC_WEAPONS, SpecWeapon,
 } from '@/lib/fracturedArchive/specs';
 import {
-  applyOutcome, DefenceDrainWeapon, expectedAttemptsToFloor, inUpstreamOrder,
+  applyOutcome, DefenceDrainWeapon, expectedAttemptsToFloor, inUpstreamOrder, TeamNeed,
 } from '@/lib/fracturedArchive/teamSpecs';
 
 /**
@@ -42,6 +42,17 @@ export interface DrainLineItem {
   needed?: number | null;
   neededResult?: string;
   bringsResult?: string;
+  /**
+   * Phase 32: the landed drains of this weapon alone that reach the ranked state (teamSpecs.ts `landedToReach`; Elder
+   * maul / DWH specs, Tonalztics hits, BGS damage, Eye of Ayak magic defence drained), from `landedFrom` to `landedTo` (Def;
+   * Ayak: magic def); `perCarrier` (Team) = first-round specs per carrier; Solo lines have none (no carriers).
+   */
+  landed?: number | null;
+  landedFrom?: number;
+  landedTo?: number;
+  /** Phase 32: `landed` counts from the Defence the other weapons' drains leave, e.g. "1 Elder maul spec lands" (teamSpecs.ts `landedNeed`). */
+  landedAfterOthers?: string;
+  perCarrier?: number;
 }
 
 export interface DrainLine {
@@ -73,6 +84,8 @@ const LABELS: Record<SpecWeapon, string> = {
 
 const ORDER: SpecWeapon[] = ['accursed', 'elderMaul', 'dwh', 'tonalztics', 'bgs', 'ayak'];
 
+const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
+
 export const drainLineItem = (
   weapon: SpecWeapon,
   specs: number,
@@ -83,12 +96,12 @@ export const drainLineItem = (
   const unit = override?.unit ?? 'spec';
   const count = override?.count ?? specs;
   const label = LABELS[weapon];
-  const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
   let what: string;
   if (unit === 'dmg') what = `${label} specs dealing ${count} damage in total`;
   else what = plural(count, `${label} spec`);
   // Tonalztics: a charged spec hits twice; the hit count is in the tooltip (review fix: shown as specs)
-  if (weapon === 'tonalztics' && unit === 'spec') what += ` (${plural(extra?.hits ?? count * 2, 'hit')})`;
+  // phase 32: planned specs count swings (2 per charged spec, each can miss); landed drains (Max-drain buttons) count hits
+  if (weapon === 'tonalztics' && unit === 'spec') what += ` (${extra?.hits !== undefined ? plural(extra.hits, 'landed hit') : plural(count * 2, 'swing')})`;
   const short = extra?.wanted !== undefined && extra.wanted > count ? extra.wanted - count : 0;
   if (short) what += count === 0 ? ` (you asked for ${extra!.wanted}: no spec energy left for them)` : ` (${short} of ${extra!.wanted} don't fit in your spec energy)`;
   const landed = weapon === 'tonalztics' ? 'land at least one damaging hit' : 'land';
@@ -111,19 +124,65 @@ export const drainLineItem = (
 /** Phase 29: "×2 (4 hits)" (Tonalztics) or "×2". */
 export const countText = (count: number, hits?: number): string => `×${count}${hits !== undefined ? ` (${hits} hit${hits === 1 ? '' : 's'})` : ''}`;
 
+type NeedFields = Pick<DrainLineItem, 'weapon' | 'count' | 'needed' | 'neededResult' | 'bringsResult' | 'landed' | 'landedFrom' | 'landedTo' | 'landedAfterOthers' | 'perCarrier'>;
+
+/** Phase 32: "4 landed hits" (Tonalztics), "2 landed specs" (Elder maul / DWH), "≈ 45 damage" (BGS), "≈ 40 magic defence drained" (Ayak). */
+const landedText = (weapon: SpecWeapon, n: number): string => {
+  if (weapon === 'tonalztics') return plural(n, 'landed hit');
+  if (weapon === 'bgs') return `≈ ${n} damage`;
+  if (weapon === 'ayak') return `≈ ${n} magic defence drained`;
+  return plural(n, 'landed spec');
+};
+
+/** Phase 32: "4 specs (2 carriers), 8 swings" (Team, Tonalztics), "3 specs (2 carriers)", "4 specs, 8 swings" (Solo). */
+const specsText = (it: NeedFields, n: number, swings: boolean): string => {
+  const carriers = it.perCarrier ? ` (${plural(Math.ceil(n / it.perCarrier), 'carrier')})` : '';
+  return `${plural(n, 'spec')}${carriers}${swings && it.weapon === 'tonalztics' ? `, ${n * 2} swings` : ''}`;
+};
+
 /**
- * Phase 29: the Team text of an item. Review 2: "needed ×3 (86%) · team brings ×4 (8 hits, 98%)" — the % is P(floor
- * from the first round) ("→ Def 167" when the plan doesn't rank at the floor); hits only on the team's part (the
- * needed count is specs: "×3 (6 hits)" read as six hits required).
+ * Phase 29: the Team text of an item. Phase 32 (the user: "needed ×4 · team brings ×4 (8 hits)" read as 4 people / 8
+ * landed hits): every number carries its unit — "needs 4 landed hits · 4 specs (2 carriers), 8 swings · 98%", then
+ * " · team: 6 specs (3 carriers) · 99.8%" when the team brings more than needed (left out when equal). The landed count
+ * is this weapon's alone from the start Defence to the ranked Defence (`landedToReach`); the % is P(floor from the first
+ * round) with the needed specs / with everything brought ("→ Def 167" when the plan doesn't rank at the floor). Solo
+ * (no `perCarrier`, needed = count): "needs 4 landed hits · 4 specs, 8 swings · 98%".
  */
-export const neededText = (it: Pick<DrainLineItem, 'weapon' | 'count' | 'hits' | 'needed' | 'neededResult' | 'bringsResult'>): string | undefined => {
+export const neededText = (it: NeedFields): string | undefined => {
   if (it.needed === undefined) return undefined;
-  const bringsParts = [it.hits !== undefined ? `${it.hits} hit${it.hits === 1 ? '' : 's'}` : '', it.bringsResult ?? ''].filter(Boolean);
-  const brings = `team brings ×${it.count}${bringsParts.length ? ` (${bringsParts.join(', ')})` : ''}`;
-  if (it.needed === null) return `${it.weapon === 'ayak' ? 'magic def 0 not reachable' : 'floor not reachable'} · ${brings}`;
+  const team = it.perCarrier !== undefined;
+  const brings = team ? `team: ${specsText(it, it.count, false)}${it.bringsResult ? ` · ${it.bringsResult}` : ''}` : '';
+  const join = (head: string, withTeam: boolean) => [head, withTeam ? brings : ''].filter(Boolean).join(' · ');
+  if (it.needed === null) return join(it.weapon === 'ayak' ? 'magic def 0 not reachable' : 'floor not reachable', true);
   // 0 = the other weapons' specs already reach the floor if they all land
-  if (it.needed === 0) return `not needed · ${brings}`;
-  return `needed ×${it.needed}${it.neededResult ? ` (${it.neededResult})` : ''} · ${brings}`;
+  if (it.needed === 0) return join('not needed', true);
+  let needs = 'needs';
+  if (it.landed === null) needs = 'needs the other drains too';
+  else if (it.landed !== undefined) needs = `needs ${landedText(it.weapon, it.landed)}${it.landedAfterOthers ? ` once ${it.landedAfterOthers} (Def ${it.landedFrom})` : ''}`;
+  const head = [needs, specsText(it, it.needed, true), it.neededResult ?? ''].filter(Boolean).join(' · ');
+  return join(head, team && it.count !== it.needed);
+};
+
+/**
+ * Phase 32: the tooltip's explanation of a "needs …" line: what a landed hit drains, and what the % means.
+ */
+export const neededExplanation = (it: NeedFields & Pick<DrainLineItem, 'label'>): string | undefined => {
+  if (it.needed === undefined || !it.needed || it.landed === undefined || it.landed === null) return undefined;
+  const team = it.perCarrier !== undefined;
+  const range = it.weapon === 'ayak' ? `magic def ${it.landedFrom} → ${it.landedTo}` : `Def ${it.landedFrom} → ${it.landedTo}`;
+  const parts = [it.landedAfterOthers
+    ? `${landedText(it.weapon, it.landed)} of ${it.label} take ${range} once ${it.landedAfterOthers} (Def ${it.landedFrom})`
+    : `${landedText(it.weapon, it.landed)} of ${it.label} alone take ${range}`];
+  if (it.weapon === 'tonalztics') parts.push('a charged Tonalztics spec swings twice and each swing can miss');
+  else parts.push('each spec can miss');
+  // review: the % counts every weapon's specs (Bork maul 98% includes the Tonalztics; the maul alone is 86%); no % when
+  // the line ranks short of the floor ("→ Def X")
+  if (it.neededResult && !it.neededResult.startsWith('→')) {
+    parts.push(team
+      ? `the % is the chance the ${it.weapon === 'ayak' ? 'magic defence reaches 0' : 'Defence reaches the floor'} in the first round with these specs and the other weapons' specs`
+      : `the % is the chance the ${it.weapon === 'ayak' ? 'magic defence reaches 0' : 'Defence reaches the floor'} with your specs`);
+  }
+  return parts.join('; ');
 };
 
 /**
@@ -137,7 +196,7 @@ export const drainLineFromAttempts = (
   text: string,
   budget?: DrainLine['budget'],
   wanted: Partial<Record<PlannerWeapon, number>> = {},
-  needed?: Partial<Record<PlannerWeapon, { n: number, result: string, brings: string }>>,
+  needed?: Partial<Record<PlannerWeapon, TeamNeed>>,
 ): DrainLine => {
   const counts = new Map<PlannerWeapon, number>();
   attempts.forEach((w) => counts.set(w, (counts.get(w) || 0) + 1));
@@ -150,10 +209,17 @@ export const drainLineFromAttempts = (
         });
         if (!needed || !(w in needed)) return it;
         const nd = needed[w as PlannerWeapon]!;
-        const withNeeded = {
-          ...it, needed: nd.n, neededResult: nd.result, bringsResult: nd.brings,
+        const withNeeded: DrainLineItem = {
+          ...it,
+          needed: nd.n,
+          neededResult: nd.result,
+          bringsResult: nd.brings,
+          ...(nd.landed !== undefined ? { landed: nd.landed, landedFrom: nd.from, landedTo: nd.to } : {}),
+          ...(nd.afterOthers ? { landedAfterOthers: nd.afterOthers } : {}),
+          ...(nd.perCarrier ? { perCarrier: nd.perCarrier } : {}),
         };
-        return { ...withNeeded, title: `${neededText(withNeeded)}; ${it.title}` };
+        const why = neededExplanation(withNeeded);
+        return { ...withNeeded, title: `${neededText(withNeeded)}${why ? ` (${why})` : ''}; ${it.title}` };
       }),
     ...after,
     ...(budget ? { budget } : {}),

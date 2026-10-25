@@ -292,7 +292,9 @@ describe('plan (reduced pool)', () => {
 
   test('more supplies → fewer free slots, never negative', () => {
     const more = plan(inputs({ searchRows: first.searchRows, supplies: { ...DEFAULT_SUPPLIES, brew: 10 } }), SMALL);
-    expect(more.slots!.supplies).toBe(first.slots!.supplies + 4);
+    // phase 32: the comfort part grows by 4 (the kit's potions follow its styles, which may change with the room left)
+    const potionSupplies = (r: typeof first) => r.potions.filter((p) => p.type !== 'heart').length;
+    expect(more.slots!.supplies - potionSupplies(more)).toBe(first.slots!.supplies - potionSupplies(first) + 4);
     expect(more.slots!.used).toBeLessThanOrEqual(INVENTORY_SLOTS);
     expect(more.slots!.free).toBe(INVENTORY_SLOTS - more.slots!.used);
     expect(more.comparison!.routes[0].seconds).toBeGreaterThanOrEqual(first.comparison!.routes[0].seconds - 1e-9);

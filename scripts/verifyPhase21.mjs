@@ -8,7 +8,7 @@
  *   rule (saves ≥ max(1, slots) s).
  * - FA: total 21:44.4 (phase 30: empty pinned defaults; phase 29, the planner picks the spec weapons: 21:53.0; phase 27:
  *   22:47.9; was 23:30.4).
- * - ToB: 7:30.0 at 28/28 (phase 29 review: planner carriers; phase 29: 7:30.6; phase 27, camp Ultor ring: 7:31.7; was 7:32.4 with 1 free slot), a Dawnbringer loadout (the staff
+ * - ToB: 7:29.5 at 28/28 (phase 32, no blessing: the Tumeken's shadow loadout in full; phase 31: 7:30.0; phase 29 review: planner carriers; phase 29: 7:30.6; phase 27, camp Ultor ring: 7:31.7; was 7:32.4 with 1 free slot), a Dawnbringer loadout (the staff
  *   free), no Dawnbringer inventory cell, a "Lighter kit" alternative, the "Raid items (0 slots)" note; Search: the
  *   Prinkipas only in Hard Mode. The Scythe loadouts are printed (with one ring camped, single-piece swaps of the Scythe
  *   set merge into the preset names; the dedupe rule is what keeps them).
@@ -139,7 +139,7 @@ const run = async () => {
   // phase 25: 7:32.2 → 7:32.4; phase 27 (camp Ultor ring, potions from the kit): 7:31.7 at 28/28 (CrossRaid HEADLINES)
   // phase 29 (the planner picks the spec weapons: Tonalztics, its slot worth 0.5 s): 7:30.6; review: the planner's
   // carriers (2 Tonalztics + 1 Elder maul): 7:30.0
-  check(tob.free === 0 && tob.total === '7:30.0', `ToB main plan 7:30.0, 28/28 (${tob.total}, ${tob.free} free)`);
+  check(tob.free === 0 && tob.total === '7:29.5', `ToB main plan 7:29.5 (phase 32; was 7:30.0), 28/28 (${tob.total}, ${tob.free} free)`);
   check(alts.some((a) => /^Lighter kit: .*−\d+ slots? for \+\d+\.\d s/.test(a)), 'ToB: "Lighter kit" alternative (−N slots for +X.X s)');
   const dawnCell = await page.locator('[data-testid="inventory-cell"][data-label="Dawnbringer"]').count();
   check(dawnCell === 0, 'ToB: no Dawnbringer inventory cell');

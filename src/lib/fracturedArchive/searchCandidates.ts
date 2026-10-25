@@ -13,8 +13,9 @@ import { ItemRef, StyleGroup } from '@/lib/fracturedArchive/presets';
  * - `weapons`: every weapon is searched (each with each of its `ammo` options, and each combat style of the group's
  *   type, and each applicable `spells` entry for autocasting weapons). Two-handedness comes from the item data
  *   (`isTwoHanded`): two-handed weapons never get a shield. Ammo: weapons that fire ammo list it in `ammo` (the
- *   test checks the calculator accepts it); weapons without `ammo` use the group's `ammo` slot pool (Rada's blessing)
- *   and the blowpipe takes its darts via `dart`.
+ *   test checks the calculator accepts it); weapons without `ammo` use the group's `ammo` slot pool (phase 32: empty in
+ *   every group: Rada's blessing had no DPS effect and cost the Plan tab a switch slot) and the blowpipe takes its darts
+ *   via `dart`.
  * - `slots`: the per-slot candidates for the coordinate ascent. Before searching, items whose offensive stats for the
  *   weapon are dominated by another item of the same slot are dropped (rule in search.ts, `prunePool`), unless they
  *   are marked `keep` (they have a special effect the stats don't show; `keep: [weapon names]` = only with those).
@@ -147,7 +148,6 @@ const MELEE: StylePool = {
     feet: [{ ref: 'Avernic treads (max)' }, { ref: 'Primordial boots' }],
     ring: [{ ref: 'Ultor ring' }, { ref: 'Bellator ring' }],
     shield: [{ ref: 'Avernic defender' }],
-    ammo: [{ ref: "Rada's blessing 4" }],
   },
   sets: [
     { name: "Inquisitor's", pieces: { head: "Inquisitor's great helm", body: "Inquisitor's hauberk", legs: "Inquisitor's plateskirt" } },
@@ -205,7 +205,6 @@ const RANGED: StylePool = {
     feet: [{ ref: 'Avernic treads (max)' }, { ref: 'Pegasian boots' }],
     ring: [{ ref: 'Venator ring' }],
     shield: [{ ref: 'Twisted buckler' }],
-    ammo: [{ ref: "Rada's blessing 4" }],
   },
   weaponExtras: [
     {
@@ -288,7 +287,6 @@ const MAGIC: StylePool = {
       { ref: ['Tome of Water', 'Charged'], keep: true, note: '+10% water spell damage' },
       { ref: ['Tome of Earth', 'Charged'], keep: true, note: '+10% earth spell damage' },
     ],
-    ammo: [{ ref: "Rada's blessing 4" }],
   },
   sets: [
     { name: 'Ancestral', pieces: { head: 'Ancestral hat', body: 'Ancestral robe top', legs: 'Ancestral robe bottom' } },

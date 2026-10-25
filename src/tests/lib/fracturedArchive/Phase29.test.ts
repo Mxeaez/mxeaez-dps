@@ -363,9 +363,10 @@ describe('Team drain line: "needed ×N · team brings ×M"', () => {
     expect(p(3)).toBe('86%');
     expect(ranked(3)).toBe(ranked(4));
     expect(p(4)).toBe('98%');
-    expect(neededText(tona)).toBe('needed ×4 (98%) · team brings ×4 (8 hits, 98%)');
-    expect(neededText({ ...tona, needed: 0 })).toBe('not needed · team brings ×4 (8 hits, 98%)');
-    expect(tona.title.startsWith(`${neededText(tona)}; `)).toBe(true);
+    // phase 32 wording (units on every number; Phase32.test.ts)
+    expect(neededText(tona)).toBe('needs 4 landed hits · 4 specs (2 carriers), 8 swings · 98%');
+    expect(neededText({ ...tona, needed: 0 })).toBe('not needed · team: 4 specs (2 carriers) · 98%');
+    expect(tona.title.startsWith(`${neededText(tona)} (`)).toBe(true);
     // the Max-drain plan's deterministic count ("4 Tonalztics of Ralos" hits = 2 specs → Def 156)
     expect(neededSpecs(model, { tonalztics: 4 }).defence).toEqual({ tonalztics: 2 });
     // specsNeeded directly: a weapon whose specs change nothing on this boss needs 0
@@ -383,14 +384,14 @@ describe('Team drain line: "needed ×N · team brings ×M"', () => {
     expect(nd).toMatchObject({ elderMaul: { n: 0 } });
     expect(nd.tonalztics!.n).toBeGreaterThan(0);
     // phase 30: at the threshold, not "×1 (66%)"
-    expect(nd.tonalztics).toEqual({ n: 2, result: '97%', brings: '>99.9%' });
+    expect(nd.tonalztics).toMatchObject({ n: 2, result: '97%', brings: '>99.9%' });
   });
 
   test('phase 30: Bork — Tonalztics is needed after maul ×3 (the pair reaches the floor at the threshold)', () => {
     const model = drainModel(undrained('bork'), A);
     const nd = specsNeeded(model, [...Array(4).fill('elderMaul'), ...Array(4).fill('tonalztics')]);
-    expect(nd.elderMaul).toEqual({ n: 3, result: '98%', brings: '99.6%' });
-    expect(nd.tonalztics).toEqual({ n: 3, result: '97%', brings: '99.6%' });
+    expect(nd.elderMaul).toMatchObject({ n: 3, result: '98%', brings: '99.6%' });
+    expect(nd.tonalztics).toMatchObject({ n: 3, result: '97%', brings: '99.6%' });
   });
 
   test('phase 30: "needed" never shows a sub-threshold probability when everything brought is above it', () => {
@@ -435,7 +436,7 @@ describe('Team drain line: "needed ×N · team brings ×M"', () => {
     expect(nd.elderMaul!.brings).toMatch(/^→ Def \d+$/);
   });
 
-  test('Solo shows Tonalztics as "×2 (4 hits)"', () => {
+  test('countText "×2 (4 hits)" (Max-drain buttons); Solo lines (phase 32): "needs N landed hits · N specs, 2N swings · …"', () => {
     expect(countText(2, 4)).toBe('×2 (4 hits)');
     expect(countText(3)).toBe('×3');
     const d = drainStateFor(undrained('ag-flying'), 'solo', {
@@ -446,8 +447,9 @@ describe('Team drain line: "needed ×N · team brings ×M"', () => {
     });
     const tona = d.line!.items.find((i) => i.weapon === 'tonalztics')!;
     expect(tona.hits).toBe(tona.count * 2);
-    expect(tona.needed).toBeUndefined();
-    expect(neededText(tona)).toBeUndefined();
+    expect(tona.needed).toBe(tona.count);
+    expect(tona.perCarrier).toBeUndefined();
+    expect(neededText(tona)).toMatch(new RegExp(`^needs \\d+ landed hits? · ${tona.count} specs?, ${tona.count * 2} swings · `));
   });
 
   test('neededSpecs: fewest specs if every one lands, more of the earlier weapon on ties; null when unreachable', () => {
@@ -617,7 +619,7 @@ describe('planner: spec modes', () => {
     expect(r.specs.solo!.bestWithout[0].seconds).toBeGreaterThan(total(r));
   }, 900000);
 
-  test('Specs I bring {Elder maul, Tonalztics}, Solo party 1: ends on Ultor at 1382.50 (review 2: the guard used to stop at Lightbearer, 1400.17)', () => {
+  test('Specs I bring {Elder maul, Tonalztics}, Solo party 1: ends on Ultor at 1329.96 (review 2: the guard used to stop at Lightbearer, 1400.17; phase 32: 1382.50 → 1329.96)', () => {
     const a = {
       ...FA.defaultAssumptions,
       partySize: 1,
@@ -627,7 +629,8 @@ describe('planner: spec modes', () => {
     };
     const r = full({ drain: 'solo', specMode: 'manual', assumptions: { ...a, mySpecs: mySpecsForSubset(['elderMaul', 'tonalztics'], { lightbearer: false }) } });
     expect(r.ring.ring).toBe('Ultor ring');
-    expect(Math.abs(total(r) - 1382.50)).toBeLessThanOrEqual(0.01);
+    // phase 32: no blessing in the melee / magic loadouts and a loadout without ammo keeps the kit's ammo: 1382.50 → 1329.96
+    expect(Math.abs(total(r) - 1329.96)).toBeLessThanOrEqual(0.01);
   }, 900000);
 
   test('Team, 6-man: the planner picks 2 Elder maul + 2 Tonalztics; the Advanced 2 / 2 / 1 by hand gives the same total (phase 31: 21:44.4)', () => {

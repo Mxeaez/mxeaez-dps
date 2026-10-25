@@ -50,7 +50,7 @@ import { filterStylePool, isOwned } from '@/lib/fracturedArchive/ownership';
  *    Prayer bonus and defensive stats are ignored (no prayer drain or damage taken in the model).
  * 3. Seeds: the pool defaults (first item of each pruned slot), the armour of every Phase 8 preset of the group, and
  *    every full set of the group (`sets`, restricted to their weapons). Two-handed weapons drop the shield; the ammo
- *    slot comes from the variant (fired ammo) or the pool (Rada's blessing).
+ *    slot comes from the variant (fired ammo) or the pool (phase 32: empty; weapons that fire no ammo leave it empty).
  * 4. From each seed: pick the best style option, then coordinate ascent — for each slot in SEARCH_SLOTS order, try
  *    every pool candidate with the rest fixed and keep the best, then re-pick the style option; repeat until a pass
  *    brings no improvement (max `maxPasses`, default 3). Evaluations are memoised per variant.

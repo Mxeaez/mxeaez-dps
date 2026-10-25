@@ -1,6 +1,8 @@
 import { EquipmentPiece, Player, PlayerEquipment } from '@/types/Player';
 import Potion from '@/enums/Potion';
-import { availableEquipment } from '@/lib/Equipment';
+import {
+  AmmoApplicability, ammoApplicability, availableEquipment, getCanonicalItemId,
+} from '@/lib/Equipment';
 import {
   applyLoadoutToPlayer,
   buildTargetMonster,
@@ -318,6 +320,12 @@ export const equipmentById = (id: number): EquipmentPiece | undefined => {
  * appearing if the quiver is in the inventory or equipped". So a kit that carries a quiver (any variant, worn or not)
  * holds one extra arrow / bolt type in it at no inventory cost. Blessed Dizana's quiver and Dizana's max cape keep the
  * quiver's perks (their pages; UNVERIFIED D23); javelins, atlatl darts, blessings and blowpipe darts don't go in it.
+ * Phase 32: the max cape page (https://oldschool.runescape.wiki/w/Dizana%27s_max_cape, read 2026-10-24) in full: "it
+ * only acts as a cosmetic upgrade to blessed Dizana's quiver with the following exceptions when worn: [the skill-cape
+ * perks]" and, as its own paragraph, "The cape retains the perks of the blessed Dizana's quiver. It cannot normally be
+ * hung on a cape hanger if it contains arrows." ("when worn" is the max-cape exceptions'; the page doesn't say whether
+ * the extra slot works from the inventory: assumed like the quiver's.) Two types of the same kind (bolts + bolts) still
+ * free the slot, though switching between them needs a manual swap through a free slot (not modelled; D23).
  */
 export const QUIVER_NAMES = ["Dizana's quiver", "Blessed Dizana's quiver", "Dizana's max cape"];
 
@@ -583,9 +591,58 @@ export const toPlayerEquipment = (eq: PlanEquipment): Partial<PlayerEquipment> =
   return [slot, it.itemVars ? { ...piece, itemVars: it.itemVars } : piece];
 }));
 
-/** The distinct item ids of a loadout (each is one inventory slot when not worn). */
-export const equipmentItemIds = (eq: PlanEquipment): number[] => Array.from(new Set(ALL_SLOTS
-  .map((s) => eq[s]?.id).filter((id): id is number => id !== undefined))).sort((a, b) => a - b);
+/** Phase 32: ammo-slot items with an effect beyond their stats on a weapon that fires no ammo (PlayerVsNPCCalc). */
+const AMMO_SLOT_EFFECT_NAMES = ['Crystal blessing'];
+
+/**
+ * Phase 32: the loadout's ammo-slot item changes none of its DPS: the weapon fires no ammo (`ammoApplicability`
+ * ALLOWED: the item's ranged attack / strength don't count) and the item has no other offensive or strength bonus and
+ * no special effect (e.g. Rada's blessing 4: prayer only). Such an item is no part of the switch: it costs no slot and is
+ * not shown, and the loadout leaves the ammo slot as it is (e.g. the worn set's bolts stay equipped while meleeing).
+ */
+export const isUnusedAmmo = (eq: PlanEquipment): boolean => {
+  const it = eq.ammo;
+  if (!it || !eq.weapon) return false;
+  if (ammoApplicability(getCanonicalItemId(eq.weapon.id), getCanonicalItemId(it.id)) !== AmmoApplicability.ALLOWED) return false;
+  const p = equipmentById(it.id);
+  if (!p || p.slot !== 'ammo' || AMMO_SLOT_EFFECT_NAMES.includes(p.name)) return false;
+  const o = p.offensive;
+  return !o.stab && !o.slash && !o.crush && !o.magic && !p.bonuses.str && !p.bonuses.magic_str;
+};
+
+/** Phase 32: the loadout without an unused ammo-slot item (`isUnusedAmmo`); the same object when there is none. */
+export const withoutUnusedAmmo = (eq: PlanEquipment): PlanEquipment => {
+  if (!isUnusedAmmo(eq)) return eq;
+  const { ammo, ...rest } = eq;
+  return rest;
+};
+
+/**
+ * The distinct item ids of a loadout (each is one inventory slot when not worn). Phase 32: an unused ammo-slot item
+ * (`isUnusedAmmo`) is left out, so it never costs a slot (a pinned one is counted once, as a pinned item).
+ */
+export const equipmentItemIds = (eq: PlanEquipment): number[] => {
+  const unused = isUnusedAmmo(eq);
+  return Array.from(new Set(ALL_SLOTS
+    .filter((s) => !(unused && s === 'ammo'))
+    .map((s) => eq[s]?.id).filter((id): id is number => id !== undefined))).sort((a, b) => a - b);
+};
+
+/** Phase 32: the loadout wears an ammo-slot item of its own (one its weapon uses, or one with a DPS effect). */
+export const wearsAmmo = (eq: PlanEquipment): boolean => !!eq.ammo && !isUnusedAmmo(eq);
+
+/**
+ * Phase 32: items a kit loadout keeps out of the inventory while it is worn: its own items, + 1 when it has no ammo of
+ * its own but the kit carries an ammo-slot item (`wears[i]` false while some `wears[j]` is true): switching to it
+ * leaves the ammo slot as it is (e.g. the bolts stay equipped while meleeing), and worn from the start it wears one of
+ * the kit's ammo items. A melee / magic weapon (or a ranged one that fires no ammo) ignores what is in the ammo slot,
+ * so this changes no DPS (the kit's ammo has no melee / magic stats; Phase32.test.ts). `wears` omitted = the phase 31
+ * count (the sizes as given).
+ */
+export const wornItemCounts = (sizes: number[], wears?: boolean[]): number[] => {
+  const any = !!wears && wears.some(Boolean);
+  return sizes.map((n, i) => n + (any && !wears![i] ? 1 : 0));
+};
 
 const equipmentKey = (eq: PlanEquipment) => ALL_SLOTS
   .map((s) => `${eq[s]?.id ?? 0}${eq[s]?.itemVars?.blowpipeDartId ? `d${eq[s]!.itemVars!.blowpipeDartId}` : ''}`).join(',');
@@ -600,9 +657,14 @@ export interface SlotUsage {
   carriedItems: number;
   /** Items of the worn loadout. */
   wornItems: number;
-  /** Fewest items of any kit loadout. */
+  /** Fewest items of any kit loadout (phase 32: + 1 for a loadout that keeps a kit ammo item in its ammo slot; `wornItemCounts`). */
   minLoadoutItems: number;
-  /** Inventory items while wearing the worn set (= carried − worn). */
+  /**
+   * Phase 32: 1 when the worn loadout has no ammo of its own and wears one of the kit's ammo items in its ammo slot
+   * (one carried item fewer in the inventory), else 0.
+   */
+  keptAmmo: number;
+  /** Inventory items while wearing the worn set (= carried − worn − kept ammo). */
   inventoryItems: number;
   /** Extra slots needed while wearing a smaller loadout (worn − min); kept free for swaps. */
   swapReserve: number;
@@ -624,6 +686,8 @@ const sumSupplies = (s: SupplyCounts) => SUPPLY_TYPES.reduce((t, x) => t + Math.
  * Dawnbringer): never in the carried union (0 slots), but still counted in a loadout's size, so a loadout that wears
  * one in place of a weapon needs no extra swap space (it takes the place of the item it replaces). Phase 31: `quiver`
  * (the planner: `quiverSpecOf` of its items) = a second arrow / bolt type rides in Dizana's quiver (`quiverAmmo`).
+ * Phase 32: `ammoWorn` (per loadout: `wearsAmmo`, it has an ammo-slot item of its own) = a loadout without one keeps a kit ammo
+ * item in its ammo slot (`wornItemCounts`); omitted = the phase 31 count.
  */
 export const kitSlotUsage = (
   loadouts: number[][],
@@ -634,6 +698,7 @@ export const kitSlotUsage = (
   total = INVENTORY_SLOTS,
   raidSupplied: number[] = [],
   quiver?: QuiverSpec,
+  ammoWorn?: boolean[],
 ): SlotUsage => {
   const free = new Set(raidSupplied);
   const all = new Set<number>(carried.filter((id) => !free.has(id)));
@@ -643,11 +708,13 @@ export const kitSlotUsage = (
   const wornSet = loadouts.length ? new Set(loadouts[worn]) : new Set<number>();
   const wornItems = wornSet.size;
   const wornFree = Array.from(wornSet).filter((id) => free.has(id)).length;
-  const minLoadoutItems = loadouts.length ? Math.min(...loadouts.map((l) => new Set(l).size)) : 0;
+  const counts = wornItemCounts(loadouts.map((l) => new Set(l).size), ammoWorn);
+  const minLoadoutItems = loadouts.length ? Math.min(...counts) : 0;
+  const keptAmmo = loadouts.length ? counts[worn] - wornItems : 0;
   const s = sumSupplies(supplies);
   const nonItem = Math.max(0, Math.floor(nonItemSlots || 0));
-  const inventoryItems = all.size - (wornItems - wornFree);
-  const swapReserve = wornItems - wornFree - minLoadoutItems;
+  const inventoryItems = all.size - (wornItems - wornFree) - keptAmmo;
+  const swapReserve = wornItems - wornFree + keptAmmo - minLoadoutItems;
   const quiverAmmo = quiverSavedSlots(all, quiver);
   const used = s + nonItem + inventoryItems + swapReserve - quiverAmmo;
   return {
@@ -657,6 +724,7 @@ export const kitSlotUsage = (
     carriedItems: all.size,
     wornItems,
     minLoadoutItems,
+    keptAmmo,
     inventoryItems,
     swapReserve,
     quiverAmmo,
@@ -681,6 +749,22 @@ export interface InventoryCell {
 const GROUP_ORDER: StyleGroup[] = ['melee', 'ranged', 'magic'];
 
 /**
+ * Phase 32: the kit ammo item the worn loadout keeps in its ammo slot when it has no ammo of its own (`wornItemCounts`):
+ * the first one in inventory-grid order (switch loadouts by style) that Dizana's quiver can't hold, else the first one.
+ * Null when the worn loadout has its own ammo or no loadout has any.
+ */
+export const wornKeptAmmo = (kit: { equipment: PlanEquipment, group: StyleGroup }[], worn: number): PlanItem | null => {
+  if (!kit.length || wearsAmmo(kit[worn].equipment)) return null;
+  const ammo: PlanItem[] = [];
+  for (const g of GROUP_ORDER) {
+    kit.forEach((l, i) => {
+      if (i !== worn && l.group === g && wearsAmmo(l.equipment)) ammo.push(l.equipment.ammo!);
+    });
+  }
+  return ammo.find((it) => !isQuiverAmmo(equipmentById(it.id))) ?? ammo[0] ?? null;
+};
+
+/**
  * Phase 31: the arrow / bolt type that rides in Dizana's quiver (no inventory cell): when the kit carries a quiver and
  * at least two arrow / bolt types (`quiverSavedSlots`), the first one not worn by the worn loadout, in inventory-grid
  * order (switch items by style, then spec weapons, then pinned items). Null otherwise.
@@ -696,6 +780,8 @@ export const quiverHeldAmmo = (
   kit.forEach((l) => equipmentItemIds(l.equipment).forEach((id) => all.add(id)));
   if (!quiverSavedSlots(all, quiver)) return null;
   const wornIds = new Set(equipmentItemIds(kit[worn].equipment));
+  const kept = wornKeptAmmo(kit, worn); // phase 32: worn in the ammo slot, not in the quiver
+  if (kept) wornIds.add(kept.id);
   const ammo = new Set(quiver.ammo);
   const pick = (it: PlanItem | undefined) => !!it && ammo.has(it.id) && !wornIds.has(it.id);
   for (const g of GROUP_ORDER) {
@@ -731,7 +817,9 @@ export const inventoryGrid = (
   const wornIds = new Set(kit.length ? equipmentItemIds(kit[worn].equipment) : []);
   // raid-supplied items (ToB's Dawnbringer) take no cell; nor does the quiver-held ammo (phase 31)
   const held = quiverHeldAmmo(kit, worn, [...specItems, ...pinnedItems], extras.quiver);
-  const placed = new Set<number>([...Array.from(wornIds), ...raidSupplied, ...(held ? [held.id] : [])]);
+  // phase 32: the kit ammo the worn loadout keeps in its ammo slot takes no cell either
+  const kept = wornKeptAmmo(kit, worn);
+  const placed = new Set<number>([...Array.from(wornIds), ...raidSupplied, ...(held ? [held.id] : []), ...(kept ? [kept.id] : [])]);
   SUPPLY_TYPES.forEach((t) => {
     for (let i = 0; i < Math.max(0, Math.floor(supplies[t.id] || 0)); i++) cells.push({ kind: 'supply', label: t.label, supply: t.id });
     // phase 31: the heart beside the potions (once, also when pinned)
@@ -748,9 +836,10 @@ export const inventoryGrid = (
   for (const g of GROUP_ORDER) {
     kit.forEach((l, i) => {
       if (i === worn || l.group !== g) return;
+      const unusedAmmo = isUnusedAmmo(l.equipment);
       ALL_SLOTS.forEach((slot) => {
         const it = l.equipment[slot];
-        if (!it || placed.has(it.id)) return;
+        if (!it || placed.has(it.id) || (unusedAmmo && slot === 'ammo')) return;
         placed.add(it.id);
         cells.push({
           kind: 'switch', label: it.name, item: it, group: g,
@@ -770,7 +859,7 @@ export const inventoryGrid = (
     cells.push({ kind: 'pinned', label: it.name, item: it });
   });
   for (let i = 0; i < Math.max(0, Math.floor(nonItemSlots || 0)); i++) cells.push({ kind: 'non-item', label: i === 0 ? 'Rune pouch' : 'Other (non-item)' });
-  const loadoutSizes = kit.map((l) => equipmentItemIds(l.equipment).length);
+  const loadoutSizes = wornItemCounts(kit.map((l) => equipmentItemIds(l.equipment).length), kit.map((l) => wearsAmmo(l.equipment)));
   const wornFree = Array.from(wornIds).filter((id) => free.has(id)).length;
   const reserve = kit.length ? loadoutSizes[worn] - wornFree - Math.min(...loadoutSizes) : 0;
   for (let i = 0; i < reserve && cells.length < total; i++) cells.push({ kind: 'swap', label: 'Swap space (a smaller loadout is worn)' });
@@ -850,6 +939,8 @@ export interface KitProblem {
   potions?: (string | null)[];
   /** Phase 31: the quiver's extra ammo slot (`quiverSavedSlots`: −1 slot for a second arrow / bolt type). */
   quiver?: QuiverSpec;
+  /** Phase 32: per candidate, whether it wears an ammo item of its own (`wearsAmmo`; `wornItemCounts`). */
+  wearsAmmo?: boolean[];
   /** Phase 21: skip the dedupe rule (the optimiser's prune step); default false. */
   noPrune?: boolean;
   /** Phase 21 (`lightenKit`): prune this kit with drops and same-group swaps instead of optimising. */
@@ -918,14 +1009,13 @@ export const optimiseKit = (p: KitProblem): KitOptimum => {
   const free = new Set(p.raidSupplied || []);
   const usedOf = (m: number[]) => {
     const all = new Set<number>(p.carried.filter((id) => !free.has(id)));
-    let min = Infinity;
     for (const i of m) {
       p.items[i].forEach((id) => {
         if (!free.has(id)) all.add(id);
       });
-      min = Math.min(min, p.items[i].length);
     }
-    return p.fixedSlots + all.size - (m.length ? min : 0) + (p.potions ? potionSlots(m.map((i) => p.potions![i])) : 0)
+    const counts = wornItemCounts(m.map((i) => p.items[i].length), p.wearsAmmo && m.map((i) => p.wearsAmmo![i]));
+    return p.fixedSlots + all.size - (m.length ? Math.min(...counts) : 0) + (p.potions ? potionSlots(m.map((i) => p.potions![i])) : 0)
       - quiverSavedSlots(all, p.quiver);
   };
   const solution = (members: number[], seed: number): KitSolution => ({
@@ -1204,6 +1294,8 @@ export interface PlanResult {
   potions: KitPotion[];
   /** Phase 31: the arrow / bolt type held in Dizana's quiver (0 slots; not in the inventory grid), if any. */
   quiverAmmo: PlanItem | null;
+  /** Phase 32: the kit ammo item the worn loadout (no ammo of its own) keeps in its ammo slot (`wornKeptAmmo`), if any. */
+  keptAmmo: PlanItem | null;
   /** Phase 29: the spec weapons (what the kit carries and why; Team: the briefing and your share). */
   specs: PlanSpecs;
   /**
@@ -1377,6 +1469,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     ownershipNotices,
     potions: [],
     quiverAmmo: null,
+    keptAmmo: null,
     specs: {
       mode: specMode, drain, bring: [], text: bringText([]), notes: [],
     },
@@ -1471,7 +1564,9 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     };
     const addCandidate = (c0: Omit<PlanCandidate, 'key' | 'label'> & { label: string }): PlanCandidate | null => {
       // a camped ring replaces every candidate's ring (merging candidates that only differed by it)
-      const c = ring ? { ...c0, equipment: { ...c0.equipment, ring } } : c0;
+      const c1 = ring ? { ...c0, equipment: { ...c0.equipment, ring } } : c0;
+      // phase 32: an ammo-slot item the weapon doesn't use and that changes no DPS is no part of the switch
+      const c = { ...c1, equipment: withoutUnusedAmmo(c1.equipment) };
       const key = `${c.group}|${equipmentKey(c.equipment)}`;
       const old = byKey.get(key);
       if (old) {
@@ -1762,6 +1857,9 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     // the current matrix (phase 29: the chosen spec subset's / carriers', once picked)
     const routeTime = (members: number[]) => routeTimeWith(dps)(members);
     const items = candidates.map((c) => equipmentItemIds(c.equipment));
+    // phase 32: a candidate without ammo of its own keeps a kit ammo item in its ammo slot (wornItemCounts)
+    const ammoWorn = candidates.map((c) => wearsAmmo(c.equipment));
+    const minWorn = (m: number[]) => Math.min(...wornItemCounts(m.map((x) => items[x].length), m.map((x) => ammoWorn[x])));
     // phase 27: the potion each candidate needs (Super combat / Ranging potion; phase 31: magic the heart; ToA / CoX: none)
     const potions = candidates.map((c) => potionOf(c.group));
     // phase 31: Dizana's quiver holds a second arrow / bolt type (−1 slot; quiverSavedSlots)
@@ -1798,6 +1896,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       raidSupplied,
       potions,
       quiver,
+      wearsAmmo: ammoWorn,
       noPrune: tuning.noPrune,
       shouldCancel: hooks.shouldCancel,
       onProgress: (done, n) => progress({
@@ -1810,7 +1909,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       m.forEach((x) => items[x].forEach((id) => {
         if (!raidSuppliedSet.has(id)) allIds.add(id);
       }));
-      return fixedSlots + allIds.size - (m.length ? Math.min(...m.map((x) => items[x].length)) : 0) + potionSlots(m.map((x) => potions[x]))
+      return fixedSlots + allIds.size - (m.length ? minWorn(m) : 0) + potionSlots(m.map((x) => potions[x]))
         - quiverSavedSlots(allIds, quiver);
     };
 
@@ -2158,9 +2257,10 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     const supplies = kitSupplies(comfort, kit.map((c) => c.group), boostsNeedSupplies);
     // phase 31: the heart is magic's potion: an item carried with the kit (deduplicated with a pinned heart)
     const heartItems = boostsNeedSupplies && kit.some((c) => c.group === 'magic') ? [heartPlanItem(heart)] : [];
-    const slots = kitSlotUsage(kitOrder.map((i) => items[i]), 0, [...runCarried, ...heartItems.map((h) => h.id)], supplies, inputs.nonItemSlots, total, raidSupplied, quiver);
+    const slots = kitSlotUsage(kitOrder.map((i) => items[i]), 0, [...runCarried, ...heartItems.map((h) => h.id)], supplies, inputs.nonItemSlots, total, raidSupplied, quiver, kitOrder.map((i) => ammoWorn[i]));
     const inventory = inventoryGrid(kit, 0, runSpecItems, pinnedItems, supplies, inputs.nonItemSlots, total, raidSupplied, { potionItems: heartItems, quiver });
     const quiverAmmo = quiverHeldAmmo(kit, 0, [...runSpecItems, ...pinnedItems], quiver);
+    const keptAmmo = wornKeptAmmo(kit, 0);
 
     // 7. why: improvements that don't fit, and the best kit of every other style mix
     const T = chosen.time;
@@ -2169,7 +2269,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       m.forEach((x) => items[x].forEach((id) => {
         if (!raidSuppliedSet.has(id)) allIds.add(id);
       }));
-      return fixedSlots + allIds.size - Math.min(...m.map((x) => items[x].length)) + potionSlots(m.map((x) => potions[x]))
+      return fixedSlots + allIds.size - minWorn(m) + potionSlots(m.map((x) => potions[x]))
         - quiverSavedSlots(allIds, quiver);
     };
     // phase 21: what each kit loadout costs and saves (vs the kit without it; optimiser times)
@@ -2221,7 +2321,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       const mixSeeds = seeds.filter((i) => allowed[i]).slice(0, 5);
       if (!mixSeeds.length) continue;
       let s = optimiseKit({
-        items, carried: runCarried, fixedSlots, totalSlots: total, time: routeTime, seeds: mixSeeds, allowed, raidSupplied, potions, quiver, noPrune: tuning.noPrune, shouldCancel: hooks.shouldCancel,
+        items, carried: runCarried, fixedSlots, totalSlots: total, time: routeTime, seeds: mixSeeds, allowed, raidSupplied, potions, quiver, wearsAmmo: ammoWorn, noPrune: tuning.noPrune, shouldCancel: hooks.shouldCancel,
       }).best;
       for (const g of mix) {
         if (s.members.some((i) => candidates[i].group === g)) continue;
@@ -2260,7 +2360,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     alternatives.sort((a, b) => (b.deltaSeconds - a.deltaSeconds) || a.label.localeCompare(b.label));
     // phase 21: the lighter kit (same-style cheaper swaps where the slots bought < 1 s each), listed first when it frees slots
     const light = lightenKit({
-      items, carried: runCarried, fixedSlots, totalSlots: total, time: routeTime, seeds: members, raidSupplied, potions, quiver, groups: candidates.map((c) => c.group), shouldCancel: hooks.shouldCancel,
+      items, carried: runCarried, fixedSlots, totalSlots: total, time: routeTime, seeds: members, raidSupplied, potions, quiver, wearsAmmo: ammoWorn, groups: candidates.map((c) => c.group), shouldCancel: hooks.shouldCancel,
     }, members);
     const freed = chosen.used - light.used;
     if (freed >= 1 && Number.isFinite(light.time)) {
@@ -2320,6 +2420,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       alternatives,
       potions: kitPotions(kit.map((c) => c.group), boostsNeedSupplies, heart),
       quiverAmmo,
+      keptAmmo,
       specs,
       ring: { policy, ring: ring?.name ?? null, screened: [] },
       matrixDps: Object.fromEntries(targets.map((t, col) => [phaseKey(t.targetKey, t.phase), Math.max(0, ...members.map((m) => dps[m][col]))])),

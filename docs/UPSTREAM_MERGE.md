@@ -22,6 +22,13 @@ own files (`bestSetup/*`, `fracturedArchive/*`, `raids/*`, `searchWorker.ts`). `
 src/lib/PlayerVsNPCCalc.ts src/lib/BaseCalc.ts src/lib/Equipment.ts src/lib/constants.ts src/lib/Prayer.ts
 src/lib/EquipmentAliases.ts src/lib/scaling src/worker src/app` (new files included): 32 files, +3332 / −26.
 
+**Round 4 (phases 29-32, reviewed in phase 32)**: no upstream file changed — `git diff --diff-filter=M 89c3e25 -- src`
+outside our own folders is still 20 files, **+334 / −29**. Everything is in `fracturedArchive/*` (planner, spec
+choice, team specs, drain line), `bestSetup/*` and `raids/*`. Nothing new to send upstream: the ring guard, the spec
+subset search, the quiver / kept-ammo slot rules and the drain-line wording are fork-only planner code (upstream has no
+planner); the `getCanonicalItemId` reverse map below was round 3. The planner calls upstream's `ammoApplicability`
+and `getCanonicalItemId` (phase 32) as they are.
+
 ## How to merge
 
 ```

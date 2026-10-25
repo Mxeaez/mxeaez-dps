@@ -156,7 +156,8 @@ describe('drain line data', () => {
     // phase 29: the Team line starts with "needed ×N (H hits) · team brings ×4"
     // (phase 29 review: "not needed" when the maul specs already give the same ranked Defence on Xarth)
     // (review 2: "needed ×N (P%) · team brings ×4 (8 hits, P%)")
-    expect(items[1].title).toMatch(/^(needed ×\d+ \([^)]*\)|not needed) · team brings ×4 \(8 hits, [^)]*\); 4 Tonalztics specs \(8 hits\); \d+% of specs land at least one damaging hit$/);
+    // (phase 32: "needs N landed hits · N specs (C carriers), 2N swings · P% · team: 4 specs (2 carriers) · P%")
+    expect(items[1].title).toMatch(/^(needs \d+ landed hits? · \d+ specs? \(\d+ carriers?\), \d+ swings · [^·(;]+( · team: 4 specs \(2 carriers\) · [^(;]+)?|not needed · team: 4 specs \(2 carriers\) · [^(;]+)( \(.*\))?; 4 Tonalztics specs \(8 swings\); \d+% of specs land at least one damaging hit$/);
     expect(items[1].hits).toBe(8);
     expect(items.every((i) => i.image)).toBe(true);
     expect(d.line!.defAfter).toBe(d.defAfter);
@@ -186,7 +187,7 @@ describe('drain line data', () => {
       ['ayak', 3, 'spec', 3],
     ]);
     expect(line.items[0].hitChance).toBe(0.8);
-    expect(line.items[0].title).toMatch(/^2 Tonalztics specs \(4 hits\)/);
+    expect(line.items[0].title).toMatch(/^2 Tonalztics specs \(4 landed hits\)/);
     expect(line.defAfter).toBe(156);
     const bgs = drainLineFromReductions(maxDrainReductions(undrained('bork'), { weapon: 'bgs', ayak: false }).reductions, {}, plan, '');
     expect(bgs.items[0]).toMatchObject({ weapon: 'bgs', unit: 'dmg' });

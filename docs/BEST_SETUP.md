@@ -1,4 +1,4 @@
-# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14; Routes tab phase 16; Plan tab phase 17; raid tabs + ToA phase 18; CoX phase 19; ToB phase 20; per-raid Plan defaults + dedupe phase 21; UI cleanup phase 23; "Items I don't own" phase 26; potions from the kit + ring policy phase 27; Plan tab polish phase 30; quiver ammo + heart as magic's potion phase 31)
+# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14; Routes tab phase 16; Plan tab phase 17; raid tabs + ToA phase 18; CoX phase 19; ToB phase 20; per-raid Plan defaults + dedupe phase 21; UI cleanup phase 23; "Items I don't own" phase 26; potions from the kit + ring policy phase 27; Plan tab polish phase 30; quiver ammo + heart as magic's potion phase 31; zero-value switch items + drain-line units phase 32)
 
 `/best-setup` (dev: http://localhost:3001/osrs-dps/best-setup; "Best setup" button in the top bar, "Calculator" leads
 back). Tabs, in order: **Search** (the default, phase 9/12, see the end of this file) searches a pool of end-game items
@@ -626,7 +626,8 @@ maul or 4 Tonalztics alone each reach the floor — the maul reads "not needed" 
 both "not needed"); the % is P(floor from the first round) with those specs / with everything brought; "(→ Def X)"
 instead when the plan doesn't rank at the floor (The Smorks, floor 0), "(→ magic def X)" for Eye of Ayak short of 0.
 Hits are on the team's part only ("needed ×3 (6 hits)" read as six hits required: 4 hits reach AG's floor). Solo
-lines: "×2 (4 hits)". The Xarth 66% is the ranking rule at work: below 95% the ranking uses the reachable Defence
+lines: "×2 (4 hits)". **Phase 32 replaced this wording** (see *Phase 32* below): "needs 4 landed hits · 4 specs (2
+carriers), 8 swings · 98%". The Xarth 66% is the ranking rule at work: below 95% the ranking uses the reachable Defence
 nearest the expected one, which is still the floor there. **Phase 30**: when everything brought reaches the floor at
 the confidence (P ≥ 95%), "needed" must too — the fewest specs that still do, not a smaller count that ranks at the
 same Defence below the threshold (Eye of Ayak likewise for magic def 0). With the Advanced 2 / 2 / 1: AG Flying
@@ -742,6 +743,78 @@ the phase 29 ranking (fastest, then fewer slots).
 | ToB | 7:30.0 | **7:30.0** | the heart (its Shadow switch) is now a kit potion: same slot, same kit; one bolt type, nothing in the quiver |
 | FA without Obligator + Ascension crossbows | 24:45.3 | **24:45.3** | the heart (Tumeken's shadow loadout) now a kit potion: same slot; one arrow type |
 | FA Solo, party 1 | 22:01.3 (Elder maul + Tonalztics) | **22:01.9, Bring: Tonalztics** | Elder maul saved 0.57 s for its slot (< 1 s); the quiver holds the Seeking dragon arrows; 23/28 |
+
+### Zero-value switch items and drain-line units (phase 32)
+
+User reports (2026-10-24): an FA plan at party 4 without Obligator charged a slot for Rada's blessing 4 in the melee
+switch ("Free slots 0 / 28"), and the drain line "needed ×4 · team brings ×4 (8 hits, 98%)" read as 4 people / 8
+landed hits.
+
+**Rule**: an item in a switch that changes none of that loadout's DPS costs no slot and is not shown. In practice the
+ammo slot: Rada's blessing 4 (prayer +2 only; the prayer bonus is not modelled) was the ammo-slot filler of the melee /
+magic presets (`MELEE_FILL`, `ANCESTRAL`) and of the search pool's melee / ranged / magic `ammo` slot; it left all
+of them. `isUnusedAmmo` (planner.ts) drops any ammo-slot item on a weapon that fires no ammo
+(`ammoApplicability` ALLOWED) with no melee / magic attack or strength stat and no effect (Crystal blessing keeps its
+effect) from a candidate before it is costed or shown, and `equipmentItemIds` never counts one (a pinned blessing is one
+pinned item). **The ammo slot keeps what is in it**: a loadout without ammo of its own keeps a kit ammo item there — the
+bolts stay equipped while meleeing, and a melee worn set starts with one of the kit's ammo items in its slot
+(`wornItemCounts`, `wornKeptAmmo`; `SlotUsage.keptAmmo`; `KitProblem.wearsAmmo`): such a loadout holds one
+inventory item fewer. Without this the blessing's slot would only move to "swap space". The worn grid draws the kept
+ammo (dashed, "a switch's ammo, worn here too …"); the free-slots tooltip says "(… worn in the ammo slot)". Jest
+(`Phase32.test.ts`): a melee / magic preset's DPS is identical with no ammo, the blessing or any pool arrow / bolt /
+javelin / dart on every phase of every raid; brute force over all 8191 subsets of the FA presets vs an exhaustive
+count of every worn state (UNVERIFIED D25).
+
+**The user's plan** (FA, party 4, Camp Lightbearer, 6 brew / 4 restore / 2 other, 1 rune pouch, not owned: Obligator,
+Zorya's tome, Rondache, Inquisitor's helm / hauberk / plateskirt / mace): 25:47.4 → **25:46.3**. The melee switch
+(Torva + Scythe + Oathplate chest) drops the blessing (10 → 9 items); the freed slot buys a third bolt type, the void
+Ascension crossbows switch firing Onyx ascension bolts (e) instead of diamond (−1.1 s for 1 slot), so it is still
+0 / 28. The "Zaryte crossbow + Ruby dragon bolts (e) #2 (+3 slots)" candidate (not in this kit; it saves 0 s here): its
+three items are the Zaryte crossbow, the Ruby dragon bolts (e) and the **Twisted buckler** — the crossbow is one-handed
+and the worn Ascension crossbows are two-handed, so the shield comes with it; the buckler is +18 ranged attack, +10
+ranged strength (a DPS item, ≥ 3 % on AG Flying), not a zero-value item.
+
+**Numbers** (defaults, Team, camp one ring; slow `CrossRaid`, `Phase29`, `Phase27`, `Phase32`; `verifyPhase32`):
+
+| Plan | Phase 31 | **Phase 32** | Slots |
+|---|---|---|---|
+| FA | 21:44.4 | **21:44.4** | same kit; the Inquisitor's + Obligator switch is 9 items: 6 free (was 5) |
+| ToA | 14:04.1 | **14:04.1** | same kit; the worn Keris partisan (Torva) keeps the Diamond ascension bolts (e) in its ammo slot: the freed slot carries your share, Eye of Ayak (was none) |
+| CoX | 6:35.9 | **6:35.9** | same kit; the worn Inquisitor's + Obligator keeps a switch's bolts: your share Tonalztics in the freed slot (was none) |
+| ToB | 7:30.0 | **7:29.5** | the Tumeken's shadow partial switch becomes the full Tumeken's shadow (Ancestral) loadout (Nylocas 41.5 → 41.0 s); carrier steps on this kit: Tonalztics −31.8, Elder maul −10.4, Tonalztics −3.5 s (phase 31 kit: −34.3). The −0.5 s is a 0.5 s-per-slot upgrade (the Imbued Guthix cape of the full Shadow loadout, one slot): the 1 s per slot rule applies per loadout (the Shadow loadout as a whole saves 15.7 s), not per item |
+| FA without Obligator + Ascension crossbows | 24:45.3 | **24:34.1** | the worn "Twisted bow switch +5 on Tumeken's shadow" becomes the full Twisted bow (Masori) (AG 198.9 → 196.5, Ocellus 775.4 → 767.3 s) |
+| FA Solo, party 1 | 22:01.9 | **22:01.9** | same kit; 6 free (was 5) |
+| The user's plan | 25:47.4 | **25:46.3** | the slot buys Onyx bolts (−1.1 s); 0 free |
+| Phase 29 regression ({Elder maul, Tonalztics}, Solo party 1, phase 29 pinned list) | 1382.50 s | **1329.96 s** | — |
+| Reduced pools, allow ring switches (`Phase27`) | FA 1533.2 / ToA 879.7 s | **1493.8 / 872.6 s** | — |
+
+**Drain-line units.** Every number says what it counts (`neededText`, drainLine.ts; `landedToReach` / `landedNeed` /
+`soloNeeds`, teamSpecs.ts). Team, per weapon: **"needs 4 landed hits · 4 specs (2 carriers), 8 swings · 98%"** — the
+fewest landed drains of that weapon alone from the start Defence to the ranked Defence (Tonalztics: hits of trunc(Magic
+/ 8); Elder maul / DWH: landed specs; BGS: "≈ N damage"; Eye of Ayak: "≈ N magic defence drained"), the needed specs, the
+carriers they take (2 first-round specs each for a 50 % weapon), the swings (a charged Tonalztics spec swings twice), and
+P(the drain lands within the first round) — or "→ Def X" / "→ magic def X" when the plan doesn't rank at the floor /
+0. When the team brings more: " · team: 6 specs (3 carriers) · 99.8%"; "not needed · team: …" when 0 are needed. When
+a weapon alone would need more landed drains than its needed specs can land (Bork: Tonalztics backs up the maul), the
+count is from the Defence the others leave: "needs 2 landed hits once 1 Elder maul spec lands (Def 195)"; if even that
+doesn't fit, "needs the other drains too" (ToA scarabs: one maul spec + Tonalztics). Solo lines likewise, without
+carriers: "needs 3 landed hits · 2 specs, 4 swings · → Def 167" (the plan's P(floor) / ranked Defence). The tooltip
+explains it: "4 landed hits of Tonalztics alone take Def 260 → 156; a charged Tonalztics spec swings twice and each
+swing can miss; the % is the chance the Defence reaches the floor in the first round with these specs and the other weapons' specs". Default carriers (2 / 2 / 1):
+
+| Boss | Elder maul | Tonalztics | Eye of Ayak |
+|---|---|---|---|
+| AG Flying | — | needs 4 landed hits · 4 specs (2 carriers), 8 swings · 98% | needs ≈ 39 magic defence drained · 2 specs (1 carrier) · → magic def 91 |
+| Xarth | not needed · team: 4 specs (2 carriers) · >99.9% | needs 2 landed hits · 2 specs (1 carrier), 4 swings · 97% · team: 4 specs (2 carriers) · >99.9% | needs ≈ 25 magic defence drained · 2 specs (1 carrier) · → magic def 180 |
+| Bork | needs 2 landed specs · 3 specs (2 carriers) · 98% · team: 4 specs (2 carriers) · 99.6% | needs 2 landed hits once 1 Elder maul spec lands (Def 195) · 3 specs (2 carriers), 6 swings · 97% · team: 4 specs (2 carriers) · 99.6% | needs ≈ 40 magic defence drained · 2 specs (1 carrier) · → magic def 260 |
+
+Solo, AG Flying with Tonalztics: "needs 3 landed hits · 2 specs, 4 swings · → Def 167". The calculator's Max-drain
+buttons keep "×2 (4 hits)" (those are landed hits); the planned lines' tooltips say "(8 swings)".
+
+**Quiver review nits**: UNVERIFIED D23 now quotes the Dizana's max cape page in full, records that two types of the
+same kind (bolts + bolts) still free the slot though switching between them needs a manual swap (not modelled;
+limiting `quiverSavedSlots` to one arrow + one bolt type isn't a one-line change, so it is documented only), and that a
+quiver only pinned or worn by a non-ranged loadout still frees the slot (storage per the wiki; firing unverified).
 
 ## Routes tab (phase 16: raid time model)
 
@@ -1051,7 +1124,7 @@ against) are listed under the stats line instead of in the table.
 37 weapon variants in total. Autocast spells (Kodai, Harmonised, Purging staff): Fire Surge (highest base) + the surge of
 the boss's elemental weakness, Dark Demonbane against demons, Ice Barrage (Kodai) unless the boss is immune to ancients
 (Archive Guardian). Constraints in the data/code: two-handed weapons (from the item data) never get a shield; weapons
-that fire ammo list it per weapon (the test checks the calculator accepts it); others use Rada's blessing in the ammo
+that fire ammo list it per weapon (the test checks the calculator accepts it); others have nothing (phase 32; was Rada's blessing) in the ammo
 slot (the test checks the weapon doesn't require ammo); the blowpipe's dart goes in the weapon's `itemVars` like the
 calculator's dart picker.
 

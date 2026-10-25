@@ -244,12 +244,17 @@ describe('every raid\'s plan runs (reduced pool)', () => {
 // ascension bolts (e) beside the Seeking dragon arrows; the kit re-shuffled: Inquisitor's + Obligator worn, Twisted bow
 // + Scorching bow switches, Tekton 16.3 → 14.4 s); ToB 7:30.0 (the heart now a kit potion for its Shadow switch: the
 // same slots).
+// Phase 32 (no Rada's blessing in the melee / magic loadouts; a loadout without ammo keeps the kit's ammo in its ammo
+// slot): FA 21:44.4 (same kit; the melee switch is 9 items: 6 free, was 5); ToA 14:04.1 and CoX 6:35.9 (same kits; the
+// worn melee set keeps the diamond ascension bolts (e) in its ammo slot: the freed slot carries your share, ToA Eye of
+// Ayak, CoX Tonalztics); ToB 7:30.0 → 7:29.5 (the freed slots turn the Tumeken's shadow partial switch into the full
+// Tumeken's shadow (Ancestral) loadout: Nylocas 41.5 → 41.0 s).
 const HEADLINES: [string, string, number][] = [
   ['fractured-archive', '21:44.4', 1304.4],
   // review 2: Eye of Ayak carriers capped at the mages (1): 13:19.6 → 14:10.6 (1 maul, 1 Tonalztics, 1 Ayak; Ultor)
   ['toa', '14:04.1', 844.1],
   ['cox', '6:35.9', 395.9],
-  ['tob', '7:30.0', 450.0],
+  ['tob', '7:29.5', 449.5],
 ];
 
 // Phase 28: the FA plan without Obligator and Ascension crossbows ("Items I don't own"; phase 26 pinned 25:46.8 with
@@ -260,7 +265,9 @@ const HEADLINES: [string, string, number][] = [
 // Phase 30 (empty pinned defaults): 24:53.8 → 24:45.3; the 5 freed slots + Tonalztics' slot buy a Tumeken's shadow
 // (Ancestral) loadout (the pinned heart, unused before, now boosts it), the Twisted bow a partial switch on it, the route
 // via Bork + Smorks; no spec weapon (your last slot is worth 8.5 s of gear).
-const ONLY_OWNED_HEADLINE: [string, number] = ['24:45.3', 1485.3];
+// Phase 32 (no blessing; kept ammo): 24:45.3 → 24:34.1; the worn Twisted bow partial switch on the Tumeken's shadow
+// becomes the full Twisted bow (Masori) loadout (Archive Guardian 198.9 → 196.5, Ocellus 775.4 → 767.3 s).
+const ONLY_OWNED_HEADLINE: [string, number] = ['24:34.1', 1474.1];
 const FA_NOT_OWNED = ['Obligator', 'Ascension crossbows'];
 
 /**

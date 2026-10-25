@@ -4,8 +4,8 @@
  * Usage (dev server running): node scripts/verifyPhase29.mjs [baseUrl]
  * - FA Plan, defaults (party 6, Team drains, "Spec weapons: Planner decides"): "Bring: …", the team briefing table
  *   (weapon → carriers → bosses driving it) and "Your share (assign me): …"; prints them.
- * - The AG Flying phase row's drain line reads "needed ×N (2N hits) · team brings ×4" (Tonalztics; review: N = the
- *   fewest of those specs giving the same ranked Defence; "not needed" when 0).
+ * - The AG Flying phase row's drain line reads "needs 4 landed hits · 4 specs (2 carriers), 8 swings · 98%" (Tonalztics;
+ *   phase 32 wording; review: the fewest of those specs giving the same ranked Defence; "not needed" when 0).
  * - Review: "Team carriers: Planner decides" by default (counts disabled); the briefing shows the planner's carriers
  *   (2 Elder maul + 2 Tonalztics on the FA defaults) with what the last carrier of each saves and the order they were
  *   added; Solo party 1 brings Tonalztics (phase 31: 22:01.9, Elder maul's 0.6 s < 1 s per slot; phase 30: Elder maul + Tonalztics 22:01.3; phase 29: Tonalztics, 22:10.5) with "dropping … / adding … to this plan" and "best without …";
@@ -78,8 +78,9 @@ const main = async () => {
   check(/^ranked at Def \d+ · Magic def -?\d+$/.test(ranked) && await page.locator('[data-testid="search-ranked-at"] img').count() === 2, `"${ranked}" with the Defence / Magic icons`);
   const panelTona = await text(page.locator('[data-testid="spec-plan"] [data-testid="drain-line-item"][data-weapon="tonalztics"]'));
   // review 2: "needed ×3 (86%) · …"; phase 30: "needed" reaches the threshold too when the team's specs do:
-  // "needed ×4 (98%) · team brings ×4 (8 hits, 98%)" (Search uses the Advanced 2 / 2 / 1 before any plan)
-  check(/needed ×4 \(98%\) · team brings ×4 \(8 hits, 98%\)/.test(panelTona), `Search drain box (AG Flying, Team): "${panelTona}"`);
+  // "needed ×4 (98%) · team brings ×4 (8 hits, 98%)"; phase 32: "needs 4 landed hits · 4 specs (2 carriers), 8 swings ·
+  // 98%" (Search uses the Advanced 2 / 2 / 1 before any plan)
+  check(/needs 4 landed hits · 4 specs \(2 carriers\), 8 swings · 98%/.test(panelTona) && !/team:/.test(panelTona), `Search drain box (AG Flying, Team): "${panelTona}"`);
   check(/run a plan to fill these/.test((await page.locator('[data-testid="team-carriers-note"]').textContent())), 'carriers note before any plan: "run a plan to fill these"');
   check(await page.locator('[data-testid="team-carrier-mode"]').inputValue() === 'auto', 'Team carriers: "Planner decides" by default');
   check(await page.locator('#bs-team-elderMaul').isDisabled(), 'carrier counts disabled while the planner decides');
@@ -112,7 +113,7 @@ const main = async () => {
 
   // AG Flying drain line in the encounter table
   const agDrains = await text(page.locator('[data-testid="plan-phase-row"][data-target="ag-flying"] [data-testid="plan-phase-drains"]').first());
-  check(/needed ×4 \(98%\) · team brings ×4 \(8 hits, 98%\)/.test(agDrains), `AG Flying (Team) drain line: "${agDrains}"`);
+  check(/needs 4 landed hits · 4 specs \(2 carriers\), 8 swings · 98%/.test(agDrains), `AG Flying (Team) drain line: "${agDrains}"`);
   const carriers = Object.fromEntries(rows.map((r) => [r.weapon, r.carriers]));
   check(carriers.elderMaul === 2 && carriers.tonalztics === 2 && rows.length === 2, `planner carriers: ${JSON.stringify(carriers)} (2 Elder maul + 2 Tonalztics)`);
   check(/picked by the planner/.test(await text(page.locator('[data-testid="plan-team-roles"] .font-semibold').first())), 'briefing says "picked by the planner"');

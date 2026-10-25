@@ -26,7 +26,8 @@ What this fork adds on top of upstream:
   of Ayak with the kit ("Bring: …", with what dropping / adding each changes); Team picks the team's carriers (each must
   save ≥ 1 s of route time; FA 6-man: 2 Elder maul + 2 Tonalztics) and your share ("assign me"). Headline plans
   (defaults, Team; phase 31: nothing pinned by default, the Saturated heart is magic's kit potion, Dizana's quiver holds a
-  second arrow / bolt type for free): FA 21:44.4, ToA 14:04.1, CoX 6:35.9, ToB 7:30.0.
+  second arrow / bolt type for free; phase 32: no zero-value switch items, a loadout without ammo keeps the kit's ammo
+  in its slot): FA 21:44.4, ToA 14:04.1, CoX 6:35.9, ToB 7:29.5.
 * **Times assume N players at your DPS** (the "Players assumed at your DPS" input under Advanced; the page says "times assume N players at your DPS"):
   N defaults to the party size in ToA / CoX / ToB, where upstream scales boss hp with it, and to 1 in the Fractured
   Archive, whose hp scaling is unknown.

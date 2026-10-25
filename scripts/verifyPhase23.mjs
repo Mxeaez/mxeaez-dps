@@ -101,9 +101,12 @@ const main = async () => {
   await page.locator('[data-testid="boss-select"]').selectOption('xarth');
   await waitSearch(page);
   const team = await lineItems(page, '[data-testid="spec-plan"]');
-  // phase 29: the Team line reads "needed ×N · team brings ×M" (Tonalztics: "needed ×N (2N hits)")
-  check(JSON.stringify(team.map((i) => [i.weapon, i.count.replace(/^.* · /, '').replace(/ \(.*\)$/, '')])) === JSON.stringify([['elderMaul', 'team brings ×4'], ['tonalztics', 'team brings ×4'], ['ayak', 'team brings ×2']]), `Team drain line: ${team.map((i) => `${i.weapon} ${i.count}`).join(', ')}`);
-  check(team.every((i) => /^(needed ×\d+( \([^)]*\))?|not needed|floor not reachable|magic def 0 not reachable) · team brings ×\d+( \([^)]*\))?$/.test(i.count)), 'every Team item starts with "needed ×N"');
+  // phase 29: the Team line reads "needed ×N · team brings ×M"; phase 32: units on every number — "needs N landed
+  // hits · N specs (C carriers), 2N swings · P%" + " · team: 4 specs (2 carriers) · P%" when the team brings more
+  check(team.map((i) => i.weapon).join(',') === 'elderMaul,tonalztics,ayak'
+    && team.slice(0, 2).every((i) => / · team: 4 specs \(2 carriers\) · /.test(i.count)) && /2 specs \(1 carrier\)/.test(team[2].count),
+  `Team drain line: ${team.map((i) => `${i.weapon} "${i.count}"`).join(', ')}`);
+  check(team.every((i) => /^(needs [^·]+ · \d+ specs? \(\d+ carriers?\)(, \d+ swings)? · [^·]+( · team: \d+ specs? \(\d+ carriers?\) · .+)?|(not needed|floor not reachable|magic def 0 not reachable) · team: \d+ specs? \(\d+ carriers?\) · .+)$/.test(i.count)), 'every Team item reads "needs … · N specs (C carriers) · …" or "not needed · team: …"');
   check(team.every((i) => /^\d+% land$/.test(i.hit || '') && i.icon), `hit chance under each icon: ${team.map((i) => i.hit).join(', ')}`);
   const result = await page.locator('[data-testid="spec-plan"] [data-testid="drain-line-result"]').innerText();
   check(/→ Def \d+ · Magic def \d+/.test(result), `drain line result "${result}"`);

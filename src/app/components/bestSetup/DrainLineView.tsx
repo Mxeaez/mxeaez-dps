@@ -5,7 +5,8 @@ import { ItemIcon } from '@/app/components/bestSetup/ItemIcons';
 
 // Phase 23: a drain plan as "[icon] ×N" per weapon with the per-spec hit chance under each icon, then
 // "→ Def 156 · Magic def 91". The full plan text is the tooltip. Data: src/lib/fracturedArchive/drainLine.ts.
-// Phase 29: Tonalztics shows its hits ("×2 (4 hits)"); a Team line shows "needed ×2 (4 hits) · team brings ×4".
+// Phase 29: Tonalztics shows its hits ("×2 (4 hits)"). Phase 32: planned lines read "needs 4 landed hits · 4 specs (2
+// carriers), 8 swings · 98%" (+ " · team: 6 specs (3 carriers) · 99.8%" when the team brings more; Solo: no carriers).
 
 const pct = (p: number) => `${Math.round(p * 100)}%`;
 

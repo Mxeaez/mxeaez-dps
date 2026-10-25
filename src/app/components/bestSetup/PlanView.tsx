@@ -190,19 +190,27 @@ const QuiverAmmoBadge: React.FC<{ ammo: PlanItem }> = ({ ammo }) => (
   </span>
 );
 
-/** The worn set, laid out like the calculator's equipment grid (phase 31: the quiver-held ammo on a worn quiver). */
-const WornGrid: React.FC<{ kit: PlanCandidate, quiverAmmo?: PlanItem | null }> = ({ kit, quiverAmmo }) => {
+/**
+ * The worn set, laid out like the calculator's equipment grid (phase 31: the quiver-held ammo on a worn quiver; phase 32:
+ * the kit ammo that a worn set without ammo of its own keeps in its ammo slot).
+ */
+const WornGrid: React.FC<{ kit: PlanCandidate, quiverAmmo?: PlanItem | null, keptAmmo?: PlanItem | null }> = ({ kit, quiverAmmo, keptAmmo }) => {
   const cell = (slot: keyof PlayerEquipment) => {
-    const it = kit.equipment[slot];
+    const kept = slot === 'ammo' && !kit.equipment.ammo && keptAmmo ? keptAmmo : null;
+    const it = kit.equipment[slot] ?? kept ?? undefined;
     const held = slot === 'cape' && quiverAmmo && it && isQuiver(it) ? quiverAmmo : null;
+    let title: string = slot;
+    if (kept) title = `${kept.name} (ammo): a switch's ammo, worn here too (this loadout fires no ammo, so it changes nothing; saves an inventory slot)`;
+    else if (it) title = `${it.name} (${slot})`;
     return (
       <div
         key={slot}
-        className="relative flex justify-center items-center h-[40px] w-[40px] bg-body-100 dark:bg-dark-400 border border-body-300 dark:border-dark-400 rounded"
+        className={`relative flex justify-center items-center h-[40px] w-[40px] bg-body-100 dark:bg-dark-400 border border-body-300 dark:border-dark-400 rounded${kept ? ' border-dashed' : ''}`}
         data-testid="worn-slot"
         data-slot={slot}
         data-item={it?.name ?? ''}
-        title={it ? `${it.name} (${slot})` : slot}
+        data-kept={kept ? 'true' : undefined}
+        title={title}
       >
         {it
           ? <ItemIcon name={it.name} src={searchItemIcon(slot, it).imageUrl} size={32} />
@@ -815,7 +823,7 @@ const PlanView: React.FC<{
               className={`px-2 py-0.5 rounded text-sm font-bold ${result.slots.free > 0 ? 'bg-green-600' : 'bg-orange-500'} text-white`}
               data-testid="free-slots"
               data-free={result.slots.free}
-              title={`${result.slots.supplies} supplies + ${result.slots.nonItem} non-item + ${result.slots.inventoryItems} items + ${result.slots.swapReserve} swap space${result.slots.quiverAmmo ? ` − ${result.slots.quiverAmmo} ammo held in the quiver${result.quiverAmmo ? ` (${result.quiverAmmo.name})` : ''}` : ''} = ${result.slots.used} of ${result.slots.total}`}
+              title={`${result.slots.supplies} supplies + ${result.slots.nonItem} non-item + ${result.slots.inventoryItems} items${result.slots.keptAmmo && result.keptAmmo ? ` (${result.keptAmmo.name} worn in the ammo slot)` : ''} + ${result.slots.swapReserve} swap space${result.slots.quiverAmmo ? ` − ${result.slots.quiverAmmo} ammo held in the quiver${result.quiverAmmo ? ` (${result.quiverAmmo.name})` : ''}` : ''} = ${result.slots.used} of ${result.slots.total}`}
             >
               {`Free slots: ${result.slots.free} / ${result.slots.total}`}
             </span>
@@ -831,7 +839,7 @@ const PlanView: React.FC<{
           <div className="flex flex-wrap gap-6 items-start">
             <div className="flex flex-col items-center gap-1">
               <div className="text-xs font-semibold">Worn</div>
-              <WornGrid kit={result.kit[0]} quiverAmmo={result.quiverAmmo} />
+              <WornGrid kit={result.kit[0]} quiverAmmo={result.quiverAmmo} keptAmmo={result.keptAmmo} />
               <div className="text-[11px] text-center max-w-[180px]" data-testid="worn-label">{result.kit[0].label}</div>
             </div>
             <div className="flex flex-col items-center gap-1">

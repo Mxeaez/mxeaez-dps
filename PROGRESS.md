@@ -3,6 +3,58 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 32 — Final review, round 4 (2026-10-24)
+
+Slot costs change (full independent review next).
+
+- **Zero-value switch items** (user, FA party 4 without Obligator: a slot for Rada's blessing 4 in the melee switch).
+  The blessing (prayer only) left `MELEE_FILL` / `ANCESTRAL` (every raid's melee / magic presets) and the melee / ranged
+  / magic search pools' `ammo` slot. planner.ts: `isUnusedAmmo` (an ammo-slot item on a weapon that fires no ammo,
+  `ammoApplicability` ALLOWED on canonical ids, no melee / magic attack or strength, not Crystal blessing) is dropped
+  from every candidate (`withoutUnusedAmmo` in `addCandidate`), never counted (`equipmentItemIds`) and never drawn
+  (`inventoryGrid`). **Kept ammo**: a loadout without ammo of its own keeps a kit ammo item in its ammo slot
+  (`wornItemCounts`, `wornKeptAmmo`, `SlotUsage.keptAmmo`, `KitProblem.wearsAmmo`, `PlanResult.keptAmmo`) — the bolts
+  stay equipped while meleeing — so it holds one inventory item fewer (without it the blessing's slot only moved into
+  swap space). Worn grid: the kept ammo in the ammo slot (dashed, "a switch's ammo, worn here too"); free-slots tooltip
+  "(… worn in the ammo slot)". UNVERIFIED D25.
+- **The user's plan** (FA, party 4, Camp Lightbearer, 6 / 4 / 0 / 2, 1 rune pouch, not owned: Obligator, Zorya's tome,
+  Rondache, Inquisitor's helm / hauberk / plateskirt / mace): 25:47.4 → **25:46.3**; the melee switch 10 → 9 items; the
+  freed slot buys Onyx ascension bolts (e) for the void Ascension crossbows switch (−1.1 s for 1 slot ≥ 1 s), so still
+  0 / 28. The "Zaryte crossbow + Ruby dragon bolts (e) #2" candidate (not in this kit at HEAD inputs; saves 0 s here):
+  +3 slots = Zaryte crossbow, Ruby dragon bolts (e), **Twisted buckler** (one-handed crossbow vs the two-handed worn
+  Ascension crossbows; +18 ranged attack / +10 ranged str: a DPS item, kept).
+- Headlines (Team, camp one ring) phase 31 → 32: FA **21:44.4** (same kit, 6 free, was 5); ToA **14:04.1** and CoX
+  **6:35.9** (same kits; the worn melee set keeps the diamond ascension bolts (e): your share now carried in the freed
+  slot, ToA Eye of Ayak, CoX Tonalztics); ToB 7:30.0 → **7:29.5** (the Tumeken's shadow partial switch becomes the full
+  Shadow (Ancestral) loadout; Nylocas 41.5 → 41.0 s; a 0.5 s-per-slot upgrade (its Imbued Guthix cape): the 1 s rule is per loadout); FA without Obligator / Ascension 24:45.3 → **24:34.1** (the
+  Twisted bow partial switch on the Shadow becomes the full Twisted bow (Masori) worn; AG 198.9 → 196.5, Ocellus 775.4 →
+  767.3 s); FA Solo party 1 **22:01.9** (6 free). Phase 29 regression {maul, Tonalztics} Solo (phase 29 pinned list)
+  1382.50 → 1329.96 s; Phase27 reduced "allow switches" FA 1533.2 → 1493.8, ToA 879.7 → 872.6 s.
+- **Drain-line units** (user: "needed ×4 · team brings ×4 (8 hits)" read as 4 people / 8 landed hits): `neededText`
+  "needs 4 landed hits · 4 specs (2 carriers), 8 swings · 98%" (+ " · team: 6 specs (3 carriers) · 99.8%" when the team
+  brings more; "not needed · team: …"); landed drains of the weapon alone from the start Defence (`landedToReach`:
+  Tonalztics hits, maul / DWH specs, BGS "≈ N damage", Ayak "≈ N magic defence drained"), or from the Defence the others leave
+  ("needs 2 landed hits once 1 Elder maul spec lands (Def 195)", `landedNeed`), else "needs the other drains too". Solo
+  (`soloNeeds`): "needs 3 landed hits · 2 specs, 4 swings · → Def 167". Tooltip: the landed range, "a charged
+  Tonalztics spec swings twice and each swing can miss", what the % means. Planned specs' tooltip "(8 swings)"; the
+  Max-drain buttons keep "×2 (4 hits)" ("(4 landed hits)"). Glossary "Needs / team". Review: the % is P(the Defence reaches the floor) with these and the other weapons' specs (Bork maul 98% includes the Tonalztics; alone 86.3%), no % sentence when the line reads "→ Def X"; "once 1 Elder maul spec lands (Def 195)"; Ayak "≈ N magic defence drained"; D25 notes a pinned blessing with an all-melee / magic kit is counted as a slot (conservative by one).
+- Quiver nits: UNVERIFIED D23 quotes the Dizana's max cape page in full ("when worn" is the max-cape exceptions'; the page
+  doesn't say if the slot works from the inventory), same-kind pair (manual swap, not modelled; `quiverSavedSlots` not
+  limited: not a one-line change), a quiver only pinned / worn by a non-ranged loadout still frees the slot; QUIVER_NAMES
+  comment likewise.
+- Round 4 review: UNVERIFIED D21 / D22 got in-game checks, new D24 (Solo 1 s per slot) and D25 (zero-value items, kept
+  ammo); ROADMAP 29-32 done, decisions, round 5 (+ finer quiver rule, same-kind ammo swap, prayer bonus); UPSTREAM_MERGE
+  round 4: no upstream file changed (+334 / −29), nothing new upstream-worthy; README headline (ToB 7:29.5); DEPLOY
+  unchanged; a grep for the owner's email is empty.
+- Tests: new `Phase32.test.ts` (data; DPS with no ammo = blessing = every pool ammo on every phase of every raid's melee /
+  magic presets; isUnusedAmmo; toy kits; brute force over 8191 FA preset subsets vs an exhaustive count with kept ammo;
+  grid; reduced plan; drain wording for AG / Xarth / Bork / Ayak / Solo; slow: the user's plan 25:46.3). Updated: Phase23
+  / Phase29 (wording), Planner (comfort supplies), Phase27 (switch totals), Phase31 (exhaustive with kept ammo),
+  Phase29 slow (1329.96), CrossRaid (ToB, FA-owned). `yarn test` 1406 (1390 pass / 16 skipped; 13 fewer parametrised preset / pool-item cases without the blessing); `RUN_SLOW_TESTS=1` CrossRaid + Phase27-32 143 / 143; lint, tsc clean.
+- Playwright: new `verifyPhase32` all OK (screenshots phase32-drain-ag-flying / -drain-solo / -user-plan /
+  -fa-defaults / -kept-ammo); verifyPhase21 / 23 / 26 / 27 / 29 / 30 / 31 re-pinned (ToB 7:29.5, FA-owned 24:34.1,
+  drain wording; ToB steps −31.8 / −10.4 / −3.5 s on the new kit): all OK; tracked screenshots restored.
+
 ## Phase 31 — Quiver ammo + heart as magic's potion (2026-10-24)
 
 Slot costs change (full independent review next).

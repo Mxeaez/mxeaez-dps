@@ -17,7 +17,7 @@ import { chromium } from '@playwright/test';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
 const FA_TOTAL = process.env.FA_TOTAL || '21:44.4';
-const FA_OWNED_TOTAL = process.env.FA_OWNED_TOTAL || '24:45.3';
+const FA_OWNED_TOTAL = process.env.FA_OWNED_TOTAL || '24:34.1'; // phase 32 (phase 31: 24:45.3)
 const SOLO_TOTAL = process.env.SOLO_TOTAL || '22:01.9';
 
 let failures = 0;

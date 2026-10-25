@@ -50,14 +50,14 @@ export interface PresetDef {
   note?: string;
 }
 
-// Shared slot fillers (best in slot per style)
+// Shared slot fillers (best in slot per style). Phase 32: no ammo-slot filler (was Rada's blessing 4: prayer only, no DPS
+// effect; as a switch item it cost the Plan tab a slot). A weapon that fires no ammo leaves the ammo slot empty.
 export const MELEE_FILL = {
   cape: 'Infernal cape',
   neck: 'Amulet of rancour',
   hands: 'Ferocious gloves',
   feet: 'Avernic treads (max)',
   ring: 'Ultor ring',
-  ammo: "Rada's blessing 4",
 };
 
 export const INQUISITOR = {
@@ -92,7 +92,6 @@ export const ANCESTRAL = {
   hands: 'Confliction gauntlets',
   feet: 'Avernic treads (max)',
   ring: 'Magus ring',
-  ammo: "Rada's blessing 4",
 };
 
 export const PRESETS: PresetDef[] = [

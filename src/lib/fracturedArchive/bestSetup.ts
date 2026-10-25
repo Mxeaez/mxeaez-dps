@@ -10,10 +10,11 @@ import { MONSTER_PHASES_BY_ID } from '@/lib/constants';
 import { getCombatStylesForCategory } from '@/utils';
 import { DefenceReductions } from '@/lib/fracturedArchive/drains';
 import {
-  DEFAULT_FIGHT_SECONDS, drainModel, PlanLabel, planLabelText, specAttempts,
+  DEFAULT_FIGHT_SECONDS, drainModel, PlanLabel, planLabelText, PlannerWeapon, specAttempts,
 } from '@/lib/fracturedArchive/specs';
 import {
-  ayakSpecsToThreshold, carriersFromCounts, describeAttempts, formatProbability, soloSpecPlan, specsNeeded, teamSpecPlan,
+  ayakSpecsToThreshold, carriersFromCounts, describeAttempts, formatProbability, soloNeeds, soloSpecPlan, specsNeeded,
+  teamSpecPlan,
 } from '@/lib/fracturedArchive/teamSpecs';
 import { DrainLine, drainLineFromAttempts, drainLineNote } from '@/lib/fracturedArchive/drainLine';
 import { minimalPlayer } from '@/lib/fracturedArchive/hittable';
@@ -211,6 +212,8 @@ export const drainStateFor = (m: Monster, id: DrainStateId, assumptions: BestSet
       wanted = { ayak: model.canHit.ayak && model.magicDef > 0 ? Math.max(0, Math.floor(mySpecs.ayak)) : 0 };
       // phase 29: the planner's Ayak specs stop at P(magic def 0) ≥ threshold
       if (mySpecs.ayakAuto) wanted = { ayak: ayakSpecsToThreshold(model, wanted.ayak ?? 0, threshold) };
+      // phase 32: "needs 4 landed hits · 4 specs, 8 swings · 98%"
+      needed = soloNeeds(model, p);
     } else {
       const p = teamSpecPlan(model, {
         partySize: assumptions.partySize,
@@ -226,6 +229,10 @@ export const drainStateFor = (m: Monster, id: DrainStateId, assumptions: BestSet
       // phase 29: "needed ×2 (4 hits) · team brings ×4" (review fix: the fewest of each weapon's first-round specs that
       // give the same ranked drain on this boss, the others kept)
       needed = specsNeeded(model, attemptsMade, threshold);
+      // phase 32: "(2 carriers)": every carrier makes its first-round specs (2 for a 50% spec)
+      Object.entries(needed).forEach(([w, nd]) => {
+        nd!.perCarrier = specAttempts(100, model.energy[w as PlannerWeapon]);
+      });
     }
   }
   const scaled = scaleMonster(withInputs(m, { defenceReductions: reductions }));

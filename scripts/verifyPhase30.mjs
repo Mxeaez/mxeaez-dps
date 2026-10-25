@@ -9,8 +9,9 @@
  *   summary next to it; changing it changes the summary.
  * - "Items I always bring": empty in every raid (phase 31: the FA / ToB heart is magic's kit potion).
  * - Search drain box (Team, Advanced 2 / 2 / 1, before any plan): "needed" reaches the confidence threshold when the
- *   team's specs do — AG Flying "needed ×4 (98%)", Xarth Tonalztics "needed ×2 (97%)", Bork Tonalztics "needed ×3
- *   (97%)" after Elder maul ×3; the carriers table summary reads "Per boss minimum at 95% (for reference): …".
+ *   team's specs do — AG Flying "needs 4 landed hits · 4 specs (2 carriers), 8 swings · 98%", Xarth Tonalztics "… 2
+ *   specs (1 carrier), 4 swings · 97%", Bork Tonalztics "… 3 specs (2 carriers), 6 swings · 97%" after Elder maul ×3
+ *   (phase 32 wording); the carriers table summary reads "Per boss minimum at 95% (for reference): …".
  * - FA plan: 21:44.4; ToB plan: the "Added in this order" steps timed on the returned kit (prints them).
  * Screenshots docs/screenshots/phase30-*.png.
  */
@@ -65,20 +66,20 @@ const main = async () => {
   await page.locator('[data-testid="boss-select"]').selectOption('ag-flying');
   await waitSearch(page);
   const ag = await text(drainItem('tonalztics'));
-  check(/needed ×4 \(98%\) · team brings ×4 \(8 hits, 98%\)/.test(ag), `AG Flying Tonalztics: "${ag}"`);
+  check(/needs 4 landed hits · 4 specs \(2 carriers\), 8 swings · 98%/.test(ag), `AG Flying Tonalztics: "${ag}"`);
   const table = await text(page.locator('[data-testid="team-table"] summary'));
   check(/^Per boss minimum at 95% \(for reference\): 6-man/.test(table), `carriers table summary: "${table}"`);
   await page.locator('[data-testid="boss-select"]').selectOption('xarth');
   await waitSearch(page);
   const xMaul = await text(drainItem('elderMaul'));
   const xTona = await text(drainItem('tonalztics'));
-  check(/not needed · team brings ×4/.test(xMaul) && /needed ×2 \(97%\) · team brings ×4 \(8 hits, >99\.9%\)/.test(xTona), `Xarth: "${xMaul}" | "${xTona}"`);
+  check(/not needed · team: 4 specs \(2 carriers\) · >99\.9%/.test(xMaul) && /needs 2 landed hits · 2 specs \(1 carrier\), 4 swings · 97% · team: 4 specs \(2 carriers\) · >99\.9%/.test(xTona), `Xarth: "${xMaul}" | "${xTona}"`);
   await shot(page, 'search-xarth');
   await page.locator('[data-testid="boss-select"]').selectOption('bork');
   await waitSearch(page);
   const bMaul = await text(drainItem('elderMaul'));
   const bTona = await text(drainItem('tonalztics'));
-  check(/needed ×3 \(98%\) · team brings ×4 \(99\.6%\)/.test(bMaul) && /needed ×3 \(97%\) · team brings ×4 \(8 hits, 99\.6%\)/.test(bTona), `Bork: "${bMaul}" | "${bTona}"`);
+  check(/needs 2 landed specs · 3 specs \(2 carriers\) · 98% · team: 4 specs \(2 carriers\) · 99\.6%/.test(bMaul) && /needs 2 landed hits once 1 Elder maul spec lands \(Def 195\) · 3 specs \(2 carriers\), 6 swings · 97% · team: 4 specs \(2 carriers\) · 99\.6%/.test(bTona), `Bork: "${bMaul}" | "${bTona}"`);
 
   // --- FA Plan inputs
   await page.locator('[data-testid="plan-tab"]').click();
@@ -124,9 +125,9 @@ const main = async () => {
   check((await pinnedNames(page)).length === 0, `tob pinned: ${(await pinnedNames(page)).join(', ')}`);
   await waitPlan(page);
   const tobTotal = await text(page.locator('[data-testid="plan-total"]'));
-  check(tobTotal === '7:30.0', `ToB plan total ${tobTotal}`);
+  check(tobTotal === '7:29.5', `ToB plan total ${tobTotal} (phase 32; phase 30: 7:30.0)`);
   const steps = await text(page.locator('[data-testid="plan-team-steps"]'));
-  check(/^Added in this order: Tonalztics −34\.\d s, Elder maul −10\.\d s, Tonalztics −3\.\d s/.test(steps), `ToB "${steps}" (phase 29: −31.8 / −10.4 / −3.5, timed before the switches)`);
+  check(/^Added in this order: Tonalztics −31\.\d s, Elder maul −10\.\d s, Tonalztics −3\.\d s/.test(steps), `ToB "${steps}" (phase 32 kit, re-timed on it: −31.8 / −10.4 / −3.5; phase 30 kit: −34.3)`);
   await shot(page, 'tob-steps');
 
   await browser.close();

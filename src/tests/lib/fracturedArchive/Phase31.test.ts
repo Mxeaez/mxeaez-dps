@@ -178,17 +178,25 @@ describe('quiver: which items count (wiki: "can only be filled with arrows or bo
  * Independent count (no planner code): for every loadout L the kit can wear, the inventory holds U \ L (U = every item
  * carried); the quiver (if carried) takes one arrow / bolt type out of it when the kit carries ≥ 2 such types (the
  * phase 31 rule). The kit needs the worst of those. Names checked by hand here, not with isQuiver / isQuiverAmmo.
+ * Phase 32 (`keptAmmo`, the planner's count since): a loadout with no ammo-slot item keeps one of the kit's ammo items
+ * in its ammo slot (one the quiver can't hold first), so it holds one item fewer in the inventory.
  */
-const exhaustive = (loadouts: number[][], carried: number[]): number => {
+const exhaustive = (loadouts: number[][], carried: number[], keptAmmo = false): number => {
   const U = new Set([...carried, ...loadouts.flat()]);
   const nameOf = (id: number) => equipmentById(id)?.name ?? '';
   const quiver = Array.from(U).some((id) => ["Dizana's quiver", "Blessed Dizana's quiver", "Dizana's max cape"].includes(nameOf(id)));
   const ammo = (id: number) => equipmentById(id)?.slot === 'ammo' && /arrow|bolts/i.test(nameOf(id)) && nameOf(id) !== 'Bolt rack';
   const types = Array.from(U).filter(ammo).length;
+  const isAmmoSlot = (id: number) => equipmentById(id)?.slot === 'ammo';
+  const kitAmmo = loadouts.flat().filter(isAmmoSlot);
   let worst = 0;
   loadouts.forEach((L) => {
     const worn = new Set(L);
-    const inv = Array.from(U).filter((id) => !worn.has(id));
+    let inv = Array.from(U).filter((id) => !worn.has(id));
+    if (keptAmmo && !L.some(isAmmoSlot)) {
+      const kept = inv.find((id) => kitAmmo.includes(id) && !ammo(id)) ?? inv.find((id) => kitAmmo.includes(id));
+      if (kept !== undefined) inv = inv.filter((id) => id !== kept);
+    }
     const held = quiver && types >= 2 && inv.some(ammo) ? 1 : 0;
     worst = Math.max(worst, inv.length - held);
   });
@@ -419,13 +427,13 @@ const SOLO_HEADLINE: [string, number] = ['22:01.9', 1321.9];
     r.specs.solo!.perWeapon.filter((d) => !d.chosen).forEach((d) => expect(d.deltaSeconds).toBeLessThan(d.deltaSlots * SHARE_MAX_SLOT_SECONDS));
     // the slot count = the exhaustive count of the returned kit (heart and spec weapons carried)
     const carried = [...r.specItems.map((x) => x.id), ...(r.potions.some((p) => p.type === 'heart') ? [SATURATED] : [])];
-    expect(r.slots!.used).toBe(r.slots!.supplies + r.slots!.nonItem + exhaustive(kitItems(r), carried));
+    expect(r.slots!.used).toBe(r.slots!.supplies + r.slots!.nonItem + exhaustive(kitItems(r), carried, true));
   }, 900000);
 
   test('Team (default): the slot count = the exhaustive count; the quiver holds the second ammo type when there is one', () => {
     const r = full({});
     const carried = [...r.specItems.map((x) => x.id), ...(r.potions.some((p) => p.type === 'heart') ? [SATURATED] : [])];
-    expect(r.slots!.used).toBe(r.slots!.supplies + r.slots!.nonItem + exhaustive(kitItems(r), carried));
+    expect(r.slots!.used).toBe(r.slots!.supplies + r.slots!.nonItem + exhaustive(kitItems(r), carried, true));
     expect(r.slots!.quiverAmmo).toBe(r.quiverAmmo ? 1 : 0);
     if (r.quiverAmmo) expect(isQuiverAmmo(equipmentById(r.quiverAmmo.id))).toBe(true);
     expect(r.inventory.some((c) => c.item?.id === r.quiverAmmo?.id)).toBe(false);

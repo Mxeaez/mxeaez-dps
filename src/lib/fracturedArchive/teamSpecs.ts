@@ -515,7 +515,10 @@ export const neededSpecs = (
   return { defence, ayak };
 };
 
-/** Phase 29 review 2: one weapon of a Team drain line: "needed ×n (86%) · team brings ×M (8 hits, 98%)". */
+/**
+ * Phase 29 review 2: one weapon of a Team drain line. Phase 32 wording (drainLine.ts `neededText`): "needs 4 landed
+ * hits · 4 specs (2 carriers), 8 swings · 98% · team: 6 specs (3 carriers) · 99.8%".
+ */
 export interface TeamNeed {
   /** Fewest specs of this weapon (earlier weapons at their own needed counts, later ones as brought). */
   n: number;
@@ -523,7 +526,99 @@ export interface TeamNeed {
   result: string;
   /** The same for everything the team brings. */
   brings: string;
+  /**
+   * Phase 32: the fewest landed hits of this weapon alone that take the start Defence `from` to the ranked Defence `to`
+   * (`landedToReach`: Elder maul / DWH landed specs, Tonalztics landed hits, BGS damage; Eye of Ayak: magic defence drained
+   * from the Magic defence bonus `from` to `to`); null = this weapon alone never gets there.
+   */
+  landed?: number | null;
+  from?: number;
+  to?: number;
+  /**
+   * Phase 32: set when this weapon alone would need more landed drains than its needed specs can land (Bork:
+   * Tonalztics backs up the maul): `landed` then counts from `from` = the Defence the other weapons' needed specs
+   * leave when they land as much as they can without reaching `to` (`landedNeed`); the text says what landed, e.g.
+   * "1 Elder maul spec lands".
+   */
+  afterOthers?: string;
+  /** Phase 32 (Team): first-round specs per carrier of this weapon (2 for a 50% spec), for "(2 carriers)". */
+  perCarrier?: number;
 }
+
+/**
+ * Phase 32: the fewest landed drains of `weapon` alone that take the Defence from `model.def` to `target` or lower:
+ * Elder maul / DWH landed specs (−35% / −30% of the current Defence each, rounded down), Tonalztics landed hits
+ * (−trunc(Magic / 8) each), BGS damage (Defence − target). 0 when the Defence is already there; null when it never
+ * gets there (a drain of 0 per hit).
+ */
+export const landedToReach = (
+  model: Pick<DrainModel, 'def' | 'floor' | 'magicLevel'>,
+  weapon: DefenceDrainWeapon,
+  target: number,
+): number | null => {
+  const to = Math.max(target, model.floor);
+  if (model.def <= to) return 0;
+  if (weapon === 'bgs') return model.def - to;
+  let d = model.def;
+  for (let k = 1; k <= 500; k++) {
+    const next = applyOutcome(model, weapon, d, { p: 1, hits: 1, damage: 0 });
+    if (next >= d) return null;
+    d = next;
+    if (d <= to) return k;
+  }
+  return null;
+};
+
+/** Phase 32: the most landed drains `n` specs of a weapon can give (a charged Tonalztics spec swings twice). */
+const maxLanded = (w: DefenceDrainWeapon, n: number): number => (w === 'tonalztics' ? 2 * n : n);
+
+const LANDED_UNIT: Record<DefenceDrainWeapon, [string, string]> = {
+  elderMaul: ['Elder maul', 'spec'], dwh: ['DWH', 'spec'], tonalztics: ['Tonalztics', 'hit'], bgs: ['BGS', 'spec'],
+};
+
+/**
+ * Phase 32: the "needs N landed hits" of weapon `w` on a drain line, given every weapon's needed specs (`needs`) and
+ * the ranked Defence `target`: its landed drains alone from the start Defence (`landedToReach`) when its needed specs
+ * can land that many; else counted from the Defence the other weapons' needed specs leave when they land as much as
+ * they can while staying above the target (upstream order, one drain at a time; BGS not counted), `afterOthers`; null
+ * when neither fits (the drain needs the others' hits as well as all of this weapon's).
+ */
+export const landedNeed = (
+  model: Pick<DrainModel, 'def' | 'floor' | 'magicLevel'>,
+  needs: Partial<Record<DefenceDrainWeapon, number>>,
+  w: DefenceDrainWeapon,
+  target: number,
+): Pick<TeamNeed, 'landed' | 'from' | 'to' | 'afterOthers'> => {
+  const alone = landedToReach(model, w, target);
+  const most = maxLanded(w, needs[w] ?? 0);
+  if (w === 'bgs' || (alone !== null && alone <= most)) return { landed: alone, from: model.def, to: target };
+  const to = Math.max(target, model.floor);
+  let d = model.def;
+  const landedOthers: string[] = [];
+  let landedTotal = 0;
+  DEFENCE_DRAIN_ORDER.forEach((x) => {
+    if (x === w || x === 'bgs' || !needs[x]) return;
+    let n = 0;
+    for (let i = 0; i < maxLanded(x, needs[x]!); i++) {
+      const next = applyOutcome(model, x, d, { p: 1, hits: 1, damage: 0 });
+      if (next <= to) break;
+      d = next;
+      n += 1;
+    }
+    if (n) {
+      const [label, unit] = LANDED_UNIT[x];
+      landedOthers.push(`${n} ${label} ${unit}${n === 1 ? '' : 's'}`);
+      landedTotal += n;
+    }
+  });
+  const k = d < model.def ? landedToReach({ ...model, def: d }, w, target) : null;
+  if (k !== null && k > 0 && k <= most) {
+    return {
+      landed: k, from: d, to: target, afterOthers: `${landedOthers.join(' and ')} ${landedTotal === 1 ? 'lands' : 'land'}`,
+    };
+  }
+  return { landed: null, from: model.def, to: target };
+};
 
 /**
  * Phase 29 review: per weapon of a first round, the fewest of its specs that give the same ranked Defence (Eye of Ayak:
@@ -555,10 +650,17 @@ export const specsNeeded = (
       // count that ranks at the same Defence: AG Flying ×3 (86%) → ×4 (98%))
       if (o.rankedDef === full.rankedDef && (full.pFloor < threshold || o.pFloor >= threshold)) {
         cur[w] = n;
-        out[w] = { n, result: defText(o), brings: defText(full) };
+        out[w] = {
+          n, result: defText(o), brings: defText(full),
+        };
         return;
       }
     }
+  });
+  // phase 32: the landed drains each needed weapon stands for ("needs 4 landed hits"), given the others' needed specs
+  const needs = Object.fromEntries(DEFENCE_DRAIN_ORDER.map((w) => [w, out[w]?.n ?? 0])) as Record<DefenceDrainWeapon, number>;
+  DEFENCE_DRAIN_ORDER.forEach((w) => {
+    if (out[w]?.n) Object.assign(out[w]!, landedNeed(model, needs, w, full.rankedDef));
   });
   if (counts.ayak) {
     const fullAyak = ayakOutcome(model, counts.ayak, threshold);
@@ -567,10 +669,40 @@ export const specsNeeded = (
     for (let n = 0; n <= counts.ayak; n++) {
       const o = ayakOutcome(model, n, threshold);
       if (o.rankedDrain === fullAyak.rankedDrain && (fullAyak.pZero < threshold || o.pZero >= threshold)) {
-        out.ayak = { n, result: ayakText(o), brings: ayakText(fullAyak) };
+        out.ayak = {
+          n, result: ayakText(o), brings: ayakText(fullAyak), landed: fullAyak.rankedDrain, from: model.magicDef, to: fullAyak.magicDefAfter,
+        };
         break;
       }
     }
+  }
+  return out;
+};
+
+/**
+ * Phase 32: the Solo drain line's "needs …" per weapon: every spec the plan makes (`n` = its attempts of that weapon),
+ * the plan's P(floor) (Eye of Ayak: P(magic def 0)) or "→ Def X" when it doesn't rank at the floor, and the landed
+ * drains of that weapon alone that reach the ranked state (`landedToReach`). Weapons with no attempt are left out.
+ */
+export const soloNeeds = (
+  model: Pick<DrainModel, 'def' | 'floor' | 'magicLevel' | 'magicDef'>,
+  plan: Pick<SoloSpecPlan, 'attempts' | 'ayakAttempts' | 'defence' | 'ayak'>,
+): Partial<Record<PlannerWeapon, TeamNeed>> => {
+  const out: Partial<Record<PlannerWeapon, TeamNeed>> = {};
+  const counts = countAttempts(plan.attempts);
+  const atFloor = plan.defence.rankedDef <= model.floor;
+  const defText = atFloor ? pct(plan.defence.pFloor) : `→ Def ${plan.defence.rankedDef}`;
+  DEFENCE_DRAIN_ORDER.filter((w) => counts[w]).forEach((w) => {
+    out[w] = {
+      n: counts[w]!, result: defText, brings: defText, ...landedNeed(model, counts, w, plan.defence.rankedDef),
+    };
+  });
+  if (plan.ayakAttempts > 0) {
+    const a = plan.ayak;
+    const text = a.rankedDrain >= Math.max(0, model.magicDef) ? pct(a.pZero) : `→ magic def ${a.magicDefAfter}`;
+    out.ayak = {
+      n: plan.ayakAttempts, result: text, brings: text, landed: a.rankedDrain, from: model.magicDef, to: a.magicDefAfter,
+    };
   }
   return out;
 };
