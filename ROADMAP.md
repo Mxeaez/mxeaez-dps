@@ -256,6 +256,19 @@ they get the full independent review; 33 and 34 get a UI/consistency check.
 
 ### Future work (round 6)
 
+From the user's own ToA / CoX / ToB spec routine (2026-10-25; the model's per-boss numbers agree with the routine where
+the model covers it, and miss the rest):
+
+- **Spec energy sources**: Death Charge (15% energy per kill — the ToA adds, Kephri's medics / soldiers, Akkha's
+  shadows are energy sources, so "adds get nothing" is wrong for damage specs), Liquid adrenaline (ToA: spec costs
+  halved for its duration — makes the Zaryte crossbow 37.5% and the clear ToA pick), the ToA Helpful Spirit / Nectar.
+- **Damage specs on adds**: allowed (the no-specs rule stays for drains only): Burning claws on the Ice demon (the only
+  positive spec there) and Vasa's crystals; the per-boss Specs box already shows them.
+- **Crystal halberd** (and Dragon halberd) as a damage-spec candidate: 30% energy, two hits on large targets; the user
+  brings it for Bloat; upstream models the spec.
+- **Per-boss spec advice in the briefing**: "Ba-Ba: ZCB · Kephri: Voidwaker · Akkha / Zebak / Wardens: ZCB" when the kit
+  carries two damage spec weapons (today the plan picks one weapon for the raid).
+
 Found in or carried past the phase 28 review; larger than a review fix, so not done (the damage-specs item moved to phase 35):
 
 - **Teammates' styles in the team time model** (phase 29 review 2): times are hp ÷ (party × your DPS), so a Magic
