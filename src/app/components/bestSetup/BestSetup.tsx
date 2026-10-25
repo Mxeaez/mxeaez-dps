@@ -20,8 +20,10 @@ import {
   RaidConfig, RaidId, RAIDS, raidConfig, teamDpsMultiplier, teamTimeLabel, TimeSettings, visibleTargets, withScalingInput,
 } from '@/lib/raids';
 import {
-  ayakExpectedDrain, drainModel, SPEC_WEAPONS, specProfile,
+  ayakExpectedDrain, drainModel, PlannerWeapon, SPEC_WEAPONS, specProfile,
 } from '@/lib/fracturedArchive/specs';
+import { DEFAULT_SPEC_MODE, SpecMode } from '@/lib/fracturedArchive/planner';
+import { subsetOfMySpecs, withPlanSpecs } from '@/lib/fracturedArchive/specChoice';
 import { resolveItem } from '@/lib/fracturedArchive/loadout';
 import SpecPlanPanel from '@/app/components/bestSetup/SpecPlanPanel';
 import SearchView from '@/app/components/bestSetup/SearchView';
@@ -46,6 +48,9 @@ import {
 // Phase 26: "Items I don't own" (NotOwnedBox.tsx, global for every raid tab, kept in localStorage).
 // Phase 29: "My specs" → "Specs I bring" (Search / Summary Solo drains; the Plan tab's manual override); Lightbearer is
 // an "I wear a Lightbearer" ring toggle, which the Plan tab's ring policy sets while the Plan tab is open.
+// Phase 33: "Specs I bring" defaults to none; "Planner decides" (the Plan tab's "Spec weapons", also next to the chips)
+// fills the chips read-only from the last plan's "Bring" (Search / Summary Solo drains use them); "Set manually" = the
+// editable chips.
 // Docs: docs/BEST_SETUP.md.
 
 const POTION_OPTIONS = (Object.keys(PotionMap) as unknown as string[])
@@ -73,7 +78,7 @@ const LIGHTBEARER = 'Lightbearer';
 
 /** Phase 23: the "?" glossary (plain-language meaning of the terms on this page). */
 export const GLOSSARY: [string, string][] = [
-  ['Drains', 'None: no Defence / Magic defence drains. Solo: only your own specs ("Specs I bring"; in the Plan tab the planner picks them), within the spec energy you have in that fight. Team: the team\'s spec carriers (Advanced) each spec twice at the start.'],
+  ['Drains', 'None: no Defence / Magic defence drains. Solo: only your own specs ("Specs I bring": the last plan\'s "Bring" while the planner decides, else the ones you tick), within the spec energy you have in that fight. Team: the team\'s spec carriers (Advanced) each spec twice at the start.'],
   ['Needs / team', 'Drain line: "needs 4 landed hits · 4 specs (2 carriers), 8 swings · 98%" = the drains that must land (Tonalztics: hits; Elder maul / DWH: specs; BGS: damage; Eye of Ayak: magic defence drained), the specs that give them (a charged Tonalztics spec swings twice; every swing can miss) and the chance the Defence reaches the floor in the first round with these specs and the other weapons\' specs ("→ Def X" instead when the plan doesn\'t rank at the floor); "team: 6 specs (3 carriers) · 99.8%" = what the carriers do in the first round (2 specs each) when that is more. Solo: "needs 4 landed hits · 4 specs, 8 swings · 98%" (your specs).'],
   ['Floor', 'The lowest Defence a boss can be drained to (e.g. Archive Guardian 156). The Defence floor is used when its chance is at least the % set in Advanced (95%).'],
   ['First round', 'The specs everyone does at the start of the fight with full (100%) energy: 2 specs each for 50% weapons.'],
@@ -115,17 +120,21 @@ const Glossary: React.FC = () => {
 /** An icon toggle button (pressed = on). */
 const IconToggle: React.FC<{
   id: string, label: string, src: string | null, on: boolean, onChange: (on: boolean) => void, title: string,
+  /** Phase 33: read-only (filled by the planner); the reason is the tooltip. */
+  locked?: string,
 }> = ({
-  id, label, src, on, onChange, title,
+  id, label, src, on, onChange, title, locked,
 }) => (
   <button
     type="button"
     id={id}
     aria-pressed={on}
     aria-label={label}
-    title={`${title} (${on ? 'on' : 'off'}; click to toggle)`}
+    title={locked ? `${title}: ${on ? 'yes' : 'no'} (${locked})` : `${title} (${on ? 'on' : 'off'}; click to toggle)`}
     data-testid={id}
-    className={`flex items-center gap-1 px-1.5 py-0.5 rounded border ${on
+    disabled={!!locked}
+    data-locked={locked ? 'true' : undefined}
+    className={`flex items-center gap-1 px-1.5 py-0.5 rounded border ${locked ? 'border-dashed cursor-default ' : ''}${on
       ? 'border-orange-500 bg-orange-100 dark:bg-orange-900/40'
       : 'border-body-400 dark:border-dark-200 opacity-50 grayscale'}`}
     onClick={() => onChange(!on)}
@@ -213,9 +222,19 @@ const AssumptionsBox: React.FC<{
   lightbearerLock?: LightbearerLock | null,
   /** Phase 29 review 2: the last plan's carriers (shown in the disabled counts while the planner decides). */
   planCarriers?: TeamSpecAssumptions['carriers'] | null,
+  /** Phase 33: who picks the spec weapons (shared with the Plan tab's "Spec weapons"), and the last plan's "Bring". */
+  specMode?: SpecMode,
+  onSpecMode?: (m: SpecMode) => void,
+  planBring?: PlannerWeapon[] | null,
 }> = ({
   raid, value, onChange, ayakHint, timeSettings, onTimeSettings, notOwned, onNotOwned, lightbearerLock, planCarriers,
+  specMode = 'manual', onSpecMode, planBring,
 }) => {
+  // phase 33: "Planner decides": the chips mirror the last plan's "Bring" (read-only); none before a plan has run
+  const plannerSpecs = specMode === 'auto';
+  const shownSpecs = withPlanSpecs(value, planBring, !plannerSpecs).mySpecs;
+  let specsLock: string | undefined;
+  if (plannerSpecs) specsLock = planBring ? 'from the last plan' : 'run a plan to fill these';
   const set = (patch: Partial<BestSetupAssumptions>) => onChange({ ...value, ...patch });
   const carrierTotal = Object.values(value.team.carriers).reduce((t, n) => t + n, 0);
   const mult = teamDpsMultiplier(value);
@@ -275,36 +294,68 @@ const AssumptionsBox: React.FC<{
           </>
         )}
       </div>
-      <div className="flex flex-wrap gap-x-2 gap-y-2 items-center" data-testid="my-specs">
-        <span className="font-semibold" title="The drain weapons you bring yourself: the Solo drain state (Search, Summary) uses only these, within your own spec energy. The Plan tab picks the spec weapons itself unless its &quot;Spec weapons&quot; is set to &quot;Specs I bring&quot;">Specs I bring:</span>
+      <div className="flex flex-wrap gap-x-2 gap-y-2 items-center" data-testid="my-specs" data-mode={specMode}>
+        <span className="font-semibold" title="The drain weapons you bring yourself: the Solo drain state (Search, Summary) uses only these, within your own spec energy. Planner decides: filled from the last plan's &quot;Bring&quot; (Solo: the weapons it picked; Team: your share). Set manually: the weapons you tick here (the Plan tab's &quot;Spec weapons: Specs I bring&quot;)">Specs I bring:</span>
+        {onSpecMode && (
+          <select
+            id="bs-spec-mode"
+            className="form-control text-xs py-0.5"
+            value={specMode}
+            data-testid="my-specs-mode"
+            title="Planner decides: the Plan tab picks the spec weapons and these chips show its choice (Search / Summary Solo drains use them). Set manually: tick the weapons you bring (the Plan tab uses them too)"
+            onChange={(e) => onSpecMode(e.target.value as SpecMode)}
+          >
+            <option value="auto">Planner decides (Plan tab)</option>
+            <option value="manual">Set manually</option>
+          </select>
+        )}
         {MY_SPEC_WEAPONS.map((k) => (
           <IconToggle
             key={k}
             id={`bs-my-${k}`}
             label={SPEC_WEAPONS[k].label}
             src={itemImage(SPEC_WEAPONS[k].item)}
-            on={value.mySpecs[k]}
+            on={shownSpecs[k]}
             title={`I bring ${SPEC_WEAPONS[k].label}`}
+            locked={specsLock}
             onChange={(on) => set({ mySpecs: { ...value.mySpecs, [k]: on } })}
           />
         ))}
-        <label
-          htmlFor="bs-ayak"
-          className={`flex items-center gap-1 px-1.5 py-0.5 rounded border ${value.mySpecs.ayak > 0 ? 'border-orange-500 bg-orange-100 dark:bg-orange-900/40' : 'border-body-400 dark:border-dark-200'}`}
-          title="Eye of Ayak specs I do (0 = I don't bring it): each lowers the boss's Magic defence by the damage dealt"
-        >
-          <ItemIcon name="Eye of Ayak" src={itemImage(SPEC_WEAPONS.ayak.item)} size={20} />
-          Ayak ×
-          <input
-            id="bs-ayak"
-            type="number"
-            className="form-control text-xs py-0.5 w-12"
-            min={0}
-            max={10}
-            value={value.mySpecs.ayak}
-            onChange={(e) => set({ mySpecs: { ...value.mySpecs, ayak: Math.min(10, Math.max(0, Math.floor(Number(e.target.value) || 0))) } })}
-          />
-        </label>
+        {plannerSpecs ? (
+          <span
+            className={`flex items-center gap-1 px-1.5 py-0.5 rounded border border-dashed ${shownSpecs.ayak > 0 ? 'border-orange-500 bg-orange-100 dark:bg-orange-900/40' : 'border-body-400 dark:border-dark-200 opacity-50 grayscale'}`}
+            data-testid="bs-ayak-locked"
+            data-locked="true"
+            data-on={shownSpecs.ayak > 0 ? 'true' : 'false'}
+            title={`Eye of Ayak: ${shownSpecs.ayak > 0 ? 'specs until the Magic defence reaches 0 (as the plan does)' : 'not brought'} (${specsLock})`}
+          >
+            <ItemIcon name="Eye of Ayak" src={itemImage(SPEC_WEAPONS.ayak.item)} size={20} />
+            {shownSpecs.ayak > 0 ? 'Ayak: until magic def 0' : 'Ayak × 0'}
+          </span>
+        ) : (
+          <label
+            htmlFor="bs-ayak"
+            className={`flex items-center gap-1 px-1.5 py-0.5 rounded border ${value.mySpecs.ayak > 0 ? 'border-orange-500 bg-orange-100 dark:bg-orange-900/40' : 'border-body-400 dark:border-dark-200'}`}
+            title="Eye of Ayak specs I do (0 = I don't bring it): each lowers the boss's Magic defence by the damage dealt"
+          >
+            <ItemIcon name="Eye of Ayak" src={itemImage(SPEC_WEAPONS.ayak.item)} size={20} />
+            Ayak ×
+            <input
+              id="bs-ayak"
+              type="number"
+              className="form-control text-xs py-0.5 w-12"
+              min={0}
+              max={10}
+              value={value.mySpecs.ayak}
+              onChange={(e) => set({ mySpecs: { ...value.mySpecs, ayak: Math.min(10, Math.max(0, Math.floor(Number(e.target.value) || 0))) } })}
+            />
+          </label>
+        )}
+        {plannerSpecs && (
+          <span className="text-gray-500 dark:text-gray-400" data-testid="my-specs-note">
+            {planBring ? `(from the last plan${planBring.length ? '' : ': it brings none'}; Search / Summary use them)` : '(run a plan to fill these)'}
+          </span>
+        )}
         {ayakHint && <span className="text-gray-500 dark:text-gray-400" data-testid="ayak-hint">{ayakHint}</span>}
       </div>
       <div className="flex flex-wrap gap-x-2 gap-y-2 items-center" data-testid="ring-toggle">
@@ -473,7 +524,17 @@ const RaidBestSetup: React.FC<{
   const [planLightbearer, setPlanLightbearer] = useState<LightbearerLock | null>(null);
   // phase 29 review 2: the last plan's carriers ("Planner decides"); Search / Summary use them
   const [planCarriers, setPlanCarriers] = useState<TeamSpecAssumptions['carriers'] | null>(null);
-  const searchA = useMemo(() => withPlanCarriers(assumptions, planCarriers), [assumptions, planCarriers]);
+  // phase 33: who picks the spec weapons (the Plan tab's "Spec weapons" and the chips' mode), and the last plan's "Bring"
+  const [specMode, setSpecMode] = useState<SpecMode>(DEFAULT_SPEC_MODE);
+  const [planBring, setPlanBring] = useState<PlannerWeapon[] | null>(null);
+  const searchA = useMemo(
+    () => withPlanSpecs(withPlanCarriers(assumptions, planCarriers), planBring, specMode === 'manual'),
+    [assumptions, planCarriers, planBring, specMode],
+  );
+  // phase 33: Solo drains with no spec weapons say so (the Search tab's drain box)
+  const noSpecsNote = drain === 'solo' && subsetOfMySpecs(searchA.mySpecs).length === 0
+    ? `no spec weapons: ${specMode === 'auto' && planBring ? 'the last plan brings none; ' : ''}run a plan or pick Specs I bring`
+    : undefined;
 
   // phase 21: the boss list follows the raid inputs (ToB: Prinkipas only in Hard Mode); a hidden pick falls back to the first
   const bossList = useMemo(() => visibleTargets(raid, assumptions), [raid, assumptions]);
@@ -481,7 +542,8 @@ const RaidBestSetup: React.FC<{
   const target = useMemo(() => findTarget(targetKey), [targetKey]);
   const phases = useMemo(() => targetPhases(target), [target]);
   const ayakHint = useMemo(() => {
-    if (mode !== 'search') return undefined;
+    // phase 33: no hint without Eye of Ayak specs (the default brings none)
+    if (mode !== 'search' || searchA.mySpecs.ayak <= 0) return undefined;
     const { monster } = buildTargetMonster(target, phase ?? phases[0], 'none', searchA);
     const model = drainModel(monster, searchA);
     const profile = specProfile(monster, 'ayak', undefined, searchA);
@@ -491,7 +553,8 @@ const RaidBestSetup: React.FC<{
     const solo = buildTargetMonster(target, phase ?? phases[0], 'solo', searchA).drain;
     const fitted = solo.line?.items.find((i) => i.weapon === 'ayak')?.count ?? 0;
     const drained = ayakExpectedDrain(profile, fitted, model.magicDef);
-    const fitText = fitted < asked ? `${fitted} of your ${asked} specs fit in your spec energy; ` : '';
+    // phase 33: the planner's Ayak ("until magic def 0") asks for no fixed count
+    const fitText = fitted < asked && !searchA.mySpecs.ayakAuto ? `${fitted} of your ${asked} specs fit in your spec energy; ` : '';
     return `Solo: ≈ ${drained.toFixed(0)} magic def drained on ${target.label} (${fitText}of ${model.magicDef}; each spec lands ${(profile.hitChance * 100).toFixed(0)}% of the time and drains ≈ ${profile.expectedDamageOnHit.toFixed(1)} when it does)`;
   }, [mode, target, phase, phases, searchA]);
   // the boss's hp and (undrained) Defence as the calculator scales them (party size, ToA raid / path levels, CoX CM)
@@ -545,6 +608,9 @@ const RaidBestSetup: React.FC<{
             onNotOwned={setNotOwned}
             lightbearerLock={mode === 'plan' ? planLightbearer : null}
             planCarriers={planCarriers}
+            specMode={specMode}
+            onSpecMode={setSpecMode}
+            planBring={planBring}
           />
 
           {mode === 'search' && (
@@ -599,6 +665,7 @@ const RaidBestSetup: React.FC<{
               phase={phase ?? phases[0]}
               drain={drain}
               assumptions={searchA}
+              noSpecsNote={noSpecsNote}
             />
           )}
 
@@ -623,7 +690,7 @@ const RaidBestSetup: React.FC<{
             />
           )}
           {mode === 'plan' && drainButtons}
-          {mode === 'plan' && <PlanView assumptions={assumptions} drain={drain} raid={raid} timeSettings={timeSettings} notOwned={notOwned} onLightbearer={setPlanLightbearer} onCarriers={setPlanCarriers} />}
+          {mode === 'plan' && <PlanView assumptions={assumptions} drain={drain} raid={raid} timeSettings={timeSettings} notOwned={notOwned} onLightbearer={setPlanLightbearer} onCarriers={setPlanCarriers} specMode={specMode} onSpecMode={setSpecMode} onSpecs={setPlanBring} />}
 
           <div className="text-[11px] text-gray-500 dark:text-gray-400">
             {`Same calculation as the main calculator. ${raid.hpNote} ${teamTimeLabel(teamDpsMultiplier(assumptions))}. Prayers: ${Object.values(GROUP_PRAYER).join(' / ')}. See docs/BEST_SETUP.md for caveats.`}

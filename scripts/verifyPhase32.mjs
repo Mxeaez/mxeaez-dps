@@ -104,6 +104,8 @@ const main = async () => {
 
   // --- Solo with Tonalztics (Specs I bring)
   await page.locator('[data-testid="drain-solo"]').click();
+  // phase 33: "Specs I bring" defaults to "Planner decides" (read-only chips): pick by hand
+  await page.locator('[data-testid="my-specs-mode"]').selectOption('manual');
   const tonaToggle = page.locator('[data-testid="bs-my-tonalztics"]');
   if ((await tonaToggle.getAttribute('aria-pressed')) !== 'true') await tonaToggle.click();
   await page.locator('[data-testid="boss-select"]').selectOption('ag-flying');
@@ -112,6 +114,7 @@ const main = async () => {
   check(/^needs \d+ landed hits? · \d+ specs?, \d+ swings · /.test(solo) && !/carrier|team:/.test(solo), `AG Flying Tonalztics (Solo): "${solo}"`);
   await shot(page, 'drain-solo');
   await tonaToggle.click();
+  await page.locator('[data-testid="my-specs-mode"]').selectOption('auto');
   await page.locator('[data-testid="drain-team"]').click();
 
   // --- the user's plan

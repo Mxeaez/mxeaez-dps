@@ -23,8 +23,10 @@ const SpecPlanPanel: React.FC<{
   phase: string | undefined,
   drain: DrainStateId,
   assumptions: BestSetupAssumptions,
+  /** Phase 33: shown instead of an empty line when the Solo drains have no spec weapons. */
+  noSpecsNote?: string,
 }> = ({
-  targetKey, phase, drain, assumptions,
+  targetKey, phase, drain, assumptions, noSpecsNote,
 }) => {
   const target = findTarget(targetKey);
   const { state, rec, floor } = useMemo(() => {
@@ -50,9 +52,10 @@ const SpecPlanPanel: React.FC<{
     <div className="text-xs flex flex-col gap-1 border border-body-400 dark:border-dark-200 rounded p-2" data-testid="spec-plan">
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-semibold" title={DRAIN_STATES.find((d) => d.id === drain)?.description}>{`${DRAIN_STATES.find((d) => d.id === drain)?.label} drains:`}</span>
-        {state.line
+        {noSpecsNote && <span className="text-orange-700 dark:text-orange-300" data-testid="drain-no-specs">{noSpecsNote}</span>}
+        {!noSpecsNote && (state.line
           ? <DrainLineView line={state.line} showBudget />
-          : <span>{state.plan}</span>}
+          : <span>{state.plan}</span>)}
         {/* the full text stays available (tooltip of the line, and here for tests / copy) */}
         <span className="sr-only" data-testid="drain-plan">{state.plan}</span>
       </div>

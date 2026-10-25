@@ -111,7 +111,8 @@ const main = async () => {
   check(specCells === (carry ? 1 : 0), `spec weapons in the inventory: ${specCells} (carry ${carry})`);
   check((await specs.getAttribute('data-bring')) === (carry ? shareWeapon : ''), `data-bring "${await specs.getAttribute('data-bring')}"`);
 
-  // AG Flying drain line in the encounter table
+  // AG Flying drain line in the encounter table (phase 33: the phase rows are under "per-phase details")
+  if (await page.locator('[data-testid="plan-phase-toggle"]').getAttribute('aria-expanded') !== 'true') await page.locator('[data-testid="plan-phase-toggle"]').click();
   const agDrains = await text(page.locator('[data-testid="plan-phase-row"][data-target="ag-flying"] [data-testid="plan-phase-drains"]').first());
   check(/needs 4 landed hits · 4 specs \(2 carriers\), 8 swings · 98%/.test(agDrains), `AG Flying (Team) drain line: "${agDrains}"`);
   const carriers = Object.fromEntries(rows.map((r) => [r.weapon, r.carriers]));

@@ -196,6 +196,8 @@ export const tobEncounterPlan = (id: EncounterId, a: RaidTimeAssumptions): Plann
         label: `${i + 1}/${n} of his hp${i > 0 ? ` (after maze ${i}: Defence restored)` : ''}`,
         targetKey: 'tob-sotetseg',
         damage: sote / n,
+        // phase 33: a new drain event (the team specs again after each maze)
+        ...(i > 0 ? { drainReset: `maze ${i}` } : {}),
       }));
     }
     case 'tob-xarpus': {
@@ -269,7 +271,7 @@ export const tobEncounterPass = (
         key: 'bloat-first', label: `First down (${down} s, drains apply)`, targetKey: 'tob-bloat', damage: firstDamage,
       },
       {
-        key: 'bloat-rest', label: 'Later downs (Defence restored by the stomp)', targetKey: 'tob-bloat-restored', damage: hp - firstDamage,
+        key: 'bloat-rest', label: 'Later downs (Defence restored by the stomp)', targetKey: 'tob-bloat-restored', damage: hp - firstDamage, drainReset: 'the stomp',
       },
     ].filter((p) => p.damage > 0).map((p) => withNote(phaseTime(p, kit, drain, fightSeconds, mult)));
   }

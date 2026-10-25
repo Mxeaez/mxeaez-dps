@@ -8,7 +8,7 @@
  *   glossary opens.
  * - Tabs are Search · Plan · Summary (no Routes / Encounters tab).
  * - Search (Xarth): the drain line shows icons with ×N and a hit % under each (Team: maul ×4, Tonalztics ×4,
- *   Ayak ×2), Solo shows "fight ≈ N s → M specs"; None: top DPS 12.839 (unchanged); the can't-hit list is collapsed.
+ *   Ayak ×2), Solo (Elder maul ticked by hand, phase 33) shows "fight ≈ N s → M specs"; None: top DPS 12.839 (unchanged); the can't-hit list is collapsed.
  * - Plan: FA shows the 8-route table, ToA a single-route table, per-phase drain lines.
  * - Calculator: the Max-drain buttons show icons ×N with hit %.
  * Screenshots docs/screenshots/phase23-*.png.
@@ -115,10 +115,15 @@ const main = async () => {
   check(await page.locator('[data-testid="search-ranked-at"]').count() === 1, 'Search header: "ranked at Def … · Magic def …"');
   await shot(page, 'search-xarth-team');
 
+  // phase 33: "Specs I bring" defaults to none: pick the Elder maul by hand (the pre-phase-33 default) for the budget
+  await page.locator('[data-testid="my-specs-mode"]').selectOption('manual');
+  await page.locator('[data-testid="bs-my-elderMaul"]').click();
   await page.locator('[data-testid="drain-solo"]').click();
   await waitSearch(page);
   const budget = await page.locator('[data-testid="spec-plan"] [data-testid="drain-line-budget"]').innerText();
   check(/fight ≈ \d+ s → \d+ specs?/.test(budget), `Solo budget "${budget}"`);
+  await page.locator('[data-testid="bs-my-elderMaul"]').click();
+  await page.locator('[data-testid="my-specs-mode"]').selectOption('auto');
 
   await page.locator('[data-testid="drain-none"]').click();
   await waitSearch(page);

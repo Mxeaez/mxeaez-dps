@@ -1,4 +1,4 @@
-# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14; Routes tab phase 16; Plan tab phase 17; raid tabs + ToA phase 18; CoX phase 19; ToB phase 20; per-raid Plan defaults + dedupe phase 21; UI cleanup phase 23; "Items I don't own" phase 26; potions from the kit + ring policy phase 27; Plan tab polish phase 30; quiver ammo + heart as magic's potion phase 31; zero-value switch items + drain-line units phase 32)
+# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14; Routes tab phase 16; Plan tab phase 17; raid tabs + ToA phase 18; CoX phase 19; ToB phase 20; per-raid Plan defaults + dedupe phase 21; UI cleanup phase 23; "Items I don't own" phase 26; potions from the kit + ring policy phase 27; Plan tab polish phase 30; quiver ammo + heart as magic's potion phase 31; zero-value switch items + drain-line units phase 32; specs follow the plan + one drain line per encounter phase 33)
 
 `/best-setup` (dev: http://localhost:3001/osrs-dps/best-setup; "Best setup" button in the top bar, "Calculator" leads
 back). Tabs, in order: **Search** (the default, phase 9/12, see the end of this file) searches a pool of end-game items
@@ -17,7 +17,8 @@ presentation only; the numbers are unchanged except the Solo fight length (below
 - **Tabs**: Search · Plan · Summary.
 - **Assumptions, simple view** (≤ 10 inputs): raid scaling (party size; ToA raid / path levels; CoX Challenge Mode;
   ToB mode), the potion per style and the Heart (FA / ToB), Zeal and Elemental fragments (FA), and **Specs I bring**
-  (phase 29; was "My specs") as icon toggles (Elder maul, DWH, BGS, Tonalztics, Ayak × N), and **Ring: I wear a
+  (phase 29; was "My specs") as icon toggles (Elder maul, DWH, BGS, Tonalztics, Ayak × N; phase 33: none by default,
+  and filled read-only from the last plan while "Planner decides" — see *Specs follow the plan* below), and **Ring: I wear a
   Lightbearer** (phase 29: a ring toggle, not a spec weapon; the Plan tab's ring policy sets it while that tab is open). Every input has a plain-language tooltip; Reset
   and a **"?" glossary** are top right.
 - **Advanced** (closed by default): team carriers per weapon (the party size above is shared) with **one "carriers use
@@ -55,7 +56,7 @@ presentation only; the numbers are unchanged except the Solo fight length (below
 
 **Glossary** (the "?" popover, `GLOSSARY` in BestSetup.tsx):
 
-- *Drains*: None = no Defence / Magic defence drains. Solo = only your own specs ("Specs I bring"; the Plan tab's planner picks them), within the spec energy
+- *Drains*: None = no Defence / Magic defence drains. Solo = only your own specs ("Specs I bring": phase 33: the last plan's "Bring" while the planner decides, else the ones you tick), within the spec energy
   you have in that fight. Team = the team's spec carriers (Advanced) each spec twice at the start.
 - *Floor*: the lowest Defence a boss can be drained to (e.g. Archive Guardian 156). The Defence floor is used when its
   chance is at least the % set in Advanced (95%).
@@ -360,8 +361,9 @@ images; a note on where the spec weapons come from: the planner or "Specs I brin
 rows and where each came from; "Potions (from the kit)" and "Ring" lines (phase 27; the old "unused potion supplies"
 warning is gone: the kit never brings a potion it doesn't use); a warning with a one-click fix for always-brought items
 no loadout wears ("Remove these to free N slots"), which re-plans; the
-per-encounter table (loadouts and styles used, "avg DPS (time-weighted)" = damage ÷ seconds, seconds; phase rows with
-each phase's DPS); the route table; the why list; run statistics. "Load worn set into calculator" opens the calculator with the worn set against the route's first phase
+per-encounter table (loadouts and styles used, phase 33: the start-of-fight drain line, "avg DPS (time-weighted)" =
+damage ÷ seconds, seconds; phase rows with each phase's DPS and drain plan, under "per-phase details", closed by
+default); the route table; the why list; run statistics. "Load worn set into calculator" opens the calculator with the worn set against the route's first phase
 (drains as planned; its DPS = the first phase row, checked by `scripts/verifyPhase17.mjs`); "Load all loadouts" adds
 one calculator loadout per kit loadout (or replaces the calculator's loadouts if they don't all fit in 6).
 
@@ -811,6 +813,77 @@ swing can miss; the % is the chance the Defence reaches the floor in the first r
 Solo, AG Flying with Tonalztics: "needs 3 landed hits · 2 specs, 4 swings · → Def 167". The calculator's Max-drain
 buttons keep "×2 (4 hits)" (those are landed hits); the planned lines' tooltips say "(8 swings)".
 
+### Specs follow the plan; one drain line per encounter (phase 33)
+
+User review of the phase 32 plan (2026-10-24): "Specs I bring" stayed lit (Elder maul, Ayak × 2) while the planner
+decided the spec weapons, and Bork + Smorks showed five drain lines when the team specs once at the start.
+
+**Specs I bring** defaults to none for every raid (`DEFAULT_ASSUMPTIONS.mySpecs`: every weapon off, Ayak 0; ToA / CoX
+/ ToB copy it). The row has a mode select, shared with the Plan tab's **Spec weapons** (one setting; the page holds it,
+so it survives leaving the Plan tab, not a raid change):
+
+- **Planner decides (Plan tab)** (default): the chips are read-only (dashed, disabled) and mirror the last plan's
+  "Bring" — Solo: the weapons the subset search picked; Team: your share when it is carried (none otherwise) —, with
+  "(from the last plan; Search / Summary use them)", or "(run a plan to fill these)" and every chip unlit before a plan
+  has run. Search / Summary's Solo drains use exactly those weapons, as the plan's own Solo drain state
+  (`withPlanSpecs` in specChoice.ts → `mySpecsForSubset`: Eye of Ayak "until magic def 0", Defence drains first; the
+  Lightbearer flag is the user's). Before a plan: no spec weapons. A plan with drains "None" decides nothing and leaves
+  the last "Bring".
+- **Set manually**: the editable chips (and Ayak × N), as before; the Plan tab uses them ("Spec weapons: Specs I bring").
+
+With no spec weapons, the Search tab's Solo drain box says so: "no spec weapons: run a plan or pick Specs I bring" (no
+empty line). The "≈ X magic def drained" hint shows only when Eye of Ayak is in the Solo specs. `plan()` itself still
+defaults to `specMode: 'manual'`; tests written against the old default keep it as an explicit input
+(`src/tests/utils/phase32Specs.ts`).
+
+What moved (Search, FA party 6, Solo drains, top row of the search; phase 32 default = Elder maul + Ayak × 2 → phase 33
+before a plan = none → after the FA Team / Solo plans = Tonalztics, the plans' "Bring"): Bork (armour 8) 10.327 →
+8.945 → 9.235 (Def 195 → 300 → 278); AG Flying 10.095 → 9.387 → 11.127 (magic def 91 → 130; Def 260 → 260 → 167);
+AG Grounded 12.855 → 11.413 → 12.887; Xarth 13.917 → 12.839 → 13.917; Moia 10.931 → 10.084 → 11.386. The Summary's
+Solo column moves the same way. No plan total moves (the Plan tab already defaulted to "Planner decides").
+
+**One drain line per encounter** (`encounterDrainSummary` in drainLine.ts; PlanView `EncounterDrains`): the encounter
+row's Drains cell shows the specs at the start of the fight, computed on the first phase (in the encounter's phase
+order) whose drain line specs at least one weapon — that phase's own numbers. A later phase whose set of spec weapons
+differs gets its own line, labelled with the phase (its share dropped). Team:
+
+| Encounter | Line (FA defaults, party 6: 2 Elder maul + 2 Tonalztics carriers) |
+|---|---|
+| Archive Guardian | Flying shield: 2 Tonalztics carriers (4 specs) → Def 156 · 98% · Grounded: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 156 · >99.9% |
+| Bork + Smorks | Start of fight: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 180 · 99.6% |
+| Moia | Start of fight: 2 Tonalztics carriers (4 specs) → Def 117 · >99.9% |
+| Xarth | Start of fight: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 102 · >99.9% |
+| Ocellus | P1 at a corner: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 129 · >99.9% · P3 last quadrant, Deflect Melee: 2 Tonalztics carriers (4 specs) → Def 150 · 84% |
+
+Solo (party 1, Bring Tonalztics, 22:01.9): "Start: 3 Tonalztics specs → Def 156 · 86%" (AG; the same weapon on every
+phase, so one line), Ezekiel "Start: 3 Tonalztics specs → Def 80", Moia "… 2 … → Def 117 · 99%", Xarth "… → Def 102 ·
+97%", Ocellus "… → Def 129 · 99%". Carriers = specs ÷ 2 (first-round specs per carrier); the % is the first Defence
+drain weapon's P(floor) (Team: with everything the carriers bring; Solo: with your specs), left out when the line ranks
+short of the floor ("→ Def X" is then the Def shown); "· magic def X" when Eye of Ayak is specced. Specs that don't fit
+in the energy (×0) are left out. The parts are separate lines in the cell (the text joins them with " · ").
+
+**Drain events** (coordinator amendment, 2026-10-24): some bosses get their Defence back mid-fight, and the team drains
+again. The time models flag those phases (`PlannedPhase.drainReset`, carried into `PhaseTime`, a reason such as
+`maze 1`), instead of the summary reading labels; the encounter line is grouped per drain event (the start, then each
+flagged phase; unflagged phases share the event before them: Bork armour 8 → 14, AG shield → flying, Ocellus
+quadrants). Flagged with the defaults of all four raids (`Phase33.test.ts` checks the flag = the labels saying "Defence
+restored"): ToB **Sotetseg** thirds 2 and 3 ("After clearing the maze, Sotetseg's Defence level is restored, necessitating
+further Defence-draining special attacks", Strategies) and ToB **Bloat**'s later downs ("If its Defence has been reduced,
+it will regenerate to full when it stomps"; the restored Bloat takes no drains in the model, so that event reads "no
+specs"). Sotetseg therefore shows three lines: "Start of fight: …", "After maze 1 (Defence restored), again: …", "After
+maze 2 (Defence restored), again: …". Not flagged: CoX Tekton ("no longer resets his Defence when healing at the anvil":
+drains carry), Vanguards (no drains at all), Verzik / Xarpus / Nylocas / Maiden (no restore in the sources), ToA
+Wardens P3 ("Defence … raised 30 levels to 180": a raise, not stated as a restore; the P3 rows are their own targets
+anyway), Akkha's final stand (hp, not Defence), CoX Olm's hand phases (whether a drain carries from one hand phase to
+the next isn't in the sources; the line shows the first phase). The maths is unchanged: every phase's drain plan still starts with
+100% spec energy, so a re-drain after a reset is assumed to have the energy (the encounter line's tooltip says so; phase
+36 shares one spec budget per encounter).
+
+The per-phase rows keep their phase 32 lines unchanged, under one **"▸ Show per-phase details (N phases)"** toggle for
+the whole table (closed by default; one click opens every encounter's rows, which keeps the columns aligned). Search
+and Summary keep their per-phase lines. Bork + Smorks at the default 0% stun uptime has five rows (armour 8 / 10 / 12 /
+14, the Smorks; the stunned row has no damage); with a stun uptime it has six, still one line.
+
 **Quiver review nits**: UNVERIFIED D23 now quotes the Dizana's max cape page in full, records that two types of the
 same kind (bolts + bolts) still free the slot though switching between them needs a manual swap (not modelled;
 limiting `quiverSavedSlots` to one arrow + one bolt type isn't a one-line change, so it is documented only), and that a
@@ -948,9 +1021,10 @@ The view tries every listed style (and spell) per preset and shows the one with 
   every boss (phase 14). The Plan tab uses each encounter's own undrained time. **Floor confidence** 95% (Advanced;
   was "Floor at P ≥"): when a drain plan counts as reaching the floor.
 - **Specs I bring** (phase 14 "My specs", the Solo drain state; phase 23: icon toggles; phase 29: renamed, Lightbearer
-  moved to its own "Ring: I wear a Lightbearer" toggle): Elder maul on, DWH / BGS / Tonalztics off,
-  `Ayak × 2` (with "≈ X magic def drained on <boss>" next to it = specs × hit chance × expected damage on a hit, from
-  the calculator), Lightbearer off; "Spec energy goes first to: Defence drains / Ayak" (Advanced).
+  moved to its own "Ring: I wear a Lightbearer" toggle; phase 33: none by default — every weapon off, `Ayak × 0` —, and
+  in "Planner decides" mode the last plan's "Bring", read-only): with Ayak, "≈ X magic def drained on <boss>" next to it
+  = specs × hit chance × expected damage on a hit, from the calculator; Lightbearer off; "Spec energy goes first to:
+  Defence drains / Ayak" (Advanced; "Set manually" only — the planner's specs put Defence drains first).
 - **Team carriers** (phase 14, the Team drain state; Advanced): party size 6 (the raid input, also the HP-scaling party
   size, an identity table), carriers per weapon (default maul 2, DWH 0, BGS 0, Tonalztics 2, Ayak 1), one "carriers use
   Lightbearer" toggle (phase 23; was a box per weapon). Carriers beyond the party size are ignored (warned in red).

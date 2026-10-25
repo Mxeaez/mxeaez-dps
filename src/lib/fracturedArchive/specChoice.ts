@@ -53,6 +53,16 @@ export const mySpecsForSubset = (subset: PlannerWeapon[], base: Pick<MySpecs, 'l
   priority: 'defence',
 });
 
+/**
+ * Phase 33: the assumptions Search / Summary use for "Specs I bring". "Set manually" (`manual`): unchanged. "Planner
+ * decides": the last plan's "Bring" set (Solo: the chosen subset; Team: your share) as the plan's own Solo drain state
+ * (`mySpecsForSubset`: Ayak until magic def 0, Defence drains first; the Lightbearer flag kept); none before a plan has
+ * run (the chips read "run a plan to fill these").
+ */
+export const withPlanSpecs = <A extends { mySpecs: MySpecs }>(a: A, planBring: PlannerWeapon[] | null | undefined, manual: boolean): A => (
+  manual ? a : { ...a, mySpecs: mySpecsForSubset(planBring ?? [], a.mySpecs) }
+);
+
 /** The weapons of "Specs I bring" (Ayak when its count is > 0). */
 export const subsetOfMySpecs = (m: MySpecs): PlannerWeapon[] => SPEC_CANDIDATES
   .filter((w) => (w === 'ayak' ? m.ayak > 0 : m[w as 'elderMaul' | 'dwh' | 'bgs' | 'tonalztics']));

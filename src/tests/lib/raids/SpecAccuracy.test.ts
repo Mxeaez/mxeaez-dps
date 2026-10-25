@@ -13,6 +13,7 @@ import { drainLineNote } from '@/lib/fracturedArchive/drainLine';
 import { TOA_DEFAULT_ASSUMPTIONS } from '@/lib/raids/toa/presets';
 import { COX_DEFAULT_ASSUMPTIONS } from '@/lib/raids/cox/presets';
 import { TOB_DEFAULT_ASSUMPTIONS } from '@/lib/raids/tob/presets';
+import { withPhase32Specs } from '@/tests/utils/phase32Specs';
 
 // Phase 24: spec accuracy in the raids. The spec profiles (specs.ts) run upstream's own spec calc
 // (`getSpecCalc()`), which scales the monster (CoX party / CM levels) and uses `getNPCDefenceRoll()`, where ToA's
@@ -20,7 +21,7 @@ import { TOB_DEFAULT_ASSUMPTIONS } from '@/lib/raids/tob/presets';
 // below; table in docs/DATA_SOURCES.md, "Spec accuracy by raid".
 
 const toaAt = (invocationLevel: number): BestSetupAssumptions => ({
-  ...TOA_DEFAULT_ASSUMPTIONS, toa: { ...TOA_DEFAULT_ASSUMPTIONS.toa!, invocationLevel },
+  ...withPhase32Specs(TOA_DEFAULT_ASSUMPTIONS), toa: { ...TOA_DEFAULT_ASSUMPTIONS.toa!, invocationLevel },
 });
 const undrained = (key: string, a: BestSetupAssumptions) => buildTargetMonster(findTarget(key), undefined, 'none', a).monster;
 const hit = (atk: number, def: number) => (atk > def ? 1 - (def + 2) / (2 * (atk + 1)) : atk / (2 * (def + 1)));

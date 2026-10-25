@@ -35,11 +35,12 @@ import {
 import { BORK_STUNNED_PHASE, OCELLUS_P3_PHASES } from '@/lib/fracturedArchive/constants';
 import { Player } from '@/types/Player';
 import { Monster } from '@/types/Monster';
+import { withPhase32Specs } from '@/tests/utils/phase32Specs';
 
 // Phase 8: "Best setup" view. Presets: src/lib/fracturedArchive/presets.ts; computation:
 // src/lib/fracturedArchive/bestSetup.ts (also run by the worker). Docs: docs/BEST_SETUP.md.
 
-const A = DEFAULT_ASSUMPTIONS;
+const A = withPhase32Specs(DEFAULT_ASSUMPTIONS); // phase 33: the pre-phase-33 "Specs I bring" (Elder maul + 2 Ayak)
 const preset = (name: string) => PRESETS.find((p) => p.name === name)!;
 
 /** What the worker's COMPUTE_BASIC handler (= the main calculator) returns for a player. */

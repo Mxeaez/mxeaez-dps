@@ -283,3 +283,121 @@ export const drainLineNote = (
   const { expected } = expectedAttemptsToFloor(model, defAttempts);
   return `1 landed spec reaches the floor (Def ${model.floor}); ≈ ${expected.toFixed(1)} specs on average, later ones add nothing`;
 };
+
+// --- phase 33: one drain line per encounter -------------------------------------------------------------------------
+
+/** One part of an encounter's start-of-fight line: the first phase (in the encounter's order) that a set of spec weapons lands on. */
+export interface EncounterDrainPart {
+  /** The phase's key (PhaseTime.key) and label without its share, e.g. "Flying shield", "Grounded", "Bork, armour 8". */
+  phaseKey: string;
+  label: string;
+  /** The phase's own drain line (the numbers of this part). */
+  line: DrainLine;
+  /** The weapons specced (count > 0), in drain-line order. */
+  items: DrainLineItem[];
+  /** e.g. "2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 180 · 99.6%". */
+  text: string;
+}
+
+/**
+ * Phase 33: one drain event = the phases between two Defence resets (the start of the fight, then each phase whose
+ * `drainReset` is set: Sotetseg after each maze, Bloat's later downs). The team specs once per event.
+ */
+export interface EncounterDrainEvent {
+  /** The event's first phase, and why the Defence was restored (undefined = the start of the fight). */
+  phaseKey: string;
+  reset?: string;
+  /** One part per distinct set of spec weapons in the event (the first phase each set lands on). */
+  parts: EncounterDrainPart[];
+  /** "Start of fight:" (Team) / "Start:" (Solo) / "After maze 1 (Defence restored), again:". */
+  head: string;
+  text: string;
+}
+
+export interface EncounterDrainSummary {
+  events: EncounterDrainEvent[];
+  /** The first event's parts (the start of the fight). */
+  parts: EncounterDrainPart[];
+  /**
+   * One event: "Start of fight: …" (Team) / "Start: …" (Solo); several parts: "Flying shield: … · Grounded: …". Each
+   * later event adds " · After maze 1 (Defence restored), again: …".
+   */
+  text: string;
+}
+
+/** "Grounded (70% of hp)" → "Grounded"; "P3 last quadrant, Deflect Melee (25%)" → "P3 last quadrant, Deflect Melee". */
+export const phaseShortLabel = (label: string): string => label.replace(/\s*\([^()]*\)\s*$/, '');
+
+/** Team: "2 Elder maul carriers (4 specs)"; Solo (no carriers): "2 Elder maul specs". */
+export const encounterItemText = (it: Pick<DrainLineItem, 'label' | 'count' | 'perCarrier'>): string => (it.perCarrier
+  ? `${plural(Math.ceil(it.count / it.perCarrier), `${it.label} carrier`)} (${plural(it.count, 'spec')})`
+  : plural(it.count, `${it.label} spec`));
+
+/**
+ * "→ Def 180 · 99.6%": the Defence after the drains (+ "· magic def X" when Eye of Ayak is specced) and the chance of the
+ * floor (Team: with everything the carriers bring; Solo: with your specs) of the first Defence-drain weapon; no % when the
+ * line ranks short of the floor (its "→ Def X" is the Def shown).
+ */
+export const encounterResultText = (line: Pick<DrainLine, 'defAfter' | 'magicDefAfter'>, items: DrainLineItem[]): string => {
+  const def = items.find((i) => i.weapon !== 'ayak');
+  const p = def ? def.bringsResult ?? def.neededResult : undefined;
+  const ayak = items.some((i) => i.weapon === 'ayak');
+  return `→ Def ${line.defAfter}${ayak ? ` · magic def ${line.magicDefAfter}` : ''}${p && !p.startsWith('→') ? ` · ${p}` : ''}`;
+};
+
+/** The parts of one drain event (phases in order): the first phase of each distinct set of spec weapons. */
+const eventParts = (phases: { key: string, label: string, drainLine?: DrainLine }[]): EncounterDrainPart[] => {
+  const parts: EncounterDrainPart[] = [];
+  const seen = new Set<string>();
+  for (const p of phases) {
+    if (!p.drainLine) continue;
+    const items = p.drainLine.items.filter((i) => i.count > 0);
+    if (!items.length) continue;
+    const signature = items.map((i) => i.weapon).sort().join(',');
+    if (seen.has(signature)) continue;
+    seen.add(signature);
+    parts.push({
+      phaseKey: p.key,
+      label: phaseShortLabel(p.label),
+      line: p.drainLine,
+      items,
+      text: `${items.map(encounterItemText).join(' + ')} ${encounterResultText(p.drainLine, items)}`,
+    });
+  }
+  return parts;
+};
+
+/**
+ * Phase 33: an encounter is specced once per drain event, at its start: the line of the first phase (in the encounter's
+ * phase order) that the specs land on (a phase whose drain line specs at least one weapon), e.g. Bork armour 8 for Bork +
+ * Smorks. A later phase of the same event whose set of spec weapons differs (AG grounded vs flying: the Elder maul can't
+ * hit the flying Guardian; Ocellus P3's Deflect Melee quadrant) is listed as its own part. A phase with `drainReset` (the
+ * Defence is restored: Sotetseg after each maze, Bloat's later downs) starts a new event: "After maze 1 (Defence
+ * restored), again: …". Undefined when no phase has a drain line (drains "None").
+ */
+export const encounterDrainSummary = (
+  phases: { key: string, label: string, drainLine?: DrainLine, drainReset?: string }[],
+  drain: 'solo' | 'team',
+): EncounterDrainSummary | undefined => {
+  if (!phases.length || !phases.some((p) => p.drainLine)) return undefined;
+  const groups: { reset?: string, phases: typeof phases }[] = [];
+  phases.forEach((p, i) => {
+    if (i === 0 || p.drainReset) groups.push({ reset: i === 0 ? undefined : p.drainReset, phases: [] });
+    groups[groups.length - 1].phases.push(p);
+  });
+  const events = groups.map((g): EncounterDrainEvent => {
+    const parts = eventParts(g.phases);
+    let head = drain === 'team' ? 'Start of fight:' : 'Start:';
+    if (g.reset) head = `After ${g.reset} (Defence restored), again:`;
+    let text = `${head} no specs`;
+    if (parts.length === 1) text = `${head} ${parts[0].text}`;
+    else if (parts.length > 1) {
+      const list = parts.map((x) => `${x.label}: ${x.text}`).join(' · ');
+      text = g.reset ? `${head} ${list}` : list;
+    }
+    return {
+      phaseKey: g.phases[0].key, ...(g.reset ? { reset: g.reset } : {}), parts, head, text,
+    };
+  });
+  return { events, parts: events[0].parts, text: events.map((e) => e.text).join(' · ') };
+};

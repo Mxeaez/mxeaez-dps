@@ -31,6 +31,7 @@ import {
 import { RAID_TIME_DEFAULTS } from '@/lib/fracturedArchive/raidTime';
 import { resolveItem } from '@/lib/fracturedArchive/loadout';
 import { generateEmptyPlayer } from '@/state';
+import { withPhase32Specs } from '@/tests/utils/phase32Specs';
 
 // Phase 26: "Items I don't own" (src/lib/fracturedArchive/ownership.ts; Search marking, planner exclusion).
 
@@ -207,7 +208,7 @@ describe('planner honours the list', () => {
   };
   const inputs = (patch: Partial<PlanInputs> = {}): PlanInputs => ({
     basePlayer: generateEmptyPlayer(),
-    assumptions: DEFAULT_ASSUMPTIONS,
+    assumptions: withPhase32Specs(DEFAULT_ASSUMPTIONS), // phase 33: the pre-phase-33 "Specs I bring" (Elder maul + 2 Ayak)
     drain: 'team',
     settings: RAID_TIME_DEFAULTS,
     route: ROUTE,

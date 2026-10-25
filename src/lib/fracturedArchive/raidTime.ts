@@ -235,6 +235,11 @@ export interface PlannedPhase {
   targetKey: string;
   phase?: string;
   damage: number;
+  /**
+   * Phase 33: the boss's Defence is restored at the start of this phase, so the team drains again: a new drain event
+   * (e.g. 'maze 1', 'the stomp': "After maze 1 (Defence restored)"). Phases without it share the drain event of the phase before (Bork armour 8 → 14).
+   */
+  drainReset?: string;
 }
 
 const pctText = (f: number): string => `${Math.round(f * 1000) / 10}%`;
@@ -324,6 +329,8 @@ export interface PhaseTime {
   /** damage ÷ dps; Infinity when damage > 0 and nothing in the kit deals damage; P2: the fixed duration. */
   seconds: number;
   note?: string;
+  /** Phase 33: see `PlannedPhase.drainReset`. */
+  drainReset?: string;
 }
 
 export interface EncounterTime {

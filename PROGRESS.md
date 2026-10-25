@@ -3,6 +3,54 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 33 — Specs follow the plan; one drain line per encounter (2026-10-24)
+
+UI / defaults only; no plan total moves (the Plan tab already defaulted to "Planner decides").
+
+- **"Specs I bring" defaults to none** (`DEFAULT_ASSUMPTIONS.mySpecs`: every weapon off, Ayak 0; ToA / CoX / ToB copy
+  it). The row has a mode select ("Planner decides (Plan tab)" / "Set manually") that is the same setting as the Plan
+  tab's "Spec weapons" (lifted to the page). Planner decides: the chips are read-only (dashed, disabled) and mirror the
+  last plan's "Bring" (Solo: the chosen subset; Team: your share when carried), "(from the last plan; Search / Summary
+  use them)", or unlit with "(run a plan to fill these)" before a plan; Search / Summary Solo drains use exactly those
+  weapons (`withPlanSpecs` in specChoice.ts → `mySpecsForSubset`: Ayak until magic def 0). A plan with drains "None"
+  leaves the last Bring. Set manually: editable chips as before. The Search tab's Solo drain box with no spec weapons:
+  "no spec weapons: run a plan or pick Specs I bring"; the Ayak hint only shows with Ayak specs.
+- **What moved** (Search, FA party 6, Solo drains, top row; phase 32 default Elder maul + Ayak × 2 → none before a plan
+  → the plans' Bring, Tonalztics): Bork 10.327 → 8.945 → 9.235; AG Flying 10.095 → 9.387 → 11.127; AG Grounded 12.855 →
+  11.413 → 12.887; Xarth 13.917 → 12.839 → 13.917; Moia 10.931 → 10.084 → 11.386 (Summary Solo column likewise). Tests
+  that pinned numbers with the old default keep it as an explicit input (`src/tests/utils/phase32Specs.ts`: Presets,
+  Phase23, SpecAccuracy, Ownership, Phase27, Phase29).
+- **One drain line per encounter** (`encounterDrainSummary` in drainLine.ts; PlanView `EncounterDrains`): the encounter
+  row shows the specs at the start of the fight, from the first phase whose drain line specs a weapon (its own
+  numbers); a later phase needing another set of weapons gets its own line. FA Team defaults: Bork + Smorks "Start of
+  fight: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 180 · 99.6%"; AG "Flying shield: 2
+  Tonalztics carriers (4 specs) → Def 156 · 98% · Grounded: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4
+  specs) → Def 156 · >99.9%"; Ocellus "P1 at a corner: … → Def 129 · >99.9% · P3 last quadrant, Deflect Melee: 2
+  Tonalztics carriers (4 specs) → Def 150 · 84%". Solo party 1 (Bring Tonalztics): "Start: 3 Tonalztics specs → Def 156 ·
+  86%" (AG), "Start: 2 Tonalztics specs → Def 129 · 99%" (Ocellus); Bork + Smorks isn't on the Solo route (unit test,
+  presets kit: "Start: 3 Tonalztics specs → Def 267").
+- **Drain events** (coordinator amendment): `PlannedPhase.drainReset` (→ `PhaseTime`) marks a phase where the Defence is
+  restored; the line is grouped per event ("After maze 1 (Defence restored), again: …"). Flagged across the four raids
+  (defaults): ToB Sotetseg thirds 2 and 3 (`maze 1`, `maze 2`) and ToB Bloat's later downs (`the stomp`; no drains in the
+  model, "no specs"). Not flagged (sources say nothing of a restore / drains carry): Tekton, Vanguards (no drains),
+  Wardens P3, Akkha, Olm, Verzik, Xarpus. Maths unchanged: each phase still plans with 100% energy (tooltip: re-draining
+  needs spec energy again; phase 36 shares one budget per encounter).
+- **Per-phase details**: one "▸ Show per-phase details (N phases)" toggle for the whole table (closed by default; rows
+  stay in the DOM, hidden); the phase rows' drain lines are unchanged. Search / Summary keep their per-phase lines.
+- Tests: new `Phase33.test.ts` (defaults per raid; withPlanSpecs; reduced plans Solo / Team chips = Bring; toy summaries;
+  FA Bork / AG / Ocellus / Xarth / Solo lines = the first phase's; stun-uptime six rows → one line; reset flags across
+  every raid = the "Defence restored" labels; Sotetseg 3 events, Bork 1, Bloat 2; slow: full FA Solo party 1 → chips
+  Tonalztics, Team → your share). `yarn test` 1434 (1416 pass / 18 skipped); `RUN_SLOW_1434 (1416 pass / 18 skipped)=1` CrossRaid + Phase27-33 171 / 171; lint, tsc clean.
+- Playwright: new `verifyPhase33` all OK (ToB 7:29.5; Sotetseg "Start of fight: 1 Elder maul carrier (2 specs) + 2
+  Tonalztics carriers (4 specs) → Def 100 · 99.7%", then "After maze 1 (Defence restored), again: …" and "After maze 2
+  …" with the same numbers) (screenshots phase33-search-solo-nospecs / -plan-collapsed / -plan-expanded /
+  -plan-solo / -search-solo-plan / -tob-sotetseg); verifyPhase29 (opens the per-phase details) and 32 ("Set manually"
+  before toggling Tonalztics) adapted; verifyPhase21 / 23 / 26 / 27 / 29 / 30 / 31 / 32 all OK (verifyPhase23 ticks the Elder
+  maul by hand for its Solo budget check); tracked
+  screenshots restored.
+- Docs: BEST_SETUP (*Specs follow the plan; one drain line per encounter (phase 33)*, Assumptions, Plan tab layout,
+  glossary), ROADMAP 33 done.
+
 ## Phase 32 — Final review, round 4 (2026-10-24)
 
 Slot costs change (full independent review next).

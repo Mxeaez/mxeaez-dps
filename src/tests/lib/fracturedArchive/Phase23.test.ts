@@ -15,11 +15,12 @@ import { carriersFromCounts, teamSpecPlan } from '@/lib/fracturedArchive/teamSpe
 import { maxDrainReductions } from '@/lib/fracturedArchive/drains';
 import { drainLineFromAttempts, drainLineFromReductions } from '@/lib/fracturedArchive/drainLine';
 import { runGearSearch } from '@/lib/fracturedArchive/search';
+import { withPhase32Specs } from '@/tests/utils/phase32Specs';
 
 // Phase 23 (UI cleanup): the fight length of the Solo spec-energy budget is computed (no input); the single
 // "carriers use Lightbearer" toggle; drain plans as "[icon] ×N" data with hit chances (drainLine.ts).
 
-const A = DEFAULT_ASSUMPTIONS;
+const A = withPhase32Specs(DEFAULT_ASSUMPTIONS); // phase 33: the pre-phase-33 "Specs I bring" (Elder maul + 2 Ayak)
 const undrained = (key: string, phase?: string) => buildTargetMonster(findTarget(key), phase, 'none', A).monster;
 
 describe('computed fight length (Solo spec-energy budget)', () => {

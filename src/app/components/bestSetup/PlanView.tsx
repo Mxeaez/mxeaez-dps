@@ -53,6 +53,9 @@ import {
 } from '@/lib/fracturedArchive/loadoutIcons';
 import { ItemIcon, LoadoutIconRow } from '@/app/components/bestSetup/ItemIcons';
 import DrainLineView from '@/app/components/bestSetup/DrainLineView';
+import {
+  encounterDrainSummary, encounterItemText, encounterResultText, EncounterDrainSummary,
+} from '@/lib/fracturedArchive/drainLine';
 import openInCalculator, { openLoadoutsInCalculator } from '@/app/components/bestSetup/loadIntoCalculator';
 import DPS_TEXT_CLASS from '@/app/components/bestSetup/styles';
 import RangingImg from '@/public/img/potions/Ranging.png';
@@ -92,6 +95,9 @@ import { PlannerWeapon, SPEC_WEAPONS } from '@/lib/fracturedArchive/specs';
 // Phase 29: "Spec weapons" (planner decides / Specs I bring) and "Mages in party" (Advanced (plan)); the results show
 // "Bring: …" (Solo: what each weapon saves) or the team briefing + your share (Team). The ring policy reports the
 // Lightbearer flag it implies to the page (the Assumptions box's "I wear a Lightbearer" follows it).
+// Phase 33: "Spec weapons" is shared with the Assumptions box (the page holds it); a "Planner decides" plan hands its
+// "Bring" to the page (the "Specs I bring" chips). The encounter table shows one start-of-fight drain line per
+// encounter (drainLine.ts `encounterDrainSummary`); the per-phase rows are under one "per-phase details" toggle (closed).
 
 const searchCache = new Map<string, SearchRow[]>();
 const cachePrefix = (a: BestSetupAssumptions, drain: DrainStateId, notOwned: string[] = []) => `${JSON.stringify(a)}|${drain}|${notOwned.length ? `${JSON.stringify([...notOwned].sort())}|` : ''}`;
@@ -281,10 +287,10 @@ const RejectionList: React.FC<{ rows: PlanRejection[], testId: string }> = ({ ro
   </ul>
 );
 
-const PhaseRows: React.FC<{ phases: PhaseTime[], encounter: string }> = ({ phases, encounter }) => (
+const PhaseRows: React.FC<{ phases: PhaseTime[], encounter: string, open: boolean }> = ({ phases, encounter, open }) => (
   <>
     {phases.map((p) => (
-      <tr key={p.key} className="text-[11px] text-gray-600 dark:text-gray-400" data-testid="plan-phase-row" data-encounter={encounter} data-target={p.targetKey} data-phase={p.phase ?? ''}>
+      <tr key={p.key} className={`text-[11px] text-gray-600 dark:text-gray-400${open ? '' : ' hidden'}`} data-testid="plan-phase-row" data-encounter={encounter} data-target={p.targetKey} data-phase={p.phase ?? ''}>
         <td className="px-2 pl-6">
           {p.label}
           {p.note && <span className="text-gray-500 dark:text-gray-400">{` · ${p.note}`}</span>}
@@ -300,6 +306,48 @@ const PhaseRows: React.FC<{ phases: PhaseTime[], encounter: string }> = ({ phase
     ))}
   </>
 );
+
+/**
+ * Phase 33: the encounter's drain line per drain event: "Start of fight: [icon] 2 Elder maul carriers (4 specs) + [icon] 2
+ * Tonalztics carriers (4 specs) → Def 180 · 99.6%" (Solo: "Start: 2 Tonalztics specs → Def 156 · 86%"); one line per
+ * part when phases need other spec weapons ("Flying shield: … / Grounded: …"); one more event per Defence reset ("After
+ * maze 1 (Defence restored), again: …").
+ */
+const EncounterDrains: React.FC<{ summary: EncounterDrainSummary }> = ({ summary }) => {
+  const resets = summary.events.length > 1;
+  return (
+    <div
+      className="flex flex-col gap-0.5 text-xs text-gray-700 dark:text-gray-200"
+      data-testid="plan-encounter-drains"
+      data-text={summary.text}
+      data-events={summary.events.length}
+      title={`Specs at the start of the fight, on the first phase they land on (the per-phase rows show each phase's own plan). A phase that needs other spec weapons gets its own line${resets ? '. The Defence is restored mid-fight, so the drains are done again: that needs spec energy again (the model gives every drain event a full 100%; phase 36 will share one spec budget per encounter)' : ''}`}
+    >
+      {summary.events.map((ev) => (
+        <React.Fragment key={ev.phaseKey}>
+          {ev.parts.length === 0 && <span data-testid="plan-encounter-drain-part" data-phase-key={ev.phaseKey}>{`${ev.head} no specs`}</span>}
+          {ev.parts.map((part, k) => (
+            <span key={part.phaseKey} className="inline-flex flex-wrap items-center gap-x-1" data-testid="plan-encounter-drain-part" data-phase-key={part.phaseKey} title={part.line.text}>
+              {ev.parts.length > 1
+                ? `${ev.reset && k === 0 ? `${ev.head} ` : ''}${part.label}: `
+                : `${ev.head} `}
+              {part.items.map((it, i) => (
+                <React.Fragment key={it.weapon}>
+                  {i > 0 && ' + '}
+                  <span className="inline-flex items-center gap-0.5" title={it.title}>
+                    <ItemIcon name={it.label} src={equipmentImageUrl(it.image)} size={16} title={it.title} />
+                    {encounterItemText(it)}
+                  </span>
+                </React.Fragment>
+              ))}
+              {` ${encounterResultText(part.line, part.items)}`}
+            </span>
+          ))}
+        </React.Fragment>
+      ))}
+    </div>
+  );
+};
 
 /** Phase 29: the Lightbearer flag the Plan tab's ring policy sets (shown in the Assumptions box). */
 export interface LightbearerLock {
@@ -412,8 +460,14 @@ const PlanView: React.FC<{
   onLightbearer?: (lock: LightbearerLock | null) => void,
   /** Phase 29 review 2: the planner's carriers after a Team plan ("Planner decides"), for Search / Summary. */
   onCarriers?: (c: TeamSpecAssumptions['carriers']) => void,
+  /** Phase 33: "Spec weapons" held by the page (shared with the Assumptions box); internal state when not given. */
+  specMode?: SpecMode,
+  onSpecMode?: (m: SpecMode) => void,
+  /** Phase 33: the "Bring" of a "Planner decides" plan (Solo: the chosen weapons; Team: your share), for the chips. */
+  onSpecs?: (bring: PlannerWeapon[]) => void,
 }> = ({
   assumptions, drain, raid, timeSettings, notOwned: notOwnedProp, onLightbearer, onCarriers,
+  specMode: specModeProp, onSpecMode, onSpecs,
 }) => {
   const notOwnedKey = JSON.stringify(notOwnedProp ?? []);
   const notOwned = useMemo(() => JSON.parse(notOwnedKey) as string[], [notOwnedKey]);
@@ -432,7 +486,11 @@ const PlanView: React.FC<{
   const [supplies, setSupplies] = useState<SupplyCounts>(raid.defaultSupplies);
   const [ringPolicy, setRingPolicy] = useState<RingPolicy>(DEFAULT_RING_POLICY);
   // phase 29: who picks the spec weapons; mages in the party (undefined = auto: 1 if the kit has a magic loadout)
-  const [specMode, setSpecMode] = useState<SpecMode>(DEFAULT_SPEC_MODE);
+  const [ownSpecMode, setOwnSpecMode] = useState<SpecMode>(DEFAULT_SPEC_MODE);
+  const specMode = specModeProp ?? ownSpecMode;
+  const setSpecMode = onSpecMode ?? setOwnSpecMode;
+  // phase 33: the per-phase rows of the encounter table (one toggle for the table, closed by default)
+  const [phaseDetails, setPhaseDetails] = useState(false);
   const [mages, setMages] = useState<number | undefined>(undefined);
   const [nonItem, setNonItem] = useState(raid.planDefaults.nonItemSlots);
   const [pinned, setPinned] = useState<number[]>(defaultPinned);
@@ -577,6 +635,12 @@ const PlanView: React.FC<{
     const t = result?.specs.team;
     if (onCarriers && t && t.mode === 'auto' && t.carriers) onCarriers(t.carriers);
   }, [result, onCarriers]);
+  // phase 33: hand a "Planner decides" plan's "Bring" to the page ("Specs I bring" chips, Search / Summary Solo drains);
+  // a plan without drains decides no spec weapons, so it leaves the last ones
+  useEffect(() => {
+    const sp = result?.specs;
+    if (onSpecs && sp && sp.mode === 'auto' && sp.drain !== 'none') onSpecs(sp.bring);
+  }, [result, onSpecs]);
 
   const planned = result && result.comparison && result.planned >= 0 ? result.comparison.routes[result.planned] : null;
   const firstPhase = planned?.encounters[0]?.phases[0];
@@ -901,13 +965,25 @@ const PlanView: React.FC<{
             </div>
           </div>
 
+          <div className="flex items-center gap-2 text-xs">
+            <button
+              type="button"
+              className="underline"
+              aria-expanded={phaseDetails}
+              data-testid="plan-phase-toggle"
+              title="Each encounter's phases with their own loadout, style, drain plan, DPS and seconds"
+              onClick={() => setPhaseDetails(!phaseDetails)}
+            >
+              {`${phaseDetails ? '▾ Hide' : '▸ Show'} per-phase details (${planned.encounters.reduce((t, e) => t + e.phases.length, 0)} phases)`}
+            </button>
+          </div>
           <table className="w-full text-sm" data-testid="plan-encounters">
             <thead>
               <tr className="bg-btns-400 dark:bg-dark-500 text-white">
                 <th className="px-2 text-left">Encounter</th>
                 <th className="px-2 text-left">Loadout used</th>
                 <th className="px-2 text-left">Style</th>
-                <th className="px-2 text-left" title="The drain plan of each phase: weapon icon × specs, the chance each spec lands under each icon, then the Defence the DPS uses">Drains</th>
+                <th className="px-2 text-left" title="Encounter rows: the specs at the start of the fight (on the first phase they land on; a phase that needs other spec weapons gets its own line). Phase rows (per-phase details): each phase's drain plan: weapon icon × specs, the chance each spec lands under each icon, then the Defence the DPS uses">Drains</th>
                 <th className="px-2 text-right" title="Damage ÷ seconds over the encounter's phases (phase rows: that phase's DPS)">avg DPS (time-weighted)</th>
                 <th className="px-2 text-right">Seconds</th>
               </tr>
@@ -918,6 +994,9 @@ const PlanView: React.FC<{
                 const time = secs(e.seconds);
                 const loadouts = Array.from(new Set(e.phases.map((p) => p.choice?.loadout).filter(Boolean)));
                 const styles = Array.from(new Set(e.phases.map((p) => p.choice?.group).filter(Boolean)));
+                const drains = drain === 'none' ? undefined : encounterDrainSummary(e.phases.map((p) => ({
+                  key: p.key, label: p.label, drainLine: p.choice?.drainLine, drainReset: p.drainReset,
+                })), drain);
                 return (
                   <React.Fragment key={e.id}>
                     <tr className="border-t border-body-300 dark:border-dark-400" data-testid="plan-encounter-row" data-encounter={e.id}>
@@ -929,13 +1008,16 @@ const PlanView: React.FC<{
                       </td>
                       <td className="px-2 py-1">{loadouts.join(' / ') || '—'}</td>
                       <td className="px-2 py-1 capitalize">{styles.join(' / ')}</td>
-                      <td className="px-2 py-1 text-[11px] text-gray-500 dark:text-gray-400" data-testid="plan-encounter-fight">
-                        {e.drainFightSeconds !== undefined ? `drains planned for a ${e.drainFightSeconds} s fight` : ''}
+                      <td className="px-2 py-1">
+                        {drains && <EncounterDrains summary={drains} />}
+                        <span className="text-[11px] text-gray-500 dark:text-gray-400" data-testid="plan-encounter-fight">
+                          {e.drainFightSeconds !== undefined ? `drains planned for a ${e.drainFightSeconds} s fight` : ''}
+                        </span>
                       </td>
                       <td className={`px-2 py-1 text-right font-mono ${DPS_TEXT_CLASS}`}>{Number.isFinite(time) && time > 0 ? (damage / time).toFixed(3) : '0'}</td>
                       <td className="px-2 py-1 text-right font-mono" data-testid="plan-encounter-seconds">{fmtS(e.seconds)}</td>
                     </tr>
-                    <PhaseRows phases={e.phases} encounter={e.id} />
+                    <PhaseRows phases={e.phases} encounter={e.id} open={phaseDetails} />
                   </React.Fragment>
                 );
               })}

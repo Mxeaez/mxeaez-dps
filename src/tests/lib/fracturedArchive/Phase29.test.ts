@@ -34,6 +34,7 @@ import {
   ayakOutcome, ayakSpecsToThreshold, defenceOutcome, formatProbability, neededSpecs, recommendCarriers, soloSpecPlan, specsNeeded,
 } from '@/lib/fracturedArchive/teamSpecs';
 import { FRACTURED_ARCHIVE_RAID } from '@/lib/raids';
+import { withPhase32Specs } from '@/tests/utils/phase32Specs';
 
 // Phase 29: the planner decides the spec weapons — Solo subset search, Team roles ("team briefing"), your share
 // ("assign me"), Eye of Ayak only with a magic loadout / mages, the Team drain line "needed ×2 (4 hits) · team brings ×4".
@@ -156,7 +157,8 @@ describe('Solo subset search (toy)', () => {
       elderMaul: true, dwh: false, bgs: false, tonalztics: false, ayak: AUTO_AYAK_SPECS, ayakAuto: true, lightbearer: true, priority: 'defence',
     });
     expect(subsetOfMySpecs(m)).toEqual(['elderMaul', 'ayak']);
-    expect(subsetOfMySpecs(A.mySpecs)).toEqual(['elderMaul', 'ayak']);
+    expect(subsetOfMySpecs(withPhase32Specs(A).mySpecs)).toEqual(['elderMaul', 'ayak']);
+    expect(subsetOfMySpecs(A.mySpecs)).toEqual([]); // phase 33: the default brings nothing
   });
 });
 
@@ -474,7 +476,7 @@ const preset = (name: string): PresetDef => {
 };
 const inputs = (patch: Partial<PlanInputs> = {}): PlanInputs => ({
   basePlayer: generateEmptyPlayer(),
-  assumptions: FA.defaultAssumptions,
+  assumptions: withPhase32Specs(FA.defaultAssumptions), // phase 33: the pre-phase-33 "Specs I bring"
   drain: 'team',
   settings: FA.defaultTimeSettings,
   route: 'all',
@@ -503,7 +505,7 @@ describe('planner: spec modes', () => {
     expect(SPEC_MODES.map((m) => m.label)).toEqual(['Planner decides', 'Specs I bring']);
     const r = plan(inputs(), MELEE_RANGED);
     expect(r.specs.mode).toBe('manual');
-    expect(r.specs.bring).toEqual(['elderMaul', 'ayak']); // the default "Specs I bring"
+    expect(r.specs.bring).toEqual(['elderMaul', 'ayak']); // "Specs I bring" (the pre-phase-33 default)
     expect(r.specItems.map((x) => x.name)).toEqual(['Elder maul', 'Eye of Ayak']);
     expect(r.specs.share).toMatchObject({ manual: true, carry: false });
   }, 300000);
@@ -585,7 +587,7 @@ describe('planner: spec modes', () => {
   }, 600000);
 
   test('Ayak hint: carried (Specs I bring) with no magic loadout in the kit', () => {
-    const r = plan(inputs({ drain: 'solo', specMode: 'manual', assumptions: { ...FA.defaultAssumptions, partySize: 2 } }), MELEE_RANGED);
+    const r = plan(inputs({ drain: 'solo', specMode: 'manual', assumptions: { ...withPhase32Specs(FA.defaultAssumptions), partySize: 2 } }), MELEE_RANGED);
     expect(r.specs.bring).toContain('ayak');
     expect(r.specs.notes.some((n) => n.startsWith('Eye of Ayak is carried but no magic loadout'))).toBe(true);
   }, 300000);

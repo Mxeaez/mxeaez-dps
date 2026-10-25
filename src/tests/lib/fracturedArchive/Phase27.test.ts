@@ -29,6 +29,7 @@ import { energyBudget } from '@/lib/fracturedArchive/specs';
 import {
   FRACTURED_ARCHIVE_RAID, RaidConfig, RAIDS, raidConfig, TOMBS_OF_AMASCUT_RAID,
 } from '@/lib/raids';
+import { withPhase32Specs } from '@/tests/utils/phase32Specs';
 
 // Phase 27: Plan tab — potions derived from the kit (one Super combat / Ranging potion per style present, part of the
 // kit's slot cost), comfort supplies entered by the user, and the ring policy (camp one ring / camp Lightbearer / allow
@@ -69,7 +70,7 @@ const planned = (raid: RaidConfig, ringPolicy?: RingPolicy, drain: 'team' | 'sol
   if (!runs.has(key)) {
     runs.set(key, plan({
       basePlayer: generateEmptyPlayer(),
-      assumptions: raid.defaultAssumptions,
+      assumptions: withPhase32Specs(raid.defaultAssumptions),
       drain,
       settings: raid.defaultTimeSettings,
       route: 'all',
@@ -179,7 +180,7 @@ describe('caches (review fix)', () => {
     const raid = FRACTURED_ARCHIVE_RAID;
     const inputs = (brew: number) => ({
       basePlayer: generateEmptyPlayer(),
-      assumptions: raid.defaultAssumptions,
+      assumptions: withPhase32Specs(raid.defaultAssumptions),
       drain: 'team' as const,
       settings: raid.defaultTimeSettings,
       route: 'all',
@@ -288,7 +289,7 @@ describe('ring policy', () => {
     const raid = FRACTURED_ARCHIVE_RAID;
     const inputs = {
       basePlayer: generateEmptyPlayer(),
-      assumptions: raid.defaultAssumptions,
+      assumptions: withPhase32Specs(raid.defaultAssumptions),
       drain: 'team' as const,
       settings: raid.defaultTimeSettings,
       route: 'all',

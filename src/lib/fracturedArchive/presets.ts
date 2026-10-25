@@ -277,8 +277,9 @@ export const DEFAULT_ASSUMPTIONS: BestSetupAssumptions = {
   useZeal: false,
   elementalFragments: true,
   partySize: 6,
+  // phase 33: nothing is brought unless the user picks it (in "Planner decides" mode the chips mirror the last plan)
   mySpecs: {
-    elderMaul: true, dwh: false, bgs: false, tonalztics: false, ayak: 2, lightbearer: false, priority: 'defence',
+    elderMaul: false, dwh: false, bgs: false, tonalztics: false, ayak: 0, lightbearer: false, priority: 'defence',
   },
   team: {
     carriers: {
