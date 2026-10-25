@@ -28,7 +28,7 @@ export const TOA_TARGETS: BestSetupTarget[] = [
   {
     key: 'toa-kephri', label: 'Kephri (Unshielded)', name: 'Kephri', version: 'Aggressive', raid: 'toa', toaPath: 'kephri',
   },
-  // Phase 35: the overlord scarabs are adds (no specs). Kephri (wiki, read 2026-10-24): "The first shield threshold will
+  // Phase 35: the overlord scarabs are adds (no specs). ToA Strategies (wiki, read 2026-10-24): "The first shield threshold will
   // cause a single Spitting Scarab to spawn, while the second threshold causes a Soldier and Arcane Scarab"; Spitting /
   // Soldier / Arcane Scarab: "a monster that is summoned by Kephri". docs/DATA_SOURCES.md *Phase 35*.
   {

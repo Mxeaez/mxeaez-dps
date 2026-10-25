@@ -980,6 +980,8 @@ nothing in the best-setup panel overflows outside a table scroller.
 
 ### Targets that never get specs (phase 35: no specs on adds)
 
+Why a flat rule is right for multi-copy phases: a spec drains only the NPC it hits, but the time model applies one drain to every copy in a phase (5 Mystics, 3 Shamans, 4 crystals, 4 Shadows), so the old savings were overstated about N times (phase 35 review: Mystics ≈ 2.4 s at best per drain round, versus the 12 s the model claimed). Single-NPC adds (the portal, the small Muttadile, the scarabs) are worth 0.6–3.6 s each with a fresh budget; phase 36's one-budget-per-encounter decides those.
+
 User, 2026-10-24: "you obviously aren't going to Ralos or Elder maul spec the little minions that die in a few hits
 anyway". Until phase 35 every add was its own drain plan with a fresh 100% spec budget (Team: the carriers' first
 round; Solo: your energy), which overstated what drains are worth (a Mystics room ranked every mystic at the drained

@@ -497,7 +497,7 @@ path level will modify most enemy hitpoints and damage by +8%, with every additi
 | Kephri: "After the third shield is cleared ... fourth and final phase"; Defence "restored when she enters final phase" (Strategies). The Kephri page says "After two phases of shields" — conflict, Strategies followed (UNVERIFIED E3) | monsters, floor | 3 × Shielded hp + Aggressive hp; drains planned per phase target |
 | Zebak "Not Just a Head" invocation: heals "for 2x the damage inflicted" (Strategies, Zebak's invocations) | no | not modelled (UNVERIFIED E8) |
 | Kephri: swarms "recover Kephri's shields, usually ~10% or lower ... per swarm"; "capped to roughly ~15% over her max capacity" | no | *Kephri swarm leak* setting (default 0, unverified) |
-| Kephri: "first shield threshold ... Spitting Scarab ..., the second ... a Soldier and Arcane Scarab" | monsters (no def-roll scaling) | included (setting, default on) |
+| ToA Strategies (not the Kephri page): "first shield threshold ... Spitting Scarab ..., the second ... a Soldier and Arcane Scarab" | monsters (no def-roll scaling) | included (setting, default on) |
 | Kephri / scarabs kalphite: keris +33% accuracy (breaching), damage bonus | yes | — |
 | Zebak: floor 50; "Upon reaching ~25% of his health, Zebak will become enraged, significantly increasing his attack speed" | floor yes | same stats: one target |
 | Obelisk: "lowered by a maximum of 40 levels, reducing ... to a minimum of 60" | floor yes | P1 = obelisk hp |
@@ -866,7 +866,7 @@ add or short-lived (all read 2026-10-24, `?action=raw`, generic User-Agent):
 
 | Target (key) | Raid | Source | Phrase |
 |---|---|---|---|
-| Spitting Scarab (`toa-spitting-scarab`) | ToA | https://oldschool.runescape.wiki/w/Kephri, /Spitting_Scarab | Kephri: "The first shield threshold will cause a single Spitting Scarab to spawn"; Spitting Scarab: "a monster that is summoned by Kephri" |
+| Spitting Scarab (`toa-spitting-scarab`) | ToA | https://oldschool.runescape.wiki/w/Tombs_of_Amascut/Strategies, /Spitting_Scarab | ToA Strategies: "The first shield threshold will cause a single Spitting Scarab to spawn"; Spitting Scarab: "a monster that is summoned by Kephri" |
 | Soldier Scarab (`toa-soldier-scarab`) | ToA | /Kephri, /Soldier_Scarab | "the second threshold causes a Soldier and Arcane Scarab"; "a monster that is summoned by Kephri" |
 | Arcane Scarab (`toa-arcane-scarab`) | ToA | /Kephri, /Arcane_Scarab | as above; "a monster that is summoned by Kephri" |
 | Akkha's Shadow (`toa-akkha-shadow`) | ToA | /Akkha%27s_Shadow | "Akkha's Shadows are summoned by Akkha ... After reaching 80% of his health, he will generate four shadows of himself" (one dispelled per 20%) |

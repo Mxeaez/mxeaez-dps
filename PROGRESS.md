@@ -36,7 +36,7 @@ Until now every add was its own drain plan with a fresh 100% spec budget, which 
   Team and Solo, no drain line; briefing rows; a reduced ToA plan's team briefing / drivers / phases list no add;
   SpecPlanPanel render; slow: ToA 14:12.1, CoX 7:01.3 with their carriers). Presets.test's per-target drain check skips
   `noDrains` targets (the Jelly).
-  `yarn test` 1514 (1493 pass / 21 skipped); `RUN_SLOW_TESTS=1` CrossRaid + Phase27-35 all pass (247 + Phase35 56);
+  `yarn test` 1514 (1493 pass / 21 skipped); `RUN_SLOW_TESTS=1` CrossRaid + Phase27-35 252/252;
   lint, tsc clean.
 - Playwright: new `scripts/verifyPhase35.mjs` all OK (ToA Search Spitting Scarab Team / Solo: the note, no icons,
   ranked at Def 80; ToA Plan 14:12.1, briefing / Spec plan without scarab or shadow, the 4 add phase rows "no specs
@@ -128,7 +128,7 @@ UI / defaults only; no plan total moves (the Plan tab already defaulted to "Plan
 - Tests: new `Phase33.test.ts` (defaults per raid; withPlanSpecs; reduced plans Solo / Team chips = Bring; toy summaries;
   FA Bork / AG / Ocellus / Xarth / Solo lines = the first phase's; stun-uptime six rows → one line; reset flags across
   every raid = the "Defence restored" labels; Sotetseg 3 events, Bork 1, Bloat 2; slow: full FA Solo party 1 → chips
-  Tonalztics, Team → your share). `yarn test` 1434 (1416 pass / 18 skipped); `RUN_SLOW_1434 (1416 pass / 18 skipped)=1` CrossRaid + Phase27-33 171 / 171; lint, tsc clean.
+  Tonalztics, Team → your share). `yarn test` 1434 (1416 pass / 18 skipped); `RUN_SLOW_TESTS=1` CrossRaid + Phase27-33 171 / 171; lint, tsc clean.
 - Playwright: new `verifyPhase33` all OK (ToB 7:29.5; Sotetseg "Start of fight: 1 Elder maul carrier (2 specs) + 2
   Tonalztics carriers (4 specs) → Def 100 · 99.7%", then "After maze 1 (Defence restored), again: …" and "After maze 2
   …" with the same numbers) (screenshots phase33-search-solo-nospecs / -plan-collapsed / -plan-expanded /
