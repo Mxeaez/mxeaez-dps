@@ -88,8 +88,9 @@ describe('potions from the kit', () => {
   test('one potion per style present where the potions are brought; none in ToA / CoX', () => {
     expect(kitPotions(['melee'], true).map((p) => p.type)).toEqual(['superCombat']);
     expect(kitPotions(['ranged'], true).map((p) => p.type)).toEqual(['ranging']);
-    expect(kitPotions(['magic'], true)).toEqual([]); // the heart is a pinned item
-    expect(kitPotions(['magic', 'ranged', 'melee', 'melee'], true).map((p) => p.type)).toEqual(['superCombat', 'ranging']);
+    // phase 31: magic's potion is the heart (was a pinned item)
+    expect(kitPotions(['magic'], true).map((p) => p.type)).toEqual(['heart']);
+    expect(kitPotions(['magic', 'ranged', 'melee', 'melee'], true).map((p) => p.type)).toEqual(['superCombat', 'ranging', 'heart']);
     expect(kitPotions(['melee', 'ranged', 'magic'], false)).toEqual([]);
     // comfort supplies: the user's counts; combat potion counts are ignored and replaced by the kit's
     expect(COMFORT_SUPPLY_TYPES).toEqual(['brew', 'restore', 'food', 'other']);
@@ -144,25 +145,30 @@ describe('potions from the kit', () => {
     const groups = Array.from(new Set(r.kit.map((c) => c.group)));
     const pots = kitPotions(groups, true);
     expect(r.potions).toEqual(pots);
-    expect(r.slots!.supplies).toBe(6 + 4 + pots.length);
-    pots.forEach((p) => expect(r.inventory.filter((c) => c.kind === 'supply' && c.supply === p.type).length).toBe(1));
-    expect(r.inventory.filter((c) => c.kind === 'supply').length).toBe(10 + pots.length);
+    // phase 31: the heart (magic) is an item cell ('potion'), not a supply count
+    const supplyPots = pots.filter((p) => p.type !== 'heart');
+    expect(r.slots!.supplies).toBe(6 + 4 + supplyPots.length);
+    supplyPots.forEach((p) => expect(r.inventory.filter((c) => c.kind === 'supply' && c.supply === p.type).length).toBe(1));
+    expect(r.inventory.filter((c) => c.kind === 'supply').length).toBe(10 + supplyPots.length);
+    expect(r.inventory.filter((c) => c.kind === 'potion').length).toBe(pots.length - supplyPots.length);
     // ToA: the raid's potion (Other) only
     const toa = planned(TOMBS_OF_AMASCUT_RAID, 'switch');
     expect(toa.potions).toEqual([]);
     expect(toa.inventory.some((c) => c.supply === 'ranging' || c.supply === 'superCombat')).toBe(false);
   }, 300000);
 
-  test('the heart is unaffected: a pinned item, magic boosted iff pinned, never a kit potion', () => {
+  // phase 31: the heart became magic's kit potion (Phase31.test.ts); a pinned heart still counts once, as a pinned item
+  test('a pinned heart: magic boosted, one cell; magic in the kit lists the heart beside the potions', () => {
     const a = planAssumptions(DEFAULT_ASSUMPTIONS, NO_SUPPLIES, [SATURATED]);
     expect(a.withoutPotion).toBeUndefined();
     expect(a.potions.magic).toBe(Potion.SATURATED_HEART);
-    expect(planAssumptions(DEFAULT_ASSUMPTIONS, NO_SUPPLIES, []).withoutPotion).toEqual(['magic']);
+    expect(planAssumptions(DEFAULT_ASSUMPTIONS, NO_SUPPLIES, []).withoutPotion).toBeUndefined();
     const cells = inventoryGrid([], 0, [], [planItemByName('Saturated heart')], kitSupplies(NO_SUPPLIES, ['magic'], true), 0);
     expect(cells.filter((c) => c.kind === 'pinned').map((c) => c.label)).toEqual(['Saturated heart']);
     expect(cells.filter((c) => c.kind === 'supply')).toEqual([]);
     const r = planned(FRACTURED_ARCHIVE_RAID, 'switch');
-    expect(r.potions.some((p) => p.group === 'magic')).toBe(false);
+    expect(r.potions.some((p) => p.group === 'magic')).toBe(r.kit.some((c) => c.group === 'magic'));
+    // pinned here (the phase 29 list): one cell either way (a 'potion' cell when the kit has magic, else 'pinned')
     expect(r.inventory.filter((c) => c.label === 'Saturated heart').length).toBe(1);
   }, 300000);
 });

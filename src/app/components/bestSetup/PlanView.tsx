@@ -23,8 +23,11 @@ import {
   heartByPotion,
   INVENTORY_SLOTS,
   InventoryCell,
+  isQuiver,
+  kitHeart,
   ownedPinned,
   PlanCandidate,
+  PlanItem,
   planItemByName,
   planAssumptions,
   planLoadoutToPlayer,
@@ -175,14 +178,27 @@ const itemUrl = (id: number) => {
 };
 const pinnedName = (id: number) => heartById(id)?.name ?? equipmentById(id)?.name;
 
-/** The worn set, laid out like the calculator's equipment grid. */
-const WornGrid: React.FC<{ kit: PlanCandidate }> = ({ kit }) => {
+/** Phase 31: the arrow / bolt type held in Dizana's quiver, drawn on the quiver's corner (0 slots). */
+const QuiverAmmoBadge: React.FC<{ ammo: PlanItem }> = ({ ammo }) => (
+  <span
+    className="absolute -right-1 -bottom-1 rounded bg-body-200 dark:bg-dark-300 border border-body-400 dark:border-dark-200 leading-none"
+    data-testid="quiver-ammo"
+    data-item={ammo.name}
+    title={`${ammo.name}: held in the quiver (0 inventory slots)`}
+  >
+    <ItemIcon name={ammo.name} src={equipmentImageUrl(equipmentById(ammo.id)?.image)} size={16} title={`${ammo.name}: held in the quiver (0 inventory slots)`} />
+  </span>
+);
+
+/** The worn set, laid out like the calculator's equipment grid (phase 31: the quiver-held ammo on a worn quiver). */
+const WornGrid: React.FC<{ kit: PlanCandidate, quiverAmmo?: PlanItem | null }> = ({ kit, quiverAmmo }) => {
   const cell = (slot: keyof PlayerEquipment) => {
     const it = kit.equipment[slot];
+    const held = slot === 'cape' && quiverAmmo && it && isQuiver(it) ? quiverAmmo : null;
     return (
       <div
         key={slot}
-        className="flex justify-center items-center h-[40px] w-[40px] bg-body-100 dark:bg-dark-400 border border-body-300 dark:border-dark-400 rounded"
+        className="relative flex justify-center items-center h-[40px] w-[40px] bg-body-100 dark:bg-dark-400 border border-body-300 dark:border-dark-400 rounded"
         data-testid="worn-slot"
         data-slot={slot}
         data-item={it?.name ?? ''}
@@ -192,6 +208,7 @@ const WornGrid: React.FC<{ kit: PlanCandidate }> = ({ kit }) => {
           ? <ItemIcon name={it.name} src={searchItemIcon(slot, it).imageUrl} size={32} />
           // eslint-disable-next-line @next/next/no-img-element
           : <img className="opacity-30 dark:filter dark:invert" src={SLOT_PLACEHOLDERS[slot]} alt={slot} draggable={false} />}
+        {held && <QuiverAmmoBadge ammo={held} />}
       </div>
     );
   };
@@ -209,6 +226,7 @@ const WornGrid: React.FC<{ kit: PlanCandidate }> = ({ kit }) => {
 const cellTitle = (c: InventoryCell) => {
   switch (c.kind) {
     case 'supply': return c.supply === 'ranging' || c.supply === 'superCombat' ? `${c.label} (from the kit: one per style)` : `${c.label} (comfort supply)`;
+    case 'potion': return `${c.label} (magic's potion, from the kit: it has a magic loadout; reusable, one slot)`;
     case 'switch': return `${c.label} (${c.group} switch)`;
     case 'spec': return `${c.label} (spec weapon)`;
     case 'pinned': return `${c.label} (always brought)`;
@@ -216,8 +234,8 @@ const cellTitle = (c: InventoryCell) => {
   }
 };
 
-/** The 4 × 7 inventory. */
-const InventoryGrid: React.FC<{ cells: InventoryCell[] }> = ({ cells }) => (
+/** The 4 × 7 inventory (phase 31: the quiver-held ammo on a quiver carried in the inventory). */
+const InventoryGrid: React.FC<{ cells: InventoryCell[], quiverAmmo?: PlanItem | null }> = ({ cells, quiverAmmo }) => (
   <div className="grid grid-cols-4 gap-1 p-2 rounded bg-[#3e3529] border border-[#2a241b] w-fit" data-testid="inventory-grid">
     {cells.map((c, i) => {
       const border = c.kind === 'switch' && c.group ? `border-2 ${GROUP_COLOURS[c.group]}` : 'border border-[#5a4d3a]';
@@ -230,13 +248,14 @@ const InventoryGrid: React.FC<{ cells: InventoryCell[] }> = ({ cells }) => (
         <div
           // eslint-disable-next-line react/no-array-index-key
           key={i}
-          className={`h-[40px] w-[40px] flex items-center justify-center rounded ${border} ${c.kind === 'free' ? 'border-dashed opacity-50' : 'bg-[#4a3f31]'}`}
+          className={`relative h-[40px] w-[40px] flex items-center justify-center rounded ${border} ${c.kind === 'free' ? 'border-dashed opacity-50' : 'bg-[#4a3f31]'}`}
           title={cellTitle(c)}
           data-testid="inventory-cell"
           data-kind={c.kind}
           data-label={c.label}
         >
           {content}
+          {quiverAmmo && c.item && isQuiver(c.item) && <QuiverAmmoBadge ammo={quiverAmmo} />}
         </div>
       );
     })}
@@ -675,7 +694,7 @@ const PlanView: React.FC<{
         </div>
         <div className="text-gray-600 dark:text-gray-300" data-testid="plan-potions-note">
           {raid.boostsNeedSupplies
-            ? 'Potions: chosen from the kit — one Super combat if it has a melee loadout, one Ranging potion if ranged (a slot each); magic uses the pinned heart.'
+            ? `Potions: chosen from the kit — one Super combat if it has a melee loadout, one Ranging potion if ranged, the ${kitHeart(assumptions, keptPinned).name} if magic (a slot each).`
             : 'Potions: the raid\'s own potion ("Other") boosts every style; no combat potions are brought.'}
         </div>
         <details className="border border-body-400 dark:border-dark-200 rounded px-2 py-1" data-testid="plan-advanced">
@@ -704,7 +723,7 @@ const PlanView: React.FC<{
               const unowned = !!name && !isOwned(name, notOwned);
               let title: string | undefined;
               if (unowned) title = 'On your "Items I don’t own" list: the plan leaves it out';
-              else if (heartById(id)) title = 'Magic boost for every magic loadout (reusable: one slot for the whole raid)';
+              else if (heartById(id)) title = 'Magic boost for every magic loadout (reusable: one slot for the whole raid). The plan brings a heart anyway when the kit has a magic loadout; pinned, it is carried even without one (counted once)';
               return (
                 <span
                   key={id}
@@ -721,7 +740,7 @@ const PlanView: React.FC<{
               );
             })}
             {raid.boostsNeedSupplies && !pinned.some((id) => heartById(id)) && HEART_ITEMS.map((h) => (
-              <button key={h.id} type="button" className="underline" onClick={() => setPinned([...pinned, h.id])} data-testid="pin-heart" title="The magic boost: magic loadouts are evaluated without a boost unless a heart is brought">
+              <button key={h.id} type="button" className="underline" onClick={() => setPinned([...pinned, h.id])} data-testid="pin-heart" title="Optional: the plan brings a heart as magic's potion whenever the kit has a magic loadout; pin one to always carry it (counted once)">
                 {`+ ${h.name}`}
               </button>
             ))}
@@ -796,7 +815,7 @@ const PlanView: React.FC<{
               className={`px-2 py-0.5 rounded text-sm font-bold ${result.slots.free > 0 ? 'bg-green-600' : 'bg-orange-500'} text-white`}
               data-testid="free-slots"
               data-free={result.slots.free}
-              title={`${result.slots.supplies} supplies + ${result.slots.nonItem} non-item + ${result.slots.inventoryItems} items + ${result.slots.swapReserve} swap space = ${result.slots.used} of ${result.slots.total}`}
+              title={`${result.slots.supplies} supplies + ${result.slots.nonItem} non-item + ${result.slots.inventoryItems} items + ${result.slots.swapReserve} swap space${result.slots.quiverAmmo ? ` − ${result.slots.quiverAmmo} ammo held in the quiver${result.quiverAmmo ? ` (${result.quiverAmmo.name})` : ''}` : ''} = ${result.slots.used} of ${result.slots.total}`}
             >
               {`Free slots: ${result.slots.free} / ${result.slots.total}`}
             </span>
@@ -812,12 +831,12 @@ const PlanView: React.FC<{
           <div className="flex flex-wrap gap-6 items-start">
             <div className="flex flex-col items-center gap-1">
               <div className="text-xs font-semibold">Worn</div>
-              <WornGrid kit={result.kit[0]} />
+              <WornGrid kit={result.kit[0]} quiverAmmo={result.quiverAmmo} />
               <div className="text-[11px] text-center max-w-[180px]" data-testid="worn-label">{result.kit[0].label}</div>
             </div>
             <div className="flex flex-col items-center gap-1">
               <div className="text-xs font-semibold">Inventory</div>
-              <InventoryGrid cells={result.inventory} />
+              <InventoryGrid cells={result.inventory} quiverAmmo={result.quiverAmmo} />
               <div className="text-[10px] text-gray-500 dark:text-gray-400 max-w-[190px]" data-testid="spec-note">
                 {result.specs.mode === 'auto'
                   ? `Spec weapons picked by the planner${result.specItems.length ? ` (${result.specItems.map((x) => x.name).join(', ')})` : ': none'}; each takes a slot.`

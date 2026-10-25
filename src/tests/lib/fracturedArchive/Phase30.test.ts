@@ -52,8 +52,10 @@ describe('ring policy with the inputs', () => {
 });
 
 describe('empty pinned defaults', () => {
-  test.each(RAIDS.map((r) => [r.id, r] as const))('%s: nothing pinned but the heart (FA / ToB)', (id, raid) => {
-    expect(raid.planDefaults.pinned).toEqual(['fractured-archive', 'tob'].includes(id) ? [SATURATED_HEART] : []);
+  // phase 31: the FA / ToB heart left too (magic's kit potion)
+  test.each(RAIDS.map((r) => [r.id, r] as const))('%s: nothing pinned (phase 31: not even the heart)', (_, raid) => {
+    expect(raid.planDefaults.pinned).toEqual([]);
+    expect(raid.planDefaults.pinned).not.toContain(SATURATED_HEART);
   });
 
   /** CoX: the Guardians take damage from pickaxes only; with nothing pinned the planner adds the pickaxe itself. */

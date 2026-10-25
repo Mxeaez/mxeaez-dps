@@ -630,7 +630,7 @@ describe('planner: spec modes', () => {
     expect(Math.abs(total(r) - 1382.50)).toBeLessThanOrEqual(0.01);
   }, 900000);
 
-  test('Team, 6-man: the planner picks 2 Elder maul + 2 Tonalztics; the Advanced 2 / 2 / 1 by hand gives the same 21:53.0', () => {
+  test('Team, 6-man: the planner picks 2 Elder maul + 2 Tonalztics; the Advanced 2 / 2 / 1 by hand gives the same total (phase 31: 21:44.4)', () => {
     const auto = full({ carrierMode: 'auto' });
     expect(auto.specs.team!.carriers).toEqual({
       elderMaul: 2, dwh: 0, bgs: 0, tonalztics: 2, ayak: 0,
@@ -640,7 +640,9 @@ describe('planner: spec modes', () => {
     // review 2: the Ayak carrier is capped at the mages (the kit has no magic loadout → 0), with a note
     expect(manual.specs.team!.carriers).toEqual({ ...A.team.carriers, ayak: 0 });
     expect(manual.specs.notes.some((x) => x.startsWith('Eye of Ayak carriers capped at the mages'))).toBe(true);
-    expect(formatDuration(total(manual))).toBe('21:53.0');
-    expect(formatDuration(total(auto))).toBe('21:53.0');
+    // phase 31: 21:53.0 → 21:44.4 with this (phase 29) pinned list: the quiver holds the Seeking dragon arrows, and the
+    // freed slot buys the phase 30 kit (Ascension crossbows + diamond (e) worn, Inquisitor's + Obligator, Twisted bow)
+    expect(formatDuration(total(manual))).toBe('21:44.4');
+    expect(formatDuration(total(auto))).toBe('21:44.4');
   }, 900000);
 });

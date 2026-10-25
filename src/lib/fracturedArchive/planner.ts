@@ -111,8 +111,8 @@ export type SupplyType = 'brew' | 'restore' | 'ranging' | 'superCombat' | 'food'
 
 /**
  * Supply types; `image` = file under src/public/img/potions (Ranging, Super combat) or src/public/img/supplies (phase 30:
- * wiki inventory images; null = generic icon). No magic potion: the magic boost is a
- * heart (Saturated / Imbued), a reusable pinned item (`HEART_ITEMS`), one slot for the whole raid.
+ * wiki inventory images; null = generic icon). No magic potion supply: the magic boost is a heart (Saturated /
+ * Imbued, `HEART_ITEMS`), reusable, one slot for the whole raid; phase 31: it is magic's kit potion (`kitPotions`).
  */
 export const SUPPLY_TYPES: { id: SupplyType, label: string, image: string | null }[] = [
   { id: 'brew', label: 'Saradomin brew', image: 'Saradomin brew(4).png' },
@@ -144,7 +144,8 @@ export const comfortSupplies = (s: SupplyCounts): SupplyCounts => ({ ...s, rangi
 /**
  * Phase 27: the potion each style brings where the potions are brought (FA, ToB: `boostsNeedSupplies`): a kit with a
  * melee loadout brings one Super combat, with a ranged loadout one Ranging potion (one potion item = one slot, whatever
- * its doses). Magic has none: its boost is a pinned heart (`pinnedHeart`). ToA / CoX: the raid potion ("Other").
+ * its doses). Phase 31: magic's is the heart (`kitHeart`: a pinned heart, else the Assumptions box's heart, else the
+ * Saturated heart), one slot only when the kit has a magic loadout. ToA / CoX: the raid potion ("Other").
  */
 export const KIT_POTIONS: Partial<Record<StyleGroup, SupplyType>> = {
   melee: 'superCombat', ranged: 'ranging',
@@ -160,20 +161,16 @@ export const potionSlots = (potions: (string | null | undefined)[]): number => n
 
 const GROUP_ORDER_POTIONS: StyleGroup[] = ['melee', 'ranged', 'magic'];
 
-/** Phase 27: the potions a kit of these style groups brings (none in ToA / CoX). */
-export const kitPotions = (groups: StyleGroup[], boostsNeedSupplies: boolean): { type: SupplyType, label: string, group: StyleGroup }[] => (
-  boostsNeedSupplies ? GROUP_ORDER_POTIONS.filter((g) => groups.includes(g) && KIT_POTIONS[g]).map((g) => ({
-    type: KIT_POTIONS[g]!, label: SUPPLY_TYPES.find((x) => x.id === KIT_POTIONS[g])!.label, group: g,
-  })) : []);
+/** Phase 31: a kit potion: a supply potion (melee / ranged) or the heart (magic). */
+export type KitPotionType = SupplyType | 'heart';
 
-/** Phase 27: the comfort supplies plus the kit's potions (what the inventory holds). */
-export const kitSupplies = (comfort: SupplyCounts, groups: StyleGroup[], boostsNeedSupplies: boolean): SupplyCounts => {
-  const out = comfortSupplies(comfort);
-  kitPotions(groups, boostsNeedSupplies).forEach((p) => {
-    out[p.type] = 1;
-  });
-  return out;
-};
+export interface KitPotion {
+  type: KitPotionType;
+  label: string;
+  group: StyleGroup;
+  /** Phase 31: the heart's pseudo id (magic only). */
+  heartId?: number;
+}
 
 /**
  * The magic boost items: reusable, one inventory slot for the whole raid, never worn. Not equipment, so they have
@@ -196,24 +193,58 @@ export const heartByPotion = (p: Potion) => HEART_ITEMS.find((h) => h.potion ===
 export const pinnedHeart = (pinned: number[]) => pinned.map(heartById).find((h) => !!h);
 
 /**
+ * Phase 31: the heart magic's kit potion is: a pinned heart (then it is carried anyway: counted once, with the pinned
+ * items), else the Assumptions box's heart (its magic potion), else the Saturated heart.
+ */
+export const kitHeart = (a: Pick<BestSetupAssumptions, 'potions'>, pinned: number[] = []): typeof HEART_ITEMS[number] => (
+  pinnedHeart(pinned) ?? heartByPotion(a.potions.magic) ?? HEART_ITEMS[0]);
+
+/**
+ * Phase 27: the potions a kit of these style groups brings (none in ToA / CoX). Phase 31: magic brings `heart` (default
+ * the Saturated heart), shown beside the potions.
+ */
+export const kitPotions = (
+  groups: StyleGroup[],
+  boostsNeedSupplies: boolean,
+  heart: typeof HEART_ITEMS[number] = HEART_ITEMS[0],
+): KitPotion[] => (boostsNeedSupplies ? GROUP_ORDER_POTIONS.filter((g) => groups.includes(g)).map((g): KitPotion => {
+  if (g === 'magic') {
+    return {
+      type: 'heart', label: heart.name, group: g, heartId: heart.id,
+    };
+  }
+  return { type: KIT_POTIONS[g]!, label: SUPPLY_TYPES.find((x) => x.id === KIT_POTIONS[g])!.label, group: g };
+}) : []);
+
+/**
+ * Phase 27: the comfort supplies plus the kit's potions (what the inventory holds). Phase 31: the heart is an item (its
+ * pseudo id, carried with the kit), not a supply count.
+ */
+export const kitSupplies = (comfort: SupplyCounts, groups: StyleGroup[], boostsNeedSupplies: boolean): SupplyCounts => {
+  const out = comfortSupplies(comfort);
+  kitPotions(groups, boostsNeedSupplies).forEach((p) => {
+    if (p.type !== 'heart') out[p.type] = 1;
+  });
+  return out;
+};
+
+/**
  * The best-setup assumptions as the plan uses them (Search / Summary always assume every style's boost):
  * - potions brought (FA, ToB: `boostsNeedSupplies`): phase 27: melee / ranged keep their boost (the kit brings the
- *   potion of every style it has: `KIT_POTIONS`, counted in its slot cost); magic is boosted iff a heart is pinned, with
- *   that heart's boost (whatever the Assumptions box says).
+ *   potion of every style it has: `KIT_POTIONS`, counted in its slot cost); phase 31: magic likewise, with `kitHeart`'s
+ *   boost (the kit brings the heart when it has a magic loadout, one slot).
  * - raid potions (ToA Smelling salts, CoX Overload: boost every style): every style keeps the raid's boost iff the
  *   "Other" supply count is > 0; with none, magic falls back to a pinned heart, melee / ranged lose the boost.
  */
 export const planAssumptions = (a: BestSetupAssumptions, supplies: SupplyCounts, pinned: number[] = []): BestSetupAssumptions => {
-  const heart = pinnedHeart(pinned);
   if (!raidBase(a.raid).boostsNeedSupplies) {
+    const heart = pinnedHeart(pinned);
     if (supplies.other > 0) return a;
     if (heart) return { ...a, potions: { ...a.potions, magic: heart.potion }, withoutPotion: ['melee', 'ranged'] };
     return { ...a, withoutPotion: ['melee', 'ranged', 'magic'] };
   }
-  const without: StyleGroup[] = [];
-  if (!heart) without.push('magic');
-  const withHeart = heart && a.potions.magic !== heart.potion ? { ...a, potions: { ...a.potions, magic: heart.potion } } : a;
-  return without.length ? { ...withHeart, withoutPotion: without } : withHeart;
+  const heart = kitHeart(a, pinned);
+  return a.potions.magic !== heart.potion ? { ...a, potions: { ...a.potions, magic: heart.potion } } : a;
 };
 
 /**
@@ -277,6 +308,56 @@ export const equipmentById = (id: number): EquipmentPiece | undefined => {
     availableEquipment.forEach((e) => byId!.set(e.id, e));
   }
   return byId.get(id);
+};
+
+// --- quiver (phase 31) ----------------------------------------------------------------------------------------------
+
+/**
+ * Phase 31: Dizana's quiver's extra ammunition slot. Wiki (https://oldschool.runescape.wiki/w/Dizana%27s_quiver, read
+ * 2026-10-24): "The quiver provides an additional ammunition slot, which can only be filled with arrows or bolts", "only
+ * appearing if the quiver is in the inventory or equipped". So a kit that carries a quiver (any variant, worn or not)
+ * holds one extra arrow / bolt type in it at no inventory cost. Blessed Dizana's quiver and Dizana's max cape keep the
+ * quiver's perks (their pages; UNVERIFIED D23); javelins, atlatl darts, blessings and blowpipe darts don't go in it.
+ */
+export const QUIVER_NAMES = ["Dizana's quiver", "Blessed Dizana's quiver", "Dizana's max cape"];
+
+/** Item ids the quiver logic looks at: the quivers and the ammo the quiver's extra slot takes. */
+export interface QuiverSpec {
+  quivers: number[];
+  ammo: number[];
+}
+
+/** An arrow / bolt (ammo slot, the name says arrow or bolts; Karil's bolt rack is not counted, UNVERIFIED D23). */
+export const isQuiverAmmo = (p: Pick<EquipmentPiece, 'name' | 'slot'> | undefined): boolean => !!p && p.slot === 'ammo'
+  && /\b(arrows?|bolts?)\b/i.test(p.name) && p.name !== 'Bolt rack';
+
+export const isQuiver = (p: Pick<EquipmentPiece, 'name'> | undefined): boolean => !!p && QUIVER_NAMES.includes(p.name);
+
+/** The quiver spec of these item ids (real equipment ids; pseudo ids such as hearts are ignored). */
+export const quiverSpecOf = (ids: Iterable<number>): QuiverSpec => {
+  const quivers: number[] = [];
+  const ammo: number[] = [];
+  new Set(ids).forEach((id) => {
+    const e = equipmentById(id);
+    if (isQuiver(e)) quivers.push(id);
+    else if (isQuiverAmmo(e)) ammo.push(id);
+  });
+  return { quivers: quivers.sort((a, b) => a - b), ammo: ammo.sort((a, b) => a - b) };
+};
+
+/**
+ * Phase 31: inventory slots the quiver saves for a kit carrying the item ids `all` (the union of its loadouts and the
+ * carried items): 1 when a quiver is among them and at least two distinct arrow / bolt types are (one of them is
+ * worn or in the inventory, one sits in the quiver), else 0. Only one extra type per quiver.
+ */
+export const quiverSavedSlots = (all: { has: (id: number) => boolean }, q: QuiverSpec | undefined): number => {
+  if (!q || !q.quivers.some((id) => all.has(id))) return 0;
+  let n = 0;
+  for (const id of q.ammo) {
+    if (all.has(id)) n += 1;
+    if (n >= 2) return 1;
+  }
+  return 0;
 };
 
 export const toPlanItem = (p: EquipmentPiece, slot: Slot = p.slot as Slot): PlanItem => ({
@@ -525,7 +606,9 @@ export interface SlotUsage {
   inventoryItems: number;
   /** Extra slots needed while wearing a smaller loadout (worn − min); kept free for swaps. */
   swapReserve: number;
-  /** supplies + non-item + inventory items + swap reserve. */
+  /** Phase 31: slots the quiver saves (0 / 1: a second arrow / bolt type held in Dizana's quiver; `quiverSavedSlots`). */
+  quiverAmmo: number;
+  /** supplies + non-item + inventory items + swap reserve − quiver ammo. */
   used: number;
   /** total − used, never below 0. */
   free: number;
@@ -539,7 +622,8 @@ const sumSupplies = (s: SupplyCounts) => SUPPLY_TYPES.reduce((t, x) => t + Math.
  * Slot use of a kit. `loadouts` = item ids per kit loadout, `worn` = index of the worn one, `carried` = pinned items +
  * spec weapons (free to use in loadouts; counted once). Phase 21: `raidSupplied` = items the raid hands out (ToB's
  * Dawnbringer): never in the carried union (0 slots), but still counted in a loadout's size, so a loadout that wears
- * one in place of a weapon needs no extra swap space (it takes the place of the item it replaces).
+ * one in place of a weapon needs no extra swap space (it takes the place of the item it replaces). Phase 31: `quiver`
+ * (the planner: `quiverSpecOf` of its items) = a second arrow / bolt type rides in Dizana's quiver (`quiverAmmo`).
  */
 export const kitSlotUsage = (
   loadouts: number[][],
@@ -549,6 +633,7 @@ export const kitSlotUsage = (
   nonItemSlots: number,
   total = INVENTORY_SLOTS,
   raidSupplied: number[] = [],
+  quiver?: QuiverSpec,
 ): SlotUsage => {
   const free = new Set(raidSupplied);
   const all = new Set<number>(carried.filter((id) => !free.has(id)));
@@ -563,7 +648,8 @@ export const kitSlotUsage = (
   const nonItem = Math.max(0, Math.floor(nonItemSlots || 0));
   const inventoryItems = all.size - (wornItems - wornFree);
   const swapReserve = wornItems - wornFree - minLoadoutItems;
-  const used = s + nonItem + inventoryItems + swapReserve;
+  const quiverAmmo = quiverSavedSlots(all, quiver);
+  const used = s + nonItem + inventoryItems + swapReserve - quiverAmmo;
   return {
     total,
     supplies: s,
@@ -573,6 +659,7 @@ export const kitSlotUsage = (
     minLoadoutItems,
     inventoryItems,
     swapReserve,
+    quiverAmmo,
     used,
     free: Math.max(0, total - used),
     overfull: used > total,
@@ -581,7 +668,7 @@ export const kitSlotUsage = (
 
 // --- inventory grid ------------------------------------------------------------------------------------------------
 
-export type InventoryCellKind = 'supply' | 'switch' | 'spec' | 'pinned' | 'non-item' | 'swap' | 'free';
+export type InventoryCellKind = 'supply' | 'potion' | 'switch' | 'spec' | 'pinned' | 'non-item' | 'swap' | 'free';
 
 export interface InventoryCell {
   kind: InventoryCellKind;
@@ -594,9 +681,39 @@ export interface InventoryCell {
 const GROUP_ORDER: StyleGroup[] = ['melee', 'ranged', 'magic'];
 
 /**
- * The 4×7 inventory while wearing the worn set: supplies, switch items grouped by style (melee, ranged, magic; slot
- * order), spec weapons, pinned items, non-item slots, swap space (free slots needed while wearing a smaller loadout),
- * free slots. Never more than `total` cells unless the kit is overfull (then every item is listed).
+ * Phase 31: the arrow / bolt type that rides in Dizana's quiver (no inventory cell): when the kit carries a quiver and
+ * at least two arrow / bolt types (`quiverSavedSlots`), the first one not worn by the worn loadout, in inventory-grid
+ * order (switch items by style, then spec weapons, then pinned items). Null otherwise.
+ */
+export const quiverHeldAmmo = (
+  kit: { equipment: PlanEquipment, group: StyleGroup }[],
+  worn: number,
+  carriedItems: PlanItem[],
+  quiver: QuiverSpec | undefined,
+): PlanItem | null => {
+  if (!quiver || !kit.length) return null;
+  const all = new Set<number>(carriedItems.map((it) => it.id));
+  kit.forEach((l) => equipmentItemIds(l.equipment).forEach((id) => all.add(id)));
+  if (!quiverSavedSlots(all, quiver)) return null;
+  const wornIds = new Set(equipmentItemIds(kit[worn].equipment));
+  const ammo = new Set(quiver.ammo);
+  const pick = (it: PlanItem | undefined) => !!it && ammo.has(it.id) && !wornIds.has(it.id);
+  for (const g of GROUP_ORDER) {
+    for (let i = 0; i < kit.length; i++) {
+      if (i !== worn && kit[i].group === g) {
+        const it = kit[i].equipment.ammo;
+        if (pick(it)) return it!;
+      }
+    }
+  }
+  return carriedItems.find(pick) ?? null;
+};
+
+/**
+ * The 4×7 inventory while wearing the worn set: supplies (phase 31: the heart, magic's kit potion, after the potions),
+ * switch items grouped by style (melee, ranged, magic; slot order), spec weapons, pinned items, non-item slots, swap
+ * space (free slots needed while wearing a smaller loadout), free slots. Phase 31: the quiver-held ammo
+ * (`quiverHeldAmmo`) takes no cell. Never more than `total` cells unless the kit is overfull (then every item is listed).
  */
 export const inventoryGrid = (
   kit: { equipment: PlanEquipment, group: StyleGroup }[],
@@ -607,15 +724,27 @@ export const inventoryGrid = (
   nonItemSlots: number,
   total = INVENTORY_SLOTS,
   raidSupplied: number[] = [],
+  extras: { potionItems?: PlanItem[], quiver?: QuiverSpec } = {},
 ): InventoryCell[] => {
   const cells: InventoryCell[] = [];
   const free = new Set(raidSupplied);
+  const wornIds = new Set(kit.length ? equipmentItemIds(kit[worn].equipment) : []);
+  // raid-supplied items (ToB's Dawnbringer) take no cell; nor does the quiver-held ammo (phase 31)
+  const held = quiverHeldAmmo(kit, worn, [...specItems, ...pinnedItems], extras.quiver);
+  const placed = new Set<number>([...Array.from(wornIds), ...raidSupplied, ...(held ? [held.id] : [])]);
   SUPPLY_TYPES.forEach((t) => {
     for (let i = 0; i < Math.max(0, Math.floor(supplies[t.id] || 0)); i++) cells.push({ kind: 'supply', label: t.label, supply: t.id });
+    // phase 31: the heart beside the potions (once, also when pinned)
+    if (t.id === 'superCombat') {
+      (extras.potionItems ?? []).forEach((it) => {
+        if (placed.has(it.id)) return;
+        placed.add(it.id);
+        cells.push({
+          kind: 'potion', label: it.name, item: it, group: 'magic',
+        });
+      });
+    }
   });
-  const wornIds = new Set(kit.length ? equipmentItemIds(kit[worn].equipment) : []);
-  // raid-supplied items (ToB's Dawnbringer) take no cell
-  const placed = new Set<number>([...Array.from(wornIds), ...raidSupplied]);
   for (const g of GROUP_ORDER) {
     kit.forEach((l, i) => {
       if (i === worn || l.group !== g) return;
@@ -719,6 +848,8 @@ export interface KitProblem {
    * members (`potionSlots`), so a melee + ranged kit pays Super combat + Ranging potion and a melee-only kit one.
    */
   potions?: (string | null)[];
+  /** Phase 31: the quiver's extra ammo slot (`quiverSavedSlots`: −1 slot for a second arrow / bolt type). */
+  quiver?: QuiverSpec;
   /** Phase 21: skip the dedupe rule (the optimiser's prune step); default false. */
   noPrune?: boolean;
   /** Phase 21 (`lightenKit`): prune this kit with drops and same-group swaps instead of optimising. */
@@ -794,7 +925,8 @@ export const optimiseKit = (p: KitProblem): KitOptimum => {
       });
       min = Math.min(min, p.items[i].length);
     }
-    return p.fixedSlots + all.size - (m.length ? min : 0) + (p.potions ? potionSlots(m.map((i) => p.potions![i])) : 0);
+    return p.fixedSlots + all.size - (m.length ? min : 0) + (p.potions ? potionSlots(m.map((i) => p.potions![i])) : 0)
+      - quiverSavedSlots(all, p.quiver);
   };
   const solution = (members: number[], seed: number): KitSolution => ({
     members, time: timeOf(members), used: usedOf(members), seed,
@@ -1068,8 +1200,10 @@ export interface PlanResult {
   planned: number;
   rejected: PlanRejection[];
   alternatives: PlanRejection[];
-  /** Phase 27: the potions the kit brings (one per style present; in the inventory grid and slot count). */
-  potions: { type: SupplyType, label: string, group: StyleGroup }[];
+  /** Phase 27: the potions the kit brings (one per style present; in the inventory grid and slot count; phase 31: magic's heart). */
+  potions: KitPotion[];
+  /** Phase 31: the arrow / bolt type held in Dizana's quiver (0 slots; not in the inventory grid), if any. */
+  quiverAmmo: PlanItem | null;
   /** Phase 29: the spec weapons (what the kit carries and why; Team: the briefing and your share). */
   specs: PlanSpecs;
   /**
@@ -1179,7 +1313,14 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
   const planA = planAssumptions(inputs.assumptions, comfort, pinnedIds);
   const policy: RingPolicy = inputs.ringPolicy ?? 'switch';
   const boostsNeedSupplies = raidBase(planA.raid).boostsNeedSupplies;
-  const potionOf = (g: StyleGroup): SupplyType | null => (boostsNeedSupplies ? KIT_POTIONS[g] ?? null : null);
+  // phase 31: magic's potion is the heart (one slot; none when a heart is pinned: it is carried anyway, counted once)
+  const heart = kitHeart(inputs.assumptions, pinnedIds);
+  const heartPinned = !!pinnedHeart(pinnedIds);
+  const potionOf = (g: StyleGroup): KitPotionType | null => {
+    if (!boostsNeedSupplies) return null;
+    if (g === 'magic') return heartPinned ? null : 'heart';
+    return KIT_POTIONS[g] ?? null;
+  };
   const total = inputs.totalSlots ?? INVENTORY_SLOTS;
   const cancelled = () => hooks.shouldCancel?.() === true;
   const progress = (p: PlanProgress) => hooks.onProgress?.(p);
@@ -1235,6 +1376,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     droppedPinned,
     ownershipNotices,
     potions: [],
+    quiverAmmo: null,
     specs: {
       mode: specMode, drain, bring: [], text: bringText([]), notes: [],
     },
@@ -1620,8 +1762,10 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     // the current matrix (phase 29: the chosen spec subset's / carriers', once picked)
     const routeTime = (members: number[]) => routeTimeWith(dps)(members);
     const items = candidates.map((c) => equipmentItemIds(c.equipment));
-    // phase 27: the potion each candidate needs (Super combat / Ranging potion; magic: the pinned heart; ToA / CoX: none)
+    // phase 27: the potion each candidate needs (Super combat / Ranging potion; phase 31: magic the heart; ToA / CoX: none)
     const potions = candidates.map((c) => potionOf(c.group));
+    // phase 31: Dizana's quiver holds a second arrow / bolt type (−1 slot; quiverSavedSlots)
+    const quiver = quiverSpecOf([...items.flat(), ...carried]);
     // seeds: the best single loadouts by their own route time (ties: matrix score), plus the best of every style group so
     // single-style and mixed kits both get explored. Phase 29 review: ranked under the drain state being optimised (each
     // spec subset / carrier set its own table), and the group bests are kept however few seeds are asked for.
@@ -1653,6 +1797,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       seeds: seedList.length ? seedList : [0],
       raidSupplied,
       potions,
+      quiver,
       noPrune: tuning.noPrune,
       shouldCancel: hooks.shouldCancel,
       onProgress: (done, n) => progress({
@@ -1665,7 +1810,8 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       m.forEach((x) => items[x].forEach((id) => {
         if (!raidSuppliedSet.has(id)) allIds.add(id);
       }));
-      return fixedSlots + allIds.size - (m.length ? Math.min(...m.map((x) => items[x].length)) : 0) + potionSlots(m.map((x) => potions[x]));
+      return fixedSlots + allIds.size - (m.length ? Math.min(...m.map((x) => items[x].length)) : 0) + potionSlots(m.map((x) => potions[x]))
+        - quiverSavedSlots(allIds, quiver);
     };
 
     // phase 29: DPS columns per distinct drain state (by tag = the monster's reductions), shared by the spec subsets /
@@ -2010,8 +2156,11 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     const kitOrder = [members[wornIx], ...members.filter((_, j) => j !== wornIx)];
     const kit = kitOrder.map((i) => candidates[i]);
     const supplies = kitSupplies(comfort, kit.map((c) => c.group), boostsNeedSupplies);
-    const slots = kitSlotUsage(kitOrder.map((i) => items[i]), 0, runCarried, supplies, inputs.nonItemSlots, total, raidSupplied);
-    const inventory = inventoryGrid(kit, 0, runSpecItems, pinnedItems, supplies, inputs.nonItemSlots, total, raidSupplied);
+    // phase 31: the heart is magic's potion: an item carried with the kit (deduplicated with a pinned heart)
+    const heartItems = boostsNeedSupplies && kit.some((c) => c.group === 'magic') ? [heartPlanItem(heart)] : [];
+    const slots = kitSlotUsage(kitOrder.map((i) => items[i]), 0, [...runCarried, ...heartItems.map((h) => h.id)], supplies, inputs.nonItemSlots, total, raidSupplied, quiver);
+    const inventory = inventoryGrid(kit, 0, runSpecItems, pinnedItems, supplies, inputs.nonItemSlots, total, raidSupplied, { potionItems: heartItems, quiver });
+    const quiverAmmo = quiverHeldAmmo(kit, 0, [...runSpecItems, ...pinnedItems], quiver);
 
     // 7. why: improvements that don't fit, and the best kit of every other style mix
     const T = chosen.time;
@@ -2020,7 +2169,8 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       m.forEach((x) => items[x].forEach((id) => {
         if (!raidSuppliedSet.has(id)) allIds.add(id);
       }));
-      return fixedSlots + allIds.size - Math.min(...m.map((x) => items[x].length)) + potionSlots(m.map((x) => potions[x]));
+      return fixedSlots + allIds.size - Math.min(...m.map((x) => items[x].length)) + potionSlots(m.map((x) => potions[x]))
+        - quiverSavedSlots(allIds, quiver);
     };
     // phase 21: what each kit loadout costs and saves (vs the kit without it; optimiser times)
     const kitMarginal = kitOrder.map((i) => {
@@ -2071,7 +2221,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       const mixSeeds = seeds.filter((i) => allowed[i]).slice(0, 5);
       if (!mixSeeds.length) continue;
       let s = optimiseKit({
-        items, carried: runCarried, fixedSlots, totalSlots: total, time: routeTime, seeds: mixSeeds, allowed, raidSupplied, potions, noPrune: tuning.noPrune, shouldCancel: hooks.shouldCancel,
+        items, carried: runCarried, fixedSlots, totalSlots: total, time: routeTime, seeds: mixSeeds, allowed, raidSupplied, potions, quiver, noPrune: tuning.noPrune, shouldCancel: hooks.shouldCancel,
       }).best;
       for (const g of mix) {
         if (s.members.some((i) => candidates[i].group === g)) continue;
@@ -2110,7 +2260,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     alternatives.sort((a, b) => (b.deltaSeconds - a.deltaSeconds) || a.label.localeCompare(b.label));
     // phase 21: the lighter kit (same-style cheaper swaps where the slots bought < 1 s each), listed first when it frees slots
     const light = lightenKit({
-      items, carried: runCarried, fixedSlots, totalSlots: total, time: routeTime, seeds: members, raidSupplied, potions, groups: candidates.map((c) => c.group), shouldCancel: hooks.shouldCancel,
+      items, carried: runCarried, fixedSlots, totalSlots: total, time: routeTime, seeds: members, raidSupplied, potions, quiver, groups: candidates.map((c) => c.group), shouldCancel: hooks.shouldCancel,
     }, members);
     const freed = chosen.used - light.used;
     if (freed >= 1 && Number.isFinite(light.time)) {
@@ -2168,7 +2318,8 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       planned,
       rejected,
       alternatives,
-      potions: kitPotions(kit.map((c) => c.group), boostsNeedSupplies),
+      potions: kitPotions(kit.map((c) => c.group), boostsNeedSupplies, heart),
+      quiverAmmo,
       specs,
       ring: { policy, ring: ring?.name ?? null, screened: [] },
       matrixDps: Object.fromEntries(targets.map((t, col) => [phaseKey(t.targetKey, t.phase), Math.max(0, ...members.map((m) => dps[m][col]))])),

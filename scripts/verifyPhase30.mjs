@@ -7,7 +7,7 @@
  *   generic flask. Checks each <img> src path, that it loaded (naturalWidth > 0) and that the file is in the repo.
  * - Ring policy: a "Rings" dropdown in the supplies row (not under Advanced), default Camp one ring, its one-line
  *   summary next to it; changing it changes the summary.
- * - "Items I always bring": only the Saturated heart in FA / ToB, empty in ToA / CoX.
+ * - "Items I always bring": empty in every raid (phase 31: the FA / ToB heart is magic's kit potion).
  * - Search drain box (Team, Advanced 2 / 2 / 1, before any plan): "needed" reaches the confidence threshold when the
  *   team's specs do — AG Flying "needed ×4 (98%)", Xarth Tonalztics "needed ×2 (97%)", Bork Tonalztics "needed ×3
  *   (97%)" after Elder maul ×3; the carriers table summary reads "Per boss minimum at 95% (for reference): …".
@@ -97,7 +97,7 @@ const main = async () => {
   check(await page.locator('[data-testid="plan-advanced"] [data-testid="plan-ring-policy"]').count() === 0, 'no ring policy under Advanced (plan)');
   const label = await text(page.locator('label[for="plan-ring-policy"]'));
   check(/^Rings/.test(label), `labelled "${label.slice(0, 5)}"`);
-  check(JSON.stringify(await pinnedNames(page)) === JSON.stringify(['Saturated heart']), `FA pinned: ${(await pinnedNames(page)).join(', ') || '(none)'}`);
+  check((await pinnedNames(page)).length === 0, `FA pinned: ${(await pinnedNames(page)).join(', ') || '(none)'}`);
   await waitPlan(page);
   const faTotal = await text(page.locator('[data-testid="plan-total"]'));
   check(faTotal === '21:44.4', `FA plan total ${faTotal} (phase 29: 21:53.0)`);
@@ -121,7 +121,7 @@ const main = async () => {
 
   // --- ToB: the steps timed on the returned kit
   await openPlan(page, 'tob');
-  check(JSON.stringify(await pinnedNames(page)) === JSON.stringify(['Saturated heart']), `tob pinned: ${(await pinnedNames(page)).join(', ')}`);
+  check((await pinnedNames(page)).length === 0, `tob pinned: ${(await pinnedNames(page)).join(', ')}`);
   await waitPlan(page);
   const tobTotal = await text(page.locator('[data-testid="plan-total"]'));
   check(tobTotal === '7:30.0', `ToB plan total ${tobTotal}`);

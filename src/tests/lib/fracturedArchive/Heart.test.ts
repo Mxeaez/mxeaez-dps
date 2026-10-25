@@ -25,6 +25,8 @@ import { generateEmptyPlayer } from '@/state';
 
 // Fix (2026-10-23): the magic boost is a Saturated heart, a pinned item (one slot for the whole raid), not a potion
 // supply. FA / ToB: magic is boosted iff a heart is pinned. ToA / CoX: the raid potion ("Other") boosts every style.
+// Phase 31: in FA / ToB the heart is magic's kit potion (Phase31.test.ts): magic is always boosted (the kit pays the
+// heart's slot when it has a magic loadout); a pinned heart sets which heart.
 
 const NO_SUPPLIES: SupplyCounts = {
   brew: 0, restore: 0, ranging: 0, superCombat: 0, food: 0, other: 0,
@@ -51,9 +53,9 @@ describe('heart as a pinned item', () => {
     expect(planItemByName('Saturated heart').name).toBe('Saturated heart');
   });
 
-  test('default pinned lists: the heart in FA and ToB, not in ToA / CoX (their raid potion boosts magic)', () => {
-    expect(FRACTURED_ARCHIVE_RAID.planDefaults.pinned).toContain('Saturated heart');
-    expect(THEATRE_OF_BLOOD_RAID.planDefaults.pinned).toContain('Saturated heart');
+  test('default pinned lists: no heart anywhere (phase 31: FA / ToB bring it as the magic kit potion)', () => {
+    expect(FRACTURED_ARCHIVE_RAID.planDefaults.pinned).not.toContain('Saturated heart');
+    expect(THEATRE_OF_BLOOD_RAID.planDefaults.pinned).not.toContain('Saturated heart');
     expect(TOMBS_OF_AMASCUT_RAID.planDefaults.pinned).not.toContain('Saturated heart');
     expect(CHAMBERS_OF_XERIC_RAID.planDefaults.pinned).not.toContain('Saturated heart');
     expect(TOMBS_OF_AMASCUT_RAID.defaultSupplies.other).toBeGreaterThan(0);
@@ -63,19 +65,22 @@ describe('heart as a pinned item', () => {
   test.each([
     ['fractured-archive', DEFAULT_ASSUMPTIONS, 'xarth'],
     ['tob', THEATRE_OF_BLOOD_RAID.defaultAssumptions, 'tob-maiden'],
-  ] as [string, BestSetupAssumptions, string][])('%s: magic is boosted iff a heart is pinned, with that heart', (_, a, targetKey) => {
+  ] as [string, BestSetupAssumptions, string][])('%s: magic is always boosted (phase 31), with the pinned heart if any', (_, a, targetKey) => {
     const without = planAssumptions(a, DEFAULT_SUPPLIES, []);
     const sat = planAssumptions(a, DEFAULT_SUPPLIES, [SATURATED]);
     const imb = planAssumptions(a, DEFAULT_SUPPLIES, [IMBUED]);
-    expect(without.withoutPotion).toEqual(['magic']);
+    // phase 31: no pinned heart = the kit's heart (the Assumptions box's, Saturated by default)
+    expect(without.withoutPotion).toBeUndefined();
+    expect(without.potions.magic).toBe(Potion.SATURATED_HEART);
     expect(sat.withoutPotion).toBeUndefined();
     expect(sat.potions.magic).toBe(Potion.SATURATED_HEART);
     expect(imb.withoutPotion).toBeUndefined();
     expect(imb.potions.magic).toBe(Potion.IMBUED_HEART);
     // phase 27: ranging / super combat come from the kit (always boosted; the kit pays their slots)
     expect(planAssumptions(a, NO_SUPPLIES, [SATURATED]).withoutPotion).toBeUndefined();
-    const off = shadowDps(without, targetKey);
+    const off = shadowDps({ ...without, withoutPotion: ['magic'] }, targetKey);
     const on = shadowDps(sat, targetKey);
+    expect(shadowDps(without, targetKey).dps).toBe(on.dps);
     expect(off.potions).toEqual([]);
     expect(on.potions).toEqual([Potion.SATURATED_HEART]);
     expect(on.dps).toBeGreaterThan(off.dps);

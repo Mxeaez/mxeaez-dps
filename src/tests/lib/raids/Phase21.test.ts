@@ -52,10 +52,10 @@ describe('per-raid plan defaults', () => {
     d.raidSupplied.forEach((n) => expect(d.pinned.map(refName)).not.toContain(refName(n)));
   });
 
-  test('the Fractured Archive pins only the heart (phase 30); the phase 17 names point at it', () => {
+  test('the Fractured Archive pins nothing (phase 31); the phase 17 names point at it', () => {
     // phase 29: no spec weapons (the planner picks them); phase 30: nothing else either (the planner decides the
-    // styles) - only the heart, until phase 31 makes it magic's kit potion
-    expect(FRACTURED_ARCHIVE_RAID.planDefaults.pinned).toEqual(['Saturated heart']);
+    // styles); phase 31: the heart is magic's kit potion, not pinned
+    expect(FRACTURED_ARCHIVE_RAID.planDefaults.pinned).toEqual([]);
     // phase 27: comfort supplies only (the combat potions come from the kit)
     expect(FRACTURED_ARCHIVE_RAID.defaultSupplies).toEqual({
       brew: 6, restore: 4, ranging: 0, superCombat: 0, food: 0, other: 0,
@@ -71,7 +71,7 @@ describe('per-raid plan defaults', () => {
     expect(TOMBS_OF_AMASCUT_RAID.defaultSupplies).toMatchObject({ brew: 0, restore: 6, other: 2 });
     expect(CHAMBERS_OF_XERIC_RAID.planDefaults.pinned).toEqual([]); // phase 30: the planner adds the pickaxe for the Guardians
     expect(CHAMBERS_OF_XERIC_RAID.defaultSupplies).toMatchObject({ brew: 2, restore: 2, other: 1 });
-    expect(THEATRE_OF_BLOOD_RAID.planDefaults.pinned).toEqual(['Saturated heart']); // phase 29: Elder maul left to the planner
+    expect(THEATRE_OF_BLOOD_RAID.planDefaults.pinned).toEqual([]); // phase 29: Elder maul left to the planner; phase 31: the heart too
     expect(THEATRE_OF_BLOOD_RAID.defaultSupplies).toEqual({
       brew: 4, restore: 3, ranging: 0, superCombat: 0, food: 0, other: 0,
     });

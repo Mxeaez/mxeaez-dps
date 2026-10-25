@@ -23,6 +23,13 @@ import {
 /** Order of the spec candidates (also the tie order of the "most needed" weapon). */
 export const SPEC_CANDIDATES: PlannerWeapon[] = ['elderMaul', 'dwh', 'bgs', 'tonalztics', 'ayak'];
 
+/**
+ * Phase 29: carrying your share is worth it only if the slot it takes costs you less than this much route time. Phase
+ * 31: also the Solo subset search's price of a slot (a larger subset must save ≥ this per extra slot) — the same rule as
+ * the kit's switches (planner.ts `SWITCH_MIN_SECONDS_PER_SLOT`).
+ */
+export const SHARE_MAX_SLOT_SECONDS = 1;
+
 /** Tie order for the most-needed weapon (the usual drain weapons first). */
 const ROLE_ORDER: PlannerWeapon[] = ['elderMaul', 'tonalztics', 'dwh', 'bgs', 'ayak'];
 
@@ -84,6 +91,12 @@ export interface SubsetProblem<W extends string> {
    * only asked for a `by` taking no more slots. A pruned subset is not timed (unless it neighbours the best).
    */
   dominated?: (s: W[], by: W[]) => boolean;
+  /**
+   * Phase 31: seconds a slot is worth (default {@link SHARE_MAX_SLOT_SECONDS}): subsets are ranked by route time +
+   * slotSeconds × slots, so a larger subset wins over a smaller one only if it saves ≥ slotSeconds per extra slot (the
+   * kit switches' rule). 0 = the phase 29 ranking (fastest, then fewer slots).
+   */
+  slotSeconds?: number;
 }
 
 export interface SubsetEvaluation<W> {
@@ -132,8 +145,17 @@ export const SUBSET_GUARD_FACTOR = 2;
 
 const subsetKey = <W extends string>(weapons: W[], s: W[]) => weapons.filter((w) => s.includes(w)).join('+');
 
-/** Fastest, then fewer slots, then fewer weapons, then the earlier subset (candidate order). */
-const betterEval = <W>(a: SubsetEvaluation<W>, b: SubsetEvaluation<W>, order: (s: W[]) => number): boolean => {
+/** Phase 31: a subset's ranking score: route time + `k` seconds per slot (Infinity stays Infinity). */
+export const subsetScore = (e: { seconds: number, slots: number }, k: number): number => e.seconds + k * e.slots;
+
+/**
+ * Lowest score (time + k per slot; phase 31), then fastest, then fewer slots, then fewer weapons, then the earlier subset
+ * (candidate order). k = 0: the phase 29 order.
+ */
+const betterEval = <W>(a: SubsetEvaluation<W>, b: SubsetEvaluation<W>, order: (s: W[]) => number, k = 0): boolean => {
+  const sa = subsetScore(a, k);
+  const sb = subsetScore(b, k);
+  if (Math.abs(sa - sb) > EPS && sa !== sb) return sa < sb;
   if (Math.abs(a.seconds - b.seconds) > EPS && a.seconds !== b.seconds) return a.seconds < b.seconds;
   if (a.slots !== b.slots) return a.slots < b.slots;
   if (a.weapons.length !== b.weapons.length) return a.weapons.length < b.weapons.length;
@@ -145,6 +167,9 @@ export const searchSpecSubsets = <W extends string>(p: SubsetProblem<W>): Subset
   const subsets = allSubsets(p.weapons);
   const orderIx = new Map(subsets.map((s, i) => [subsetKey(p.weapons, s), i]));
   const order = (s: W[]) => orderIx.get(subsetKey(p.weapons, s)) ?? 0;
+  // phase 31: a slot's price (a larger subset must save ≥ k per extra slot)
+  const slotPrice = Math.max(0, p.slotSeconds ?? SHARE_MAX_SLOT_SECONDS);
+  const better = (a: SubsetEvaluation<W>, b: SubsetEvaluation<W>) => betterEval(a, b, order, slotPrice);
   // one representative per signature: the fewest slots, then the fewest weapons, then the earlier subset
   const reps = new Map<string, W[]>();
   subsets.forEach((s) => {
@@ -169,7 +194,7 @@ export const searchSpecSubsets = <W extends string>(p: SubsetProblem<W>): Subset
   const quickEvals: SubsetEvaluation<W>[] = kept.map((s) => ({
     weapons: s, seconds: p.quick(s), slots: p.slots(s), full: false,
   }));
-  quickEvals.sort((a, b) => (betterEval(a, b, order) ? -1 : Number(betterEval(b, a, order))));
+  quickEvals.sort((a, b) => (better(a, b) ? -1 : Number(better(b, a))));
   // full runs: the best `finalists` by quick time, then every subset within the guard (review fix: a subset whose quick
   // run was unlucky can still win)
   const nFinal = Math.max(1, p.finalists ?? 3);
@@ -178,19 +203,21 @@ export const searchSpecSubsets = <W extends string>(p: SubsetProblem<W>): Subset
   const gap = Number.isFinite(quickEvals[0].seconds) && Number.isFinite(best.seconds) ? Math.max(0, quickEvals[0].seconds - best.seconds) : 0;
   const margin = (p.guard ?? SUBSET_GUARD_FACTOR) * gap;
   quickEvals.slice(1).forEach((e, i) => {
-    if (i + 1 >= nFinal && !(p.guard === Infinity) && !(e.seconds <= best.seconds + margin + EPS)) return;
+    if (i + 1 >= nFinal && !(p.guard === Infinity) && !(subsetScore(e, slotPrice) <= subsetScore(best, slotPrice) + margin + EPS)) return;
     const f = asFull(e);
-    if (betterEval(f, best, order)) best = f;
+    if (better(f, best)) best = f;
   });
-  // the fastest set without each brought weapon (the best quick one without it gets a full run)
+  // the best set without each brought weapon (the best quick one without it gets a full run; phase 31: ranked like
+  // the plan, time + k per slot)
   const bestWithout: BestWithout<W>[] = best.weapons.map((w) => {
     const top = quickEvals.find((e) => !e.weapons.includes(w));
     if (top) fullOf(top.weapons);
-    let pick: { weapons: W[], seconds: number } | null = null;
-    fullMemo.forEach((seconds, k) => {
-      const weapons = (k ? k.split('+') : []) as W[];
+    let pick: { weapons: W[], seconds: number, score: number } | null = null;
+    fullMemo.forEach((seconds, key) => {
+      const weapons = (key ? key.split('+') : []) as W[];
       if (weapons.includes(w)) return;
-      if (!pick || seconds < pick.seconds - EPS) pick = { weapons, seconds };
+      const score = subsetScore({ seconds, slots: p.slots(weapons) }, slotPrice);
+      if (!pick || score < pick.score - EPS) pick = { weapons, seconds, score };
     });
     const found = pick as { weapons: W[], seconds: number } | null;
     return { weapon: w, weapons: found?.weapons ?? [], seconds: found?.seconds ?? Infinity };
@@ -220,9 +247,9 @@ export const searchSpecSubsets = <W extends string>(p: SubsetProblem<W>): Subset
 
   const evaluated = new Map<string, SubsetEvaluation<W>>();
   quickEvals.forEach((e) => evaluated.set(subsetKey(p.weapons, e.weapons), e));
-  fullMemo.forEach((seconds, k) => {
-    const weapons = (k ? k.split('+') : []) as W[];
-    evaluated.set(k, {
+  fullMemo.forEach((seconds, key) => {
+    const weapons = (key ? key.split('+') : []) as W[];
+    evaluated.set(key, {
       weapons, seconds, slots: p.slots(weapons), full: true,
     });
   });
@@ -230,7 +257,7 @@ export const searchSpecSubsets = <W extends string>(p: SubsetProblem<W>): Subset
     best: best.weapons,
     seconds: best.seconds,
     bestWithout,
-    evaluated: Array.from(evaluated.values()).sort((a, b) => (betterEval(a, b, order) ? -1 : Number(betterEval(b, a, order)))),
+    evaluated: Array.from(evaluated.values()).sort((a, b) => (better(a, b) ? -1 : Number(better(b, a)))),
     signatures: reps.size,
     pruned: reps.size - kept.length,
     perWeapon,
@@ -261,7 +288,10 @@ export const weaponDeltaText = (d: WeaponDelta<PlannerWeapon>): string => {
   const label = specWeaponLabel(d.weapon);
   // deltaSeconds = seconds saved by having the weapon; the route-time change of the move is its negative (or itself)
   if (d.chosen) return `dropping ${label} from this plan: ${signed(d.deltaSeconds)} (frees ${slots})`;
-  return `adding ${label} to this plan: ${signed(-d.deltaSeconds)} (${slots})`;
+  // phase 31: a weapon that saves time but < 1 s per slot is not brought (the subset search's slot price)
+  const cheap = d.deltaSeconds > 0.05 && d.deltaSlots > 0 && d.deltaSeconds < d.deltaSlots * SHARE_MAX_SLOT_SECONDS
+    ? `, < ${SHARE_MAX_SLOT_SECONDS} s per slot` : '';
+  return `adding ${label} to this plan: ${signed(-d.deltaSeconds)} (${slots}${cheap})`;
 };
 
 /** "best without Elder maul: Tonalztics, 22:10.5" (`fmt` formats the route time). */
@@ -501,9 +531,6 @@ export const mostNeededWeapon = (roles: TeamRoles, allowed: (w: PlannerWeapon) =
   return rows.filter((r) => r.carriers === most)
     .sort((a, b) => ((b.lastSaved ?? 0) - (a.lastSaved ?? 0)) || (ROLE_ORDER.indexOf(a.weapon) - ROLE_ORDER.indexOf(b.weapon)))[0].weapon;
 };
-
-/** Phase 29: carrying your share is worth it only if the slot it takes costs you less than this much route time. */
-export const SHARE_MAX_SLOT_SECONDS = 1;
 
 export interface ShareDecision {
   weapon: PlannerWeapon | null;

@@ -25,7 +25,8 @@ What this fork adds on top of upstream:
 * **The planner picks the spec weapons** (Plan tab): Solo tries every set of Elder maul / DWH / BGS / Tonalztics / Eye
   of Ayak with the kit ("Bring: …", with what dropping / adding each changes); Team picks the team's carriers (each must
   save ≥ 1 s of route time; FA 6-man: 2 Elder maul + 2 Tonalztics) and your share ("assign me"). Headline plans
-  (defaults, Team; phase 30: nothing pinned by default but the heart): FA 21:44.4, ToA 14:06.0, CoX 6:36.3, ToB 7:30.0.
+  (defaults, Team; phase 31: nothing pinned by default, the Saturated heart is magic's kit potion, Dizana's quiver holds a
+  second arrow / bolt type for free): FA 21:44.4, ToA 14:04.1, CoX 6:35.9, ToB 7:30.0.
 * **Times assume N players at your DPS** (the "Players assumed at your DPS" input under Advanced; the page says "times assume N players at your DPS"):
   N defaults to the party size in ToA / CoX / ToB, where upstream scales boss hp with it, and to 1 in the Fractured
   Archive, whose hp scaling is unknown.

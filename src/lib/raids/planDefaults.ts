@@ -1,7 +1,7 @@
 import type { SupplyCounts } from '@/lib/fracturedArchive/planner';
 import type { ItemRef } from '@/lib/fracturedArchive/presets';
 
-/** The heart's name in the pinned lists (a pseudo item: planner.ts `HEART_ITEMS`). */
+/** The heart's name (a pseudo item: planner.ts `HEART_ITEMS`); phase 31: magic's kit potion, no longer pinned. */
 export const SATURATED_HEART = 'Saturated heart';
 
 /**
@@ -11,13 +11,14 @@ export const SATURATED_HEART = 'Saturated heart';
  * (`defaultPinned`, `defaultNonItemSlots`, `defaultSupplies`, `raidSuppliedItems`); docs/BEST_SETUP.md, *Plan tab*,
  * lists them with their sources.
  *
- * The magic boost is a heart (`SATURATED_HEART`: reusable, one slot for the whole raid; nobody brings magic potions), so
- * it is a pinned item, not a supply: pinned by default where the potions are brought (FA, ToB). ToA / CoX don't pin it:
- * their raid potion (Smelling salts / Overload, the "Other" supply) boosts magic too.
+ * The magic boost is a heart (`SATURATED_HEART`: reusable, one slot for the whole raid; nobody brings magic potions).
+ * Phase 31: where the potions are brought (FA, ToB) it is magic's kit potion (planner.ts `kitPotions`: one slot when the
+ * kit has a magic loadout, like Super combat / Ranging potion), not a pinned item. ToA / CoX: the raid potion (Smelling
+ * salts / Overload, the "Other" supply) boosts magic too.
  *
  * Phase 30: the pinned lists are empty (the user's decision, ROADMAP round 4: the planner decides the styles, so nothing
- * is "always brought"; the list is for the user's own additions) — except the heart in FA / ToB until phase 31 makes it
- * magic's kit potion. CoX's Dragon pickaxe needs no pin: the Guardians take damage from pickaxes only, so the planner
+ * is "always brought"; the list is for the user's own additions); phase 31 removed the FA / ToB heart, the last default
+ * pin. CoX's Dragon pickaxe needs no pin: the Guardians take damage from pickaxes only, so the planner
  * adds the pickaxe switch itself (it is in the CoX pool and presets).
  *
  * Spec weapons are not listed here (phase 29: the Elder maul the FA / CoX / ToB lists had is gone too): the Plan tab's
@@ -51,11 +52,11 @@ const supplies = (s: Partial<SupplyCounts>): SupplyCounts => ({
  * The Fractured Archive: the user's own kit (2026-10-23): rune pouch, Lightbearer, Elder maul, Zaryte crossbow, Kodai
  * wand, Ancestral robe top, Elidinis' ward (f) (phase 30: the items left the pinned list, the planner decides); 6 brews,
  * 4 restores (phase 17 defaults; phase 27: the 2 ranging / 1 super combat became one potion per style in the kit,
- * derived by the planner); and a Saturated heart (the magic boost, user correction 2026-10-23: "Nobody uses magic
- * potions, they use Saturated heart").
+ * derived by the planner); the Saturated heart (the magic boost, user correction 2026-10-23: "Nobody uses magic potions,
+ * they use Saturated heart") is magic's kit potion since phase 31, not pinned.
  */
 export const FA_PLAN_DEFAULTS: RaidPlanDefaults = {
-  pinned: [SATURATED_HEART],
+  pinned: [],
   nonItemSlots: 1,
   supplies: supplies({ brew: 6, restore: 4 }),
   raidSupplied: [],
@@ -104,12 +105,12 @@ export const COX_PLAN_DEFAULTS: RaidPlanDefaults = {
  * ranging potions and food; "Additional supplies ... are available after each death and after defeating Pestilent Bloat
  * and Sotetseg", and the chests sell Saradomin brews and Super restores — so the default stock is moderate: 4 brew,
  * 3 restore (phase 27: the kit's potions — 1 Super combat / 1 Ranging potion per style present — are derived by the
- * planner), and a pinned Saturated heart (ToB has no raid boost: the potions are brought). The
+ * planner; phase 31: the Saturated heart is magic's, ToB has no raid boost: the potions are brought). The
  * Dawnbringer is the raid's own item ("Used to break Verzik Vitur's shield during the first phase"): 0 slots, not pinned.
  * Lightbearer isn't in the Strategies inventories: not pinned.
  */
 export const TOB_PLAN_DEFAULTS: RaidPlanDefaults = {
-  pinned: [SATURATED_HEART],
+  pinned: [],
   nonItemSlots: 1,
   supplies: supplies({ brew: 4, restore: 3 }),
   raidSupplied: ['Dawnbringer'],

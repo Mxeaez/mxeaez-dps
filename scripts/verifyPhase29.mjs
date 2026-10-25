@@ -8,7 +8,7 @@
  *   fewest of those specs giving the same ranked Defence; "not needed" when 0).
  * - Review: "Team carriers: Planner decides" by default (counts disabled); the briefing shows the planner's carriers
  *   (2 Elder maul + 2 Tonalztics on the FA defaults) with what the last carrier of each saves and the order they were
- *   added; Solo party 1 brings Elder maul + Tonalztics (22:01.3; phase 29: Tonalztics, 22:10.5) with "dropping … / adding … to this plan" and "best without …";
+ *   added; Solo party 1 brings Tonalztics (phase 31: 22:01.9, Elder maul's 0.6 s < 1 s per slot; phase 30: Elder maul + Tonalztics 22:01.3; phase 29: Tonalztics, 22:10.5) with "dropping … / adding … to this plan" and "best without …";
  *   the party-1 Search drain box has no team carrier table.
  * - "I wear a Lightbearer" follows the ring policy: Camp one ring → the planned ring (off unless it is Lightbearer),
  *   Camp Lightbearer → on, Allow ring switches → the user's toggle again.
@@ -158,8 +158,9 @@ const main = async () => {
   })));
   check(weapons.length > 0 && weapons.every((w) => w.delta > 0 && w.text.startsWith('dropping ')), `each brought weapon: ${weapons.map((w) => w.text).join('; ')}`);
   // phase 30 (empty pinned defaults): the brute force over all 32 sets has 1321.34 s for {Elder maul, Tonalztics} (tied
-  // with ten other sets pairing Tonalztics with Elder maul or DWH); phase 29: Bring Tonalztics, 22:10.5
-  check(/^Bring: Elder maul, Tonalztics$/.test(soloBring) && soloTotal === '22:01.3', `Solo optimum (brute force): Bring Elder maul, Tonalztics, 22:01.3 (${soloBring}, ${soloTotal})`);
+  // with ten other sets pairing Tonalztics with Elder maul or DWH); phase 29: Bring Tonalztics, 22:10.5. Phase 31: a
+  // slot is priced at 1 s, so {Tonalztics} 1321.91 wins (Elder maul saves 0.57 s for its slot)
+  check(/^Bring: Tonalztics$/.test(soloBring) && soloTotal === '22:01.9', `Solo (1 s per slot): Bring Tonalztics, 22:01.9 (${soloBring}, ${soloTotal})`);
   const without = page.locator('[data-testid="plan-spec-without"]');
   check(await without.count() === weapons.length, `${await without.count() ? await text(without.first()) : 'no "best without" line'}`);
   const others = await page.locator('[data-testid="plan-spec-rejected"], [data-testid="plan-spec-other"]').evaluateAll((els) => els.map((e) => e.textContent.trim()));

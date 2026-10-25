@@ -233,7 +233,7 @@ const AssumptionsBox: React.FC<{
       <ScalingInputs raid={raid} value={value} onChange={onChange} />
       <div className="flex flex-wrap gap-x-4 gap-y-2 items-center">
         {(['melee', 'ranged', 'magic'] as StyleGroup[]).map((g) => {
-          // where the potions are brought (FA, ToB) the magic boost is a heart, a pinned item in the Plan tab
+          // where the potions are brought (FA, ToB) the magic boost is a heart (phase 31: the Plan tab's kit potion for magic)
           const heart = g === 'magic' && raid.boostsNeedSupplies;
           const options = heart ? POTION_OPTIONS.filter((p) => HEART_POTIONS.includes(p) || p === value.potions[g]) : POTION_OPTIONS;
           return (
@@ -242,7 +242,7 @@ const AssumptionsBox: React.FC<{
               htmlFor={`bs-potion-${g}`}
               className="flex items-center gap-1"
               title={heart
-                ? 'Magic boost. Search and Summary assume this heart is brought; the Plan tab boosts magic only while a heart is in "Items I always bring" (it follows this choice)'
+                ? 'Magic boost. Search and Summary assume this heart is brought; the Plan tab brings it (the magic potion of the kit) when the kit has a magic loadout, one slot'
                 : `Boost used by every ${g} setup`}
             >
               <span className={heart ? '' : 'capitalize'}>{heart ? 'Heart' : `${g} potion`}</span>

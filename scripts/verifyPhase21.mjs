@@ -33,7 +33,7 @@ const EXPECTED = {
     supplies: {
       brew: 6, restore: 4, food: 0, other: 0,
     },
-    pinned: ['Saturated heart'], // phase 30: nothing else pinned by default
+    pinned: [], // phase 31: not even the heart (magic's kit potion)
     team: 'times: your DPS alone',
   },
   toa: {
@@ -54,7 +54,7 @@ const EXPECTED = {
     supplies: {
       brew: 4, restore: 3, food: 0, other: 0,
     },
-    pinned: ['Saturated heart'],
+    pinned: [], // phase 31
     team: 'times assume 4 players at your DPS',
   },
 };

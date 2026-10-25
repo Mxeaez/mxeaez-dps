@@ -99,8 +99,8 @@ describe('switching raids: defaults per raid, no leaks', () => {
     };
     expect(planAssumptions(t.get('toa'), { ...none, other: 2 }).withoutPotion).toBeUndefined();
     expect(planAssumptions(t.get('toa'), none).withoutPotion).toEqual(['melee', 'ranged', 'magic']);
-    // phase 27: FA melee / ranged potions come from the kit (always boosted); magic needs the pinned heart
-    expect(planAssumptions(t.get('fractured-archive'), none).withoutPotion).toEqual(['magic']);
+    // phase 27: FA melee / ranged potions come from the kit (always boosted); phase 31: magic's heart too
+    expect(planAssumptions(t.get('fractured-archive'), none).withoutPotion).toBeUndefined();
   });
 
   test('a raid\'s monster inputs only reach its own targets', () => {
@@ -237,11 +237,18 @@ describe('every raid\'s plan runs (reduced pool)', () => {
 // Twisted bow + Seeking dragon arrows switch, Zebak 126.5 → 121.9 s);
 // CoX 6:36.3 (the planner adds the Dragon pickaxe switch for the Guardians itself: the same kit); ToB 7:30.0 (only the
 // heart was pinned).
+// Phase 31 (Dizana's quiver holds a second arrow / bolt type; the heart is magic's kit potion, no longer pinned): FA
+// 21:44.4 (the quiver holds the Seeking dragon arrows and the unused pinned heart is gone: 2 more free slots, 5 in all,
+// nothing saves ≥ 1 s per slot); ToA 14:06.0 → 14:04.1 (the quiver holds the diamond ascension bolts (e); the slot buys
+// a Keris partisan of breaching loadout, Kephri 147.7 → 145.8 s); CoX 6:36.3 → 6:35.9 (the quiver holds the diamond
+// ascension bolts (e) beside the Seeking dragon arrows; the kit re-shuffled: Inquisitor's + Obligator worn, Twisted bow
+// + Scorching bow switches, Tekton 16.3 → 14.4 s); ToB 7:30.0 (the heart now a kit potion for its Shadow switch: the
+// same slots).
 const HEADLINES: [string, string, number][] = [
   ['fractured-archive', '21:44.4', 1304.4],
   // review 2: Eye of Ayak carriers capped at the mages (1): 13:19.6 → 14:10.6 (1 maul, 1 Tonalztics, 1 Ayak; Ultor)
-  ['toa', '14:06.0', 846.0],
-  ['cox', '6:36.3', 396.3],
+  ['toa', '14:04.1', 844.1],
+  ['cox', '6:35.9', 395.9],
   ['tob', '7:30.0', 450.0],
 ];
 

@@ -3,6 +3,48 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 31 — Quiver ammo + heart as magic's potion (2026-10-24)
+
+Slot costs change (full independent review next).
+
+- **Quiver** (planner.ts `QUIVER_NAMES`, `isQuiver`, `isQuiverAmmo`, `quiverSpecOf`, `quiverSavedSlots`,
+  `quiverHeldAmmo`): a kit carrying any Dizana's quiver (Charged / Uncharged / Locked, Blessed, Dizana's max cape), worn or
+  not, and ≥ 2 arrow / bolt types needs 1 slot less (one type per quiver; the Bolt rack, javelins, atlatl darts,
+  blessings don't count). Source: wiki Dizana's quiver (https://oldschool.runescape.wiki/w/Dizana%27s_quiver, read
+  2026-10-24): "an additional ammunition slot, which can only be filled with arrows or bolts", "only appearing if the
+  quiver is in the inventory or equipped" (UNVERIFIED D23). In every count: `optimiseKit` (`KitProblem.quiver`), the
+  plan's `usedWith` / `usedOfKit`, `kitSlotUsage` (`SlotUsage.quiverAmmo`), `inventoryGrid` (the held type takes no
+  cell). Kit view: the held ammo on the quiver's corner (worn cape slot or the quiver's inventory cell), tooltip "…
+  held in the quiver (0 inventory slots)"; free-slots tooltip "− 1 ammo held in the quiver (name)".
+- **Heart = magic's kit potion** (`kitHeart`, `kitPotions` → `KitPotion` with type 'heart'): FA / ToB no longer pin it
+  (`planDefaults.ts`); a kit with a magic loadout pays one slot (a pinned heart: counted once, no potion slot), magic is
+  always boosted (`planAssumptions`: pinned heart, else the Assumptions box's, else Saturated). Inventory: a 'potion' cell
+  right after the potions; "Potions (from the kit): … Saturated heart (magic)". ToA / CoX unchanged (raid potion, no
+  heart slot). The "+ Saturated / Imbued heart" pin buttons stay (optional).
+- **Solo subset search, 1 s per slot** (specChoice.ts `SubsetProblem.slotSeconds`, default `SHARE_MAX_SLOT_SECONDS`,
+  `subsetScore`): ranked by time + 1 s × slots, "best without …" too; "adding Elder maul to this plan: −0.6 s (1 slot,
+  < 1 s per slot)".
+- Headlines (Team, camp one ring) phase 30 → 31: FA 21:44.4 → **21:44.4** (quiver holds the Seeking dragon arrows, and
+  the unused pinned heart is gone: 5 free slots, was 3; nothing saves ≥ 1 s per slot); ToA 14:06.0 → **14:04.1** (quiver
+  holds the Diamond ascension bolts (e); the slot buys a Keris partisan of breaching loadout, Kephri 147.7 → 145.8 s);
+  CoX 6:36.3 → **6:35.9** (quiver holds the Diamond ascension bolts (e); kit re-shuffled: Inquisitor's + Obligator worn,
+  Twisted bow + Scorching bow switches, Tekton 16.3 → 14.4 s); ToB **7:30.0** (heart now a kit potion for the Shadow
+  switch: same slot); FA without Obligator / Ascension crossbows **24:45.3** (same: the heart for the Shadow loadout).
+  Solo party 1: 22:01.3 (Elder maul + Tonalztics) → **22:01.9, Bring: Tonalztics** (Elder maul saved 0.57 s). Phase 29's
+  slow regression with the phase 29 pinned list: 21:53.0 → 21:44.4.
+- Tests: new `Phase31.test.ts` (toy kits (a)-(d) hand-counted in `kitSlotUsage`, the optimiser and the grid; real items;
+  brute force over all 8191 subsets of the 13 FA presets vs an exhaustive per-worn-state count; heart (e)-(h) on reduced
+  plans incl. ToB / ToA / CoX; subset rule (i); slow: Solo Bring Tonalztics 22:01.9 + exhaustive count of the plan's
+  kit, Team exhaustive count); Heart / Phase21 / Phase27 / Phase30 / Planner / CrossRaid updated for the heart; CrossRaid
+  ToA / CoX re-pinned; Phase29 slow 21:44.4. `yarn test` 1391 (1376 pass / 15 skipped); `RUN_SLOW_TESTS=1` CrossRaid +
+  Phase27 + 28 + 29 + 30 + 31 115 / 115; lint, tsc clean.
+- Playwright: new `verifyPhase31` all OK (FA quiver badge on the worn Dizana's quiver, "Seeking dragon arrow: held in the
+  quiver", no cell, pinned list empty; FA owned: heart cell right after the potions; Solo "Bring: Tonalztics" 22:01.9,
+  "adding Elder maul … < 1 s per slot"); screenshots phase31-fa-quiver / -fa-heart / -solo. verifyPhase21 / 23 / 26 / 27 /
+  29 / 30 re-pinned (pinned lists empty, ToA 14:04.1, Solo Tonalztics 22:01.9): all OK; tracked screenshots restored.
+- Docs: BEST_SETUP (*Plan tab → Heart*, *Quiver ammo and the heart (phase 31)*, potions, ToB / Assumptions lines),
+  UNVERIFIED D23 (+ D11 / D14 / D19), ROADMAP 31 done + decisions, README headlines.
+
 ## Phase 30 — Plan tab polish (2026-10-24)
 
 UI / defaults only; the planner's maths is unchanged.

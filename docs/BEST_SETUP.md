@@ -1,4 +1,4 @@
-# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14; Routes tab phase 16; Plan tab phase 17; raid tabs + ToA phase 18; CoX phase 19; ToB phase 20; per-raid Plan defaults + dedupe phase 21; UI cleanup phase 23; "Items I don't own" phase 26; potions from the kit + ring policy phase 27; Plan tab polish phase 30)
+# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14; Routes tab phase 16; Plan tab phase 17; raid tabs + ToA phase 18; CoX phase 19; ToB phase 20; per-raid Plan defaults + dedupe phase 21; UI cleanup phase 23; "Items I don't own" phase 26; potions from the kit + ring policy phase 27; Plan tab polish phase 30; quiver ammo + heart as magic's potion phase 31)
 
 `/best-setup` (dev: http://localhost:3001/osrs-dps/best-setup; "Best setup" button in the top bar, "Calculator" leads
 back). Tabs, in order: **Search** (the default, phase 9/12, see the end of this file) searches a pool of end-game items
@@ -242,7 +242,7 @@ Fourth raid tab, same code (`THEATRE_OF_BLOOD_RAID`, `src/lib/raids/theatreOfBlo
   New in `tob/damage.ts`: **nylocas style gating** (Vasilias by its form phase "Melee / Ranged / Magic form", default
   melee; wave nylocas by name; Prinkipas by version; Verzik's nylocas not gated) and **Dawnbringer only on Verzik P1**
   — and not under P1's new phase "Shield (Dawnbringer with a teammate)" (one staff per raid).
-- **Defaults**: Super combat / Ranging / Saturated heart (no raid boost; potions are supplies, the heart a pinned item), Piety / Rigour / Augury,
+- **Defaults**: Super combat / Ranging / Saturated heart (no raid boost; potions come from the kit, phase 31: the heart too), Piety / Rigour / Augury,
   Team carriers **2 Elder maul + 2 BGS** (Strategies 4-scale Maiden plan), team-DPS multiplier = party size.
 - **Presets** = FA list + "Torva + Salve (ei) + Scythe (slash)" (Bloat is undead) and "Dawnbringer (Ancestral)".
   **Pool** = FA pool + Blade of Saeldor (c), Abyssal tentacle, Eye of Ayak, Dawnbringer, Salve amulet(ei) (kept) in
@@ -254,7 +254,7 @@ Fourth raid tab, same code (`THEATRE_OF_BLOOD_RAID`, `src/lib/raids/theatreOfBlo
   exhumed heals, default 0; Entry 22.5%), P3 25% (same stats); Verzik P1 = Dawnbringer specs (2 per player × 112.5,
   each costs one 4-tick attack: specs × 2.4 s ÷ team) + the rest at **1 player × the kit's best + (team − 1) × the
   kit's best without the Dawnbringer**, P2 (+ heals, default 0), P3 (+ heals; Hard Mode always +30%).
-- **Plan**: supplies brew 4 / restore 3 / 1 ranging / 1 super combat + a pinned Saturated heart (lower than a no-resupply raid: the chests after Bloat and
+- **Plan**: supplies brew 4 / restore 3 (+ the kit's potions, phase 27; phase 31: the Saturated heart is magic's kit potion, no longer pinned) (lower than a no-resupply raid: the chests after Bloat and
   Sotetseg sell brews and restores — documented, not modelled); phase 21: the Dawnbringer costs 0 slots (*Plan tab →
   Per-raid defaults*).
 
@@ -286,8 +286,7 @@ other non-items** (default 1); **Rings** (phase 30: a dropdown on the same row �
 Lightbearer / Allow ring switches — with the one-line summary of what it chose next to it; it was under "Advanced
 (plan)" before);
 **Items I always bring** (phase 30: empty by default — the planner decides the styles, so nothing is "always brought";
-the list is for your own additions — except the Saturated heart in FA / ToB until phase 31 makes it magic's kit
-potion; before: Lightbearer, Zaryte crossbow, Kodai wand, Ancestral robe top, Elidinis' ward (f), Saturated heart;
+the list is for your own additions; phase 31 removed the FA / ToB Saturated heart, now magic's kit potion; before: Lightbearer, Zaryte crossbow, Kodai wand, Ancestral robe top, Elidinis' ward (f), Saturated heart;
 editable with the calculator's item search; each takes a slot unless a kit loadout wears it, and any loadout may use
 them for free). Time-model settings come from the Advanced box (phase 23; defaults `raid.defaultTimeSettings`;
 FA: `RAID_TIME_DEFAULTS`). Phase 22: `plan()` and `computeRouteComparison()` throw if the time model passed isn't the
@@ -296,26 +295,27 @@ assumptions' raid's (`assertTimeModelForRaid`), since both default to the Fractu
 **Supplies → DPS** (review fix; phase 27): Super combat carries the melee boost, Ranging potion the ranged one
 (`KIT_POTIONS`). Since phase 27 the kit always brings the potion of each style it has, so melee / ranged are always
 boosted and the potion's slot is part of the kit's slot cost; before, a style whose supply count was 0 was evaluated
-**without a potion** (`BestSetupAssumptions.withoutPotion`, still used for magic without a heart and for ToA / CoX
-without the raid potion; `planAssumptions(assumptions, supplies, pinned)`, honoured by `applyLoadoutToPlayer`); the
+**without a potion** (`BestSetupAssumptions.withoutPotion`, still used for ToA / CoX without the raid potion (and, before
+phase 31, for FA / ToB magic without a pinned heart); `planAssumptions(assumptions, supplies, pinned)`, honoured by `applyLoadoutToPlayer`); the
 Assumptions box's potion is the one used. The searches, matrix, exact times
 and "Load into calculator" all use it; the drain / spec model keeps the potions (team carriers bring their own).
 
 **Heart** (fix 2026-10-23, user: "Nobody uses magic potions, they use Saturated heart instead"): the magic boost is a
-reusable item, one inventory slot for the whole raid, so it is a **pinned item**, not a supply (the old "Magic boost"
-supply count is gone). Hearts are pseudo items (`HEART_ITEMS` in `planner.ts`: Saturated heart −9001, Imbued heart
-−9002 — not equipment) that live in the pinned list: one slot each, counted once, never worn; `planItemByName` resolves
-their names. Rules:
-- **FA, ToB** (`boostsNeedSupplies`): magic is boosted **iff a heart is pinned**, with that heart's boost. The default
-  pinned lists include the Saturated heart. The Assumptions box's magic selector reads **Heart** (Saturated / Imbued
-  heart) there; the Plan's pinned heart follows it (changing it swaps the pinned heart; removing the heart in the Plan
-  turns the magic boost off and offers "+ Saturated heart" / "+ Imbued heart"). **Search, Summary and Routes always
-  assume the heart is brought**; the Plan with the heart pinned gives the same DPS.
-- **ToA, CoX** (raid potions: Smelling salts / Overload boost every style): every style keeps the raid potion iff the
-  "Other" supply count is > 0 (the default); with 0 Other no style is boosted, except magic when a heart is pinned. The
-  heart isn't pinned by default there.
-- Warnings: the heart is never a kit potion; it shows under "Always brought but in no kit loadout" when the kit has
-  no magic loadout.
+reusable item, one inventory slot for the whole raid. Hearts are pseudo items (`HEART_ITEMS` in `planner.ts`: Saturated
+heart −9001, Imbued heart −9002 — not equipment); `planItemByName` resolves their names. Rules (phase 31; before, the
+heart was a pinned item and FA / ToB magic was boosted only while one was pinned):
+- **FA, ToB** (`boostsNeedSupplies`): the heart is **magic's kit potion** (`kitPotions`, `kitHeart`), exactly like Super
+  combat for melee and Ranging potion for ranged: one slot when the kit has a magic loadout, none otherwise, so magic
+  is always boosted. Which heart: a pinned one if you pinned it, else the Assumptions box's **Heart** (Saturated /
+  Imbued), else the Saturated heart. It is drawn beside the potions (an inventory cell right after them, tooltip
+  "magic's potion, from the kit") and listed in "Potions (from the kit)". Nothing pins it by default; "+ Saturated
+  heart" / "+ Imbued heart" still pin one (carried even without a magic loadout, then reported under "Always brought but
+  in no kit loadout"); a pinned heart with a magic loadout counts **once** (the optimiser charges no potion slot for
+  magic then; the final count de-duplicates by id). **Search, Summary and Routes always assume the heart**; the Plan
+  gives the same magic DPS.
+- **ToA, CoX** (raid potions: Smelling salts / Overload boost every style): unchanged — every style keeps the raid
+  potion iff the "Other" supply count is > 0 (the default), no heart slot; with 0 Other no style is boosted, except
+  magic when a heart is pinned.
 
 **Algorithm** (`plan(inputs, tuning?, hooks?)`; `PLAN_DEFAULTS` holds the caps):
 
@@ -461,7 +461,8 @@ bit less DPS."
 
 **Potions from the kit** (`KIT_POTIONS`, `kitPotions`, `kitSupplies`, `potionSlots` in planner.ts). Where the
 potions are brought (FA, ToB: `boostsNeedSupplies`) a kit with a melee loadout brings **one Super combat**, with a
-ranged loadout **one Ranging potion**; magic uses the pinned heart (unchanged); ToA / CoX bring no combat potion (the
+ranged loadout **one Ranging potion**; magic uses the pinned heart (phase 31: magic's kit potion is the heart, one slot
+when the kit has a magic loadout; *Heart* above); ToA / CoX bring no combat potion (the
 raid potion, "Other", boosts every style, as before). One potion item = one slot whatever its doses (no "Potion doses"
 setting: upstream's boost model doesn't depend on doses). The potion slots are part of the kit's slot cost in the
 optimiser (`KitProblem.potions`: one slot per distinct potion of the kit's members), so a melee + ranged + magic kit pays
@@ -703,6 +704,45 @@ Timings: Jest first Solo plan 44 s (searches included; 53 s before the fix, 123 
 20.5 s with the searches cached; a Team plan with planner carriers 21 s in Jest (first, searches included), 4 s with
 manual carriers once cached.
 
+### Quiver ammo and the heart (phase 31)
+
+User requests (2026-10-24): the quiver should hold the crossbow's bolts when the bow's arrows are worn, and the heart
+should be decided by the plan like the other potions.
+
+**Quiver ammo** (`QUIVER_NAMES`, `isQuiver`, `isQuiverAmmo`, `quiverSpecOf`, `quiverSavedSlots`, `quiverHeldAmmo` in
+planner.ts). Wiki, [Dizana's quiver](https://oldschool.runescape.wiki/w/Dizana%27s_quiver) (read 2026-10-24): "The
+quiver provides an additional ammunition slot, which can only be filled with arrows or bolts", "only appearing if the
+quiver is in the inventory or equipped". Rule: a kit that carries a Dizana's quiver (any variant: Charged / Uncharged /
+Locked, Blessed Dizana's quiver, Dizana's max cape; not Decorative armour (quiver)), worn or in the inventory, and
+**at least two** arrow / bolt types (ammo-slot items whose name says arrow(s) / bolt(s); not the Bolt rack, javelins,
+atlatl darts, blessings; blowpipe darts aren't ammo-slot items) needs **one slot less**: one type is worn or in the
+inventory, the other rides in the quiver. Only one extra type per quiver (three types: one free). With one type or no
+quiver, ammo costs slots as before. The rule is in every slot count: the optimiser (`KitProblem.quiver`), the plan's
+`usedWith` / `usedOfKit` (kit marginals, additions, alternatives, lighter kit), `kitSlotUsage` (`SlotUsage.quiverAmmo`)
+and the inventory grid (`quiverHeldAmmo`: the first arrow / bolt type not worn by the worn loadout, in grid order, takes
+no cell). The kit view draws it on the quiver's corner (worn cape slot, or the quiver's inventory cell) with the tooltip
+"… held in the quiver (0 inventory slots)"; the free-slots tooltip reads "… − 1 ammo held in the quiver (name)".
+UNVERIFIED D23 (the firing behaviour, the max cape / blessed quiver, and the one-type case not modelled).
+
+**Heart**: see *Plan tab → Heart* — magic's kit potion in FA / ToB, not pinned; ToA / CoX unchanged.
+
+**Solo spec weapons: 1 s per slot** (`SubsetProblem.slotSeconds`, default `SHARE_MAX_SLOT_SECONDS` = 1; `subsetScore`).
+The subset search ranks subsets by route time + 1 s × slots, so a larger set wins only if it saves ≥ 1 s per extra slot
+(the kit switches' dedupe rule and "assign me" use the same price); "best without …" is ranked the same way. A weapon
+left out for that reason reads "adding Elder maul to this plan: −0.6 s (1 slot, < 1 s per slot)". `slotSeconds: 0` is
+the phase 29 ranking (fastest, then fewer slots).
+
+**Numbers** (defaults, Team, compare all, camp one ring; slow `CrossRaid`, `Phase31`; `verifyPhase31`):
+
+| Raid | Phase 30 | **Phase 31** | Slots |
+|---|---|---|---|
+| FA | 21:44.4 | **21:44.4** | the quiver holds the Seeking dragon arrows (Ascension crossbows + diamond bolts (e) worn, Twisted bow switch) and the pinned heart (no magic loadout) is gone: 23 of 28 used, 5 free (was 3); nothing saves ≥ 1 s per slot |
+| ToA | 14:06.0 | **14:04.1** | the quiver holds the Diamond ascension bolts (e) (Twisted bow + Ascension crossbows); the slot buys a Keris partisan of breaching (Torva) loadout, Kephri 147.7 → 145.8 s; 28/28 |
+| CoX | 6:36.3 | **6:35.9** | the quiver holds the Diamond ascension bolts (e) beside the Seeking dragon arrows; the kit re-shuffled (Inquisitor's + Obligator worn, Twisted bow and Scorching bow switches; Tekton 16.3 → 14.4 s); 28/28 |
+| ToB | 7:30.0 | **7:30.0** | the heart (its Shadow switch) is now a kit potion: same slot, same kit; one bolt type, nothing in the quiver |
+| FA without Obligator + Ascension crossbows | 24:45.3 | **24:45.3** | the heart (Tumeken's shadow loadout) now a kit potion: same slot; one arrow type |
+| FA Solo, party 1 | 22:01.3 (Elder maul + Tonalztics) | **22:01.9, Bring: Tonalztics** | Elder maul saved 0.57 s for its slot (< 1 s); the quiver holds the Seeking dragon arrows; 23/28 |
+
 ## Routes tab (phase 16: raid time model)
 
 **Phase 23: the tab is gone.** Its route table is now part of the Plan tab's results (the *planned* kit timed on every
@@ -826,7 +866,7 @@ The view tries every listed style (and spell) per preset and shows the one with 
 
 - All skills 99 (the calculator's default player).
 - Potions per style: Super combat / Ranging potion / Saturated heart (selectable; in FA / ToB the magic one is labelled
-  **Heart** and offers Saturated / Imbued heart — it is a pinned item in the Plan tab, see *Plan tab → Heart*; CoX-only overloads/super potions and
+  **Heart** and offers Saturated / Imbued heart — phase 31: the Plan tab brings it as magic's kit potion, see *Plan tab → Heart*; CoX-only overloads/super potions and
   ToA smelling salts are available in the dropdown but don't work in the raid).
 - Prayers: Piety / Rigour / Augury; "Zeal instead of Piety" switches melee to the raid prayer.
 - Elemental fragments: on for magic presets (all four elements, +2 base max hit to elemental spells). Only the Kodai

@@ -332,7 +332,7 @@ describe('review fixes', () => {
     }
   });
 
-  test('phase 27: melee / ranged always keep their potion (the kit brings it); no heart = magic unboosted; drains keep the potions', () => {
+  test('phase 27: melee / ranged always keep their potion (the kit brings it); phase 31: magic too (the heart); drains keep the potions', () => {
     const tbow = PRESETS.find((p) => p.name === 'Twisted bow (Masori)')!;
     const scythe = PRESETS.find((p) => p.name === 'Torva + Scythe (slash)')!;
     const heart = [planItemByName('Saturated heart').id];
@@ -342,7 +342,7 @@ describe('review fixes', () => {
     const noRanging = { ...withPots, withoutPotion: ['ranged' as const] };
     expect(withPots.withoutPotion).toBeUndefined();
     expect(planAssumptions(DEFAULT_ASSUMPTIONS, { ...DEFAULT_SUPPLIES, ranging: 0 }, heart).withoutPotion).toBeUndefined();
-    expect(planAssumptions(DEFAULT_ASSUMPTIONS, DEFAULT_SUPPLIES).withoutPotion).toEqual(['magic']); // no heart pinned
+    expect(planAssumptions(DEFAULT_ASSUMPTIONS, DEFAULT_SUPPLIES).withoutPotion).toBeUndefined(); // phase 31: the kit's heart
     const { monster } = buildTargetMonster(findTarget('xarth'), undefined, 'team', withPots);
     const dpsOf = (preset: typeof tbow, a: typeof withPots) => evaluateLoadout(
       applyPresetToPlayer(generateEmptyPlayer(), preset, presetStyles(preset)[0], null, monster, a),
