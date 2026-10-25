@@ -2,8 +2,9 @@ import React from 'react';
 import { PlayerEquipment } from '@/types/Player';
 import { StyleGroup } from '@/lib/fracturedArchive/presets';
 import { PlanCandidate } from '@/lib/fracturedArchive/planner';
-import { BriefingRow } from '@/lib/fracturedArchive/briefing';
-import { LOADOUT_SLOT_ORDER, searchItemIcon } from '@/lib/fracturedArchive/loadoutIcons';
+import { BriefingRow, damageText } from '@/lib/fracturedArchive/briefing';
+import { itemImageByName, LOADOUT_SLOT_ORDER, searchItemIcon } from '@/lib/fracturedArchive/loadoutIcons';
+import SurgeImg from '@/public/img/supplies/Surge potion(4).png';
 import { ItemIcon, LoadoutIconRow } from '@/app/components/bestSetup/ItemIcons';
 import { DrainBrief } from '@/app/components/bestSetup/DrainLineView';
 
@@ -88,7 +89,7 @@ const PlanBriefing: React.FC<{
               )}
             </td>
             <td className="px-2 py-1" title={r.drainText} data-testid="plan-briefing-specs">
-              {r.specs.length === 0 && <span className="text-gray-500 dark:text-gray-400">—</span>}
+              {r.specs.length === 0 && r.damage.length === 0 && !r.surge && <span className="text-gray-500 dark:text-gray-400">—</span>}
               <span className="flex flex-col gap-0.5">
                 {r.specs.map((g) => (
                   <span key={g.key} className="inline-flex flex-wrap items-center gap-x-2" data-testid="plan-briefing-group" data-text={g.text}>
@@ -97,6 +98,24 @@ const PlanBriefing: React.FC<{
                     {g.times > 1 && <span className="font-bold" title="The Defence is restored mid-fight: the same specs again each time">{`× ${g.times}`}</span>}
                   </span>
                 ))}
+                {/* phase 36: your damage specs and the surge dose (your own spec energy) */}
+                {(r.damage.length > 0 || r.surge) && (
+                  <span className="inline-flex flex-wrap items-center gap-x-2" data-testid="plan-briefing-damage" data-text={damageText(r.damage)} data-surge={r.surge ? 'true' : 'false'}>
+                    {r.damage.length > 0 && <span className="text-[11px] text-gray-500 dark:text-gray-400">You:</span>}
+                    {r.damage.map((d) => (
+                      <span key={d.weapon} className="inline-flex items-center gap-0.5" title={`${d.count} ${d.label} spec${d.count === 1 ? '' : 's'} (damage; your spec energy): saves ${d.saved.toFixed(1)} s`}>
+                        <ItemIcon name={d.label} src={itemImageByName(d.label)} size={24} />
+                        <span className="font-bold">{`×${d.count}`}</span>
+                      </span>
+                    ))}
+                    {r.surge && (
+                      <span className="inline-flex items-center gap-0.5" title="Drink a Surge potion dose here (+25% spec energy), right after your first spec: it does nothing at 100%" data-testid="plan-briefing-surge">
+                        <ItemIcon name="Surge potion(4)" src={SurgeImg.src} size={20} />
+                        <span className="text-[11px]">dose</span>
+                      </span>
+                    )}
+                  </span>
+                )}
               </span>
             </td>
             <td className="px-2 py-1 text-right font-mono font-bold whitespace-nowrap" data-testid="plan-briefing-seconds">{fmtSeconds(r.seconds)}</td>

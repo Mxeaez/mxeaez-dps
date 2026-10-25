@@ -3,6 +3,50 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 36 — Damage specs, surge potion, one spec budget per encounter (2026-10-25)
+
+Numbers move (full independent review next). Docs: docs/BEST_SETUP.md *Damage specs, surge potion and one spec budget
+per encounter (phase 36)*; UNVERIFIED B10 / E9 / F7 / G7 updated, D27 (budget), D28 (damage specs), D29 (surge) new;
+DATA_SOURCES *Phase 36*.
+
+- **One spec budget per encounter** (`specBudget.ts` pure DP, `encounterBudget.ts` time-model glue; raidTime.ts
+  `encounterTime` / `raidTime`): pools = your bar (Solo) or one bar per carrier + yours (Team); 100% at each encounter
+  (`CARRY_SPEC_ENERGY = false`, the flag carries the leftover with 0 s of travel); drain events per NPC + Defence resets
+  (new: Kephri's final phase, the Warden's enrage, Olm's hand phases — wiki quotes in DATA_SOURCES); regen +10% / 30 s
+  (15 s Lightbearer) on the encounter's wall clock; exact DP with dominance pruning, ties → fewer specs, then a top-up
+  spending spare energy on drain reliability; never slower than no specs; at most 24 options per event after the
+  pruning (`MAX_EVENT_OPTIONS`; only Olm's events have more: CoX 7:03.2 → 7:03.6 for a ~45% faster plan). Couplings (Bloat's first down → later downs)
+  attributed to the causing event.
+- **Damage specs** (`damageSpecs.ts`): Voidwaker, Dragon / Burning claws, Zaryte crossbow (ruby / diamond (e)), Crimson
+  kisten (the roadmap's "Kiston": a Maggot King unique); Keris partisan of breaching and Bone dagger not modelled
+  (no upstream spec). E[spec] = upstream `getSpecCalc().getExpectedDamage()`; net = E − DPS × ticks × 0.6; seconds =
+  net ÷ (team-DPS multiplier × DPS); only damage-limited phases, never adds.
+- **Surge potion**: a 1-slot item (4 doses, pseudo id like the hearts, bundled wiki image); +25% capped, once per
+  encounter after your first spec or below 100%; doses placed exactly per route (≥ 300 s apart on the route's DPS clock,
+  first at the raid start); a second potion only if > 4 doses fit.
+- **Planner**: the optimiser replays a fixed spec plan (`fixedAlloc`) found by the DP on a bootstrap kit; carriers /
+  share / items greedy use the DP on the kit; exact re-time allocates per kit. Damage weapons and surge potions brought
+  greedily at ≥ 1 s per slot (`pickSpecItem`); Team: with damage specs your share is "your spec energy goes to …".
+  Fixes found on the way: the optimiser's times are re-timed after the item greedy (step 7 used stale times), and
+  `formatDuration` rounds before splitting minutes (1499.96 s read "24:60.0").
+- **UI**: Plan briefing "You: [icon] ×N" damage specs and a surge "dose" marker; Bring line + "Surge dose at: Ocellus"
+  (icon); per-phase rows list damage specs; inventory shows the Surge potion; Search "Specs (damage)" box
+  (`SpecDamageBox.tsx`, best first: E[dmg], net, s / spec, energy); Search Solo drain box "with a surge dose" line.
+- **Headlines** (Team defaults, camp one ring): FA 21:44.4 → **21:04.9** (Bring Zaryte crossbow + Burning claws + Surge
+  potion, dose at Ocellus; carriers 2 Elder maul + 4 Tonalztics), ToA 14:12.1 → **14:05.5** (Voidwaker), CoX 7:01.3 →
+  **7:03.6** (Dragon claws; Olm re-drained from one budget: slower), ToB 7:29.5 → **7:21.2** (Dragon claws; Sotetseg
+  "start: Tonalztics 3 hits → Def 107 · after maze 1 / 2: Elder maul 2 specs + Tonalztics 1 hit → Def 100"). FA Solo
+  party 1 22:01.9 → 21:54.8; FA without Obligator / Ascension 24:34.1 → 24:05.1; the user's plan 25:46.3 → 25:00.0.
+- Tests: new `src/tests/lib/raids/Phase36.test.ts` (26); re-pinned Phase27 / 29 / 30 / 31 / 32 / 33 / 34 / 35 / 35b /
+  CrossRaid. Verify: new `scripts/verifyPhase36.mjs`; verifyPhase21-35b re-pinned (totals, Bork lines).
+  `yarn test` 1556 (1534 pass / 22 skipped); `RUN_SLOW_TESTS=1` CrossRaid + Phase27-36 294/294; tsc, lint clean.
+  Verify: verifyPhase36 all OK (screenshots phase36-*.png); verifyPhase21 / 23 / 26 / 27 / 29-35b all OK after the re-pins
+  (tracked screenshots they overwrote restored). verifyPhase35b's "Obligator not owned" Wear check is skipped when the
+  route no longer passes Bork + Smorks (it now takes Ezekiel).
+- Not done / left: plans are slower (browser: FA ~40 s, ToA ~50 s, ToB ~70 s, CoX ~112 s, 193 s before the option cap;
+  verifyPhase21's limit raised 150 → 240 s, verifyPhase27's re-plan 20 → 60 s); the time between
+  encounters (energy carry), mid-event re-drains and two doses in one long encounter are not modelled (D27, D29).
+
 ## Phase 35b — Briefing: one drain line per NPC (2026-10-24)
 
 User (FA plan briefing): "It says Bork + Smorks. But they are separate bosses. I can't tell which I should use

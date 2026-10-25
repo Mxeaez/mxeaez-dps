@@ -12,6 +12,7 @@ import {
   presetSpells,
   presetStyles,
   styleLabel,
+  monsterForSpecCounts, specCountsDrainKey,
 } from '@/lib/fracturedArchive/bestSetup';
 import {
   BestSetupAssumptions, DEFAULT_ASSUMPTIONS, PresetDef, StyleGroup,
@@ -34,8 +35,20 @@ import {
   OCELLUS_P3_PHASES,
 } from '@/lib/fracturedArchive/constants';
 import { dagonhaiEncounterDamage } from '@/lib/fracturedArchive/dagonhai';
-import { DEFAULT_FIGHT_SECONDS } from '@/lib/fracturedArchive/specs';
+import { DEFAULT_FIGHT_SECONDS, drainModel, PlannerWeapon } from '@/lib/fracturedArchive/specs';
 import { DrainLine } from '@/lib/fracturedArchive/drainLine';
+import type { SpecCounts } from '@/lib/fracturedArchive/bestSetup';
+import {
+  DAMAGE_SPEC_WEAPON_IDS, DAMAGE_SPEC_WEAPONS, damageSpecItemName, damageSpecProfile, DamageSpecProfile, DamageSpecWeapon,
+} from '@/lib/fracturedArchive/damageSpecs';
+import { canWeaponHit } from '@/lib/fracturedArchive/hittable';
+import {
+  budgetedEncounter, CARRY_SPEC_ENERGY, EncounterAlloc, encounterWallSeconds, EncounterSpecPlan, fixedEncounter,
+  PhaseDamageSpecs, SpecBudgetConfig,
+} from '@/lib/fracturedArchive/encounterBudget';
+import {
+  placeDoses, PoolState, SURGE_COOLDOWN_SECONDS, SURGE_DOSES_PER_POTION,
+} from '@/lib/fracturedArchive/specBudget';
 import {
   FRACTURED_ARCHIVE_HP_SCALING,
   FRACTURED_ARCHIVE_MAX_PARTY_SIZE,
@@ -165,6 +178,18 @@ export interface PhaseQuery {
   drain: DrainStateId;
   /** The encounter's length for the spec-energy budget (Solo drains). */
   fightSeconds: number;
+  /** Phase 36: the planned phase (row) this query is for (`PlannedPhase.key`; set by `phaseTime`). */
+  rowKey?: string;
+  /**
+   * Phase 36: the spec counts of the phase's drain event (the encounter's spec budget, encounterBudget.ts): the drain
+   * state is these specs (those that can hit this phase), not the drain state's own plan.
+   */
+  specs?: { counts: SpecCounts };
+  /**
+   * Phase 36: only the DPS is needed (the spec budget timing an option): the kit may answer with any counts that leave
+   * the same drains (`specCountsDrainKey`), so its drain line may name other specs.
+   */
+  outcomeOnly?: boolean;
 }
 
 /** The kit's best answer for a phase. */
@@ -186,6 +211,12 @@ export interface KitChoice {
  */
 export interface RaidKit {
   best: (q: PhaseQuery) => KitChoice | null;
+  /** Phase 36: a damage spec's upstream numbers on the phase under the query's drains (null: unknown). */
+  specDamage?: (q: PhaseQuery, weapon: DamageSpecWeapon) => DamageSpecProfile | null;
+  /** Phase 36: which drain / damage spec weapons can hit the phase (missing = can). */
+  specHits?: (q: PhaseQuery) => Record<string, boolean>;
+  /** Phase 36: a key of the drains the query's spec counts leave (equal keys = equal DPS); see `specCountsDrainKey`. */
+  drainKey?: (q: PhaseQuery) => string;
 }
 
 export const phaseKey = (targetKey: string, phase?: string): string => `${targetKey}|${phase ?? ''}`;
@@ -331,6 +362,10 @@ export interface PhaseTime {
   note?: string;
   /** Phase 33: see `PlannedPhase.drainReset`. */
   drainReset?: string;
+  /** Phase 36: your damage specs on this phase (the spec budget; `seconds` already counts them). */
+  damageSpecs?: PhaseDamageSpecs[];
+  /** Phase 36: why damage specs don't apply (a fixed-length phase, the Dawnbringer specs). */
+  noDamageSpecs?: string;
 }
 
 export interface EncounterTime {
@@ -340,6 +375,8 @@ export interface EncounterTime {
   seconds: number;
   /** Time of the first pass without drains (= the fight length given to the drain planner); undefined for None. */
   drainFightSeconds?: number;
+  /** Phase 36: the encounter's spec plan under the spec budget (Solo / Team drains). */
+  specPlan?: EncounterSpecPlan;
 }
 
 export interface RaidTimeAssumptions {
@@ -370,6 +407,13 @@ export interface RaidTimeAssumptions {
   cox?: CoxInputs;
   /** Phase 20: Theatre of Blood inputs (mode) for the hp of ToB targets. */
   tob?: TobInputs;
+  /**
+   * Phase 36: one spec budget per encounter (encounterBudget.ts): set by `raidTimeAssumptionsFrom` for Solo / Team
+   * drains; undefined = the phase 14-35 drain states (every phase target its own plan).
+   */
+  specBudget?: SpecBudgetConfig;
+  /** Phase 36 (planner): replay these spec plans instead of allocating (the optimiser's inner loop). */
+  fixedAlloc?: Partial<Record<EncounterId, EncounterAlloc>>;
 }
 
 /**
@@ -392,22 +436,62 @@ export interface RaidTimeModel {
   requiredPhaseTargets: (a: RaidTimeAssumptions) => { targetKey: string, phase?: string }[];
 }
 
+/**
+ * Phase 36: the spec budget of the best-setup assumptions: Solo = "Specs I bring" (Eye of Ayak up to its spec count),
+ * Team = the carriers that count (the first party-size of them, in `teamSpecPlan`'s order) with their Lightbearer flags;
+ * your damage spec weapons and Surge potions (Plan: the planner's choice; elsewhere none).
+ */
+export const specBudgetFrom = (best: BestSetupAssumptions, drain: DrainStateId): SpecBudgetConfig | undefined => {
+  if (drain === 'none') return undefined;
+  const m = best.mySpecs;
+  const common = {
+    lightbearer: !!m.lightbearer,
+    damage: (best.damageSpecs ?? []).filter((w) => DAMAGE_SPEC_WEAPON_IDS.includes(w)),
+    surgePotions: Math.max(0, Math.floor(best.surgePotions ?? 0)),
+    carry: CARRY_SPEC_ENERGY,
+  };
+  if (drain === 'solo') {
+    const many = 99;
+    const solo: Partial<Record<PlannerWeapon, number>> = {};
+    if (m.elderMaul) solo.elderMaul = many;
+    if (m.dwh) solo.dwh = many;
+    if (m.tonalztics) solo.tonalztics = many;
+    if (m.bgs) solo.bgs = many;
+    if (m.ayak > 0) solo.ayak = Math.floor(m.ayak);
+    return { drain, solo, ...common };
+  }
+  const carriers: Partial<Record<PlannerWeapon, number>> = {};
+  let left = Math.max(0, Math.floor(best.partySize));
+  (Object.keys(best.team.carriers) as PlannerWeapon[]).forEach((w) => {
+    const k = Math.min(Math.max(0, Math.floor(best.team.carriers[w] ?? 0)), left);
+    if (k > 0) carriers[w] = k;
+    left -= k;
+  });
+  return {
+    drain, carriers, carrierLightbearer: { ...best.team.lightbearer }, ...common,
+  };
+};
+
 export const raidTimeAssumptionsFrom = (
   best: BestSetupAssumptions,
   drain: DrainStateId,
   settings: TimeSettings = RAID_TIME_DEFAULTS,
   model?: RaidTimeModel,
-): RaidTimeAssumptions => ({
-  partySize: best.partySize,
-  drain,
-  settings,
-  fallbackFightSeconds: best.fightSeconds ?? DEFAULT_FIGHT_SECONDS,
-  dpsMultiplier: teamDpsMultiplier(best),
-  ...(model ? { model } : {}),
-  ...(best.toa ? { toa: best.toa } : {}),
-  ...(best.cox ? { cox: best.cox } : {}),
-  ...(best.tob ? { tob: best.tob } : {}),
-});
+): RaidTimeAssumptions => {
+  const budget = specBudgetFrom(best, drain);
+  return {
+    partySize: best.partySize,
+    drain,
+    settings,
+    fallbackFightSeconds: best.fightSeconds ?? DEFAULT_FIGHT_SECONDS,
+    dpsMultiplier: teamDpsMultiplier(best),
+    ...(model ? { model } : {}),
+    ...(best.toa ? { toa: best.toa } : {}),
+    ...(best.cox ? { cox: best.cox } : {}),
+    ...(best.tob ? { tob: best.tob } : {}),
+    ...(budget ? { specBudget: budget } : {}),
+  };
+};
 
 export const timeOf = (damage: number, dps: number): number => {
   if (damage <= 0) return 0;
@@ -426,7 +510,7 @@ export const phaseTime = (
   dpsFactor = 1,
 ): PhaseTime => {
   const choice = kit.best({
-    targetKey: p.targetKey, phase: p.phase, drain, fightSeconds,
+    targetKey: p.targetKey, phase: p.phase, drain, fightSeconds, rowKey: p.key,
   });
   const dps = choice?.dps ?? 0;
   return {
@@ -467,6 +551,7 @@ const evalEncounterPass = (
       dps,
       seconds: settings.ocellusP2Seconds,
       note: `${Math.round(carried)} carried to P3 (${pctText(settings.ocellusP2CarryOver)})`,
+      noDamageSpecs: 'a fixed-length phase',
     });
   }
   const p3Total = Math.max(0, targetHp('ocellus-p3', OCELLUS_P3_PHASES[0], a.partySize) - carried);
@@ -551,10 +636,41 @@ export const drainFightSecondsOf = (
  * iteration; the drained pass is shorter, which would only give a Solo plan less energy, so the plan is a little
  * generous).
  */
-export const encounterTime = (id: EncounterId, kit: RaidKit, a: RaidTimeAssumptions): EncounterTime => {
+/** Phase 36: where an encounter sits in the route (energy carry, surge dose). */
+export interface EncounterBudgetOptions {
+  /** A surge dose right after the first specs. */
+  surge?: boolean;
+  /** Clock (wall s) at the start (carry: the raid clock). */
+  clock0?: number;
+  /** Energy per pool at the start (carry); undefined = full. */
+  startState?: PoolState;
+}
+
+export const encounterTime = (id: EncounterId, kit: RaidKit, a: RaidTimeAssumptions, opts: EncounterBudgetOptions = {}): EncounterTime => {
   const model = modelOf(a);
   const label = model.labels[id] ?? id;
   const fixed = typeof a.fixedFightSeconds === 'number' ? a.fixedFightSeconds : a.fixedFightSeconds?.[id];
+  // phase 36: one spec budget per encounter (Solo / Team)
+  const budget = a.drain !== 'none' ? a.specBudget : undefined;
+  if (budget) {
+    const pass = (k: RaidKit, d: DrainStateId, f: number) => model.encounterPass(id, k, a, d, f);
+    const alloc = a.fixedAlloc?.[id];
+    if (alloc) {
+      const fight = fixed ?? a.fallbackFightSeconds;
+      const r = fixedEncounter(kit, a, budget, alloc, { pass, drain: a.drain, fightSeconds: fight });
+      return {
+        id, label, phases: r.phases, seconds: r.seconds, drainFightSeconds: fight,
+      };
+    }
+    const first = pass(kit, 'none', a.fallbackFightSeconds);
+    const fight = fixed ?? drainFightSecondsOf(sumSeconds(first), a);
+    const r = budgetedEncounter(kit, a, budget, {
+      drain: a.drain, pass, first, fightSeconds: fight, clock0: opts.clock0 ?? 0, startState: opts.startState, surge: !!opts.surge,
+    });
+    return {
+      id, label, phases: r.phases, seconds: r.seconds, drainFightSeconds: fight, specPlan: r.plan,
+    };
+  }
   if (a.drain !== 'none' && fixed !== undefined) {
     const phases = model.encounterPass(id, kit, a, a.drain, fixed);
     return {
@@ -580,7 +696,30 @@ export interface RouteTime {
   encounters: EncounterTime[];
   /** Total DPS time in seconds (Infinity when some phase can't be damaged by the kit). */
   seconds: number;
+  /** Phase 36: the encounters that get a surge dose (right after their first specs), in route order. */
+  surgeDoses?: EncounterId[];
 }
+
+/**
+ * Phase 36: the surge doses of a route: the encounters' start times on the route's clock (wall seconds of the
+ * encounters before it, without doses; travel 0 s: the cooldown pauses between ToB rooms and the DPS-only model has no
+ * travel elsewhere, so this is exact for ToB and conservative for the others), and `placeDoses` (≥ 300 s apart, at
+ * most 4 per potion, the most route time saved).
+ */
+export const routeSurgeDoses = (
+  plain: EncounterTime[],
+  dosed: EncounterTime[],
+  a: Pick<RaidTimeAssumptions, 'dpsMultiplier' | 'partySize'>,
+  potions: number,
+): EncounterId[] => {
+  let at = 0;
+  const items = plain.map((e, i) => {
+    const item = { id: e.id, at, gain: e.seconds - dosed[i].seconds };
+    at += encounterWallSeconds(e.seconds, a);
+    return item;
+  });
+  return placeDoses(items, SURGE_DOSES_PER_POTION * Math.max(0, Math.floor(potions)), SURGE_COOLDOWN_SECONDS);
+};
 
 /** DPS-only time of one route with a kit. `cache` shares encounter results between routes. */
 export const raidTime = (
@@ -589,15 +728,59 @@ export const raidTime = (
   assumptions: RaidTimeAssumptions,
   cache: Map<EncounterId, EncounterTime> = new Map(),
 ): RouteTime => {
-  const encounters = route.encounters.map((id) => {
-    let e = cache.get(id);
+  const budget = assumptions.drain !== 'none' ? assumptions.specBudget : undefined;
+  const cached = (id: EncounterId, surge: boolean) => {
+    const k = surge ? `${id}|surge` : id;
+    let e = cache.get(k);
     if (!e) {
-      e = encounterTime(id, kit, assumptions);
-      cache.set(id, e);
+      e = encounterTime(id, kit, assumptions, { surge });
+      cache.set(k, e);
     }
     return e;
-  });
-  return { route, encounters, seconds: encounters.reduce((t, e) => t + e.seconds, 0) };
+  };
+  const total = (es: EncounterTime[]) => es.reduce((t, e) => t + e.seconds, 0);
+  if (budget && !assumptions.fixedAlloc && budget.carry) {
+    // phase 36, energy carried (CARRY_SPEC_ENERGY): sequential, each encounter starts with the previous one's leftover
+    // on the raid clock (travel 0 s); a dose is taken where it saves time and the cooldown allows (greedy, in order)
+    let clock = 0;
+    let state: PoolState | undefined;
+    let lastDose = -Infinity;
+    let doses = SURGE_DOSES_PER_POTION * budget.surgePotions;
+    const surgeDoses: EncounterId[] = [];
+    const encounters = route.encounters.map((id) => {
+      const plain = encounterTime(id, kit, assumptions, { clock0: clock, startState: state });
+      let e = plain;
+      if (doses > 0 && clock - lastDose >= SURGE_COOLDOWN_SECONDS - 1e-9) {
+        const dosed = encounterTime(id, kit, assumptions, { clock0: clock, startState: state, surge: true });
+        if (dosed.seconds < plain.seconds - 1e-9) {
+          e = dosed;
+          doses -= 1;
+          lastDose = clock;
+          surgeDoses.push(id);
+        }
+      }
+      state = e.specPlan?.end;
+      clock += encounterWallSeconds(e.seconds, assumptions);
+      return e;
+    });
+    return {
+      route, encounters, seconds: total(encounters), ...(surgeDoses.length ? { surgeDoses } : {}),
+    };
+  }
+  if (budget && !assumptions.fixedAlloc && budget.surgePotions > 0) {
+    const plain = route.encounters.map((id) => cached(id, false));
+    const dosed = route.encounters.map((id) => cached(id, true));
+    const doses = new Set(routeSurgeDoses(plain, dosed, assumptions, budget.surgePotions));
+    const encounters = route.encounters.map((id, i) => (doses.has(id) ? dosed[i] : plain[i]));
+    return {
+      route, encounters, seconds: total(encounters), ...(doses.size ? { surgeDoses: route.encounters.filter((id) => doses.has(id)) } : {}),
+    };
+  }
+  const encounters = route.encounters.map((id) => cached(id, false));
+  const fixedDoses = assumptions.fixedAlloc ? route.encounters.filter((id) => assumptions.fixedAlloc?.[id]?.surge) : [];
+  return {
+    route, encounters, seconds: total(encounters), ...(fixedDoses.length ? { surgeDoses: fixedDoses } : {}),
+  };
 };
 
 export interface RouteComparison {
@@ -672,6 +855,21 @@ export const playerKitLoadout = (player: Player, index: number): KitLoadout => (
   toPlayer: (monster) => ({ ...player, ...calculateEquipmentBonusesFromGear(player, monster) }),
 });
 
+/** Phase 36: a stable key of spec counts (weapons sorted, zeros dropped). */
+export const specCountsKey = (c: SpecCounts | undefined): string => Object.entries(c ?? {})
+  .filter(([, n]) => (n ?? 0) > 0).sort(([a], [b]) => a.localeCompare(b)).map(([w, n]) => `${w}${n}`)
+  .join(',');
+
+/** Phase 36: which drain weapons (drainModel's canHit) and damage spec weapons (canWeaponHit) can hit a monster. */
+export const specHitsOf = (m: Monster, assumptions: BestSetupAssumptions): Record<string, boolean> => {
+  const model = drainModel(m, assumptions);
+  const out: Record<string, boolean> = { ...model.canHit };
+  DAMAGE_SPEC_WEAPON_IDS.forEach((w) => {
+    out[w] = canWeaponHit(m, damageSpecItemName(w), DAMAGE_SPEC_WEAPONS[w].group);
+  });
+  return out;
+};
+
 export interface KitEvaluator extends RaidKit {
   /** evaluateLoadout calls so far (memo misses). */
   evaluations: () => number;
@@ -688,15 +886,26 @@ export const createKitEvaluator = (loadouts: KitLoadout[], assumptions: BestSetu
   const evals = new Map<string, number>();
   let count = 0;
   const monsterFor = (q: PhaseQuery) => {
-    const key = `${phaseKey(q.targetKey, q.phase)}|${q.drain}|${q.drain === 'none' ? 0 : q.fightSeconds}`;
+    // phase 36: a query with the encounter budget's spec counts gets exactly those specs
+    let specs = q.drain !== 'none' && q.specs ? specCountsKey(q.specs.counts) : '';
+    if (specs && q.outcomeOnly) specs = `dk:${specCountsDrainKey(findTarget(q.targetKey), q.phase, q.drain, assumptions, q.specs!.counts)}`;
+    const key = `${phaseKey(q.targetKey, q.phase)}|${q.drain}|${q.drain === 'none' || q.specs ? 0 : q.fightSeconds}|${specs}`;
     let m = monsters.get(key);
     if (!m) {
-      m = buildTargetMonster(findTarget(q.targetKey), q.phase, q.drain, { ...assumptions, fightSeconds: q.fightSeconds });
+      m = specs && q.outcomeOnly
+        ? {
+          monster: monsterForSpecCounts(findTarget(q.targetKey), q.phase, q.drain, assumptions, q.specs!.counts),
+          drain: { id: q.drain } as DrainState,
+        }
+        : buildTargetMonster(findTarget(q.targetKey), q.phase, q.drain, { ...assumptions, fightSeconds: q.fightSeconds }, q.drain !== 'none' ? q.specs?.counts : undefined);
       monsters.set(key, m);
     }
     return m;
   };
   return {
+    specDamage: (q, w) => damageSpecProfile(monsterFor(q).monster, w, assumptions),
+    specHits: (q) => specHitsOf(monsterFor({ ...q, drain: 'none', specs: undefined }).monster, assumptions),
+    drainKey: (q) => specCountsDrainKey(findTarget(q.targetKey), q.phase, q.drain, assumptions, q.specs?.counts ?? {}),
     evaluations: () => count,
     best: (q) => {
       const pk = phaseKey(q.targetKey, q.phase);
@@ -852,7 +1061,9 @@ export const computeRouteComparison = (
 /** "4:05.3" (m:ss.s), "∞" for an infinite time. */
 export const formatDuration = (s: number): string => {
   if (!Number.isFinite(s)) return '∞';
-  const m = Math.floor(s / 60);
-  const rest = s - m * 60;
+  // phase 36 fix: round to the tenth first (1499.96 s read "24:60.0")
+  const r = Math.round(s * 10) / 10;
+  const m = Math.floor(r / 60);
+  const rest = r - m * 60;
   return `${m}:${rest < 10 ? '0' : ''}${rest.toFixed(1)}`;
 };

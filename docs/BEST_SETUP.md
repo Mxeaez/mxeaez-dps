@@ -1,4 +1,4 @@
-# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14; Routes tab phase 16; Plan tab phase 17; raid tabs + ToA phase 18; CoX phase 19; ToB phase 20; per-raid Plan defaults + dedupe phase 21; UI cleanup phase 23; "Items I don't own" phase 26; potions from the kit + ring policy phase 27; Plan tab polish phase 30; quiver ammo + heart as magic's potion phase 31; zero-value switch items + drain-line units phase 32; specs follow the plan + one drain line per encounter phase 33; readability phase 34)
+# Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14; Routes tab phase 16; Plan tab phase 17; raid tabs + ToA phase 18; CoX phase 19; ToB phase 20; per-raid Plan defaults + dedupe phase 21; UI cleanup phase 23; "Items I don't own" phase 26; potions from the kit + ring policy phase 27; Plan tab polish phase 30; quiver ammo + heart as magic's potion phase 31; zero-value switch items + drain-line units phase 32; specs follow the plan + one drain line per encounter phase 33; readability phase 34; damage specs, surge potion and one spec budget per encounter phase 36)
 
 `/best-setup` (dev: http://localhost:3001/osrs-dps/best-setup; "Best setup" button in the top bar, "Calculator" leads
 back). Tabs, in order: **Search** (the default, phase 9/12, see the end of this file) searches a pool of end-game items
@@ -1085,6 +1085,126 @@ add and a reset; render: "Bork:" / "Smorks:" spec and Wear lines; slow: FA 21:44
 Phase34.test / verifyPhase33 / 34 re-pinned to the per-NPC Bork + Smorks line. Screenshots
 `docs/screenshots/phase35b-bork-smorks.png` (Obligator not owned: both spec lines and both Wear lines),
 `phase35b-bork-smorks-phone.png`, `phase35b-cox.png`, `phase35b-toa.png`.
+
+### Damage specs, surge potion and one spec budget per encounter (phase 36)
+
+ROADMAP round 5, row 36 (user, 2026-10-24: damage specs like Voidwaker / Zaryte crossbow weren't considered, "best spec
+weapon per boss", the surge potion). Until phase 35 every phase target (every Olm phase, every Sotetseg third, Bork and
+The Smorks) started from a full spec bar of its own (UNVERIFIED B10 / F7 / G7). **This phase changes numbers.**
+
+**One spec budget per encounter** (`specBudget.ts`, `encounterBudget.ts`; raidTime.ts `encounterTime` when the
+assumptions carry a `specBudget`, i.e. Solo / Team drains in the time model and the Plan tab; Search / Summary keep the
+one-boss budget):
+
+- *Pools.* Solo: your spec bar. Team: one bar per carrier (each carrier specs only its weapon; Lightbearer per weapon)
+  plus yours for your damage specs and the surge dose.
+- *Energy across encounters — decision:* every encounter starts at **100%** (`CARRY_SPEC_ENERGY = false`). In-game the
+  bar is not reset between rooms, but the DPS-only time model has no travel / puzzle time, and the time between bosses
+  (puzzle rooms, walking, ToB / CoX resupply) usually refills most of a bar (100% takes 300 s); carrying the leftover with
+  0 s of travel would make every boss after the first start nearly empty, a pessimism the raids don't have. The flag
+  flips it: each encounter then starts at min(100%, the previous encounter's leftover + its regen) on the raid clock,
+  planned in route order (myopic), and the surge doses are placed greedily in order. UNVERIFIED B10 / D27.
+- *Drain events* = per NPC its first phase and every Defence reset: Sotetseg's mazes, Bloat's stomp (phase 33) and, new,
+  the wiki's other resets — Kephri's final phase ("the defence level is reset for the final phase"), the Tumeken's
+  Warden enrage ("base defence level is reset to 180"), every Olm hand phase after the first ("His stats also reset when
+  a new phase starts"). An event's option = spec counts per drain weapon; a weapon's specs are made at the first phase of
+  the event it can hit (AG: Tonalztics on the flying shield, the maul when it lands) from the energy then. Every phase of
+  the event gets the event's specs that can hit it. Adds (`NO_DRAINS_ADDS`) and other `noDrains` targets get no drain
+  specs; adds get no damage specs either.
+- *Clock and regen:* rows = the encounter's phases (its undrained pass), wall time = the model's seconds × team-DPS
+  multiplier ÷ party size (the `drainFightSecondsOf` formula; = the seconds in ToA / CoX / ToB, ÷ party in the FA);
+  +10% per 30 s (15 s with Lightbearer) per bar, credited at each row's end; damage specs on a row may use the row's
+  regen; bars are capped at 100% between rows. Regen during an event does **not** feed that event's drains (the old
+  Solo budget counted the whole fight's regen for the start-of-fight specs; now it buys damage specs or later events).
+  Sotetseg's mazes aren't in the model, so their regen isn't counted (pessimistic).
+- *Choice:* an exact dynamic programme over the rows (state: every bar, the options of the events still running, a dose
+  pending) for the least encounter seconds; options that another dominates (as fast on every phase, no more energy from
+  any bar at any row, its damage specs at least as good) are dropped first, which keeps the optimum. To keep the planner fast an event keeps at most 24
+  options after the pruning (`MAX_EVENT_OPTIONS`: the fastest per spec count, then the fastest; only Olm's events have
+  more at the defaults — the DP is exact over the kept ones). Ties: fewer specs;
+  then a **top-up** spends spare energy on more drain specs where that costs no time (the ranked Defence rounds: on
+  Kephri one maul spec ranks at Def 60 at 63%, four reach it at 98%). "No specs" is always an option, so a plan is
+  never slower than spending nothing and an extra carrier never makes it slower (the phase 35 review's BGS carrier that
+  cost 3.3 s can't happen any more). Team: the spec counts per weapon are paid by its carriers, each spec from the
+  fullest bar. Couplings between events (Bloat's first down sets the damage left for the later downs) are attributed to
+  the event that causes them.
+- The Team briefing / drain lines / "team: N specs (M carriers)" now show the specs each event gets: Sotetseg's three
+  events are listed separately (no "× 3" unless they get the same specs).
+
+**Damage specs** (`damageSpecs.ts`): Voidwaker, Dragon claws, Burning claws, Zaryte crossbow (Ruby / Diamond dragon bolts
+(e)), Crimson kisten (a Maggot King unique — the roadmap's "Kiston"; not an FA reward). Keris partisan of breaching (no
+special attack upstream) and the Bone dagger (upstream `UNIMPLEMENTED_SPECS`) are not modelled. E[spec damage] =
+upstream's `getSpecCalc().getExpectedDamage()` (the spec distribution + Burning claws' burn) against the phase's drained
+monster, in the style's armour preset (melee: the better of Torva and Inquisitor's; ranged Masori (f)), every
+non-defensive style × armour × bolt tried; the spec's ticks = the spec calc's `getExpectedAttackSpeed()`. A weapon that
+can't hit the phase (hittable.ts `canWeaponHit` with its own style: Voidwaker is a melee weapon whose spec rolls magic —
+not on Moia, the flying Guardian, Ocellus's Deflect Melee) deals 0.
+
+- *Value of one spec on a phase:* **net = E[spec] − DPS × ticks × 0.6 s** (what your loadout's normal attacks would have
+  dealt in those ticks; the variant with the most net at that DPS), **seconds saved = net ÷ (team-DPS multiplier × DPS)**
+  — the time model's own rate (time = damage ÷ (multiplier × DPS)): a damage spec takes net damage off the phase. With
+  the multiplier = the party size (ToA / CoX / ToB) one player's spec is worth less in a big team; the FA's multiplier
+  is 1 (its hp table is the identity), so FA damage specs are worth more. Only on damage-limited phases (seconds =
+  damage ÷ (multiplier × DPS)): not Ocellus P2 (fixed length), the Dawnbringer specs, adds.
+- *Energy:* the item's spec cost (Voidwaker / claws / kisten 50%, Burning claws 35%, ZCB 75%) from your bar, which in Solo
+  is also the drains' bar: the DP splits it between drains and damage specs per encounter.
+- *Bringing one* (planner decides): greedy on the spec budget's route time with the kit, the item saving the most net
+  of 1 s per slot, while one saves ≥ 1 s per slot (`pickSpecItem`; the price of kit switches, Solo spec weapons and
+  your share); with no free slot the kit is re-optimised with it carried. Solo then drops a drain weapon whose slot is
+  now worth < 1 s. Team: damage specs are your energy, so when you bring one your share is "your spec energy goes to
+  your … specs — let a teammate carry …" (no drain weapon for you). "Specs I bring" (manual) brings none.
+
+**Surge potion** (wiki, read 2026-10-24/25: 25% per dose, once every five minutes, the cooldown removed on entering a
+raid, paused between ToB rooms, not between ToA rooms; "Drinking this would have no effect" at 100%). A 1-slot kit
+candidate of 4 doses: a dose adds 25% to your bar (capped) once per encounter, right after your first spec there or
+whenever the bar is below 100% (the DP picks the moment). Doses are placed per route (`routeSurgeDoses`, `placeDoses`):
+≥ 300 s apart on the route clock (the encounters' wall times without doses; travel 0 s — exact for ToB, conservative
+for the others), the first may be at the raid start, at most 4 per potion, exact (the most time saved). A second potion
+only when the route allows more than 4 doses (`dosesAllowed`) and it saves ≥ 1 s. The Plan shows "Surge dose at:
+Ocellus" with the potion icon and a "dose" marker on those briefing rows; the Search tab's Solo drain box has a "with a
+surge dose" line (the boss's Solo budget + 25%). UNVERIFIED D29.
+
+Two fixes found on the way: after the damage-spec / surge greedy the optimiser's kit times are re-timed under the new spec
+plan (step 7's "what each loadout saves" / additions used stale times), and `formatDuration` rounds to the tenth before
+splitting minutes.
+
+**The planner** (planner.ts `runRing`): the optimiser times thousands of kits, so it replays a *fixed* spec plan
+(`RaidTimeAssumptions.fixedAlloc`): a bootstrap kit is optimised under the phase 14-35 per-target drain states, the spec
+budget's DP on it gives the plan (`fixedFor`), the kit is re-optimised under that plan and the plan re-derived on the
+result. The Team carrier greedy, your share and the damage / surge greedy run the DP on the kit itself (`dpCmp`); the
+reported times are the exact re-time with the DP on the exact kit. Solo subsets: each subset's plan from the bootstrap
+kit; subsets with the same drains on every phase are one candidate.
+
+**Per-boss view** (Search tab, `SpecDamageBox.tsx`, damageSpecs.ts `damageSpecRanking`): a "Specs (damage)" box under the
+results lists every damage spec weapon on the selected boss / phase / drain state against the top row's DPS, best first:
+E[dmg], net, seconds per spec at the current party (net ÷ (multiplier × DPS)), energy; a weapon that can't hit is greyed.
+
+**Headlines** (Plan tab defaults, Team, camp one ring; CrossRaid):
+
+| Raid | Phase 35b | **Phase 36** | What changed |
+|---|---|---|---|
+| FA | 21:44.4 | **21:04.9** | Bring Zaryte crossbow (−30.7 s, a free slot), a Surge potion (−5.2 s; one dose, at Ocellus) and Burning claws (−3.0 s); your share: none ("your spec energy goes to your Zaryte crossbow / Burning claws specs"); carriers 2 Elder maul + 4 Tonalztics (was 2 + 2); Bork + Smorks: "Bork: Elder maul 2 specs → Def 180 · Smorks: Tonalztics 10 hits → Def 0" from one budget; damage specs on every boss (ZCB ×1-2, Burning claws ×1) |
+| ToA | 14:12.1 | **14:05.5** | Bring Voidwaker (−6.6 s; ×2-4 per boss); carriers 1 Elder maul + 1 Eye of Ayak (unchanged); Kephri's final phase and the Warden's enrage are new drain events (1 maul spec each from the energy left) |
+| CoX | 7:01.3 | **7:03.6** | slower: Olm's hand phases are re-drained from one budget (was a full first round per claw per phase); Bring Dragon claws (a slot from the kit); carriers 4 Elder maul + 2 Tonalztics (was 2 Elder maul + 1 Tonalztics + 1 BGS + 1 Ayak); the option cap (`MAX_EVENT_OPTIONS`, below) costs 0.4 s here (7:03.2 uncapped) for a plan ~45% faster |
+| ToB | 7:29.5 | **7:21.2** | Bring Dragon claws (−8.3 s); carriers 2 Elder maul + 2 Tonalztics; Sotetseg "start: Tonalztics 3 hits → Def 107 · after maze 1: Elder maul 2 specs + Tonalztics 1 hit → Def 100 · after maze 2: the same" (was the full 4 + 4 specs × 3) |
+| FA Solo, party 1 | 22:01.9 | **21:54.8** | the start-of-fight drains have 100% (no fight regen); damage specs / the surge potion where they save ≥ 1 s per slot |
+| FA without Obligator + Ascension crossbows | 24:34.1 | **24:05.1** | damage specs and the shared budget |
+| The user's plan (Phase32.test: party 4, Camp Lightbearer, the user's "don't own" list) | 25:46.3 | **25:00.0** | (also `formatDuration`'s rounding fix: 1499.96 s read "24:60.0") |
+
+Worked examples (one spec, the Search box's numbers: Team drains, the best preset's DPS): FA Xarth, Inquisitor's +
+Obligator 13.917 DPS, multiplier 1: Zaryte crossbow (Rapid, ruby (e)) E 97.95 in 5 ticks, net 97.95 − 13.917 × 5 × 0.6 =
+56.20, saves 56.20 ÷ 13.917 = 4.04 s; Voidwaker E 54.0 (max 54 → 27-81), net 20.6, 1.48 s. ToA Zebak (500), Twisted bow
+11.034 DPS, multiplier 6: ZCB E 96.28, net 63.18, 63.18 ÷ (6 × 11.034) = 0.95 s; Voidwaker net 30.02, 0.45 s. CoX Tekton,
+Torva + Obligator 14.416 DPS, multiplier 6: Dragon claws E 66.80, net 32.20, 0.37 s (Voidwaker 10.5: Tekton takes a fifth
+of magic damage; the ZCB can't hit him). ToB Maiden, Torva + Scythe 14.592 DPS, multiplier 4: ZCB E 109.71, net 65.94,
+1.13 s; Dragon claws net 32.85, 0.56 s.
+
+**Checks**: `src/tests/lib/raids/Phase36.test.ts` (E[spec] by hand for Voidwaker and Dragon claws on Xarth and Zebak vs
+upstream; net / seconds on a toy; the DP vs an exhaustive search on toys (Solo two events, with a dose, Team carriers)
+and on real encounters (ToB Sotetseg Team, every option combination; FA Xarth Solo with drains, Voidwaker and a dose);
+dose placement; the 1 s / slot rule; adds; Sotetseg's shared budget; never slower than no specs; the carry flag),
+re-pinned tests of phases 27-35b and CrossRaid; `scripts/verifyPhase36.mjs` (Search Specs box on Xarth, the Solo surge
+line, the FA Plan's surge dose and damage specs, ToB Sotetseg), screenshots `docs/screenshots/phase36-*.png`.
 
 ## Routes tab (phase 16: raid time model)
 

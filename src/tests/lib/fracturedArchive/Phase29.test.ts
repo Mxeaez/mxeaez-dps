@@ -518,9 +518,14 @@ describe('planner: spec modes', () => {
     expect(roles.rows.length).toBeGreaterThan(0);
     const share = r.specs.share!;
     expect(share.manual).toBe(false);
-    expect(share.weapon).toBe(mostNeededWeapon(roles));
+    // phase 36: when you bring damage spec weapons your energy goes to them: no drain weapon share
+    const extra = (r.specs.damage?.length ?? 0) + (r.specs.surgePotions ?? 0);
+    if (r.specs.damage?.length) {
+      expect(share.weapon).toBeNull();
+      expect(share.reason).toMatch(/^your spec energy goes to your /);
+    } else expect(share.weapon).toBe(mostNeededWeapon(roles));
     expect(r.specs.bring).toEqual(share.carry ? [share.weapon] : []);
-    expect(r.specItems.length).toBe(r.specs.bring.length);
+    expect(r.specItems.length).toBe(r.specs.bring.length + extra);
     if (share.carry) expect(r.inventory.some((c) => c.kind === 'spec')).toBe(true);
     expect(r.slots!.used).toBeLessThanOrEqual(28);
     // manual carriers (plan()'s default): the briefing = the Advanced counts (2 maul, 2 Tonalztics, 1 Ayak)
@@ -562,8 +567,9 @@ describe('planner: spec modes', () => {
     expect(ayak.deltaSeconds).toBeLessThanOrEqual(1e-9);
     // the chosen weapons each save time
     r.specs.solo!.perWeapon.filter((d) => d.chosen).forEach((d) => expect(d.deltaSeconds).toBeGreaterThan(0));
-    expect(r.specItems.map((x) => x.name).length).toBe(r.specs.bring.length);
-    expect(r.specs.text).toBe(bringText(r.specs.bring));
+    // phase 36: + the damage spec weapons / Surge potions the planner added, after the drain weapons
+    expect(r.specItems.map((x) => x.name).length).toBe(r.specs.bring.length + (r.specs.damage?.length ?? 0) + (r.specs.surgePotions ?? 0));
+    expect(r.specs.text.startsWith(r.specs.bring.length ? bringText(r.specs.bring) : 'Bring:')).toBe(true);
   }, 600000);
 
   test('Solo, planner decides: a magic-only kit values Eye of Ayak (its drain only helps magic)', () => {
@@ -621,7 +627,7 @@ describe('planner: spec modes', () => {
     expect(r.specs.solo!.bestWithout[0].seconds).toBeGreaterThan(total(r));
   }, 900000);
 
-  test('Specs I bring {Elder maul, Tonalztics}, Solo party 1: ends on Ultor at 1329.96 (review 2: the guard used to stop at Lightbearer, 1400.17; phase 32: 1382.50 → 1329.96)', () => {
+  test('Specs I bring {Elder maul, Tonalztics}, Solo party 1: ends on Ultor at 1364.55 (review 2: the guard used to stop at Lightbearer, 1400.17; phase 32: 1382.50 → 1329.96; phase 36: 1364.55)', () => {
     const a = {
       ...FA.defaultAssumptions,
       partySize: 1,
@@ -632,22 +638,26 @@ describe('planner: spec modes', () => {
     const r = full({ drain: 'solo', specMode: 'manual', assumptions: { ...a, mySpecs: mySpecsForSubset(['elderMaul', 'tonalztics'], { lightbearer: false }) } });
     expect(r.ring.ring).toBe('Ultor ring');
     // phase 32: no blessing in the melee / magic loadouts and a loadout without ammo keeps the kit's ammo: 1382.50 → 1329.96
-    expect(Math.abs(total(r) - 1329.96)).toBeLessThanOrEqual(0.01);
+    // phase 36 (one spec budget per encounter: no fight regen for the start-of-fight drains): 1329.96 → 1364.55
+    expect(Math.abs(total(r) - 1364.55)).toBeLessThanOrEqual(0.01);
   }, 900000);
 
-  test('Team, 6-man: the planner picks 2 Elder maul + 2 Tonalztics; the Advanced 2 / 2 / 1 by hand gives the same total (phase 31: 21:44.4)', () => {
+  test('Team, 6-man: the planner picks 2 Elder maul + 4 Tonalztics (phase 36; was 2 + 2), never slower than the Advanced 2 / 2 / 1 by hand', () => {
     const auto = full({ carrierMode: 'auto' });
+    // phase 36 (one spec budget per encounter: Bork and the Smorks share the carriers' energy): 2 Elder maul + 4 Tonalztics
     expect(auto.specs.team!.carriers).toEqual({
-      elderMaul: 2, dwh: 0, bgs: 0, tonalztics: 2, ayak: 0,
+      elderMaul: 2, dwh: 0, bgs: 0, tonalztics: 4, ayak: 0,
     });
-    expect(auto.specs.team!.steps!.map((x) => x.weapon)).toEqual(['tonalztics', 'tonalztics', 'elderMaul', 'elderMaul']);
+    expect(auto.specs.team!.steps!.map((x) => x.weapon)).toEqual(['tonalztics', 'tonalztics', 'elderMaul', 'tonalztics', 'elderMaul', 'tonalztics']);
     const manual = full({ carrierMode: 'manual' });
     // review 2: the Ayak carrier is capped at the mages (the kit has no magic loadout → 0), with a note
     expect(manual.specs.team!.carriers).toEqual({ ...A.team.carriers, ayak: 0 });
     expect(manual.specs.notes.some((x) => x.startsWith('Eye of Ayak carriers capped at the mages'))).toBe(true);
     // phase 31: 21:53.0 → 21:44.4 with this (phase 29) pinned list: the quiver holds the Seeking dragon arrows, and the
     // freed slot buys the phase 30 kit (Ascension crossbows + diamond (e) worn, Inquisitor's + Obligator, Twisted bow)
-    expect(formatDuration(total(manual))).toBe('21:44.4');
-    expect(formatDuration(total(auto))).toBe('21:44.4');
+    // phase 36: the planner's carriers are never slower than the Advanced ones (2 / 2 / 1, the Ayak carrier capped)
+    expect(total(auto)).toBeLessThanOrEqual(total(manual) + 1e-6);
+    expect(formatDuration(total(manual))).toBe('21:12.4');
+    expect(formatDuration(total(auto))).toBe('21:07.9');
   }, 900000);
 });

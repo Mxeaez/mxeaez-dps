@@ -3,6 +3,7 @@ import {
   BriefGroup, encounterBrief, encounterDrainSummary,
 } from '@/lib/fracturedArchive/drainLine';
 import { EncounterTime } from '@/lib/fracturedArchive/raidTime';
+import type { DamageSpecWeapon } from '@/lib/fracturedArchive/damageSpecs';
 
 /**
  * Phase 34: the Plan tab's raid briefing, one row per encounter of the planned route: the loadouts used (kit loadout
@@ -69,9 +70,33 @@ export interface BriefingRow {
   seconds: number;
   /** "Tonalztics 4 hits → Def 117" per group, joined with " · " ("no specs" when none): for tests / copy. */
   specsText: string;
+  /** Phase 36: your damage specs in the encounter (all its phases), per weapon, with the seconds they save. */
+  damage: { weapon: DamageSpecWeapon, label: string, count: number, saved: number }[];
+  /** Phase 36: a surge dose here (right after the first specs). */
+  surge: boolean;
 }
 
-export const briefingRows = (encounters: EncounterTime[], drain: DrainStateId): BriefingRow[] => encounters.map((e) => {
+/** Phase 36: an encounter's damage specs per weapon (phase order of first use), summed over its phases. */
+export const encounterDamageSpecs = (e: Pick<EncounterTime, 'phases'>): BriefingRow['damage'] => {
+  const out: BriefingRow['damage'] = [];
+  e.phases.forEach((p) => (p.damageSpecs ?? []).forEach((d) => {
+    const x = out.find((o) => o.weapon === d.weapon);
+    if (x) {
+      x.count += d.count;
+      x.saved += d.count * d.saved;
+    } else {
+      out.push({
+        weapon: d.weapon, label: d.label, count: d.count, saved: d.count * d.saved,
+      });
+    }
+  }));
+  return out;
+};
+
+/** Phase 36: "Voidwaker ×2" per weapon, joined with " + ". */
+export const damageText = (d: BriefingRow['damage']): string => d.map((x) => `${x.label} ×${x.count}`).join(' + ');
+
+export const briefingRows = (encounters: EncounterTime[], drain: DrainStateId, surgeDoses: string[] = []): BriefingRow[] => encounters.map((e) => {
   const loadouts = Array.from(new Set(e.phases.map((p) => p.choice?.loadout).filter((l): l is string => !!l)));
   const summary = drain === 'none' ? undefined : encounterDrainSummary(e.phases.map((p) => ({
     key: p.key, label: p.label, drainLine: p.choice?.drainLine, drainReset: p.drainReset, npc: phaseNpc(p.targetKey),
@@ -86,5 +111,7 @@ export const briefingRows = (encounters: EncounterTime[], drain: DrainStateId): 
     ...(summary ? { drainText: summary.text } : {}),
     seconds: e.seconds,
     specsText: specs.length ? specs.map((g) => g.text).join(' · ') : 'no specs',
+    damage: encounterDamageSpecs(e),
+    surge: surgeDoses.includes(e.id),
   };
 });

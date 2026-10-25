@@ -113,7 +113,7 @@ const main = async () => {
   await page.locator('[data-testid="plan-compare-max"]').click();
   await page.locator('[data-testid="plan-max-line"]').waitFor({ timeout: 600000 });
   const maxLine = (await page.locator('[data-testid="plan-max-line"]').innerText()).trim();
-  check(maxLine === `Best possible with everything: 21:44.4 (yours: ${total})`, `"${maxLine}"`); // phase 30: 21:53.0 → 21:44.4
+  check(maxLine === `Best possible with everything: 21:04.9 (yours: ${total})`, `"${maxLine}"`); // phase 30: 21:53.0 → 21:44.4
   await shot(page, 'plan-excluded');
 
   // --- reload: persisted

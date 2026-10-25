@@ -22,6 +22,7 @@ import {
   HEART_ITEMS,
   heartById,
   heartByPotion,
+  surgeById,
   INVENTORY_SLOTS,
   InventoryCell,
   isQuiver,
@@ -68,6 +69,7 @@ import ImbuedHeartImg from '@/public/img/potions/Imbued heart.png';
 import SaradominBrewImg from '@/public/img/supplies/Saradomin brew(4).png';
 import SuperRestoreImg from '@/public/img/supplies/Super restore(4).png';
 import AnglerfishImg from '@/public/img/supplies/Anglerfish.png';
+import SurgeImg from '@/public/img/supplies/Surge potion(4).png';
 import headSlot from '@/public/img/slots/head.png';
 import capeSlot from '@/public/img/slots/cape.png';
 import neckSlot from '@/public/img/slots/neck.png';
@@ -84,6 +86,7 @@ import {
   bestWithoutText, describeNeed, specWeaponLabel, weaponDeltaText,
 } from '@/lib/fracturedArchive/specChoice';
 import { PlannerWeapon, SPEC_WEAPONS } from '@/lib/fracturedArchive/specs';
+import { damageSpecLabel } from '@/lib/fracturedArchive/damageSpecs';
 
 // "Plan" tab of /best-setup (phase 17): the kit (worn set + switch items) that minimises the route time within 28
 // inventory slots (src/lib/fracturedArchive/planner.ts), run in the search worker (RAID_PLAN). The per-phase search rows
@@ -196,7 +199,10 @@ const SupplyIcon: React.FC<{ type: SupplyType, label: string, size?: number }> =
 
 const itemUrl = (id: number) => {
   const heart = heartById(id);
-  return heart ? HEART_IMAGES[heart.name] : equipmentImageUrl(equipmentById(id)?.image);
+  if (heart) return HEART_IMAGES[heart.name];
+  // phase 36: the Surge potion (a pseudo item, like the hearts)
+  if (surgeById(id)) return SurgeImg.src;
+  return equipmentImageUrl(equipmentById(id)?.image);
 };
 const pinnedName = (id: number) => heartById(id)?.name ?? equipmentById(id)?.name;
 
@@ -258,7 +264,7 @@ const cellTitle = (c: InventoryCell) => {
     case 'supply': return c.supply === 'ranging' || c.supply === 'superCombat' ? `${c.label} (from the kit: one per style)` : `${c.label} (comfort supply)`;
     case 'potion': return `${c.label} (magic's potion, from the kit: it has a magic loadout; reusable, one slot)`;
     case 'switch': return `${c.label} (${c.group} switch)`;
-    case 'spec': return `${c.label} (spec weapon)`;
+    case 'spec': return c.item && surgeById(c.item.id) ? `${c.label} (Surge potion: +25% spec energy a dose, one dose per 5 minutes)` : `${c.label} (spec weapon)`;
     case 'pinned': return `${c.label} (always brought)`;
     default: return c.label;
   }
@@ -320,6 +326,13 @@ const PhaseRows: React.FC<{ phases: PhaseTime[], encounter: string, open: boolea
         <td className="px-2">{p.choice?.style ?? ''}</td>
         <td className="px-2" data-testid="plan-phase-drains">
           {p.choice?.drainLine ? <DrainLineView line={p.choice.drainLine} compact /> : ''}
+          {/* phase 36: your damage specs on this phase */}
+          {(p.damageSpecs ?? []).map((d) => (
+            <span key={d.weapon} className="inline-flex items-center gap-0.5 ml-1" data-testid="plan-phase-damage" data-weapon={d.weapon} data-count={d.count} title={`${d.count} ${d.label} spec${d.count === 1 ? '' : 's'}: E[damage] ${d.expected.toFixed(1)} each, ${d.net.toFixed(1)} more than the normal attacks in its ${d.ticks} ticks, saves ${d.saved.toFixed(1)} s each`}>
+              <ItemIcon name={d.label} src={itemImageByName(d.label)} size={14} />
+              {`×${d.count}`}
+            </span>
+          ))}
           {/* phase 35: adds (and other targets drains never apply to) say why there are no specs */}
           {!p.choice?.drainLine && findTarget(p.targetKey).noDrains === NO_DRAINS_ADDS && (
             <span title={`No drains: ${NO_DRAINS_ADDS}`} data-testid="plan-phase-no-drains">no specs (adds)</span>
@@ -346,7 +359,7 @@ const EncounterDrains: React.FC<{ summary: EncounterDrainSummary }> = ({ summary
       data-testid="plan-encounter-drains"
       data-text={summary.text}
       data-events={summary.events.length}
-      title={`Specs at the start of the fight, on the first phase they land on (the per-phase rows show each phase's own plan). A phase that needs other spec weapons gets its own line${resets ? '. The Defence is restored mid-fight, so the drains are done again: that needs spec energy again (the model gives every drain event a full 100%; phase 36 will share one spec budget per encounter)' : ''}`}
+      title={`Specs at the start of the fight, on the first phase they land on (the per-phase rows show each phase's own plan). A phase that needs other spec weapons gets its own line${resets ? '. The Defence is restored mid-fight, so the drains are done again from the energy left (phase 36: one spec budget per encounter, +10% per 30 s of regen)' : ''}`}
     >
       {summary.events.map((ev) => (
         <React.Fragment key={ev.phaseKey}>
@@ -403,7 +416,16 @@ const BringBox: React.FC<{ specs: PlanResult['specs'] }> = ({ specs }) => (
     <div className="flex flex-wrap items-center gap-2" title={specs.mode === 'auto' ? '(spec weapons picked by the planner)' : '(from "Specs I bring")'}>
       <span className="font-semibold" data-testid="plan-bring">{specs.text}</span>
       {specs.bring.map((w) => <ItemIcon key={w} name={specWeaponLabel(w)} src={specIcon(w)} size={28} />)}
+      {(specs.damage ?? []).map((w) => <ItemIcon key={w} name={damageSpecLabel(w)} src={itemImageByName(damageSpecLabel(w))} size={28} />)}
+      {(specs.surgePotions ?? 0) > 0 && <ItemIcon name="Surge potion(4)" src={SurgeImg.src} size={24} />}
     </div>
+    {(specs.surgeAt ?? []).length > 0 && (
+      <div className="flex flex-wrap items-center gap-1" data-testid="plan-surge" data-at={specs.surgeAt!.join('|')} title="A dose of Surge potion (+25% spec energy, one per 5 minutes; the cooldown resets on entering the raid) right after your first spec there: it does nothing at 100%">
+        <ItemIcon name="Surge potion(4)" src={SurgeImg.src} size={20} />
+        <span className="font-semibold">Surge dose at:</span>
+        {specs.surgeAt!.join(', ')}
+      </div>
+    )}
     {specs.share && (
       <div className="flex flex-wrap items-center gap-1" data-testid="plan-share" data-weapon={specs.share.weapon ?? ''} data-carry={specs.share.carry ? 'true' : 'false'} data-manual={specs.share.manual ? 'true' : 'false'}>
         <span className="font-semibold">{specs.share.manual ? 'Your share (Specs I bring): ' : 'Your share (assign me): '}</span>
@@ -493,6 +515,17 @@ const SpecPlanBody: React.FC<{ specs: PlanResult['specs'] }> = ({ specs }) => (
           </ul>
         </details>
       </div>
+    )}
+    {specs.items && specs.items.length > 0 && (
+      <ul className="list-disc ml-5" data-testid="plan-spec-items" title="Damage spec weapons and Surge potions the planner added, in order: each saves at least 1 s per slot (the spec budget re-planned with it)">
+        {specs.items.map((s) => (
+          <li key={s.item} data-testid="plan-spec-item" data-saved={s.saved.toFixed(1)} data-slots={s.slots}>
+            {s.slots < 0
+              ? `${s.item}: +${(-s.saved).toFixed(1)} s, frees a slot (worth < 1 s now)`
+              : `${s.item}: −${s.saved.toFixed(1)} s (${s.slots} slot${s.slots === 1 ? '' : 's'}, ${s.how})`}
+          </li>
+        ))}
+      </ul>
     )}
     {specs.notes.map((n) => <div key={n} className="text-orange-700 dark:text-orange-300" data-testid="plan-spec-note">{n}</div>)}
   </div>
@@ -951,7 +984,7 @@ const PlanView: React.FC<{
           </div>
 
           <PlanBriefing
-            rows={briefingRows(planned.encounters, drain)}
+            rows={briefingRows(planned.encounters, drain, planned.surgeDoses ?? [])}
             kit={result.kit}
             imageOf={(id) => targetImageUrl(findTarget(raid.encounterTarget[id]))}
           />

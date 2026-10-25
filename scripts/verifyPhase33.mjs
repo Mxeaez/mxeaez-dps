@@ -17,7 +17,8 @@ import { openSections } from './phase34Sections.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
 // phase 35b: one line per NPC (phase 33: Bork's line only, "Start of fight: … → Def 180 · 99.6%")
-const BORK_LINE = 'Bork: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 180 · 99.6% · Smorks: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 5';
+// phase 36: one spec budget for Bork and the Smorks; the planner's 2 Elder maul + 4 Tonalztics carriers
+const BORK_LINE = 'Bork: 2 Elder maul carriers (4 specs) → Def 180 · 96% · Smorks: 4 Tonalztics carriers (8 specs) → Def 0 · 85%';
 const WEAPONS = ['elderMaul', 'dwh', 'bgs', 'tonalztics'];
 
 let failures = 0;
@@ -89,7 +90,7 @@ const main = async () => {
   await page.locator('[data-testid="plan-view"]').waitFor({ timeout: 30000 });
   await waitPlan(page);
   const total = await text(page.locator('[data-testid="plan-total"]'));
-  check(total === '21:44.4', `FA Team total ${total} (phase 32: 21:44.4)`);
+  check(total === '21:04.9', `FA Team total ${total} (phase 32: 21:44.4)`);
   const bork = await encLine(page, 'bork-smorks');
   check(bork.data === BORK_LINE && bork.shown.replace(' Smorks: ', ' · Smorks: ') === BORK_LINE, `Bork + Smorks: "${bork.shown}"`);
   check(await page.locator('[data-testid="plan-phase-toggle"]').getAttribute('aria-expanded') === 'false', 'per-phase details closed by default');
@@ -135,7 +136,7 @@ const main = async () => {
   await waitPlan(page);
   const soloTotal = await text(page.locator('[data-testid="plan-total"]'));
   const soloBring = await page.locator('[data-testid="plan-specs"]').getAttribute('data-bring');
-  check(soloTotal === '22:01.9' && soloBring === 'tonalztics', `Solo party 1: ${soloTotal}, Bring ${soloBring} (phase 32: 22:01.9, Tonalztics)`);
+  check(soloTotal === '21:54.8' && soloBring === 'tonalztics', `Solo party 1: ${soloTotal}, Bring ${soloBring} (phase 32: 22:01.9, Tonalztics)`);
   const c2 = await chips(page);
   check(JSON.stringify(chipsOn(c2)) === '["tonalztics"]', `chips after the Solo plan: [${chipsOn(c2)}]`);
   const soloIds = await page.locator('[data-testid="plan-encounter-row"]').evaluateAll((els) => els.map((e) => e.dataset.encounter));
@@ -178,13 +179,13 @@ const main = async () => {
   await page.locator('[data-testid="plan-view"]').waitFor({ timeout: 30000 });
   await waitPlan(page);
   const tobTotal = await text(page.locator('[data-testid="plan-total"]'));
-  check(tobTotal === '7:29.5', `ToB plan total ${tobTotal} (phase 32: 7:29.5)`);
+  check(tobTotal === '7:21.2', `ToB plan total ${tobTotal} (phase 32: 7:29.5)`);
   const soteRow = page.locator('[data-testid="plan-encounter-row"][data-encounter="tob-sotetseg"] [data-testid="plan-encounter-drains"]');
   const soteEvents = Number(await soteRow.getAttribute('data-events'));
   const soteParts = (await soteRow.locator('[data-testid="plan-encounter-drain-part"]').allInnerTexts()).map((l) => l.replace(/\s+/g, ' ').trim());
   soteParts.forEach((l) => console.log(`     Sotetseg: "${l.replace(/\s+/g, ' ').trim()}"`));
   check(soteEvents === 3 && /^Start of fight: /.test(soteParts[0]) && /^After maze 1 \(Defence restored\), again: /.test(soteParts[1]) && /^After maze 2 \(Defence restored\), again: /.test(soteParts[2]), `Sotetseg: ${soteEvents} drain events`);
-  check(/spec energy again/.test(await soteRow.getAttribute('title')), 'Sotetseg tooltip: re-draining needs spec energy again');
+  check(/from the energy left/.test(await soteRow.getAttribute('title')), 'Sotetseg tooltip: re-drained from the energy left (phase 36)');
   const bloatRow = page.locator('[data-testid="plan-encounter-row"][data-encounter="tob-bloat"] [data-testid="plan-encounter-drains"]');
   if (await bloatRow.count()) console.log(`     Bloat: "${await bloatRow.getAttribute('data-text')}"`);
   for (const id of ['tob-maiden', 'tob-nylocas', 'tob-xarpus', 'tob-verzik']) {

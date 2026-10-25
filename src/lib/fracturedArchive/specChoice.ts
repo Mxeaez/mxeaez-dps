@@ -585,3 +585,25 @@ export const describeNeed = (n: RoleTargetNeed): string => {
     .filter((w) => n.carriers![w]).map((w) => `${n.carriers![w]} ${specWeaponLabel(w)}`);
   return `${parts.join(' + ')} → ${formatProbability(n.pFloor)}`;
 };
+
+// --- phase 36: damage spec weapons and Surge potions --------------------------------------------------------------
+
+/**
+ * Phase 36: the next item (damage spec weapon / Surge potion) of the planner's greedy: the one with the most route time
+ * saved net of its slots (saved − `slotSeconds` × slots) among those saving ≥ `slotSeconds` per slot (an item carried
+ * anyway, 0 slots, must save > 0.05 s); null when none does. Ties: the earlier candidate. Same price per slot as kit
+ * switches (D13), the Solo spec weapons (D24) and your share (D21).
+ */
+export const pickSpecItem = <T>(
+  cands: { item: T, seconds: number, slots: number }[],
+  current: number,
+  slotSeconds = SHARE_MAX_SLOT_SECONDS,
+): { item: T, seconds: number, slots: number } | null => {
+  let pick: { item: T, seconds: number, slots: number } | null = null;
+  cands.forEach((c) => {
+    const saved = current - c.seconds;
+    if (!(saved >= Math.max(0.05, c.slots * slotSeconds) - EPS)) return;
+    if (!pick || saved - c.slots * slotSeconds > (current - pick.seconds) - pick.slots * slotSeconds + EPS) pick = c;
+  });
+  return pick;
+};

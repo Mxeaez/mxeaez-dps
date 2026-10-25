@@ -888,3 +888,39 @@ Found while reading (not modelled; UNVERIFIED F10): the Glowing crystal "heals V
 levels once he reaches it", and Mod Ash (Discord, 9 July 2026, quoted on /Skeletal_Mystic) gives CoX stat-regeneration
 rates in ticks per level: "Stone guardians - 8 Muttadiles - 15 Vasa Nistirio - 10 Vasa's crystal - 9 Tekton - 15
 LizardShamans - 20 Skeletal mystics - 25 ... Vespula - 10 Vespula's portal - 45 ... Otherwise default should be 100".
+
+### Phase 36 — damage specs, the surge potion, Defence resets (2026-10-25)
+
+Sources (fetched 2026-10-24/25, `?action=raw`, generic User-Agent): https://oldschool.runescape.wiki/w/Surge_potion,
+/Voidwaker, /Dragon_claws, /Burning_claws, /Zaryte_crossbow, /Crimson_kisten, /Tumeken%27s_Warden, /Kephri.
+
+**Surge potion** (`src/lib/fracturedArchive/specBudget.ts`): "Surge potions restore 25% special attack energy per dose,
+but can only be drunk once every five minutes"; "The cooldown timer will pause in the following situations: … Between
+rooms in the Theatre of Blood"; "The cooldown timer can be removed in the following situations: … Entering and exiting a
+raid"; "The cooldown timer will not pause or be removed during these situations: … Between rooms in the Tombs of
+Amascut"; "Attempting to drink the potion with 100% special attack energy will produce the message Drinking this would
+have no effect." Four doses (Surge potion(1)–(4)); the inventory image `src/public/img/supplies/Surge potion(4).png` is
+the wiki's File:Surge_potion(4).png. Model: +25% (capped at 100%) at most once per encounter, right after your first spec
+there or whenever the bar is below 100%; doses ≥ 300 s apart on the route's clock (the encounters' wall time; travel 0
+s: exact for ToB, conservative for the others), the first may be at the raid start; **unverified** (UNVERIFIED D29).
+
+**Damage specs** (`src/lib/fracturedArchive/damageSpecs.ts`): the numbers are upstream's (`getSpecCalc()`,
+`getExpectedDamage()`, `getExpectedAttackSpeed()`), which follow the wiki:
+
+| Weapon | Energy | Wiki (quote) | Upstream |
+|---|---|---|---|
+| Voidwaker | 50% | "deals guaranteed Magic damage between 50-150% of the wielder's maximum melee hit" | accuracy 1, min = max ÷ 2, max + min; rolled as magic (Bork's magic resistance −2 applies, B5) |
+| Dragon claws | 50% | "hits an enemy four times in succession … rolls against the opponent's slash defence" | `dClawDist` (the four-roll cascade) |
+| Burning claws | 35% | "Burning barrage … hits an enemy three times in succession"; "Each of the three hits also has a chance to inflict a burn … One spec can inflict 0, 10, 19, 20, or 29 burn damage" | `burningClawSpec` + `burningClawDoT` (the burn's expected damage counts) |
+| Zaryte crossbow | 75% | "Evoke … provides doubled accuracy for the attack, and guarantees the special effect of any enchanted bolts used, provided that the player lands a successful hit"; ruby bolts "can guarantee that up to 110 damage is dealt" | ×2 accuracy; the bolt effect on every accurate hit (ruby (e): 22% of the monster's **current** hp, max 110 — the planner uses the full hp, generous late in a fight; **unverified**) |
+| Crimson kisten | 50% | "four separate accuracy rolls in a single hit. If at least one roll succeeds, the attack deals 70-110% of the player's maximum hit, with additional successful rolls increasing the attack's minimum and maximum hit by 20%" | modelled (phase 25 note). The roadmap's "Kiston" is this item: a **Maggot King** unique, not a Fractured Archive reward |
+
+Not modelled (upstream has no spec): Keris partisan of breaching (no entry in `WEAPON_SPEC_COSTS`), Bone dagger
+(`UNIMPLEMENTED_SPECS`). The spec player wears the style's armour preset (melee: Torva or Inquisitor's, whichever gives
+the spec more; ranged: Masori (f) with Ruby or Diamond dragon bolts (e)), not your kit's loadout (**unverified** choice,
+D28).
+
+**Defence resets** now drain events (one spec budget per encounter needs them): Tumeken's Warden: "When entering the
+enraged state, the Warden's base defence level is reset to 180"; Kephri: "the defence level is reset for the final phase";
+CoX Olm: "His stats also reset when a new phase starts" (phase 19's quote, F7). Sotetseg's mazes and Bloat's stomp were
+already resets (phase 33).

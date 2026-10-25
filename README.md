@@ -27,8 +27,12 @@ What this fork adds on top of upstream:
   save ≥ 1 s of route time; FA 6-man: 2 Elder maul + 2 Tonalztics) and your share ("assign me"). Headline plans
   (defaults, Team; phase 31: nothing pinned by default, the Saturated heart is magic's kit potion, Dizana's quiver holds a
   second arrow / bolt type for free; phase 32: no zero-value switch items, a loadout without ammo keeps the kit's ammo
-  in its slot; phase 35: adds such as Kephri's scarabs or the CoX Mystics get no specs): FA 21:44.4, ToA 14:12.1, CoX
-  7:01.3, ToB 7:29.5.
+  in its slot; phase 35: adds such as Kephri's scarabs or the CoX Mystics get no specs; phase 36: one spec budget per
+  encounter, damage specs and the surge potion): FA 21:04.9, ToA 14:05.5, CoX 7:03.6, ToB 7:21.2.
+* **Damage specs and the surge potion** (phase 36): Voidwaker, Dragon / Burning claws, Zaryte crossbow and Crimson
+  kisten specs compete with the drains for one spec budget per encounter (100% at each boss, regen on the fight's
+  clock); the planner brings a damage spec weapon or a Surge potion when it saves ≥ 1 s per slot and says where to drink
+  the doses; the Search tab lists every damage spec's value on the selected boss ("Specs (damage)").
 * **Times assume N players at your DPS** (the "Players assumed at your DPS" input under Advanced; the page says "times assume N players at your DPS"):
   N defaults to the party size in ToA / CoX / ToB, where upstream scales boss hp with it, and to 1 in the Fractured
   Archive, whose hp scaling is unknown.

@@ -258,11 +258,12 @@ describe('ToA plan (reduced pool): the spec plan and briefing list no add target
  */
 (process.env.RUN_SLOW_TESTS ? describe : describe.skip)('headlines (slow)', () => {
   test.each([
-    ['toa', '14:12.1', 852.1, {
+    // phase 36 (one spec budget per encounter, damage specs, surge): ToA 14:12.1 → 14:05.5, CoX 7:01.3 → 7:03.6
+    ['toa', '14:05.5', 845.47, {
       elderMaul: 1, dwh: 0, bgs: 0, tonalztics: 0, ayak: 1,
     }],
-    ['cox', '7:01.3', 421.3, {
-      elderMaul: 2, dwh: 0, bgs: 1, tonalztics: 1, ayak: 1,
+    ['cox', '7:03.6', 423.6, {
+      elderMaul: 4, dwh: 0, bgs: 0, tonalztics: 2, ayak: 0,
     }],
   ] as [RaidConfig['id'], string, number, Record<string, number>][])('%s: %s', (id, text, seconds, carriers) => {
     const raid = raidConfig(id);

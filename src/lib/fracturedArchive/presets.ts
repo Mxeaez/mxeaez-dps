@@ -3,6 +3,7 @@ import Potion from '@/enums/Potion';
 import {
   CoxInputs, RaidId, ToaInputs, TobInputs,
 } from '@/lib/raids/types';
+import type { DamageSpecWeapon } from '@/lib/fracturedArchive/damageSpecs';
 
 /**
  * Named setups for the "Best setup" view (phase 8, /best-setup). Plain data — edit freely.
@@ -237,6 +238,15 @@ export interface BestSetupAssumptions {
    * scales with it, else 1). Ocellus P2 stays a fixed wall-clock length.
    */
   teamDpsMultiplier?: number;
+  /**
+   * Phase 36: damage spec weapons you carry (damageSpecs.ts; the time model's spec budget spends your energy on them).
+   * Undefined = none (the Plan tab's planner fills it).
+   */
+  damageSpecs?: DamageSpecWeapon[];
+  /** Phase 36: Surge potions you carry (4 doses each; the time model places the doses). Undefined = 0. */
+  surgePotions?: number;
+  /** Phase 36: extra Solo spec energy (%) for a single boss (the Search tab's "with a surge dose" line: 25). */
+  soloExtraEnergy?: number;
 }
 
 /** Drain weapons the user carries (phase 14). */

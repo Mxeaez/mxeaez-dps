@@ -268,7 +268,7 @@ export const describeAttempts = (attempts: PlannerWeapon[]): string => {
   return parts.length ? parts.join(' + ') : 'no specs';
 };
 
-const describeDefence = (model: Pick<DrainModel, 'def' | 'floor'>, o: DefenceOutcome, hasAttempts: boolean): string => {
+export const describeDefence = (model: Pick<DrainModel, 'def' | 'floor'>, o: DefenceOutcome, hasAttempts: boolean): string => {
   if (!hasAttempts) return `Def ${model.def}`;
   const floorText = o.bestCaseDef > model.floor
     ? ` (floor ${model.floor} not reachable; best case Def ${o.bestCaseDef})`
@@ -293,6 +293,8 @@ export interface SoloSpecInput {
    * ({@link ayakSpecsToThreshold}); all of them when none does.
    */
   ayakUntilZero?: boolean;
+  /** Phase 36: energy on top of the budget (%), e.g. 25 for a surge dose (the Search tab's "with a surge dose" line). */
+  extraEnergy?: number;
 }
 
 /**
@@ -375,7 +377,7 @@ export const bestAttempts = (
  */
 export const soloSpecPlan = (model: DrainModel, input: SoloSpecInput): SoloSpecPlan => {
   const threshold = input.threshold ?? DEFAULT_FLOOR_THRESHOLD;
-  const budget = energyBudget({ seconds: input.fightSeconds, lightbearer: input.lightbearer });
+  const budget = energyBudget({ seconds: input.fightSeconds, lightbearer: input.lightbearer }) + Math.max(0, input.extraEnergy ?? 0);
   const weapons = DEFENCE_DRAIN_ORDER.filter((w) => input.carried[w] && model.canHit[w]);
   let ayakUsable = model.canHit.ayak && model.magicDef > 0 ? Math.max(0, Math.floor(input.ayakSpecs)) : 0;
   if (input.ayakUntilZero) ayakUsable = ayakSpecsToThreshold(model, ayakUsable, threshold);

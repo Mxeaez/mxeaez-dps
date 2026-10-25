@@ -20,13 +20,13 @@ import { chromium } from '@playwright/test';
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
 const BRIEFING = [
   'Flying shield: Tonalztics 4 hits → Def 156 · Grounded: Tonalztics 4 hits → Def 156',
-  'Bork: Elder maul 2 specs + Tonalztics 2 hits → Def 180 · Smorks: Elder maul 4 specs + Tonalztics 2 hits → Def 5', // phase 35b
+  'Bork: Elder maul 2 specs → Def 180 · Smorks: Tonalztics 10 hits → Def 0', // phase 35b; phase 36: one spec budget
   'Tonalztics 2 hits → Def 117',
   'Tonalztics 2 hits → Def 102',
   'P1 at a corner: Tonalztics 2 hits → Def 129 · P3 last quadrant, Deflect Melee: Tonalztics 3 hits → Def 150',
 ];
 // phase 35b: one line per NPC (phase 33: Bork's line only, "Start of fight: … → Def 180 · 99.6%")
-const BORK_LINE = 'Bork: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 180 · 99.6% · Smorks: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 5';
+const BORK_LINE = 'Bork: 2 Elder maul carriers (4 specs) → Def 180 · 96% · Smorks: 4 Tonalztics carriers (8 specs) → Def 0 · 85%'; // phase 36
 
 let failures = 0;
 const check = (ok, msg) => {
@@ -114,7 +114,7 @@ const main = async () => {
   await page.locator('[data-testid="plan-tab"]').click();
   await waitPlan(page);
   const total = await text(page.locator('[data-testid="plan-total"]'));
-  check(total === '21:44.4', `FA Team total ${total} (phase 33: 21:44.4)`);
+  check(total === '21:04.9', `FA Team total ${total} (phase 33: 21:44.4)`);
   const rows = await page.locator('[data-testid="plan-briefing-row"]').evaluateAll((els) => els.map((e) => ({
     id: e.dataset.encounter,
     specs: e.dataset.specs,
@@ -130,8 +130,8 @@ const main = async () => {
   check(rows.every((r) => r.bossImg && r.loadouts.length > 0 && r.loadouts.every((n) => n >= 5) && r.specIcons.length > 0 && r.specIcons.every(Boolean)), 'every briefing row: boss image, loadout icons, a weapon icon per spec');
   check(rows.every((r) => r.counts.every((c) => c.bold)), 'the spec numbers are bold');
   check(rows.find((r) => r.id === 'bork-smorks')?.title === BORK_LINE, 'the briefing tooltip is phase 33\'s encounter line');
-  check(JSON.stringify(rows.map((r) => r.seconds)) === JSON.stringify(['182.1 s', '196.5 s', '71.1 s', '186.8 s', '667.8 s']), 'briefing seconds as before');
-  check(/^Bring: Tonalztics/.test(await text(page.locator('[data-testid="plan-bring"]'))) && await visible(page, '[data-testid="plan-share"]'), 'Bring and your share visible');
+  check(JSON.stringify(rows.map((r) => r.seconds)) === JSON.stringify(['174.8 s', '188.0 s', '65.3 s', '181.6 s', '655.2 s']), 'briefing seconds (phase 36)');
+  check(/^Bring: Zaryte crossbow, Burning claws, Surge potion/.test(await text(page.locator('[data-testid="plan-bring"]'))) && await visible(page, '[data-testid="plan-share"]'), 'Bring and your share visible (phase 36: damage specs + Surge potion)');
   for (const [id, inner] of [['plan-why-details', 'kit-loadout'], ['plan-spec-details', 'plan-team-briefing'], ['plan-phase-details', 'plan-encounters']]) {
     const closed = !(await page.locator(`details[data-testid="${id}"]`).evaluate((d) => d.open));
     const hidden = !(await visible(page, `[data-testid="${inner}"]`));
@@ -171,7 +171,8 @@ const main = async () => {
   await page.locator('[data-testid="spec-plan-details-toggle"]').click();
   check(await visible(page, '[data-testid="spec-plan"] [data-testid="drain-line"]') && await visible(page, '[data-testid="drain-pfloor"]') && await visible(page, '[data-testid="team-table"]'), '"details" opens the sentence form, the chance of the floor and the per-boss table');
   const sentence = await text(page.locator('[data-testid="spec-plan"] [data-testid="drain-line-count"]').first());
-  check(sentence === 'needs 4 landed hits · 4 specs (2 carriers) = 8 attacks, 4 must land · 98%', `sentence form: "${sentence}"`);
+  // phase 36: the plan's carriers are 2 Elder maul + 4 Tonalztics
+  check(sentence === 'needs 4 landed hits · 4 specs (2 carriers) = 8 attacks, 4 must land · 98% · team: 8 specs (4 carriers) · >99.9%', `sentence form: "${sentence}"`);
   const searchText = await visibleText(page, '[data-testid="search-view"]');
   check(!/search started from|vs best preset|evaluations|Exp\. TTK \(top row only\)|Best preset/.test(searchText), 'Search: no "search started from", "vs best preset", evaluation counts, TTK note or best preset in the default view');
   check(!(await visible(page, '[data-testid="search-ranked-at"]')), 'ranked-at under "Search details"');

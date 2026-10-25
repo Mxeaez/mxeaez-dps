@@ -77,7 +77,7 @@ const main = async () => {
   await page.locator('[data-testid="plan-view"]').waitFor({ timeout: 30000 });
   await waitPlan(page);
   const total = await text(page.locator('[data-testid="plan-total"]'));
-  check(total === '14:12.1', `ToA plan total ${total} (phase 35: 14:12.1; phase 34: 14:04.1)`);
+  check(total === '14:05.5', `ToA plan total ${total} (phase 35: 14:12.1; phase 34: 14:04.1)`);
   const rows = await page.locator('[data-testid="plan-briefing-row"]').evaluateAll((els) => els.map((e) => ({
     id: e.dataset.encounter,
     specs: e.dataset.specs,

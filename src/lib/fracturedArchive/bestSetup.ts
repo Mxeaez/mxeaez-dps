@@ -10,11 +10,11 @@ import { MONSTER_PHASES_BY_ID } from '@/lib/constants';
 import { getCombatStylesForCategory } from '@/utils';
 import { DefenceReductions } from '@/lib/fracturedArchive/drains';
 import {
-  DEFAULT_FIGHT_SECONDS, drainModel, PlanLabel, planLabelText, PlannerWeapon, specAttempts,
+  DEFAULT_FIGHT_SECONDS, DrainModel, drainModel, PlanLabel, planLabelText, PlannerWeapon, specAttempts,
 } from '@/lib/fracturedArchive/specs';
 import {
-  ayakSpecsToThreshold, carriersFromCounts, describeAttempts, formatProbability, soloNeeds, soloSpecPlan, specsNeeded,
-  teamSpecPlan,
+  ayakOutcome, ayakSpecsToThreshold, carriersFromCounts, countsToReductions, DEFENCE_DRAIN_ORDER, defenceOutcome,
+  describeAttempts, describeDefence, formatProbability, inUpstreamOrder, soloNeeds, soloSpecPlan, specsNeeded, teamSpecPlan,
 } from '@/lib/fracturedArchive/teamSpecs';
 import { DrainLine, drainLineFromAttempts, drainLineNote } from '@/lib/fracturedArchive/drainLine';
 import { minimalPlayer } from '@/lib/fracturedArchive/hittable';
@@ -64,8 +64,12 @@ export const findTarget = (key: string): BestSetupTarget => {
   return t;
 };
 
+const baseMonsters = new Map<string, Omit<Monster, 'inputs'> | undefined>();
 const baseMonster = (target: BestSetupTarget): Omit<Monster, 'inputs'> => {
-  const m = getMonsters().find((x) => x.name === target.name && x.version === target.version);
+  // phase 36: cached (the spec budget builds many monsters)
+  const bk = `${target.name}|${target.version}`;
+  if (!baseMonsters.has(bk)) baseMonsters.set(bk, getMonsters().find((x) => x.name === target.name && x.version === target.version));
+  const m = baseMonsters.get(bk);
   if (!m) {
     throw new Error(`Best setup: monster '${target.name}' (${target.version}) not in monsters.json`);
   }
@@ -165,13 +169,70 @@ export const autoFightSeconds = (m: Monster, assumptions: BestSetupAssumptions):
   return t;
 };
 
+/** Phase 36: spec counts per drain weapon of a drain event (the time model's spec budget allocation, specBudget.ts). */
+export type SpecCounts = Partial<Record<PlannerWeapon, number>>;
+
+/**
+ * Phase 36: the spec attempts a drain event's counts make on one phase target: each Defence-drain weapon's specs when
+ * it can hit the target (upstream's order), then Eye of Ayak's when it can hit and the magic defence bonus is > 0. A
+ * weapon that can't hit this phase (the maul on the flying Guardian) makes none here; its specs land on the event's
+ * other phases.
+ */
+export const attemptsFromCounts = (
+  model: Pick<DrainModel, 'canHit' | 'magicDef'>,
+  counts: SpecCounts,
+): PlannerWeapon[] => [
+  ...DEFENCE_DRAIN_ORDER.flatMap((w) => (model.canHit[w] ? Array(Math.max(0, Math.floor(counts[w] ?? 0))).fill(w) : [])),
+  ...(model.canHit.ayak && model.magicDef > 0 ? Array(Math.max(0, Math.floor(counts.ayak ?? 0))).fill('ayak') : []),
+];
+
+const drainKeyModels = new Map<string, DrainModel | null>();
+const drainKeys = new Map<string, string>();
+const DRAIN_KEYS_MAX = 200000;
+
+/**
+ * Phase 36: the drains a drain event's spec counts leave on one phase target, as a key (the `defenceReductions` the
+ * ranking uses; 'none' when drains never apply there): two counts with the same key give the same monster, so the
+ * spec budget times them once. Cheap (no drain line): the target's drain model is cached.
+ */
+export const specCountsDrainKey = (
+  target: BestSetupTarget,
+  phase: string | undefined,
+  drain: DrainStateId,
+  assumptions: BestSetupAssumptions,
+  counts: SpecCounts,
+): string => {
+  if (drain === 'none' || target.noDrains) return 'none';
+  const k = JSON.stringify([target.key, phase ?? null, assumptions.partySize, assumptions.raid ?? null, assumptions.toa ?? null,
+    assumptions.cox ?? null, assumptions.tob ?? null, assumptions.potions, assumptions.useZeal]);
+  let model = drainKeyModels.get(k);
+  if (model === undefined) {
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    model = drainModel(buildTargetMonster(target, phase, 'none', assumptions).monster, assumptions);
+    drainKeyModels.set(k, model);
+  }
+  if (!model) return 'none';
+  const attempts = attemptsFromCounts(model, counts);
+  const memoKey = `${k}|${assumptions.floorThreshold}|${attempts.join(',')}`;
+  const hit = drainKeys.get(memoKey);
+  if (hit !== undefined) return hit;
+  const defAttempts = inUpstreamOrder(attempts.filter((w): w is Exclude<PlannerWeapon, 'ayak'> => w !== 'ayak'));
+  const threshold = assumptions.floorThreshold;
+  const defence = defenceOutcome(model, defAttempts, threshold);
+  const ayak = ayakOutcome(model, attempts.length - defAttempts.length, threshold);
+  const out = JSON.stringify(countsToReductions(defence.rankedCounts, ayak.rankedDrain));
+  if (drainKeys.size >= DRAIN_KEYS_MAX) drainKeys.clear();
+  drainKeys.set(memoKey, out);
+  return out;
+};
+
 /**
  * Phase 14: Solo = `soloSpecPlan` (the user's carried weapons within their own energy budget), Team =
  * `teamSpecPlan` (the carriers' first round). Both rank at the floor if P(floor) ≥ `floorThreshold`, else at the
  * nearest reachable Defence to the expected value; see teamSpecs.ts. The calculator's Max-drain buttons (drains.ts)
  * are unchanged.
  */
-export const drainStateFor = (m: Monster, id: DrainStateId, assumptions: BestSetupAssumptions): DrainState => {
+export const drainStateFor = (m: Monster, id: DrainStateId, assumptions: BestSetupAssumptions, specCounts?: SpecCounts): DrainState => {
   let reductions: DefenceReductions = { ...INITIAL_MONSTER_INPUTS.defenceReductions };
   let specs = 'no specs';
   let plan = 'No drains';
@@ -188,7 +249,36 @@ export const drainStateFor = (m: Monster, id: DrainStateId, assumptions: BestSet
     const model = drainModel(m, assumptions);
     const threshold = assumptions.floorThreshold;
     fightSeconds = assumptions.fightSeconds ?? autoFightSeconds(m, assumptions);
-    if (id === 'solo') {
+    if (specCounts) {
+      // phase 36: the specs the encounter's spec budget gave this drain event (Solo: yours; Team: the carriers'), all at
+      // the start of the event; ranked like the first round (floor at P ≥ threshold, else the nearest reachable Defence)
+      const attempts = attemptsFromCounts(model, specCounts);
+      const defAttempts = inUpstreamOrder(attempts.filter((w): w is Exclude<PlannerWeapon, 'ayak'> => w !== 'ayak'));
+      const nAyak = attempts.length - defAttempts.length;
+      const defence = defenceOutcome(model, defAttempts, threshold);
+      const ayak = ayakOutcome(model, nAyak, threshold);
+      reductions = countsToReductions(defence.rankedCounts, ayak.rankedDrain);
+      pFloor = defence.pFloor;
+      attemptsMade = [...defAttempts, ...Array(nAyak).fill('ayak')];
+      const ayakText = nAyak > 0 ? `; ${nAyak}× Ayak → ≈ ${ayak.expectedDrain.toFixed(0)} magic def drained (magic def ${ayak.magicDefAfter})` : '';
+      const who = id === 'team' ? `Team (${assumptions.partySize})` : 'Solo';
+      const defText = defAttempts.length
+        ? `${describeAttempts(defAttempts)} → ${describeDefence(model, defence, true)}`
+        : `no Defence specs → Def ${model.def}`;
+      plan = `${who}, encounter spec budget: ${defText}${ayakText}`;
+      specs = `${describeAttempts(attemptsMade)} (P floor ${formatProbability(pFloor)})`;
+      fightSeconds = undefined;
+      if (id === 'team') {
+        needed = specsNeeded(model, attemptsMade, threshold);
+        Object.entries(needed).forEach(([w, nd]) => {
+          nd!.perCarrier = specAttempts(100, model.energy[w as PlannerWeapon]);
+        });
+      } else {
+        needed = soloNeeds(model, {
+          attempts: defAttempts, ayakAttempts: nAyak, defence, ayak,
+        });
+      }
+    } else if (id === 'solo') {
       const { mySpecs } = assumptions;
       const p = soloSpecPlan(model, {
         carried: {
@@ -200,6 +290,7 @@ export const drainStateFor = (m: Monster, id: DrainStateId, assumptions: BestSet
         priority: mySpecs.priority,
         threshold,
         ayakUntilZero: !!mySpecs.ayakAuto,
+        extraEnergy: assumptions.soloExtraEnergy,
       });
       reductions = p.reductions;
       pFloor = p.defence.pFloor;
@@ -267,6 +358,8 @@ export const buildTargetMonster = (
   phase: string | undefined,
   drain: DrainStateId,
   assumptions: BestSetupAssumptions,
+  /** Phase 36: the drain event's spec counts (the time model's spec budget); undefined = the drain state's own plan. */
+  specCounts?: SpecCounts,
 ): { monster: Monster, drain: DrainState } => {
   const phases = targetPhases(target);
   const raid = raidBase(target.raid);
@@ -284,9 +377,35 @@ export const buildTargetMonster = (
   m = withInputs(m, { monsterCurrentHp: scaleMonster(m).skills.hp });
   // phase 19: targets whose drains never stick (CoX Vanguards) stay undrained in every drain state
   const undrained = target.noDrains && drain !== 'none';
-  const d0 = drainStateFor(m, undrained ? 'none' : drain, assumptions);
+  const d0 = drainStateFor(m, undrained ? 'none' : drain, assumptions, specCounts);
   const d = undrained ? { ...d0, id: drain, plan: `No drains: ${target.noDrains}` } : d0;
   return { monster: withInputs(m, { defenceReductions: d.reductions }), drain: d };
+};
+
+const undrainedMonsters = new Map<string, Monster>();
+
+/**
+ * Phase 36: the monster with the drains a drain event's spec counts leave (`specCountsDrainKey`), without building the
+ * drain line (the spec budget timing its options; the reported phases are built with `buildTargetMonster`).
+ */
+export const monsterForSpecCounts = (
+  target: BestSetupTarget,
+  phase: string | undefined,
+  drain: DrainStateId,
+  assumptions: BestSetupAssumptions,
+  counts: SpecCounts,
+): Monster => {
+  const uk = JSON.stringify([target.key, phase ?? null, assumptions.partySize, assumptions.raid ?? null, assumptions.toa ?? null,
+    assumptions.cox ?? null, assumptions.tob ?? null]);
+  let m = undrainedMonsters.get(uk);
+  if (!m) {
+    m = buildTargetMonster(target, phase, 'none', assumptions).monster;
+    if (undrainedMonsters.size > 5000) undrainedMonsters.clear();
+    undrainedMonsters.set(uk, m);
+  }
+  const key = specCountsDrainKey(target, phase, drain, assumptions, counts);
+  if (key === 'none') return m;
+  return withInputs(m, { defenceReductions: JSON.parse(key) as DefenceReductions });
 };
 
 // --- players -------------------------------------------------------------------------------------------------------

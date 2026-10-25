@@ -255,12 +255,17 @@ describe('every raid\'s plan runs (reduced pool)', () => {
 // share Elder maul, was Eye of Ayak); CoX 6:35.9 → 7:01.3 (Mystics 31.8 → 43.9, Shamans 25.1 → 29.7, Vespula 19.3 → 23.4:
 // the portal 12.2 → 15.8, Vasa 18.5 → 21.8: the crystals 5.6 → 8.9, Muttadiles 21.6 → 22.8: the small one 11.0 → 12.3;
 // one Tonalztics carrier fewer: 2 Elder maul, 1 Tonalztics, 1 BGS, 1 Eye of Ayak; your share Elder maul, was Tonalztics).
+// Phase 36 (one spec budget per encounter; damage specs; the surge potion; the wiki's Kephri / Warden / Olm resets): FA
+// 21:44.4 → 21:04.9 (Bring Zaryte crossbow + Burning claws + a Surge potion, a dose at Ocellus; carriers 2 Elder maul + 4
+// Tonalztics); ToA 14:12.1 → 14:05.5 (Bring Voidwaker; 1 Elder maul + 1 Eye of Ayak); CoX 7:01.3 → 7:03.6 (Bring Dragon
+// claws; Olm's phases re-drained from one budget: slower; carriers 4 Elder maul + 2 Tonalztics); ToB 7:29.5 → 7:21.2 (Bring Dragon claws; 2 Elder maul + 2
+// Tonalztics).
 const HEADLINES: [string, string, number][] = [
-  ['fractured-archive', '21:44.4', 1304.4],
+  ['fractured-archive', '21:04.9', 1264.85],
   // review 2: Eye of Ayak carriers capped at the mages (1): 13:19.6 → 14:10.6 (1 maul, 1 Tonalztics, 1 Ayak; Ultor)
-  ['toa', '14:12.1', 852.1],
-  ['cox', '7:01.3', 421.3],
-  ['tob', '7:29.5', 449.5],
+  ['toa', '14:05.5', 845.47],
+  ['cox', '7:03.6', 423.6],
+  ['tob', '7:21.2', 441.2],
 ];
 
 // Phase 28: the FA plan without Obligator and Ascension crossbows ("Items I don't own"; phase 26 pinned 25:46.8 with
@@ -273,7 +278,8 @@ const HEADLINES: [string, string, number][] = [
 // via Bork + Smorks; no spec weapon (your last slot is worth 8.5 s of gear).
 // Phase 32 (no blessing; kept ammo): 24:45.3 → 24:34.1; the worn Twisted bow partial switch on the Tumeken's shadow
 // becomes the full Twisted bow (Masori) loadout (Archive Guardian 198.9 → 196.5, Ocellus 775.4 → 767.3 s).
-const ONLY_OWNED_HEADLINE: [string, number] = ['24:34.1', 1474.1];
+// Phase 36 (one spec budget per encounter; damage specs; the surge potion): 24:34.1 → 24:05.1
+const ONLY_OWNED_HEADLINE: [string, number] = ['24:05.1', 1445.1];
 const FA_NOT_OWNED = ['Obligator', 'Ascension crossbows'];
 
 /**
@@ -284,7 +290,9 @@ const recomputed = (raid: RaidConfig, res: PlanResult): number => {
   const pinned = raid.planDefaults.pinned.map((n) => planItemByName(n).id);
   const ringA = ringAssumptions(planAssumptions(raid.defaultAssumptions, comfortSupplies(raid.defaultSupplies), pinned), DEFAULT_RING_POLICY, res.ring.ring ? { name: res.ring.ring } : null);
   // phase 29 review: the Team drains use the planner's carriers
-  const planA = res.specs.team?.carriers ? { ...ringA, team: { ...ringA.team, carriers: res.specs.team.carriers } } : ringA;
+  const planA0 = res.specs.team?.carriers ? { ...ringA, team: { ...ringA.team, carriers: res.specs.team.carriers } } : ringA;
+  // phase 36: and your damage spec weapons / Surge potions (the spec budget spends your energy on them)
+  const planA = { ...planA0, damageSpecs: res.specs.damage ?? [], surgePotions: res.specs.surgePotions ?? 0 };
   const base = generateEmptyPlayer();
   const loadouts: KitLoadout[] = res.kit.map((c) => {
     const eq = toPlayerEquipment(c.equipment);
@@ -342,8 +350,12 @@ const PINNED_ENCOUNTER_SECONDS: Record<string, Record<string, number>> = {
   },
   // Phase 35 (no specs on adds): ToA Kephri 153.8 → 155.5, Akkha 160.9 → 161.6; CoX Vasa 20.1 → 22.9, Vespula 23.3 →
   // 24.1, Mystics 44.8 → 52.4, Shamans 32.1 → 37.5, Muttadiles 23.9 → 24.
+  // Phase 36 (one spec budget per encounter; Kephri's final phase, the Warden's enrage and Olm's phases are Defence
+  // resets): ToA Kephri 155.5 → 157 (the final phase re-drained from the energy left); CoX Olm 204.4 → 211.5 (with the
+  // option cap, MAX_EVENT_OPTIONS); ToB Bloat
+  // 39.2 (unchanged), Sotetseg 77 → 79.2 (the three thirds share the carriers' energy); FA unchanged.
   toa: {
-    'toa-kephri': 155.5, 'toa-zebak': 120.8, 'toa-akkha': 161.6, 'toa-baba': 103.1, 'toa-wardens': 349.9,
+    'toa-kephri': 157, 'toa-zebak': 120.8, 'toa-akkha': 161.6, 'toa-baba': 103.1, 'toa-wardens': 349.9,
   },
   cox: {
     'cox-tekton': 18.6,
@@ -355,10 +367,10 @@ const PINNED_ENCOUNTER_SECONDS: Record<string, Record<string, number>> = {
     'cox-muttadiles': 24,
     'cox-guardians': 36.4,
     'cox-ice-demon': 17.2,
-    'cox-olm': 204.4,
+    'cox-olm': 211.5,
   },
   tob: {
-    'tob-maiden': 55.5, 'tob-bloat': 39.2, 'tob-nylocas': 44.5, 'tob-sotetseg': 77, 'tob-xarpus': 64.2, 'tob-verzik': 271.5,
+    'tob-maiden': 55.5, 'tob-bloat': 39.2, 'tob-nylocas': 44.5, 'tob-sotetseg': 79.2, 'tob-xarpus': 64.2, 'tob-verzik': 271.5,
   },
 };
 

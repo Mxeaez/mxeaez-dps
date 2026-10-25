@@ -25,6 +25,7 @@ import DefenceIcon from '@/public/img/bonuses/defence.png';
 import MagicIcon from '@/public/img/bonuses/magic.png';
 import { teamDpsMultiplier, teamTimeLabel } from '@/lib/raids';
 import { loadoutUsesUnowned, unownedLabel } from '@/lib/fracturedArchive/ownership';
+import SpecDamageBox from '@/app/components/bestSetup/SpecDamageBox';
 
 // "Search" tab of /best-setup (phase 9): full gear search over the pool in src/lib/fracturedArchive/searchCandidates.ts,
 // run in its own worker (src/worker/searchWorker.ts). Docs: docs/BEST_SETUP.md.
@@ -221,6 +222,10 @@ const SearchView: React.FC<{
       {result && (
         <>
           {target.note && <div className="text-xs text-orange-700 dark:text-orange-300">{target.note}</div>}
+          {/* phase 36: the damage spec weapons on this boss (best first), against the top row's DPS */}
+          {result.rows.length > 0 && result.rows[0].dps > 0 && (
+            <SpecDamageBox targetKey={targetKey} phase={phase} drain={drain} assumptions={assumptions} dps={result.rows[0].dps} mult={teamMult} />
+          )}
           <details className="text-xs" data-testid="search-details">
             <summary className="cursor-pointer text-gray-500 dark:text-gray-400" data-testid="search-details-toggle">Search details</summary>
             <div className="text-xs flex flex-col gap-0.5" data-testid="search-summary">

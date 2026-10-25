@@ -165,8 +165,9 @@ export const toaEncounterPlan = (id: EncounterId, a: RaidTimeAssumptions): Plann
           },
         );
       }
+      // phase 36: "the defence level is reset for the final phase" (Kephri, wiki): a new drain event
       rows.push({
-        key: 'kephri-final', label: 'Unshielded (final phase)', targetKey: 'toa-kephri', damage: hp('toa-kephri'),
+        key: 'kephri-final', label: 'Unshielded (final phase)', targetKey: 'toa-kephri', damage: hp('toa-kephri'), drainReset: 'the final phase',
       });
       return rows;
     }
@@ -212,6 +213,9 @@ export const toaEncounterPlan = (id: EncounterId, a: RaidTimeAssumptions): Plann
           label: `P3 enraged (last ${pct(P3_ENRAGE_AT)} + ${pct(P3_ENRAGE_HEAL)} heal)`,
           targetKey: 'toa-warden-p3-enraged',
           damage: p3 * (P3_ENRAGE_AT + P3_ENRAGE_HEAL),
+          // phase 36: "When entering the enraged state, the Warden's base defence level is reset to 180" (Tumeken's
+          // Warden, wiki): a new drain event
+          drainReset: 'the enrage',
         },
       ];
     }

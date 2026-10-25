@@ -146,12 +146,15 @@ const olmPlan = (a: RaidTimeAssumptions, party: number): PlannedPhase[] => {
   const rows: PlannedPhase[] = [];
   for (let i = 1; i <= n; i++) {
     const penultimate = i === n ? ', penultimate' : '';
+    // phase 36: "His stats also reset when a new phase starts" (wiki): each hand phase after the first is a new drain
+    // event of each claw (one spec budget for the whole encounter)
+    const reset = i > 1 ? { drainReset: `phase ${i - 1}` } : {};
     rows.push(
       {
-        key: `olm-p${i}-right`, label: `Phase ${i} of ${n}${penultimate}: right claw (mage hand)`, targetKey: 'cox-olm-right', damage: right,
+        key: `olm-p${i}-right`, label: `Phase ${i} of ${n}${penultimate}: right claw (mage hand)`, targetKey: 'cox-olm-right', damage: right, ...reset,
       },
       {
-        key: `olm-p${i}-left`, label: `Phase ${i} of ${n}${penultimate}: left claw (melee hand)`, targetKey: 'cox-olm-left', damage: left,
+        key: `olm-p${i}-left`, label: `Phase ${i} of ${n}${penultimate}: left claw (melee hand)`, targetKey: 'cox-olm-left', damage: left, ...reset,
       },
     );
   }

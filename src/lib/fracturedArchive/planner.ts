@@ -13,6 +13,8 @@ import {
   presetStyles,
   resolveItem,
   resolvePresetEquipment,
+  monsterForSpecCounts,
+  specCountsDrainKey,
   styleLabel,
 } from '@/lib/fracturedArchive/bestSetup';
 import {
@@ -27,6 +29,7 @@ import {
   createKitEvaluator,
   drainFightSecondsOf,
   EncounterId,
+  EncounterTime,
   encounterTime,
   FA_TIME_MODEL,
   KitChoice,
@@ -40,7 +43,14 @@ import {
   Route,
   RouteComparison,
   routesFor,
+  specHitsOf,
 } from '@/lib/fracturedArchive/raidTime';
+import { scaleMonster } from '@/lib/MonsterScaling';
+import {
+  DAMAGE_SPEC_WEAPON_IDS, DAMAGE_SPEC_WEAPONS, damageSpecItemName, damageSpecLabel, damageSpecProfile, DamageSpecWeapon,
+} from '@/lib/fracturedArchive/damageSpecs';
+import { EncounterAlloc, encounterWallSeconds } from '@/lib/fracturedArchive/encounterBudget';
+import { dosesAllowed, SURGE_DOSES_PER_POTION } from '@/lib/fracturedArchive/specBudget';
 import { raidBase } from '@/lib/raids/base';
 import { TimeSettings } from '@/lib/raids/types';
 import {
@@ -57,12 +67,15 @@ import {
   mostNeededWeapon,
   mySpecsForSubset,
   NO_CARRIERS,
+  pickSpecItem,
   pickSeeds,
   RoleTarget,
   rowsFromCarriers,
   searchSpecSubsets,
+  SHARE_MAX_SLOT_SECONDS,
   ShareDecision,
   SPEC_CANDIDATES,
+  specWeaponLabel,
   SUBSET_GUARD_FACTOR,
   SubsetSearchResult,
   TeamRoles,
@@ -382,15 +395,33 @@ export const heartPlanItem = (h: typeof HEART_ITEMS[number]): PlanItem => ({
   id: h.id, name: h.name, version: '', slot: 'ring',
 });
 
+/**
+ * Phase 36: Surge potions (4 doses each; one inventory slot each). Not equipment: pseudo ids like the hearts. The first
+ * is the planner's 1-slot candidate, the second only when the route allows more than 4 doses (`dosesAllowed`).
+ * `image` = file under src/public/img/supplies (the wiki's Surge potion(4) inventory image).
+ */
+export const SURGE_ITEMS: { id: number, name: string, image: string }[] = [
+  { id: -9101, name: 'Surge potion(4)', image: 'Surge potion(4).png' },
+  { id: -9102, name: 'Surge potion(4) (second)', image: 'Surge potion(4).png' },
+];
+export const surgeById = (id: number) => SURGE_ITEMS.find((s) => s.id === id);
+export const surgePlanItem = (s: typeof SURGE_ITEMS[number]): PlanItem => ({
+  id: s.id, name: s.name, version: '', slot: 'ring',
+});
+
 export const planItemByName = (name: ItemRef): PlanItem => {
   const heart = typeof name === 'string' ? HEART_ITEMS.find((h) => h.name === name) : undefined;
-  return heart ? heartPlanItem(heart) : toPlanItem(resolveItem(name));
+  if (heart) return heartPlanItem(heart);
+  const surge = typeof name === 'string' ? SURGE_ITEMS.find((h) => h.name === name) : undefined;
+  return surge ? surgePlanItem(surge) : toPlanItem(resolveItem(name));
 };
 
-/** A pinned id as a plan item: equipment, or a heart. */
+/** A pinned id as a plan item: equipment, a heart or (phase 36) a Surge potion. */
 export const pinnedPlanItem = (id: number): PlanItem | undefined => {
   const heart = heartById(id);
   if (heart) return heartPlanItem(heart);
+  const surge = surgeById(id);
+  if (surge) return surgePlanItem(surge);
   const p = equipmentById(id);
   return p ? toPlanItem(p) : undefined;
 };
@@ -565,6 +596,24 @@ export interface PlanSpecs {
   share?: ShareDecision & { manual: boolean, slotValueSeconds?: number };
   /** e.g. the Ayak hint (carried but no magic loadout uses it / no mages in the party). */
   notes: string[];
+  /** Phase 36: your damage spec weapons (planner decides; their items are in `specItems`). */
+  damage?: DamageSpecWeapon[];
+  /** Phase 36: Surge potions brought (4 doses each). */
+  surgePotions?: number;
+  /** Phase 36: the encounters of the planned route that get a surge dose (labels, route order). */
+  surgeAt?: string[];
+  /** Phase 36: the damage-spec / surge items the planner added (or dropped), in order, with what each saved. */
+  items?: PlanItemStep[];
+}
+
+/** Phase 36: one step of the planner's damage-spec / surge greedy. */
+export interface PlanItemStep {
+  item: string;
+  /** Route seconds it saved (the spec budget's DP on the kit). */
+  saved: number;
+  /** Slots it took (−1: a drain weapon left at home). */
+  slots: number;
+  how: string;
 }
 
 const SPEC_ITEM_NAMES = Object.fromEntries(SPEC_CANDIDATES.map((w) => {
@@ -1660,7 +1709,71 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       const o = candidates[i].options[bestOpt[i]?.[col] ?? 0];
       return o ? styleLabel(o.style, o.spell) : '-';
     };
-    const matrixKit = (members: number[], table: number[][] = dps): RaidKit => ({
+    // phase 36: the spec budget's drain states. A query with an event's spec counts (encounterBudget.ts) is the monster
+    // built with exactly those specs; its DPS column (lazily per candidate) is keyed by the drained monster's stats, so
+    // counts that land on the same Defence share their DPS. Drains "None" queries are the no-specs state.
+    const allocMemo = new Map<string, { monster: ReturnType<typeof monstersAt>[number], tag: string }>();
+    const allocMonster = (q: PhaseQuery) => {
+      const counts = q.drain === 'none' ? {} : (q.specs?.counts ?? {});
+      const pk = phaseKey(q.targetKey, q.phase);
+      // counts that leave the same drains share the monster (its drain line is not used here)
+      const k = `${pk}|${specCountsDrainKey(findTarget(q.targetKey), q.phase, drain, ringA, counts)}`;
+      let v = allocMemo.get(k);
+      if (!v) {
+        const m = monsterForSpecCounts(findTarget(q.targetKey), q.phase, drain, ringA, counts);
+        const s = scaleMonster(m);
+        v = { monster: m, tag: `${pk}#${JSON.stringify([s.skills, s.defensive, m.inputs.phase ?? ''])}` };
+        allocMemo.set(k, v);
+      }
+      return v;
+    };
+    const allocCols = new Map<string, Float64Array>();
+    const allocDps = (tag: string, monster: ReturnType<typeof monstersAt>[number], i: number): number => {
+      let col = allocCols.get(tag);
+      if (!col || col.length < candidates.length) {
+        const old = col;
+        col = new Float64Array(candidates.length).fill(NaN);
+        if (old) col.set(old);
+        allocCols.set(tag, col);
+      }
+      if (Number.isNaN(col[i])) col[i] = dpsOn(candidates[i], candidates[i].equipment, 0, [monster], [tag]).dps;
+      return col[i];
+    };
+    const specDamageMemo = new Map<string, ReturnType<typeof damageSpecProfile>>();
+    const specHitsMemo = new Map<string, Record<string, boolean>>();
+    const budgetKitParts: Pick<RaidKit, 'specDamage' | 'specHits' | 'drainKey'> = {
+      drainKey: (q) => specCountsDrainKey(findTarget(q.targetKey), q.phase, q.drain, ringA, q.specs?.counts ?? {}),
+      specDamage: (q, w) => {
+        const { monster, tag } = allocMonster(q);
+        const k = `${tag}|${w}`;
+        if (!specDamageMemo.has(k)) specDamageMemo.set(k, damageSpecProfile(monster, w, ringA));
+        return specDamageMemo.get(k)!;
+      },
+      specHits: (q) => {
+        const pk = phaseKey(q.targetKey, q.phase);
+        if (!specHitsMemo.has(pk)) specHitsMemo.set(pk, specHitsOf(allocMonster({ ...q, drain: 'none', specs: undefined }).monster, ringA));
+        return specHitsMemo.get(pk)!;
+      },
+    };
+    const matrixKit = (members: number[], table: number[][] = dps, budget = false): RaidKit => (budget ? {
+      best: (q) => {
+        const { monster, tag } = allocMonster(q);
+        let bi = -1;
+        let bd = 0;
+        for (const m of members) {
+          const d = allocDps(tag, monster, m);
+          if (bi < 0 || d > bd) {
+            bi = m;
+            bd = d;
+          }
+        }
+        if (bi < 0) return null;
+        return {
+          loadout: candidates[bi].label, style: '-', group: candidates[bi].group, dps: bd,
+        };
+      },
+      ...budgetKitParts,
+    } : {
       best: (q) => {
         const col = colIx.get(phaseKey(q.targetKey, q.phase));
         if (col === undefined) throw new Error(`Planner: phase ${phaseKey(q.targetKey, q.phase)} not in the matrix`);
@@ -1852,11 +1965,18 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     const tMatrix = Date.now();
 
     // 5. optimise
-    const routeTimeWith = (table: number[][]) => (members: number[]) => {
-      const cmp = compareRoutes(matrixKit(members, table), fastA, routes);
+    // Phase 36: kits are timed with `ta` (default `runA`). With the spec budget (Solo / Team), the optimiser replays a
+    // fixed spec plan (`fixedAlloc`, found by the budget's DP on a reference kit: `fixedFor`), one pass per encounter;
+    // the bootstrap (`legacyA`) times the phase 14-35 per-target drain states of the table, to find that first kit.
+    const legacyA: RaidTimeAssumptions = { ...fastA, specBudget: undefined, fixedAlloc: undefined };
+    const budgetOn = !!fastA.specBudget;
+    let runA: RaidTimeAssumptions = legacyA;
+    const routeTimeWith = (table: number[][], ta?: RaidTimeAssumptions) => (members: number[]) => {
+      const t = ta ?? runA;
+      const cmp = compareRoutes(matrixKit(members, table, !!t.specBudget), t, routes);
       return cmp.fastest >= 0 ? cmp.routes[cmp.fastest].seconds : Infinity;
     };
-    // the current matrix (phase 29: the chosen spec subset's / carriers', once picked)
+    // the current matrix and spec plan (phase 29: the chosen spec subset's / carriers', once picked)
     const routeTime = (members: number[]) => routeTimeWith(dps)(members);
     const items = candidates.map((c) => equipmentItemIds(c.equipment));
     // phase 32: a candidate without ammo of its own keeps a kit ammo item in its ammo slot (wornItemCounts)
@@ -1868,16 +1988,20 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     const quiver = quiverSpecOf([...items.flat(), ...carried]);
     // seeds: the best single loadouts by their own route time (ties: matrix score), plus the best of every style group so
     // single-style and mixed kits both get explored. Phase 29 review: ranked under the drain state being optimised (each
-    // spec subset / carrier set its own table), and the group bests are kept however few seeds are asked for.
-    const seedsMemo = new Map<number[][], Map<number, number[]>>();
-    const seedsFor = (table: number[][], n: number): number[] => {
-      let byN = seedsMemo.get(table);
+    // spec subset / carrier set its own table; phase 36: and spec plan), and the group bests are kept however few seeds
+    // are asked for.
+    const seedsMemo = new Map<RaidTimeAssumptions, Map<number[][], Map<number, number[]>>>();
+    const seedsFor = (table: number[][], n: number, ta?: RaidTimeAssumptions): number[] => {
+      const t = ta ?? runA;
+      if (!seedsMemo.has(t)) seedsMemo.set(t, new Map());
+      const byTable = seedsMemo.get(t)!;
+      let byN = byTable.get(table);
       if (!byN) {
         byN = new Map();
-        seedsMemo.set(table, byN);
+        byTable.set(table, byN);
       }
       if (!byN.has(n)) {
-        const rt = routeTimeWith(table);
+        const rt = routeTimeWith(table, t);
         const cmax = targets.map((_, col) => Math.max(0, ...table.map((r) => r[col])));
         const singles = candidates.map((c, i) => ({
           i, t: rt([i]), s: table[i].reduce((a, d, col) => a + (cmax[col] > 0 ? d / cmax[col] : 0), 0), group: c.group,
@@ -1887,13 +2011,13 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       return byN.get(n)!;
     };
     const seedCount = screen ? Math.min(cfg.seeds, SCREEN_SEEDS) : cfg.seeds;
-    let seeds = seedsFor(dps, seedCount);
-    const optimiseFor = (table: number[][], carriedIds: number[], seedList: number[], label: string) => optimiseKit({
+    let seeds = seedsFor(dps, seedCount, legacyA);
+    const optimiseFor = (table: number[][], carriedIds: number[], seedList: number[], label: string, ta?: RaidTimeAssumptions) => optimiseKit({
       items,
       carried: carriedIds,
       fixedSlots,
       totalSlots: total,
-      time: routeTimeWith(table),
+      time: routeTimeWith(table, ta),
       seeds: seedList.length ? seedList : [0],
       raidSupplied,
       potions,
@@ -1916,7 +2040,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     };
 
     // phase 29: DPS columns per distinct drain state (by tag = the monster's reductions), shared by the spec subsets /
-    // carrier sets of this run; `colsFor` fills only some candidates (the carrier greedy times one kit)
+    // carrier sets of this run (the bootstrap's tables and the seeds' scores)
     const colCache = new Map<string, number[]>();
     targets.forEach((_, col) => colCache.set(tags[col], dps.map((r) => r[col])));
     const tableMemo = new Map<string, number[][]>();
@@ -1935,17 +2059,60 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       tableMemo.set(memoKey, table);
       return table;
     };
-    const colsFor = (ms: ReturnType<typeof monstersAt>, ts: string[], members: number[]) => {
-      const t: number[][] = [];
-      members.forEach((i) => {
-        t[i] = ts.map((tag, col) => colCache.get(tag)?.[i] ?? dpsOn(candidates[i], candidates[i].equipment, col, ms, ts).dps);
+    const cmpSeconds = (cmp: RouteComparison) => (cmp.fastest >= 0 ? cmp.routes[cmp.fastest].seconds : Infinity);
+    // phase 36: the spec budget's DP on a kit (the matrix, these members) for the assumptions' specs, and the spec plan
+    // it picks as the optimiser's fixed plan (the fastest route's encounters win: their surge doses)
+    const budgetA = (a: BestSetupAssumptions): RaidTimeAssumptions => ({
+      ...raidTimeAssumptionsFrom(a, drain, settings, tuning.model),
+      ...(fastA.fixedFightSeconds !== undefined ? { fixedFightSeconds: fastA.fixedFightSeconds } : {}),
+    });
+    const dpMemo = new Map<string, RouteComparison>();
+    const dpCmp = (members: number[], a: BestSetupAssumptions): RouteComparison => {
+      const k = JSON.stringify([[...members].sort((x, y) => x - y), a.mySpecs, a.team, a.damageSpecs ?? [], a.surgePotions ?? 0]);
+      let cmp = dpMemo.get(k);
+      if (!cmp) {
+        if (cancelled()) throw new PlanCancelled();
+        cmp = compareRoutes(matrixKit(members, dps, true), budgetA(a), routes);
+        dpMemo.set(k, cmp);
+      }
+      return cmp;
+    };
+    const allocOf = (cmp: RouteComparison): Partial<Record<EncounterId, EncounterAlloc>> => {
+      const out: Partial<Record<EncounterId, EncounterAlloc>> = {};
+      const take = (e: EncounterTime) => {
+        if (e.specPlan) {
+          out[e.id] = {
+            events: e.specPlan.events, rowEvent: e.specPlan.rowEvent, damage: e.specPlan.damage, surge: e.specPlan.surge,
+          };
+        }
+      };
+      cmp.routes.forEach((r) => r.encounters.forEach((e) => { if (!out[e.id]) take(e); }));
+      if (cmp.fastest >= 0) cmp.routes[cmp.fastest].encounters.forEach(take);
+      return out;
+    };
+    const fixedFor = (a: BestSetupAssumptions, members: number[]): RaidTimeAssumptions => (budgetOn
+      ? { ...budgetA(a), fixedAlloc: allocOf(dpCmp(members, a)) }
+      : legacyA);
+    /** The drain state of every phase of a fixed plan (its DPS columns' tags): equal = the same problem. */
+    const planSignature = (ta: RaidTimeAssumptions): string => {
+      const parts: string[] = [];
+      Object.keys(ta.fixedAlloc ?? {}).sort().forEach((id) => {
+        const al = ta.fixedAlloc![id]!;
+        (byEncounter.get(id) ?? []).forEach((t) => {
+          al.events.forEach((ev) => {
+            parts.push(allocMonster({
+              targetKey: t.targetKey, phase: t.phase, drain, fightSeconds: fallbackFight, specs: { counts: ev.counts },
+            }).tag);
+          });
+        });
+        parts.push(JSON.stringify(al.damage));
       });
-      return t;
+      return parts.join('#');
     };
 
     // phase 29: the spec weapons. Solo (planner decides): every subset of the owned spec weapons with the kit
     // (specChoice.ts searchSpecSubsets). Team: the carriers (planner decides: greedy on the route time, review fix), then
-    // the briefing and your share ("assign me").
+    // the briefing and your share ("assign me"). Phase 36: each timed with the spec budget (one per encounter).
     let runCarried = carried;
     let runSpecItems = specItems;
     let subsetResult: SubsetSearchResult<PlannerWeapon> | undefined;
@@ -1966,17 +2133,17 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       }
       return d;
     };
-    const teamCmp = (c: CarrierCounts, members: number[]) => {
-      const { ms, ts } = teamData(c);
-      return compareRoutes(matrixKit(members, colsFor(ms, ts, members)), fastA, routes);
-    };
-    const cmpSeconds = (cmp: RouteComparison) => (cmp.fastest >= 0 ? cmp.routes[cmp.fastest].seconds : Infinity);
+    // phase 36: a carrier set's route time on a kit = the spec budget's DP with exactly these carriers
+    const teamCmp = (c: CarrierCounts, members: number[]) => dpCmp(members, {
+      ...teamData(c).a, damageSpecs: assumptions.damageSpecs, surgePotions: assumptions.surgePotions,
+    });
     let carrierSteps: CarrierStep[] | undefined;
     const carrierNotes: string[] = [];
+    let soloWithSubset: ((sub: PlannerWeapon[]) => BestSetupAssumptions) | undefined;
     if (autoSolo) {
       const fightOfCol = (col: number) => soloFight?.[encounterOfCol[col]] ?? fallbackFight;
       const subsetMemo = new Map<string, { a: BestSetupAssumptions, ms: ReturnType<typeof monstersAt>, ts: string[] }>();
-      // the subset's monsters: the undrained monster + the Solo reductions (SOLO_DRAIN_CACHE)
+      // the subset's monsters: the undrained monster + the Solo reductions (SOLO_DRAIN_CACHE); phase 36: the bootstrap
       const soloMonstersAt = (a: BestSetupAssumptions) => targets.map((t, col) => {
         const fight = fightOfCol(col);
         const regen = a.mySpecs.lightbearer ? LIGHTBEARER_REGEN_SECONDS : SPEC_REGEN_SECONDS;
@@ -2011,14 +2178,24 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         return tableFor(ms, ts, `drains with ${bringText(sub).replace('Bring: ', '')}`);
       };
       const carriedWith = (sub: PlannerWeapon[]) => Array.from(new Set([...carried, ...sub.map(specId)]));
-      const optMemo = new Map<string, KitOptimum>();
       const quickSeeds = Math.min(screen ? SUBSET_SCREEN_SEEDS : SUBSET_QUICK_SEEDS, seedCount);
+      // phase 36: the reference kit of the subsets' spec plans: the bootstrap kit with every owned spec weapon
+      const refTable = tableOf(ownedSpecs);
+      const ref = optimiseFor(refTable, carriedWith(ownedSpecs), seedsFor(refTable, quickSeeds, legacyA), 'kits', legacyA);
+      const subA = new Map<string, RaidTimeAssumptions>();
+      const subPlan = (sub: PlannerWeapon[]) => {
+        const k = sub.join('+');
+        if (!subA.has(k)) subA.set(k, budgetOn ? fixedFor(withSubset(sub), ref.best.members) : legacyA);
+        return subA.get(k)!;
+      };
+      const optMemo = new Map<string, KitOptimum>();
       // review fix: each subset's seeds are ranked under its own table (they were the all-weapons table's first n)
       const runSub = (sub: PlannerWeapon[], n: number) => {
         const k = `${n}|${sub.join('+')}`;
         if (!optMemo.has(k)) {
           const table = tableOf(sub);
-          optMemo.set(k, optimiseFor(table, carriedWith(sub), seedsFor(table, n), `spec weapons: ${bringText(sub).replace('Bring: ', '')}`));
+          const ta = budgetOn ? subPlan(sub) : legacyA;
+          optMemo.set(k, optimiseFor(table, carriedWith(sub), seedsFor(table, n, ta), `spec weapons: ${bringText(sub).replace('Bring: ', '')}`, ta));
         }
         return optMemo.get(k)!;
       };
@@ -2026,15 +2203,19 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       const fixed = screen ? screenSubset : null;
       subsetResult = fixed ? undefined : searchSpecSubsets<PlannerWeapon>({
         weapons: ownedSpecs,
-        signature: (sub) => subsetData(sub).ts.join('#'),
+        // phase 36: the same spec plan (drain state of every phase) = the same problem
+        signature: (sub) => (budgetOn ? planSignature(subPlan(sub)) : subsetData(sub).ts.join('#')),
         slots: (sub) => sub.filter((w) => !carriedSet.has(specId(w))).length,
         quick: (sub) => runSub(sub, quickSeeds).best.time,
-        // a subset whose every DPS is ≤ another's (with no more slots) can't be faster
-        dominated: (sub, by) => {
-          const a = tableOf(sub);
-          const b = tableOf(by);
-          return a.every((row, i) => row.every((d, col) => d <= b[i][col] + 1e-9));
-        },
+        // a subset whose every DPS is ≤ another's (with no more slots) can't be faster (phase 36: only for the
+        // phase 14-35 tables; the spec plans differ per subset)
+        ...(budgetOn ? {} : {
+          dominated: (sub: PlannerWeapon[], by: PlannerWeapon[]) => {
+            const a = tableOf(sub);
+            const b = tableOf(by);
+            return a.every((row, i) => row.every((d, col) => d <= b[i][col] + 1e-9));
+          },
+        }),
         ...(screen ? {} : { full: (sub: PlannerWeapon[]) => runSub(sub, seedCount).best.time }),
         finalists: screen ? 1 : SUBSET_FINALISTS,
         guard: screen ? 0 : SUBSET_GUARD_FACTOR,
@@ -2043,15 +2224,24 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       if (screen && !fixed) screenSubset = best;
       opt = runSub(best, seedCount);
       assumptions = subsetData(best).a;
-      exactA = raidTimeAssumptionsFrom(assumptions, drain, settings, tuning.model);
       dps = tableOf(best);
+      runA = budgetOn ? subPlan(best) : legacyA;
+      if (budgetOn) {
+        // phase 36: the spec plan of the chosen kit (the DP on its members), the kit re-optimised once under it
+        runA = fixedFor(assumptions, opt.best.members);
+        opt = optimiseFor(dps, carriedWith(best), seedsFor(dps, seedCount), `spec weapons: ${bringText(best).replace('Bring: ', '')}`);
+        runA = fixedFor(assumptions, opt.best.members);
+      }
+      exactA = raidTimeAssumptionsFrom(assumptions, drain, settings, tuning.model);
       seeds = seedsFor(dps, seedCount);
       runCarried = carriedWith(best);
       runSpecItems = best.map((w) => planItemByName(SPEC_WEAPONS[w].item));
+      soloWithSubset = withSubset;
     } else if (autoCarriers) {
       // review fix: the carriers are planner output. Greedy (specChoice.ts greedyCarriers) on the route time of the kit
       // optimised under the Advanced carriers; then the kit is re-optimised under the chosen carriers, and if it changed,
-      // the greedy runs once more on it (at most two rounds). The Team drain state uses exactly these carriers.
+      // the greedy runs once more on it (at most two rounds). The Team drain state uses exactly these carriers. Phase 36:
+      // each carrier set timed with the spec budget's DP on the kit (a carrier that saves nothing is never added).
       const party = Math.max(1, Math.floor(assumptions.partySize));
       const weaponsFor = (m: number[]): PlannerWeapon[] => ['elderMaul', 'tonalztics', 'dwh', 'bgs', ...(magesOf(m) > 0 ? ['ayak' as PlannerWeapon] : [])];
       // review 2: Eye of Ayak carriers capped at the mages in the party (only mages gain from its drain; the time model
@@ -2059,13 +2249,14 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       const greedyOn = (m: number[]) => greedyCarriers({
         weapons: weaponsFor(m), total: party, perWeapon: party, caps: { ayak: magesOf(m) }, time: (c) => cmpSeconds(teamCmp(c, m)),
       });
-      opt = optimiseFor(dps, carried, seeds, 'kits');
+      opt = optimiseFor(dps, carried, seeds, 'kits', legacyA);
       let g = greedyOn(opt.best.members);
       for (let round = 0; round < 2; round++) {
         const { ms, ts } = teamData(g.carriers);
         const table = tableFor(ms, ts, `drains with ${carriersText(party, rowsFromCarriers(g.carriers, () => ({ saved: 0, drivers: [] })))}`);
         const before = [...opt.best.members].sort((x, y) => x - y).join(',');
         dps = table;
+        runA = fixedFor(teamData(g.carriers).a, opt.best.members);
         seeds = seedsFor(table, seedCount);
         opt = optimiseFor(table, carried, seeds, 'kits');
         if (round === 1 || [...opt.best.members].sort((x, y) => x - y).join(',') === before) break;
@@ -2076,9 +2267,10 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       }
       carrierSteps = g.steps;
       assumptions = teamData(g.carriers).a;
+      runA = fixedFor(assumptions, opt.best.members);
       exactA = raidTimeAssumptionsFrom(assumptions, drain, settings, tuning.model);
     } else {
-      opt = optimiseFor(dps, carried, seeds, 'kits');
+      opt = optimiseFor(dps, carried, seeds, 'kits', legacyA);
       if (drain === 'team') {
         // review 2: manual carriers — only the first party-size count (teamSpecPlan's order), Eye of Ayak capped at the
         // mages; when that changes the drains, re-optimise under the clamped carriers
@@ -2094,12 +2286,128 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         if (eff.ayak < effectiveCarriers(assumptions.team.carriers, party, Infinity).ayak) {
           const { ms, ts } = teamData(eff);
           dps = tableFor(ms, ts, 'drains with the carriers that count');
-          seeds = seedsFor(dps, seedCount);
-          opt = optimiseFor(dps, carried, seeds, 'kits');
+          seeds = seedsFor(dps, seedCount, legacyA);
+          opt = optimiseFor(dps, carried, seeds, 'kits', legacyA);
         }
         assumptions = teamData(eff).a;
         exactA = raidTimeAssumptionsFrom(assumptions, drain, settings, tuning.model);
       }
+      if (budgetOn) {
+        // phase 36: the spec plan of the bootstrap kit, the kit re-optimised once under it
+        runA = fixedFor(assumptions, opt.best.members);
+        seeds = seedsFor(dps, seedCount);
+        opt = optimiseFor(dps, carried, seeds, 'kits');
+        runA = fixedFor(assumptions, opt.best.members);
+      }
+    }
+
+    // phase 36: your damage spec weapons and Surge potions (planner decides). Greedy on the spec budget's DP with the
+    // kit: add the item that saves the most route time while it saves ≥ 1 s per slot it takes (a free slot or one
+    // taken from the kit: the kit is re-optimised with it carried); Solo then drops a drain weapon whose slot is worth
+    // < 1 s now that the energy has other uses. Team: damage specs are your own energy, so you carry none of the
+    // team's drain weapons then (your share below).
+    const damageBring: DamageSpecWeapon[] = [];
+    let surgePotions = 0;
+    const itemSteps: PlanItemStep[] = [];
+    const itemNotes: string[] = [];
+    if (autoSpecs && budgetOn && !screen) {
+      const ownedDamage = DAMAGE_SPEC_WEAPON_IDS.filter((w) => isOwned(damageSpecItemName(w), notOwned));
+      const damageId = (w: DamageSpecWeapon) => planItemByName(DAMAGE_SPEC_WEAPONS[w].item).id;
+      const withItems = (a: BestSetupAssumptions, dmg: DamageSpecWeapon[], surge: number): BestSetupAssumptions => ({
+        ...a, damageSpecs: [...dmg], surgePotions: surge,
+      });
+      const inKit = (id: number, m: number[]) => runCarried.includes(id) || m.some((x) => items[x].includes(id));
+      const rejected = new Set<string>();
+      let curT = cmpSeconds(dpCmp(opt.best.members, withItems(assumptions, damageBring, surgePotions)));
+      for (let guard = 0; guard < 12; guard++) {
+        const m = opt.best.members;
+        // this step's state (the closures below must not see later changes)
+        const curA = assumptions;
+        const curDamage = [...damageBring];
+        const curSurge = surgePotions;
+        const route = dpCmp(m, withItems(curA, curDamage, curSurge));
+        const wall = route.fastest >= 0 ? route.routes[route.fastest].encounters.reduce((t, e) => t + encounterWallSeconds(e.seconds, fastA), 0) : 0;
+        const maxPotions = dosesAllowed(wall) > SURGE_DOSES_PER_POTION ? 2 : 1;
+        const cands: { key: string, label: string, id: number, a: BestSetupAssumptions, dmg?: DamageSpecWeapon }[] = [
+          ...ownedDamage.filter((w) => !curDamage.includes(w)).map((w) => ({
+            key: w, label: DAMAGE_SPEC_WEAPONS[w].label, id: damageId(w), a: withItems(curA, [...curDamage, w], curSurge), dmg: w,
+          })),
+          ...(curSurge < maxPotions ? [{
+            key: `surge${curSurge + 1}`, label: SURGE_ITEMS[curSurge].name, id: SURGE_ITEMS[curSurge].id, a: withItems(curA, curDamage, curSurge + 1),
+          }] : []),
+        ].filter((c) => !rejected.has(c.key));
+        const picked = pickSpecItem(cands.map((c) => ({ item: c, seconds: cmpSeconds(dpCmp(m, c.a)), slots: c.dmg && inKit(c.id, m) ? 0 : 1 })), curT);
+        if (!picked) break;
+        const p = { c: picked.item, t: picked.seconds, slots: picked.slots };
+        const withId = p.slots ? [...runCarried, p.c.id] : runCarried;
+        const free = total - opt.best.used;
+        let accepted = false;
+        if (p.slots === 0 || free >= p.slots) {
+          const rescore = (x: KitSolution): KitSolution => ({ ...x, used: usedWith(withId, x.members) });
+          opt = { ...opt, best: rescore(opt.best), finals: opt.finals.map(rescore) };
+          accepted = true;
+          itemSteps.push({
+            item: p.c.label, saved: curT - p.t, slots: p.slots, how: p.slots ? 'a free slot' : 'carried anyway',
+          });
+          curT = p.t;
+        } else {
+          // no free slot: the kit re-optimised with the item carried (its spec plan from the current kit)
+          const ta = fixedFor(p.c.a, m);
+          const opt2 = optimiseFor(dps, withId, seedsFor(dps, seedCount, ta), `spec items: ${p.c.label}`, ta);
+          const t2 = cmpSeconds(dpCmp(opt2.best.members, p.c.a));
+          if (opt2.best.used <= total && curT - t2 >= p.slots * SHARE_MAX_SLOT_SECONDS - 1e-9) {
+            opt = opt2;
+            accepted = true;
+            itemSteps.push({
+              item: p.c.label, saved: curT - t2, slots: p.slots, how: 'a slot from the kit (re-optimised)',
+            });
+            curT = t2;
+          } else {
+            rejected.add(p.c.key);
+            itemNotes.push(`${p.c.label}: saves ${(curT - p.t).toFixed(1)} s with a free slot, but none is free and the kit without a slot for it loses more`);
+          }
+        }
+        if (accepted) {
+          runCarried = withId;
+          if (p.c.dmg) damageBring.push(p.c.dmg);
+          else surgePotions += 1;
+          assumptions = withItems(assumptions, damageBring, surgePotions);
+        }
+      }
+      // Solo: a drain weapon whose slot is worth < 1 s with the damage specs / doses brought is left at home
+      if (soloWithSubset && (damageBring.length || surgePotions)) {
+        let sub = SPEC_CANDIDATES.filter((w) => runSpecItems.some((it) => it.id === specId(w)));
+        sub.forEach((w) => {
+          if (carriedSet.has(specId(w))) return;
+          const fewer = sub.filter((x) => x !== w);
+          const a2 = withItems({ ...assumptions, mySpecs: mySpecsForSubset(fewer, assumptions.mySpecs) }, damageBring, surgePotions);
+          const t = cmpSeconds(dpCmp(opt.best.members, a2));
+          if (t - curT < SHARE_MAX_SLOT_SECONDS - 1e-9) {
+            itemSteps.push({
+              item: `without ${SPEC_WEAPONS[w].label}`, saved: curT - t, slots: -1, how: 'drain weapon dropped',
+            });
+            sub = fewer;
+            curT = t;
+            assumptions = a2;
+            runCarried = runCarried.filter((id) => id !== specId(w));
+            const rescore = (x: KitSolution): KitSolution => ({ ...x, used: usedWith(runCarried, x.members) });
+            opt = { ...opt, best: rescore(opt.best), finals: opt.finals.map(rescore) };
+          }
+        });
+        runSpecItems = sub.map((w) => planItemByName(SPEC_WEAPONS[w].item));
+      }
+      if (itemSteps.length) {
+        runA = fixedFor(assumptions, opt.best.members);
+        exactA = raidTimeAssumptionsFrom(assumptions, drain, settings, tuning.model);
+        // the optimiser's times were under the plan without the items: re-time its kits under the new plan
+        const retime = (x: KitSolution): KitSolution => ({ ...x, time: routeTime(x.members) });
+        opt = { ...opt, best: retime(opt.best), finals: opt.finals.map(retime) };
+      }
+      runSpecItems = [
+        ...runSpecItems,
+        ...damageBring.map((w) => planItemByName(DAMAGE_SPEC_WEAPONS[w].item)),
+        ...SURGE_ITEMS.slice(0, surgePotions).map(surgePlanItem),
+      ];
     }
     // phase 30: the greedy's steps re-timed on a kit (the returned one): each prefix of the carriers added, in order, on
     // these members (the greedy measured them on the kit before partial switches / the final re-optimisation)
@@ -2165,20 +2473,28 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
           weapon: null, carry: false, reason: 'you bring the weapons ticked under "Specs I bring"', manual: true,
         };
       } else {
-        const cmp0 = compareRoutes(matrixKit(opt.best.members), fastA, routes);
+        const cmp0 = teamCmp(teamCarriers(), opt.best.members);
         const roles0 = briefing(opt.best.members, cmp0.fastest >= 0 ? cmp0.routes[cmp0.fastest] : null);
         const w = mostNeededWeapon(roles0, (x) => ownedSpecs.includes(x));
         const carriers = roles0.rows.find((r) => r.weapon === w)?.carriers;
-        if (!w || carriedSet.has(specId(w))) {
+        if (damageBring.length) {
+          // phase 36: your spec energy goes to your damage specs: a teammate carries the drain weapon
+          share = {
+            weapon: null,
+            carry: false,
+            reason: `your spec energy goes to your ${damageBring.map(damageSpecLabel).join(' / ')} specs${w ? ` — let a teammate carry ${specWeaponLabel(w)}${carriers ? ` (most needed: ${carriers} carrier${carriers === 1 ? '' : 's'})` : ''}` : ''}`,
+            manual: false,
+          };
+        } else if (!w || carriedSet.has(specId(w))) {
           share = {
             ...assignMe({
               weapon: w, carriers, carriedAnyway: !!w, freeSlots: 0,
             }),
             manual: false,
           };
-          if (w) runSpecItems = [planItemByName(SPEC_WEAPONS[w].item)];
+          if (w) runSpecItems = [planItemByName(SPEC_WEAPONS[w].item), ...runSpecItems];
         } else {
-          const withW = [...carried, specId(w)];
+          const withW = [...runCarried, specId(w)];
           const free = total - opt.best.used;
           let slotValue: number | undefined;
           let opt2: KitOptimum | null = null;
@@ -2199,7 +2515,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
               opt = { ...opt, best: rescore(opt.best), finals: opt.finals.map(rescore) };
             }
             runCarried = withW;
-            runSpecItems = [planItemByName(SPEC_WEAPONS[w].item)];
+            runSpecItems = [planItemByName(SPEC_WEAPONS[w].item), ...runSpecItems];
           }
         }
       }
@@ -2265,7 +2581,8 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     const keptAmmo = wornKeptAmmo(kit, 0);
 
     // 7. why: improvements that don't fit, and the best kit of every other style mix
-    const T = chosen.time;
+    // phase 36: the kit's time under the final spec plan (the optimiser's time may predate the damage specs / doses)
+    const T = routeTime(chosen.members);
     const usedOfKit = (m: number[]) => {
       const allIds = new Set<number>(runCarried.filter((id) => !raidSuppliedSet.has(id)));
       m.forEach((x) => items[x].forEach((id) => {
@@ -2382,7 +2699,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     // phase 29: the spec weapons of the plan (Team: the briefing on the planned route; the Ayak hint)
     const bring = runSpecItems.map(specWeaponOf).filter((w): w is PlannerWeapon => !!w);
     const roles = drain === 'team' && planned >= 0 ? briefing(members, comparison.routes[planned]) : undefined;
-    const notes: string[] = drain === 'team' ? [...carrierNotes] : [];
+    const notes: string[] = drain === 'team' ? [...carrierNotes, ...itemNotes] : [...itemNotes];
     if (bring.includes('ayak')) {
       if (drain === 'team' && roles && roles.mages === 0) {
         notes.push('Eye of Ayak is carried but "Mages in party" is 0 (Advanced (plan)): its Magic defence drain helps no one.');
@@ -2390,11 +2707,20 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         notes.push('Eye of Ayak is carried but no magic loadout in your kit uses its Magic defence drain.');
       }
     }
+    // phase 36: the damage spec weapons and Surge potions after the drain weapons
+    const extras = [...damageBring.map(damageSpecLabel), ...(surgePotions ? [surgePotions > 1 ? `${surgePotions} Surge potions` : 'Surge potion'] : [])];
+    let bringLine = bringText(bring);
+    if (extras.length) bringLine = bring.length ? `${bringLine}, ${extras.join(', ')}` : `Bring: ${extras.join(', ')}`;
+    const plannedRoute = planned >= 0 ? comparison.routes[planned] : null;
+    const surgeAt = (plannedRoute?.surgeDoses ?? []).map((id) => plannedRoute!.encounters.find((e) => e.id === id)?.label ?? id);
     const specs: PlanSpecs = {
       mode: specMode,
       drain,
       bring,
-      text: bringText(bring),
+      text: bringLine,
+      ...(damageBring.length ? { damage: [...damageBring] } : {}),
+      ...(surgePotions ? { surgePotions, surgeAt } : {}),
+      ...(itemSteps.length ? { items: itemSteps } : {}),
       ...(subsetResult ? {
         solo: {
           perWeapon: subsetResult.perWeapon,

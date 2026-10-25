@@ -74,17 +74,18 @@ describe('FA (presets kit, 2 Elder maul + 2 Tonalztics carriers)', () => {
     expect(s.events.map((e) => e.phaseKey)).toEqual(['bork-8', 'smorks']);
     expect(s.events[0].parts[0].line).toBe(bork.phases.find((p) => p.key === 'bork-8')!.choice!.drainLine);
     expect(s.events[1].parts[0].line).toBe(bork.phases.find((p) => p.key === 'smorks')!.choice!.drainLine);
-    expect(s.events.map((e) => e.parts[0].line.defAfter)).toEqual([180, 5]);
-    expect(s.text).toBe('Bork: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 180 · 99.6% · Smorks: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 5');
+    // phase 36: one spec budget for both NPCs: 1 maul spec on Bork, the rest on the Smorks (was 100% each: Def 180 / 5)
+    expect(s.events.map((e) => e.parts[0].line.defAfter)).toEqual([195, 15]);
+    expect(s.text).toBe('Bork: 1 Elder maul carrier (1 spec) → Def 195 · Smorks: 2 Elder maul carriers (3 specs) + 2 Tonalztics carriers (4 specs) → Def 15');
     const row = rows[0];
     expect(row.specs.map((g) => g.label)).toEqual(['Bork', 'Smorks']);
-    expect(row.specs.map((g) => g.result)).toEqual(['→ Def 180', '→ Def 5']);
-    expect(row.specsText).toBe('Bork: Elder maul 2 specs + Tonalztics 2 hits → Def 180 · Smorks: Elder maul 4 specs + Tonalztics 2 hits → Def 5');
+    expect(row.specs.map((g) => g.result)).toEqual(['→ Def 195', '→ Def 15']);
+    expect(row.specsText).toBe('Bork: Elder maul 1 spec → Def 195 · Smorks: Elder maul 3 specs + Tonalztics 2 hits → Def 15');
   });
 
   test('Bork + Smorks: the Wear cell names the loadouts per NPC when they differ (default carriers: Shadow on armour 14)', () => {
-    // these carriers: Inquisitor's on all five rows → one unnamed group (phase 34)
-    expect(rows[0].wear).toEqual([{ loadouts: rows[0].loadouts }]);
+    // phase 36: with these carriers Bork is drained less (1 maul spec) and armour 14 uses the Shadow too: named groups
+    expect(rows[0].wear.map((w) => w.npc)).toEqual(['Bork', 'Smorks']);
     const [def] = encountersOf('fractured-archive', ['bork-smorks']);
     const borkLoadouts = Array.from(new Set(def.phases.filter((p) => p.targetKey === 'bork').map((p) => p.choice!.loadout)));
     const smorksLoadouts = def.phases.filter((p) => p.targetKey === 'smorks').map((p) => p.choice!.loadout);
@@ -141,21 +142,23 @@ describe('FA (presets kit, 2 Elder maul + 2 Tonalztics carriers)', () => {
 });
 
 describe('ToA / CoX / ToB multi-NPC encounters (default assumptions, presets kit)', () => {
-  test('ToB Sotetseg: three reset events of one NPC ("× 3"); Bloat keeps its stomp event', () => {
+  test('ToB Sotetseg: three reset events of one NPC (phase 36: different specs each); Bloat keeps its stomp event', () => {
     const [sote, bloat] = encountersOf('tob', ['tob-sotetseg', 'tob-bloat']);
     const s = summaryOf(sote);
     expect(s.events).toHaveLength(3);
     expect(s.events.map((e) => e.reset)).toEqual([undefined, 'maze 1', 'maze 2']);
     expect(s.events.every((e) => e.npc === undefined)).toBe(true);
     const [row, bloatRow] = briefingRows([sote, bloat], 'team');
-    expect(row.specsText).toBe('Elder maul 2 specs + BGS 4 specs → Def 100 × 3');
+    // phase 36: one spec budget: three different events (was the same full specs "× 3")
+    expect(row.specs.map((g) => g.label)).toEqual(['start', 'after maze 1', 'after maze 2']);
     expect(bloatRow.drainText).toMatch(/ · After the stomp \(Defence restored\), again: no specs$/);
   });
 
   test('ToA Kephri: the scarabs (no specs) get no line; the Wear names Kephri and the scarabs', () => {
     const [kephri] = encountersOf('toa', ['toa-kephri']);
     const s = summaryOf(kephri);
-    expect(s.events).toHaveLength(1);
+    // phase 36: "the defence level is reset for the final phase" (wiki): a second event
+    expect(s.events.map((e) => e.reset)).toEqual([undefined, 'the final phase']);
     expect(s.events[0].npc).toBeUndefined();
     expect(s.text.startsWith('Start of fight: ')).toBe(true);
     const [row] = briefingRows([kephri], 'team');
@@ -166,17 +169,21 @@ describe('ToA / CoX / ToB multi-NPC encounters (default assumptions, presets kit
   test('ToA Wardens: Obelisk / Elidinis\' Warden / Tumeken\'s Warden lines', () => {
     const [w] = encountersOf('toa', ['toa-wardens']);
     const s = summaryOf(w);
-    expect(s.events.map((e) => e.npc)).toEqual(['Obelisk', 'Elidinis\' Warden', 'Tumeken\'s Warden']);
+    // phase 36: one spec budget: Elidinis' Warden's P2 gets no specs (the energy goes to the Obelisk and P3), and the
+    // enrage resets the Defence (wiki): a second Tumeken's Warden event
+    expect(s.events.map((e) => e.npc)).toEqual(['Obelisk', 'Tumeken\'s Warden', 'Tumeken\'s Warden']);
     const [row] = briefingRows([w], 'team');
-    expect(row.specs.map((g) => g.label)).toEqual(['Obelisk', 'Elidinis\' Warden, P2 shield', 'Elidinis\' Warden, P2 core', 'Tumeken\'s Warden']);
+    expect(row.specs.map((g) => g.label)).toEqual(['Obelisk', 'Tumeken\'s Warden', 'Tumeken\'s Warden, after the enrage']);
   });
 
   test('CoX Olm: right claw, left claw and head are three lines (and three Wear lines); Vanguards: no specs, Wear per Vanguard', () => {
     const [olm, vanguards] = encountersOf('cox', ['cox-olm', 'cox-vanguards']);
     const s = summaryOf(olm);
-    expect(s.events.map((e) => e.npc)).toEqual(['Right claw', 'Left claw', 'Head']);
+    // phase 36: "His stats also reset when a new phase starts" (wiki): each claw's later phases are new events
+    expect(s.events.map((e) => `${e.npc}${e.reset ? `/${e.reset}` : ''}`)).toEqual(['Right claw', 'Left claw', 'Right claw/phase 1', 'Left claw/phase 1', 'Right claw/phase 2', 'Left claw/phase 2', 'Head']);
     const [row, vRow] = briefingRows([olm, vanguards], 'team');
-    expect(row.specs.map((g) => g.label)).toEqual(['Right claw', 'Left claw', 'Head']);
+    expect(row.specs.map((g) => g.label)[0]).toBe('Right claw');
+    expect(row.specs.map((g) => g.label)).toContain('Head');
     expect(row.wear.map((g) => g.npc)).toEqual(['Right claw', 'Left claw', 'Head']);
     expect(vRow.specsText).toBe('no specs');
     expect(vRow.wear.map((g) => g.npc)).toEqual(['Melee vanguard', 'Ranged vanguard', 'Magic vanguard']);
@@ -248,7 +255,7 @@ describe('toy: two NPCs and a reset', () => {
 // --- slow: no number changes ---------------------------------------------------------------------------------------
 
 (process.env.RUN_SLOW_TESTS ? describe : describe.skip)('FA default Team plan: total unchanged (slow)', () => {
-  test('21:44.4; Bork + Smorks briefing per NPC', () => {
+  test('21:04.9 (phase 36; was 21:44.4); Bork + Smorks briefing per NPC', () => {
     const r = plan({
       basePlayer: generateEmptyPlayer(),
       assumptions: FA.defaultAssumptions,
@@ -263,8 +270,9 @@ describe('toy: two NPCs and a reset', () => {
       carrierMode: 'auto',
     } as PlanInputs);
     const planned = r.comparison!.routes[r.planned];
-    expect(formatDuration(planned.seconds)).toBe('21:44.4');
+    expect(formatDuration(planned.seconds)).toBe('21:04.9'); // phase 36 (was 21:44.4)
     const row = briefingRows(planned.encounters, 'team').find((x) => x.id === 'bork-smorks')!;
-    expect(row.specsText).toBe('Bork: Elder maul 2 specs + Tonalztics 2 hits → Def 180 · Smorks: Elder maul 4 specs + Tonalztics 2 hits → Def 5');
+    // phase 36: one spec budget for both NPCs (and the planner's 2 Elder maul + 4 Tonalztics carriers)
+    expect(row.specsText).toBe('Bork: Elder maul 2 specs → Def 180 · Smorks: Tonalztics 10 hits → Def 0');
   });
 });

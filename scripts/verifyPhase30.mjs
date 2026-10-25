@@ -104,7 +104,7 @@ const main = async () => {
   check((await pinnedNames(page)).length === 0, `FA pinned: ${(await pinnedNames(page)).join(', ') || '(none)'}`);
   await waitPlan(page);
   const faTotal = await text(page.locator('[data-testid="plan-total"]'));
-  check(faTotal === '21:44.4', `FA plan total ${faTotal} (phase 29: 21:53.0)`);
+  check(faTotal === '21:04.9', `FA plan total ${faTotal} (phase 29: 21:53.0)`);
   const summary = await text(page.locator('[data-testid="plan-ring-summary-text"]'));
   check(/^one ring on every loadout: .+ \(the fastest of \d+\)$/.test(summary), `ring summary next to the dropdown: "${summary}"`);
   const faSteps = page.locator('[data-testid="plan-team-steps"]');
@@ -128,9 +128,10 @@ const main = async () => {
   check((await pinnedNames(page)).length === 0, `tob pinned: ${(await pinnedNames(page)).join(', ')}`);
   await waitPlan(page);
   const tobTotal = await text(page.locator('[data-testid="plan-total"]'));
-  check(tobTotal === '7:29.5', `ToB plan total ${tobTotal} (phase 32; phase 30: 7:30.0)`);
+  check(tobTotal === '7:21.2', `ToB plan total ${tobTotal} (phase 32; phase 30: 7:30.0)`);
   const steps = await text(page.locator('[data-testid="plan-team-steps"]'));
-  check(/^Added in this order: Tonalztics −31\.\d s, Elder maul −10\.\d s, Tonalztics −3\.\d s/.test(steps), `ToB "${steps}" (phase 32 kit, re-timed on it: −31.8 / −10.4 / −3.5; phase 30 kit: −34.3)`);
+  // phase 36: one spec budget per encounter (carriers 2 Elder maul + 2 Tonalztics, added in another order)
+  check(/^Added in this order: Elder maul −24\.\d s, Tonalztics −13\.\d s, Tonalztics −4\.\d s, Elder maul −2\.\d s/.test(steps), `ToB "${steps}" (phase 36; phase 32 kit, re-timed on it: −31.8 / −10.4 / −3.5)`);
   await shot(page, 'tob-steps');
 
   await browser.close();

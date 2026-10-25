@@ -17,9 +17,9 @@ import { chromium } from '@playwright/test';
 import { openSections } from './phase34Sections.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
-const FA_TOTAL = process.env.FA_TOTAL || '21:44.4';
-const FA_OWNED_TOTAL = process.env.FA_OWNED_TOTAL || '24:34.1'; // phase 32 (phase 31: 24:45.3)
-const SOLO_TOTAL = process.env.SOLO_TOTAL || '22:01.9';
+const FA_TOTAL = process.env.FA_TOTAL || '21:04.9';
+const FA_OWNED_TOTAL = process.env.FA_OWNED_TOTAL || '24:05.1'; // phase 32 (phase 31: 24:45.3)
+const SOLO_TOTAL = process.env.SOLO_TOTAL || '21:54.8';
 
 let failures = 0;
 const check = (ok, msg) => {
@@ -126,7 +126,8 @@ const main = async () => {
   await waitPlan(page);
   const soloTotal = await text(page.locator('[data-testid="plan-total"]'));
   const soloBring = await text(page.locator('[data-testid="plan-bring"]'));
-  check(soloBring === 'Bring: Tonalztics' && soloTotal === SOLO_TOTAL, `Solo: "${soloBring}", ${soloTotal} (expected Bring: Tonalztics, ${SOLO_TOTAL}; phase 30: Elder maul + Tonalztics 22:01.3)`);
+  // phase 36: + damage spec weapons and a Surge potion
+  check(soloBring === 'Bring: Tonalztics, Zaryte crossbow, Burning claws, Surge potion' && soloTotal === SOLO_TOTAL, `Solo: "${soloBring}", ${soloTotal} (expected Bring: Tonalztics, Zaryte crossbow, Burning claws, Surge potion, ${SOLO_TOTAL}; phase 30: Elder maul + Tonalztics 22:01.3)`);
   const maul = page.locator('[data-testid="plan-spec-weapons"] li[data-weapon="elderMaul"]');
   const maulText = (await maul.count()) ? await text(maul.first()) : '';
   check(/^adding Elder maul to this plan: −0\.\d s \(1 slot, < 1 s per slot\)$/.test(maulText), `Solo: "${maulText}"`);

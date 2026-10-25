@@ -430,7 +430,9 @@ describe('drain line wording: "needs N landed hits · N specs (C carriers) = S a
 /** FA, party 4, Camp Lightbearer, 6 brew / 4 restore / 0 food / 2 other, 1 rune pouch, the user's "don't own" list. */
 const USER_PLAN_NOT_OWNED = ['Obligator', "Zorya's tome", 'Rondache', "Inquisitor's great helm", "Inquisitor's hauberk", "Inquisitor's plateskirt", "Inquisitor's mace"];
 /** Phase 31: 25:47.4 (blessing in the melee switch, 0 free); phase 32: see PROGRESS. */
-const USER_PLAN: [string, number] = ['25:46.3', 1546.26];
+// phase 36 (one spec budget per encounter, damage specs, the surge potion; formatDuration's rounding fix: it read
+// "24:60.0"): 25:46.3 → 25:00.0
+const USER_PLAN: [string, number] = ['25:00.0', 1500.0];
 
 (process.env.RUN_SLOW_TESTS ? describe : describe.skip)('the user\'s plan (slow)', () => {
   test('no blessing; the freed slot buys Onyx bolts for the void switch (−1.1 s); slots = the exhaustive count', () => {

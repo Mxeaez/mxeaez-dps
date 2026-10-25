@@ -322,6 +322,8 @@ export const tobEncounterPass = (
         dps: dawnbringerChoice.dps,
         // the same team as the spec count (dawnbringerSpecs): each player's specs × 2.4 s
         seconds: mult > 0 ? (specs * DAWNBRINGER_SPEC_SECONDS) / mult : 0,
+        // phase 36: these are special attacks already (the staff's), not a damage-limited phase
+        noDamageSpecs: 'the Dawnbringer specs',
       });
     }
     return withNote(phaseTime(p, kit, drain, fightSeconds, mult));

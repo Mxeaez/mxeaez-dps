@@ -9,6 +9,7 @@ import { drainModel, planLabelText } from '@/lib/fracturedArchive/specs';
 import { formatProbability, recommendCarriers } from '@/lib/fracturedArchive/teamSpecs';
 import DrainLineView, { DrainBrief } from '@/app/components/bestSetup/DrainLineView';
 import { briefResultText } from '@/lib/fracturedArchive/drainLine';
+import { SURGE_DOSE_ENERGY } from '@/lib/fracturedArchive/specBudget';
 
 // Phase 14: the drain plan of the selected drain state (text + P(floor)) and the team carrier table for the selected
 // boss / phase, shown under the Search tab's selectors. All numbers come from specs.ts / teamSpecs.ts (pure).
@@ -35,11 +36,15 @@ const SpecPlanPanel: React.FC<{
   // phase 35: a target drains never apply to (adds, Vanguards, Verzik, ...) says so instead of "no spec weapons"
   const noDrains = !!target.noDrains && drain !== 'none';
   const noSpecsNote = noDrains ? undefined : noSpecsNoteIn;
-  const { state, rec, floor } = useMemo(() => {
+  const {
+    state, rec, floor, surge,
+  } = useMemo(() => {
     const built = buildTargetMonster(target, phase, drain, assumptions);
     const model = drainModel(built.monster, assumptions);
     return {
       state: built.drain,
+      // phase 36: the Solo drains with a surge dose on top (+25% spec energy)
+      surge: drain === 'solo' ? buildTargetMonster(target, phase, drain, { ...assumptions, soloExtraEnergy: SURGE_DOSE_ENERGY }).drain : undefined,
       floor: model.floor,
       rec: recommendCarriers(model, {
         partySize: assumptions.partySize,
@@ -66,6 +71,12 @@ const SpecPlanPanel: React.FC<{
         {/* the full text stays available (tooltip of the line, and here for tests / copy) */}
         <span className="sr-only" data-testid="drain-plan">{state.plan}</span>
       </div>
+      {surge?.line && !noSpecsNote && !noDrains && (
+        <div className="flex flex-wrap items-center gap-2" data-testid="drain-surge" data-plan={surge.plan} title={`With a Surge potion dose (+${SURGE_DOSE_ENERGY}% spec energy): ${surge.plan}`}>
+          <span className="text-gray-600 dark:text-gray-300">with a surge dose:</span>
+          <DrainBrief items={surge.line.items} result={briefResultText(surge.line, surge.line.items, true)} title={surge.line.text} />
+        </div>
+      )}
       <details data-testid="spec-plan-details">
         <summary className="cursor-pointer text-gray-500 dark:text-gray-400" data-testid="spec-plan-details-toggle">details</summary>
         <div className="flex flex-col gap-1 mt-1 pl-2 border-l-2 border-body-400 dark:border-dark-200">

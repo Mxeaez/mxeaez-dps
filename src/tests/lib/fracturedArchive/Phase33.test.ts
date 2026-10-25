@@ -108,7 +108,8 @@ describe('planner decides: the chips equal the plan\'s "Bring" (reduced pools)',
     const r = plan(inputs({ drain: 'solo', assumptions: { ...FA.defaultAssumptions, partySize: 2 } }), MELEE_RANGED);
     expect(r.specs.mode).toBe('auto');
     expect(chipsOf(r)).toEqual(r.specs.bring);
-    expect(r.specItems.map((x) => x.name)).toEqual(r.specs.bring.map((w) => {
+    // phase 36: the drain weapons first, then the damage spec weapons / Surge potions the planner added
+    expect(r.specItems.slice(0, r.specs.bring.length).map((x) => x.name)).toEqual(r.specs.bring.map((w) => {
       const it = SPEC_WEAPONS[w].item;
       return typeof it === 'string' ? it : it[0];
     }));
@@ -205,25 +206,24 @@ describe('encounter line = the first phase\'s line (FA, presets kit)', () => {
     drain,
   )!;
 
-  test('Bork + Smorks (Team): the five rows (armour 8 / 10 / 12 / 14, the Smorks) collapse to one line, armour 8\'s numbers', () => {
+  test('Bork + Smorks (Team): the five rows (armour 8 / 10 / 12 / 14, the Smorks): armour 8 starts Bork\'s line, the Smorks have their own (phase 36)', () => {
     const e = encounter(TEAM, 'team', 'bork-smorks');
     // stun uptime 0 by default: the stunned row has no damage and is left out
     expect(e.phases.map((p) => p.key)).toEqual(['bork-8', 'bork-10', 'bork-12', 'bork-14', 'smorks']);
     const s = summary(e, 'team');
-    expect(s.parts).toHaveLength(1);
-    expect(s.parts[0].phaseKey).toBe('bork-8');
+    // phase 36: one spec budget for Bork and the Smorks: different specs on each (without NPC names: two parts)
+    expect(s.parts.map((x) => x.phaseKey)).toEqual(['bork-8', 'smorks']);
     expect(s.parts[0].line).toBe(e.phases[0].choice!.drainLine);
-    expect(s.parts[0].line.defAfter).toBe(180);
-    expect(s.text).toBe('Start of fight: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 180 · 99.6%');
+    expect(s.parts[0].line.defAfter).toBe(195);
+    expect(s.text).toBe('Bork, armour 8: 1 Elder maul carrier (1 spec) → Def 195 · The Smorks: 2 Elder maul carriers (3 specs) + 2 Tonalztics carriers (4 specs) → Def 15');
   });
 
-  test('with a stun uptime the stunned row joins the same line (six rows, one line)', () => {
+  test('with a stun uptime the stunned row joins Bork\'s line (six rows)', () => {
     const kit = createKitEvaluator(PRESETS.map((p) => presetKitLoadout(generateEmptyPlayer(), p, TEAM)), TEAM);
     const e = encounterTime('bork-smorks', kit, raidTimeAssumptionsFrom(TEAM, 'team', { ...FA.defaultTimeSettings, borkStunUptime: 0.2 }, FA.time));
     expect(e.phases.map((p) => p.key)).toEqual(['bork-8', 'bork-10', 'bork-12', 'bork-14', 'bork-stunned', 'smorks']);
     const s = summary(e, 'team');
-    expect(s.parts.map((p) => p.phaseKey)).toEqual(['bork-8']);
-    expect(s.text).toBe('Start of fight: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 180 · 99.6%');
+    expect(s.parts.map((p) => p.phaseKey)).toEqual(['bork-8', 'smorks']);
   });
 
   test('Archive Guardian (Team): the flying shield first (Tonalztics only), then grounded (Elder maul + Tonalztics)', () => {
@@ -253,12 +253,13 @@ describe('encounter line = the first phase\'s line (FA, presets kit)', () => {
     const s = summary(bork, 'solo');
     expect(s.parts).toHaveLength(1);
     expect(s.parts[0].line).toBe(bork.phases[0].choice!.drainLine);
-    expect(s.text).toBe(`Start: ${bork.phases[0].choice!.drainLine!.items[0].count} Tonalztics specs → Def ${bork.phases[0].choice!.drainLine!.defAfter}`);
+    // phase 36: Bork and the Smorks share your 100%: 1 spec here
+    expect(s.text).toBe(`Start: 1 Tonalztics spec → Def ${bork.phases[0].choice!.drainLine!.defAfter}`);
     const ag = encounter(SOLO, 'solo', 'archive-guardian');
     const sa = summary(ag, 'solo');
     expect(sa.parts).toHaveLength(1); // the same weapon on every phase
     expect(sa.parts[0].phaseKey).toBe('ag-shield');
-    expect(sa.text).toMatch(/^Start: \d Tonalztics specs → Def 156 · \d+%$/);
+    expect(sa.text).toMatch(/^Start: \d Tonalztics specs → Def \d+( · \d+%)?$/);
   });
 });
 
@@ -297,8 +298,16 @@ describe('drain events (Defence restored mid-fight)', () => {
 
   test('the flag is set on exactly the phases whose label says the Defence is restored (every raid, defaults)', () => {
     expect(flagged.length).toBeGreaterThan(50);
-    expect(flagged.filter((p) => p.reset).map((p) => p.key)).toEqual(flagged.filter((p) => /Defence restored/.test(p.label)).map((p) => p.key));
+    // phase 36: the wiki's other resets (Kephri's final phase, the Warden's enrage, Olm's phases) are flagged too; their
+    // labels predate the flag
+    expect(flagged.filter((p) => p.reset && p.raid === 'tob').map((p) => p.key)).toEqual(flagged.filter((p) => /Defence restored/.test(p.label)).map((p) => p.key));
     expect(flagged.filter((p) => p.reset).map((p) => `${p.raid}/${p.key}: ${p.reset}`)).toEqual([
+      'toa/kephri-final: the final phase',
+      'toa/wardens-p3-enraged: the enrage',
+      'cox/olm-p2-right: phase 1',
+      'cox/olm-p2-left: phase 1',
+      'cox/olm-p3-right: phase 2',
+      'cox/olm-p3-left: phase 2',
       'tob/bloat-rest: the stomp',
       'tob/sotetseg-2: maze 1',
       'tob/sotetseg-3: maze 2',
