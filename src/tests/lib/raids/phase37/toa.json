@@ -89,88 +89,6 @@
    "key": "melee|26382,21295,29801,0,25981,26384,22322,26386,22981,31097,28307"
   },
   {
-   "label": "Tumeken's shadow (Ancestral)",
-   "kind": "preset",
-   "group": "magic",
-   "equipment": {
-    "head": {
-     "id": 21018,
-     "name": "Ancestral hat",
-     "version": "",
-     "slot": "head"
-    },
-    "body": {
-     "id": 21021,
-     "name": "Ancestral robe top",
-     "version": "",
-     "slot": "body"
-    },
-    "legs": {
-     "id": 21024,
-     "name": "Ancestral robe bottom",
-     "version": "",
-     "slot": "legs"
-    },
-    "cape": {
-     "id": 21793,
-     "name": "Imbued Guthix cape",
-     "version": "Normal",
-     "slot": "cape"
-    },
-    "neck": {
-     "id": 12002,
-     "name": "Occult necklace",
-     "version": "",
-     "slot": "neck"
-    },
-    "hands": {
-     "id": 31106,
-     "name": "Confliction gauntlets",
-     "version": "",
-     "slot": "hands"
-    },
-    "feet": {
-     "id": 31097,
-     "name": "Avernic treads (max)",
-     "version": "",
-     "slot": "feet"
-    },
-    "ring": {
-     "id": 28307,
-     "name": "Ultor ring",
-     "version": "",
-     "slot": "ring"
-    },
-    "weapon": {
-     "id": 27275,
-     "name": "Tumeken's shadow",
-     "version": "Charged",
-     "slot": "weapon",
-     "twoHanded": true
-    }
-   },
-   "options": [
-    {
-     "style": {
-      "name": "Accurate",
-      "type": "magic",
-      "stance": "Accurate"
-     },
-     "spell": null
-    },
-    {
-     "style": {
-      "name": "Longrange",
-      "type": "magic",
-      "stance": "Longrange"
-     },
-     "spell": null
-    }
-   ],
-   "source": "preset",
-   "key": "magic|21018,21793,12002,0,27275,21021,0,21024,31106,31097,28307"
-  },
-  {
    "label": "Osmumten's fang (Torva)",
    "kind": "preset",
    "group": "melee",
@@ -256,6 +174,88 @@
    ],
    "source": "preset",
    "key": "melee|26382,21295,29801,0,26219,26384,22322,26386,22981,31097,28307"
+  },
+  {
+   "label": "Tumeken's shadow (Ancestral)",
+   "kind": "preset",
+   "group": "magic",
+   "equipment": {
+    "head": {
+     "id": 21018,
+     "name": "Ancestral hat",
+     "version": "",
+     "slot": "head"
+    },
+    "body": {
+     "id": 21021,
+     "name": "Ancestral robe top",
+     "version": "",
+     "slot": "body"
+    },
+    "legs": {
+     "id": 21024,
+     "name": "Ancestral robe bottom",
+     "version": "",
+     "slot": "legs"
+    },
+    "cape": {
+     "id": 21793,
+     "name": "Imbued Guthix cape",
+     "version": "Normal",
+     "slot": "cape"
+    },
+    "neck": {
+     "id": 12002,
+     "name": "Occult necklace",
+     "version": "",
+     "slot": "neck"
+    },
+    "hands": {
+     "id": 31106,
+     "name": "Confliction gauntlets",
+     "version": "",
+     "slot": "hands"
+    },
+    "feet": {
+     "id": 31097,
+     "name": "Avernic treads (max)",
+     "version": "",
+     "slot": "feet"
+    },
+    "ring": {
+     "id": 28307,
+     "name": "Ultor ring",
+     "version": "",
+     "slot": "ring"
+    },
+    "weapon": {
+     "id": 27275,
+     "name": "Tumeken's shadow",
+     "version": "Charged",
+     "slot": "weapon",
+     "twoHanded": true
+    }
+   },
+   "options": [
+    {
+     "style": {
+      "name": "Accurate",
+      "type": "magic",
+      "stance": "Accurate"
+     },
+     "spell": null
+    },
+    {
+     "style": {
+      "name": "Longrange",
+      "type": "magic",
+      "stance": "Longrange"
+     },
+     "spell": null
+    }
+   ],
+   "source": "preset",
+   "key": "magic|21018,21793,12002,0,27275,21021,0,21024,31106,31097,28307"
   },
   {
    "label": "Torva + Scythe (slash)",
@@ -519,15 +519,15 @@
  "kitMarginal": [
   {
    "slots": 1,
-   "seconds": 1.8478664620179188
+   "seconds": 2.833164112398663
+  },
+  {
+   "slots": 1,
+   "seconds": 6.004671269442724
   },
   {
    "slots": 7,
    "seconds": "Infinity"
-  },
-  {
-   "slots": 1,
-   "seconds": 6.0046712694426105
   },
   {
    "slots": 1,
@@ -539,7 +539,7 @@
   },
   {
    "slots": 1,
-   "seconds": 5.001392893233287
+   "seconds": 7.4835373412108765
   }
  ],
  "slots": {
@@ -817,23 +817,13 @@
   }
  ],
  "pinnedItems": [],
- "comparison": "b722cb15cf5aee0f2f1caa22d904c316e386cc86d66c51d05666f3c28e92c8e3",
+ "comparison": "66a9daf1852aef25d813b485c6fa427a9ae9eb45064333a11ae065ba43c99c09",
  "planned": 0,
  "rejected": [
   {
-   "label": "Torva + Obligator",
-   "kind": "addition",
-   "deltaSeconds": 0.263270223143536,
-   "deltaSlots": 1,
-   "reason": "needs 1 more slot, 0 free",
-   "weapons": [
-    "Obligator"
-   ]
-  },
-  {
    "label": "Inquisitor's + Obligator",
    "kind": "addition",
-   "deltaSeconds": 0.22678410845458075,
+   "deltaSeconds": 1.462414007132793,
    "deltaSlots": 4,
    "reason": "needs 4 more slots, 0 free",
    "weapons": [
@@ -841,9 +831,19 @@
    ]
   },
   {
+   "label": "Torva + Obligator",
+   "kind": "addition",
+   "deltaSeconds": 1.0630145915840785,
+   "deltaSlots": 1,
+   "reason": "needs 1 more slot, 0 free",
+   "weapons": [
+    "Obligator"
+   ]
+  },
+  {
    "label": "Inquisitor's + Obligator + Torva full helm",
    "kind": "addition",
-   "deltaSeconds": 0.16668570130764238,
+   "deltaSeconds": 0.9129421248256904,
    "deltaSlots": 3,
    "reason": "needs 3 more slots, 0 free",
    "weapons": [
@@ -853,17 +853,16 @@
  ],
  "alternatives": [
   {
-   "label": "melee + magic: Tumeken's shadow (Ancestral) / Osmumten's fang (Torva) / Torva + Scythe (slash) / Keris partisan of breaching (Torva) / Torva + Obligator",
+   "label": "melee + magic: Tumeken's shadow (Ancestral) / Scythe of Vitur / Osmumten's fang (Torva) / Keris partisan of breaching (Torva)",
    "kind": "alternative",
-   "deltaSeconds": -24.15250618278094,
-   "deltaSlots": -7,
-   "reason": "24.2 s slower",
+   "deltaSeconds": -27.77794814982599,
+   "deltaSlots": -6,
+   "reason": "27.8 s slower",
    "weapons": [
     "Tumeken's shadow",
-    "Osmumten's fang",
     "Scythe of Vitur",
-    "Keris partisan of breaching",
-    "Obligator"
+    "Osmumten's fang",
+    "Keris partisan of breaching"
    ]
   },
   {
@@ -943,9 +942,9 @@
   "items": [
    {
     "item": "Voidwaker",
-    "saved": 6.051093499603667,
+    "saved": 5.824717101941133,
     "slots": 1,
-    "how": "a free slot"
+    "how": "a slot from the kit (re-optimised)"
    }
   ],
   "team": {
@@ -957,12 +956,12 @@
      "weapon": "elderMaul",
      "carriers": 1,
      "drivers": [
+      "Zebak (17.8 s)",
+      "Kephri (16.0 s)",
       "Ba-Ba (15.2 s)",
-      "Zebak (13.5 s)",
-      "Kephri (12.1 s)",
       "Akkha (2.1 s)"
      ],
-     "lastSaved": 42.99163728149506
+     "lastSaved": 51.24965622920831
     },
     {
      "weapon": "ayak",
@@ -976,9 +975,9 @@
    ],
    "perTarget": [
     {
-     "key": "toa-kephri-shielded|",
-     "label": "Kephri (Shielded)",
-     "group": "Kephri (Shielded)",
+     "key": "toa-kephri-shielded-before-supplies|",
+     "label": "Kephri (Shielded) (before supplies)",
+     "group": "Kephri (Shielded) (before supplies)",
      "carriers": {
       "elderMaul": 2
      },
@@ -986,9 +985,9 @@
      "ayak": null
     },
     {
-     "key": "toa-kephri|",
-     "label": "Kephri (Unshielded)",
-     "group": "Kephri (Unshielded)",
+     "key": "toa-kephri-before-supplies|",
+     "label": "Kephri (Unshielded) (before supplies)",
+     "group": "Kephri (Unshielded) (before supplies)",
      "carriers": {
       "elderMaul": 2
      },
@@ -996,9 +995,9 @@
      "ayak": null
     },
     {
-     "key": "toa-zebak|",
-     "label": "Zebak",
-     "group": "Zebak",
+     "key": "toa-zebak-before-supplies|",
+     "label": "Zebak (before supplies)",
+     "group": "Zebak (before supplies)",
      "carriers": {
       "tonalztics": 1
      },
@@ -1117,13 +1116,13 @@
    "steps": [
     {
      "weapon": "elderMaul",
-     "saved": 43.03084276945128,
-     "seconds": 859.8878633822118
+     "saved": 51.28886171716454,
+     "seconds": 890.2500398077285
     },
     {
      "weapon": "ayak",
      "saved": 12.04056912999647,
-     "seconds": 847.8472942522153
+     "seconds": 878.209470677732
     }
    ]
   },
@@ -1134,9 +1133,9 @@
    "manual": false
   },
   "notes": [
-   "Zaryte crossbow: saves 2.2 s with a free slot, but none is free and the kit without a slot for it loses more",
+   "Zaryte crossbow: saves 2.1 s with a free slot, but none is free and the kit without a slot for it loses more",
    "Surge potion(4): saves 1.2 s with a free slot, but none is free and the kit without a slot for it loses more",
-   "Your spec bar goes to Voidwaker: 2 carriers (party − 1), 14:07.8 vs 14:13.9 if you carry a drain weapon instead."
+   "Your spec bar goes to Voidwaker: 2 carriers (party − 1), 14:38.2 vs 14:44.0 if you carry a drain weapon instead."
   ]
  },
  "ring": {
@@ -1145,43 +1144,44 @@
   "screened": [
    {
     "ring": "Ultor ring",
-    "seconds": 847.8472942522153,
-    "full": true
-   },
-   {
-    "ring": "Bellator ring",
-    "seconds": 850.8296067454028,
+    "seconds": 878.209470677732,
     "full": true
    },
    {
     "ring": "Venator ring",
-    "seconds": 851.3287537035094,
+    "seconds": 879.5950040787673,
     "full": true
    },
    {
-    "ring": "Magus ring",
-    "seconds": 851.8521339989138,
-    "full": true
-   },
-   {
-    "ring": "Lightbearer",
-    "seconds": 852.0010621005534,
+    "ring": "Bellator ring",
+    "seconds": 884.4320031376467,
     "full": true
    },
    {
     "ring": "Ring of shadows",
-    "seconds": 852.1336107632106,
+    "seconds": 884.8308811272921,
     "full": true
+   },
+   {
+    "ring": "Magus ring",
+    "seconds": 885.0089513725939,
+    "full": true
+   },
+   {
+    "ring": "Lightbearer",
+    "seconds": 897.1305276904909,
+    "full": false,
+    "atLeast": 0
    }
   ]
  },
  "matrixDps": {
-  "toa-kephri-shielded|": 9.520107646332463,
-  "toa-spitting-scarab|": 13.512919373010053,
-  "toa-soldier-scarab|": 13.852165741069431,
-  "toa-arcane-scarab|": 14.243752849337392,
-  "toa-kephri|": 9.520107646332463,
-  "toa-zebak|": 10.933995336547946,
+  "toa-kephri-shielded-before-supplies|": 8.976847049587587,
+  "toa-spitting-scarab-before-supplies|": 12.05269457244323,
+  "toa-soldier-scarab-before-supplies|": 12.518615955884007,
+  "toa-arcane-scarab-before-supplies|": 12.435485831056345,
+  "toa-kephri-before-supplies|": 8.976847049587587,
+  "toa-zebak-before-supplies|": 9.32823121980418,
   "toa-akkha-shadow|": 13.250201794597965,
   "toa-akkha|Final stand (Protect from Magic + Missiles)": 9.035148722463616,
   "toa-akkha|Praying Melee": 12.92337280527188,
@@ -1198,17 +1198,17 @@
  "excluded": [],
  "droppedPinned": [],
  "ownershipNotices": [],
- "searchRows": "de8c646bfaf616f79deb1320a55c46d88a5e4a7b3da4a5a3b7b978c677df4cd5",
- "objectiveSeconds": 847.8472942522153,
+ "searchRows": "cb6bca3bc65ec14acd82fe71b3dc712841ca17494f81355607e293864626c29e",
+ "objectiveSeconds": 878.209470677732,
  "fightSeconds": null,
  "plannedRoute": {
   "id": "toa-kephri>toa-zebak>toa-akkha>toa-baba>toa-wardens",
-  "seconds": 847.8472942522153,
+  "seconds": 878.209470677732,
   "surgeDoses": null,
   "encounters": [
    {
     "id": "toa-kephri",
-    "seconds": 146.63317302674398,
+    "seconds": 156.21107581889385,
     "events": [
      {
       "npc": "Kephri",
@@ -1243,6 +1243,9 @@
      }
     ],
     "damage": {
+     "kephri-shield": {
+      "voidwaker": 1
+     },
      "kephri-final": {
       "voidwaker": 2
      }
@@ -1251,7 +1254,7 @@
    },
    {
     "id": "toa-zebak",
-    "seconds": 121.02137924333618,
+    "seconds": 141.80565287670314,
     "events": [
      {
       "npc": "Zebak",

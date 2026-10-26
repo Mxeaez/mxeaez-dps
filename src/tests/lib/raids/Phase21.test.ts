@@ -224,9 +224,12 @@ describe('ToB: Prinkipas only in Hard Mode', () => {
   test('the raid\'s targets (Summary rows, time model) are unchanged; other raids show every target', () => {
     prinkipas.forEach((k) => expect(THEATRE_OF_BLOOD_RAID.targets.map((t) => t.key)).toContain(k));
     expect(THEATRE_OF_BLOOD_RAID.targets.filter((t) => !t.noSummary).map((t) => t.key)).not.toContain('tob-prinkipas-melee');
-    [FRACTURED_ARCHIVE_RAID, TOMBS_OF_AMASCUT_RAID, CHAMBERS_OF_XERIC_RAID].forEach((r) => {
+    [FRACTURED_ARCHIVE_RAID, CHAMBERS_OF_XERIC_RAID].forEach((r) => {
       expect(visibleTargets(r, r.defaultAssumptions)).toBe(r.targets);
     });
+    // phase 38a: ToA hides only the time model's copies of rooms 1-2 (`beforeSupplies`)
+    expect(visibleTargets(TOMBS_OF_AMASCUT_RAID, TOMBS_OF_AMASCUT_RAID.defaultAssumptions))
+      .toEqual(TOMBS_OF_AMASCUT_RAID.targets.filter((t) => !t.beforeSupplies));
   });
 });
 

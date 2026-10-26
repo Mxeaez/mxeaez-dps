@@ -67,6 +67,12 @@ describe('ToA hp: upstream scaling at raid level 500, party 6, path 0', () => {
   };
 
   test('every target equals scaleMonster with the calculator\'s ToA inputs', () => {
+    // phase 38a: the copies of rooms 1-2 (`-before-supplies`) are the same monsters
+    const copies = Object.fromEntries(TOA_TARGETS.filter((t) => t.beforeSupplies)
+      .map((t) => [t.key, EXPECTED[t.key.replace('-before-supplies', '')]]));
+    expect(Object.keys(copies).sort()).toEqual(['toa-arcane-scarab', 'toa-kephri', 'toa-kephri-shielded', 'toa-soldier-scarab', 'toa-spitting-scarab', 'toa-zebak']
+      .map((k) => `${k}-before-supplies`).sort());
+    Object.assign(EXPECTED, copies);
     expect(Object.keys(EXPECTED).sort()).toEqual(TOA_TARGETS.map((t) => t.key).sort());
     TOA_TARGETS.forEach((t) => {
       const { monster } = buildTargetMonster(t, undefined, 'none', A);
@@ -190,15 +196,16 @@ describe('ToA encounter damage sequences (src/lib/raids/toa/time.ts)', () => {
   const plan1 = (id: string, s = settings) => toaEncounterPlan(id, timeA('none', s)).map((p) => [p.targetKey, p.phase ?? '', Math.round(p.damage * 10) / 10]);
 
   test('Kephri: 3 shields + overlords + her hp; leaks add per intermission', () => {
+    // phase 38a: rooms 1-2 (Kephri, Zebak) target the copies fought before the supplies (normal potions)
     expect(plan1('toa-kephri')).toEqual([
-      ['toa-kephri-shielded', '', 3 * 2070],
-      ['toa-spitting-scarab', '', 550],
-      ['toa-soldier-scarab', '', 550],
-      ['toa-arcane-scarab', '', 550],
-      ['toa-kephri', '', 1100],
+      ['toa-kephri-shielded-before-supplies', '', 3 * 2070],
+      ['toa-spitting-scarab-before-supplies', '', 550],
+      ['toa-soldier-scarab-before-supplies', '', 550],
+      ['toa-arcane-scarab-before-supplies', '', 550],
+      ['toa-kephri-before-supplies', '', 1100],
     ]);
     const leaky = { ...TOA_TIME_DEFAULTS, kephriSwarmLeak: 0.1, kephriOverlords: false };
-    expect(plan1('toa-kephri', leaky)).toEqual([['toa-kephri-shielded', '', 2070 * 3.2], ['toa-kephri', '', 1100]]);
+    expect(plan1('toa-kephri', leaky)).toEqual([['toa-kephri-shielded-before-supplies', '', 2070 * 3.2], ['toa-kephri-before-supplies', '', 1100]]);
   });
 
   test('Akkha: fixed rows = 4 shadows + 20% final stand in melee (his main hp depends on the kit, see below)', () => {
@@ -211,7 +218,7 @@ describe('ToA encounter damage sequences (src/lib/raids/toa/time.ts)', () => {
   });
 
   test('Zebak, Ba-Ba: their hp; Wardens: obelisk, P3 95% + 25% enraged (siphons optional)', () => {
-    expect(plan1('toa-zebak')).toEqual([['toa-zebak', '', 8000]]);
+    expect(plan1('toa-zebak')).toEqual([['toa-zebak-before-supplies', '', 8000]]);
     expect(plan1('toa-baba')).toEqual([['toa-baba', '', 5240]]);
     expect(plan1('toa-wardens')).toEqual([
       ['toa-obelisk', '', 3590],
@@ -242,7 +249,9 @@ describe('ToA encounter damage sequences (src/lib/raids/toa/time.ts)', () => {
   // toy kit: DPS per target key (anything missing deals 0)
   const toyKit = (dps: Record<string, number>): RaidKit => ({
     best: (q: PhaseQuery) => {
-      const d = dps[phaseKey(q.targetKey, q.phase)] ?? dps[q.targetKey] ?? 0;
+      // phase 38a: a copy before the supplies answers as its target
+      const key = q.targetKey.replace('-before-supplies', '');
+      const d = dps[phaseKey(key, q.phase)] ?? dps[key] ?? 0;
       return d > 0 ? { loadout: 'toy', style: 'x', dps: d } : null;
     },
   });

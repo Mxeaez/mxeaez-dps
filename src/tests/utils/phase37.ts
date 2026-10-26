@@ -108,8 +108,9 @@ export const PHASE37_MEMO: Record<string, MemoCounters> = {
   fa: {
     encounterRuns: 10648, passRuns: 10445, encounterHits: 444976, passHits: 9904,
   },
+  // phase 38a (rooms 1-2 before the supplies: other drain states and candidates): was 32784 / 10825 / 544791 / 24576
   toa: {
-    encounterRuns: 32784, passRuns: 10825, encounterHits: 544791, passHits: 24576,
+    encounterRuns: 39715, passRuns: 11721, encounterHits: 728535, passHits: 30660,
   },
   tob: {
     encounterRuns: 25001, passRuns: 23772, encounterHits: 1335979, passHits: 5729,

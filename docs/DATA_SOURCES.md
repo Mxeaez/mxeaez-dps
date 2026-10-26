@@ -925,3 +925,26 @@ D28).
 enraged state, the Warden's base defence level is reset to 180"; Kephri: "the defence level is reset for the final phase";
 CoX Olm: "His stats also reset when a new phase starts" (phase 19's quote, F7). Sotetseg's mazes and Bloat's stomp were
 already resets (phase 33).
+
+### Phase 38a — raid wall clock, ToA supplies by room (2026-10-25)
+
+**Typical raid length** (`RaidBase.typicalRaidMinutes`, `RAID_LENGTH_SOURCES` in src/lib/raids/base.ts; **unverified**,
+UNVERIFIED D30). The wiki publishes no "typical" completion time, only time limits and speed tasks (fetched 2026-10-25,
+`?action=raw`, generic User-Agent), so the ToA / CoX / ToB defaults sit above the speed tasks:
+- Fractured Archive **25 min**: the user's in-game raid stats, docs/calibration/fa-times-2026-10-25.md (personal bests
+  24:50 at 3, 25:38 at 4, 22:01 at 5, 24:32 at 6; the user, 2026-10-25: "≈ 25 min").
+- Tombs of Amascut **30 min**: https://oldschool.runescape.wiki/w/Tombs_of_Amascut (time-limit invocations: "Players
+  have 40 / 35 / 30 / 25 minutes to complete the raid"; 30 = Run for It), https://oldschool.runescape.wiki/w/Tombs_Speed_Runner_II
+  ("Complete the Tombs of Amascut (expert) within 20 mins at any group size", Grandmaster).
+- Chambers of Xeric **20 min**: https://oldschool.runescape.wiki/w/Chambers_of_Xeric_(5-Scale)_Speed-Chaser ("in less
+  than 15 minutes", Master), /Chambers_of_Xeric_(Trio)_Speed-Chaser ("less than 16 minutes and 30 seconds").
+- Theatre of Blood **20 min**: https://oldschool.runescape.wiki/w/Theatre_(4-Scale)_Speed-Chaser ("in less than 17
+  minutes", Master), /Theatre_(5-Scale)_Speed-Chaser ("less than 16 minutes"). The surge cooldown pauses between ToB
+  rooms (Surge potion, phase 36 quote above), so ToB's surge clock stays fight time only.
+
+**ToA supplies by room** (src/lib/raids/toa/supplies.ts; **unverified** slot accounting, UNVERIFIED D31): the user,
+2026-10-25: "supplies come after any 2 rooms, then after all 4 before the warden", confirmed by
+https://oldschool.runescape.wiki/w/Tombs_of_Amascut (*Consumables*): "Consumable items are received from supplies given
+by the Helpful Spirit in the Nexus ... They can be claimed from the spirit once after completing two paths, and once
+again after completing the remaining two paths and before proceeding to" the Wardens. Boosts:
+Smelling salts 11 + 16%, Super combat 5 + 15%, Ranging potion and Saturated heart 4 + 10% (upstream `src/utils.ts`).

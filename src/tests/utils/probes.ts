@@ -68,7 +68,7 @@ export const kitLoadouts = (kit: Pick<PlanCandidate, 'key' | 'label' | 'group' |
       name: c.label,
       group: c.group,
       options: c.options,
-      toPlayer: (m, o) => applyLoadoutToPlayer(base, c.label, c.group, eq, o.style, o.spell, m, a),
+      toPlayer: (m, o, ta) => applyLoadoutToPlayer(base, c.label, c.group, eq, o.style, o.spell, m, ta ?? a),
     };
   });
 };

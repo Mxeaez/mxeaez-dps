@@ -23,6 +23,7 @@ import {
   P2_ELIDINIS_INITIAL_PHASE,
   P2_TUMEKEN_INITIAL_PHASE,
 } from '@/lib/raids/toa/constants';
+import { beforeSuppliesKey, TOA_ROOMS_BEFORE_SUPPLIES } from '@/lib/raids/toa/supplies';
 
 /**
  * Phase 18: Tombs of Amascut time model (Encounters tab, planner). Same contract as the Fractured Archive's
@@ -138,8 +139,18 @@ export const p2WardenTarget = (s: ToaTimeSettings): { targetKey: string, phase: 
   ? { targetKey: 'toa-warden-p2-tumeken', phase: P2_TUMEKEN_INITIAL_PHASE }
   : { targetKey: 'toa-warden-p2', phase: P2_ELIDINIS_INITIAL_PHASE });
 
-/** The fixed-damage phases of an encounter (the Wardens' P2 depends on DPS and is built in `toaEncounterPass`). */
-export const toaEncounterPlan = (id: EncounterId, a: RaidTimeAssumptions): PlannedPhase[] => {
+/**
+ * Phase 38a: the encounters fought before the first supply drop (the first `TOA_ROOMS_BEFORE_SUPPLIES` rooms of the
+ * fixed route: Kephri, Zebak). Their rows target the `-before-supplies` copies (normal potions, supplies.ts).
+ */
+export const TOA_BEFORE_SUPPLIES_ENCOUNTERS: EncounterId[] = TOA_ROUTE_SLOTS.slice(0, TOA_ROOMS_BEFORE_SUPPLIES).map((s) => s.options[0]);
+
+/** A planned phase of a room before the supplies: its target's copy, the label says so. */
+const beforeSupplies = (p: PlannedPhase): PlannedPhase => ({
+  ...p, targetKey: beforeSuppliesKey(p.targetKey), label: `${p.label} (before supplies: normal potions)`,
+});
+
+const toaRoomPlan = (id: EncounterId, a: RaidTimeAssumptions): PlannedPhase[] => {
   const s = toaSettings(a);
   const hp = (t: string, p?: string) => toaHp(a, t, p);
   switch (id) {
@@ -222,6 +233,12 @@ export const toaEncounterPlan = (id: EncounterId, a: RaidTimeAssumptions): Plann
     default:
       throw new Error(`ToA time model: unknown encounter '${id}'`);
   }
+};
+
+/** The fixed-damage phases of an encounter (the Wardens' P2 depends on DPS and is built in `toaEncounterPass`). */
+export const toaEncounterPlan = (id: EncounterId, a: RaidTimeAssumptions): PlannedPhase[] => {
+  const rows = toaRoomPlan(id, a);
+  return TOA_BEFORE_SUPPLIES_ENCOUNTERS.includes(id) ? rows.map(beforeSupplies) : rows;
 };
 
 export interface WardensP2Result {

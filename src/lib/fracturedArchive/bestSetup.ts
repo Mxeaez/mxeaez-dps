@@ -21,6 +21,7 @@ import { minimalPlayer } from '@/lib/fracturedArchive/hittable';
 import { isOutOfMeleeReach } from '@/lib/fracturedArchive/immunities';
 import { BestSetupTarget } from '@/lib/raids/types';
 import { ALL_RAID_TARGETS, raidBase } from '@/lib/raids/base';
+import { assumptionsForTarget } from '@/lib/raids/toa/supplies';
 import { BEST_SETUP_TARGETS } from '@/lib/fracturedArchive/targets';
 import {
   BestSetupAssumptions, PRESETS, PresetDef, StyleGroup,
@@ -203,12 +204,14 @@ export const specCountsDrainKey = (
   counts: SpecCounts,
 ): string => {
   if (drain === 'none' || target.noDrains) return 'none';
+  // phase 38a: a room before the ToA supplies drains with the normal potions
+  const ta = assumptionsForTarget(target, assumptions);
   const k = JSON.stringify([target.key, phase ?? null, assumptions.partySize, assumptions.raid ?? null, assumptions.toa ?? null,
-    assumptions.cox ?? null, assumptions.tob ?? null, assumptions.potions, assumptions.useZeal]);
+    assumptions.cox ?? null, assumptions.tob ?? null, ta.potions, assumptions.useZeal]);
   let model = drainKeyModels.get(k);
   if (model === undefined) {
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    model = drainModel(buildTargetMonster(target, phase, 'none', assumptions).monster, assumptions);
+    model = drainModel(buildTargetMonster(target, phase, 'none', assumptions).monster, ta);
     drainKeyModels.set(k, model);
   }
   if (!model) return 'none';
@@ -377,7 +380,8 @@ export const buildTargetMonster = (
   m = withInputs(m, { monsterCurrentHp: scaleMonster(m).skills.hp });
   // phase 19: targets whose drains never stick (CoX Vanguards) stay undrained in every drain state
   const undrained = target.noDrains && drain !== 'none';
-  const d0 = drainStateFor(m, undrained ? 'none' : drain, assumptions, specCounts);
+  // phase 38a: a room before the ToA supplies drains with the normal potions
+  const d0 = drainStateFor(m, undrained ? 'none' : drain, assumptionsForTarget(target, assumptions), specCounts);
   const d = undrained ? { ...d0, id: drain, plan: `No drains: ${target.noDrains}` } : d0;
   return { monster: withInputs(m, { defenceReductions: d.reductions }), drain: d };
 };

@@ -102,6 +102,11 @@ export interface BestSetupTarget {
    * name covers different NPCs (Olm's claws and head, the three Vanguards, small / large Muttadile) or to shorten the name.
    */
   npc?: string;
+  /**
+   * Phase 38a (ToA): this copy of a target is fought before the raid's supplies (the first two rooms): its DPS and drains
+   * use the normal potions (src/lib/raids/toa/supplies.ts `assumptionsForTarget`). Not in the Search list.
+   */
+  beforeSupplies?: boolean;
 }
 
 /** One scaling input shown in the assumptions box of a raid tab; it reads and writes its own assumption field. */

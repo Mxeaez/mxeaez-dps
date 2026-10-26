@@ -686,7 +686,7 @@ describe('review: you carry a drain weapon or you damage-spec (Team, one bar eac
     const loadouts: KitLoadout[] = res.kit.map((c) => {
       const eq = toPlayerEquipment(c.equipment);
       return {
-        id: c.key, name: c.label, group: c.group, options: c.options, toPlayer: (m, o) => applyLoadoutToPlayer(base, c.label, c.group, eq, o.style, o.spell, m, a),
+        id: c.key, name: c.label, group: c.group, options: c.options, toPlayer: (m, o, ta) => applyLoadoutToPlayer(base, c.label, c.group, eq, o.style, o.spell, m, ta ?? a),
       };
     });
     const cmp = compareRoutes(createKitEvaluator(loadouts, a), raidTimeAssumptionsFrom(a, 'team', raid.defaultTimeSettings, raid.time), routesFor({ model: raid.time }).filter((r) => r.id === ROUTE));

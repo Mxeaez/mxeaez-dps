@@ -269,10 +269,12 @@ describe('ring policy', () => {
    * wiki's Kephri / Warden / Olm Defence resets; Manual specs, no damage specs): ToA 879.6 → 881.1, CoX 442.0 → 448.9,
    * ToB 455.1 → 457.3 (Sotetseg's thirds share the carriers' energy); FA unchanged. Phase 36 review (regen on the
    * drained clock): ToA 881.1 → 881.2, CoX 448.9 → 452.7 (Olm's phases: fewer regen ticks); FA / ToB unchanged.
+   * Phase 38a (ToA rooms 1-2 before the supplies: normal potions, Kephri 157.1 → 185.8 s, Zebak 121.9 → 142.9 s; the
+   * kit adds a Twisted bow): ToA 881.2 → 930.9; FA / CoX / ToB unchanged (no surge potion in these plans).
    */
   test.each([
     ['fractured-archive', 1493.8],
-    ['toa', 881.2],
+    ['toa', 930.9],
     ['cox', 452.7],
     ['tob', 457.3],
   ] as [RaidConfig['id'], number][])('%s: allow switches reproduces the previous planner (%s s)', (id, seconds) => {

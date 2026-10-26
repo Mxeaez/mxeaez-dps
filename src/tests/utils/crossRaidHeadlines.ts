@@ -113,7 +113,7 @@ export const recomputed = (raid: RaidConfig, res: PlanResult): number => {
       name: c.label,
       group: c.group,
       options: c.options,
-      toPlayer: (m, o) => applyLoadoutToPlayer(base, c.label, c.group, eq, o.style, o.spell, m, planA),
+      toPlayer: (m, o, ta) => applyLoadoutToPlayer(base, c.label, c.group, eq, o.style, o.spell, m, ta ?? planA),
     };
   });
   const cmp = compareRoutes(createKitEvaluator(loadouts, planA), raidTimeAssumptionsFrom(planA, 'team', raid.defaultTimeSettings, raid.time));

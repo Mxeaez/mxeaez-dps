@@ -33,6 +33,7 @@ import {
 } from '@/lib/fracturedArchive/searchCandidates';
 import { raidBase } from '@/lib/raids/base';
 import { BestSetupTarget } from '@/lib/raids/types';
+import { assumptionsForTarget } from '@/lib/raids/toa/supplies';
 import { filterStylePool, isOwned } from '@/lib/fracturedArchive/ownership';
 
 /**
@@ -415,11 +416,13 @@ interface Candidate {
 export const runGearSearch = (
   basePlayer: Player,
   query: GearSearchQuery,
-  assumptions: BestSetupAssumptions,
+  assumptionsIn: BestSetupAssumptions,
   options: GearSearchOptions = {},
 ): GearSearchResult => {
   const start = Date.now();
   const target = findTarget(query.targetKey);
+  // phase 38a: a ToA room before the supplies is searched with the normal potions (same object for any other target)
+  const assumptions = assumptionsForTarget(target, assumptionsIn);
   const styles = query.styles || 'all';
   const groups = groupsFor(styles);
   const presets = options.presets || raidBase(assumptions.raid).presets;

@@ -3,6 +3,46 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 38a — Raid wall clock + ToA supplies by room (2026-10-25)
+
+**Numbers moved** (`node scripts/pinHeadlines.mjs --full`, 7 changes): FA 21:07.7 → **21:05.3**, FA Solo 21:59.0 →
+**21:56.2**, ToA 14:07.8 → **14:38.2**; CoX 7:08.7, ToB 7:23.4, FA without Obligator / Ascension 24:11.9 unchanged.
+Docs: BEST_SETUP *Raid wall clock + ToA supplies by room (phase 38a)*, DATA_SOURCES *Phase 38a*, UNVERIFIED D30 (the
+clock) / D31 (ToA supplies), D29 points to D30.
+
+- **Raid clock** (raidTime.ts `raidClock`, `surgeClockStarts`, `surgeClockSpan`): a per-raid typical raid length
+  (`RaidBase.typicalRaidMinutes`: FA 25 min from the user's raid stats, ToA 30, CoX 20, ToB 20 above the wiki's speed
+  tasks; `RAID_LENGTH_SOURCES`), `BestSetupAssumptions.raidMinutes` → `RaidTimeAssumptions.raidSeconds`. The non-fight
+  time max(0, L − Σ fight walls) goes before each encounter in proportion to its fight time. Surge doses
+  (`routeSurgeDoses`) are placed on it (ToB: fight time only, `surgePausesBetweenEncounters`); the planner tries a second
+  potion when the clock allows > 4 doses; with `CARRY_SPEC_ENERGY` (off) the bars regenerate in the gaps (+10% per tick,
+  cap 100%). Plan tab → Advanced (plan) → "Typical raid length (min)" (0-120, saved as `plan.raidMinutes`).
+- **ToA supplies by room** (new src/lib/raids/toa/supplies.ts): Kephri and Zebak (rooms 1-2 of the fixed route) target
+  `-before-supplies` copies (`beforeSupplies`, hidden from Search / Summary); `assumptionsForTarget` swaps Smelling salts
+  for Super combat / Ranging potion / Saturated heart in the kit evaluator (`KitLoadout.toPlayer`'s new 3rd argument),
+  the planner's DPS matrix and damage-spec values, the drain model (`buildTargetMonster`, `specCountsDrainKey`) and the
+  gear search. Wiki: supplies "once after completing two paths, and once again ... before" the Wardens.
+- **Moved totals, explained:** FA: the clock starts AG at ≈ 179 s, Xarth ≈ 694 s, Ocellus ≈ 1391 s, so 3 doses (AG,
+  Xarth, Ocellus; was Ocellus only); with the extra energy the item greedy takes Crimson kisten (4.47 s, on AG grounded)
+  instead of Burning claws (was on the Smorks): AG 175.78 → 173.49 (dose + kisten), Xarth 181.62 → 180.61 (dose; ZCB +
+  kisten from 100 + 10 + 25), Bork 189.79 → 190.71 (no claws spec), Ocellus 655.17 (dose as before) = −2.38 s; kit,
+  ring, route, carriers unchanged. FA Solo: a third dose on Ocellus (679.81 → 677.04). ToA: Kephri 146.63 → 156.21,
+  Zebak 121.02 → 141.81 without salts (+26 → +19 / +13 levels), same six loadouts (listed in another order), no surge
+  potion. Reduced plans: r27toa 881.2 → 930.9 (Phase27 pin, r27toa.json re-captured); CrossRaid fast pins ToA Kephri
+  157 → 185.1, Zebak 120.8 → 137.8; Phase37c drain outcome FA Xarth: your bar 0 → 10 (dose, kisten); PHASE37_MEMO toa
+  re-recorded (encounter runs +21%).
+- Test re-timers pass the 3rd `toPlayer` argument (crossRaidHeadlines `recomputed`, probes.ts, Phase36's kit brute
+  force): one that ignores it times ToA rooms 1-2 with the salts (the retime probe caught it: gap −30.2 s).
+- Tests: new `Phase38a.test.ts` (8: defaults; the clock by hand (100/100/200 s in 1200 s → starts 200/500/1000); dose
+  placement on a 25-min FA party 6 with hand gains → AG, Moia, Ocellus vs Ocellus on the fight clock / ToB pause; regen
+  in the gaps with carry; the Plan input validation; ToA rooms 1-2 copies; boosts by hand +26 / +19 / +13 / +13; Zebak
+  seconds = hp ÷ (normal DPS × 6)); ToA / Phase21 / Phase37b / Phase37c / CrossRaid / Phase27 expectations updated.
+  `yarn test` (fast) green after the updates; `RUN_SLOW_TESTS=1` CrossRaidHeadlines + CrossRaidHeadlinesCox 5 / 5;
+  `node scripts/probes/retime.mjs`: all six gap 0. Verify: new `verifyPhase38a.mjs` OK (defaults per raid, tooltip
+  sources, saved across a reload, Reset; screenshot phase38a-raid-length.png); verifyPhase36 OK; verifyPhase37 fails
+  only its 60 s CoX time limit (112 s alone; the machine is slow today: `pinHeadlines cox --check` 128 s here vs 129 s
+  at HEAD, so not this phase). tsc, lint clean.
+
 ## Phase 37c — Reusable review probes (2026-10-25)
 
 **No result changed** (no src/lib file touched; `node scripts/pinHeadlines.mjs --full --check` → no change, 615 s

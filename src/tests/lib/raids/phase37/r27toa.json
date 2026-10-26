@@ -147,6 +147,14 @@
    "options": [
     {
      "style": {
+      "name": "Chop",
+      "type": "slash",
+      "stance": "Aggressive"
+     },
+     "spell": null
+    },
+    {
+     "style": {
       "name": "Reap",
       "type": "slash",
       "stance": "Accurate"
@@ -154,7 +162,7 @@
      "spell": null
     }
    ],
-   "source": "search: Zebak",
+   "source": "search: Zebak (before supplies)",
    "key": "melee|30750,21295,29801,0,22325,30753,0,30756,22981,31097,28316"
   },
   {
@@ -242,14 +250,14 @@
      "spell": null
     }
    ],
-   "source": "Scythe of Vitur #3 → Twisted bow (Masori): Masori body (f), Masori chaps (f), Necklace of rupture, Zaryte vambraces, Dizana's quiver, Masori mask (f)",
+   "source": "Scythe of Vitur #3 → Twisted bow (Masori): Masori body (f), Masori chaps (f), Zaryte vambraces, Necklace of rupture, Dizana's quiver, Masori mask (f)",
    "base": "Scythe of Vitur #3",
    "partner": "Twisted bow (Masori)",
    "pieces": [
     "body",
     "legs",
-    "neck",
     "hands",
+    "neck",
     "cape",
     "head"
    ],
@@ -267,7 +275,7 @@
   },
   {
    "slots": 7,
-   "seconds": 11.771011069061387
+   "seconds": 13.128989002124626
   }
  ],
  "slots": {
@@ -568,13 +576,23 @@
    "slot": "weapon"
   }
  ],
- "comparison": "02c0d1a59d7680c6738403a2b8dc9bb3292797f11c342040a416814d5b7b6405",
+ "comparison": "eae3adadf512cfa7cde04c80cae80708514cba7cf274fc670d19a8231015794e",
  "planned": 0,
  "rejected": [
   {
+   "label": "Twisted bow (Masori)",
+   "kind": "addition",
+   "deltaSeconds": 5.562357079836374,
+   "deltaSlots": 1,
+   "reason": "needs 1 more slot, 0 free",
+   "weapons": [
+    "Twisted bow"
+   ]
+  },
+  {
    "label": "Scythe of Vitur #2",
    "kind": "addition",
-   "deltaSeconds": 2.6577402787966093,
+   "deltaSeconds": 3.061365342742647,
    "deltaSlots": 4,
    "reason": "needs 4 more slots, 0 free",
    "weapons": [
@@ -590,25 +608,15 @@
    "weapons": [
     "Scythe of Vitur"
    ]
-  },
-  {
-   "label": "Scythe of Vitur",
-   "kind": "addition",
-   "deltaSeconds": 1.9396551724137225,
-   "deltaSlots": 4,
-   "reason": "needs 4 more slots, 0 free",
-   "weapons": [
-    "Scythe of Vitur"
-   ]
   }
  ],
  "alternatives": [
   {
    "label": "melee + magic: Tumeken's shadow (Ancestral) / Scythe of Vitur #3",
    "kind": "alternative",
-   "deltaSeconds": -11.771011069061387,
+   "deltaSeconds": -13.128989002124626,
    "deltaSlots": -7,
-   "reason": "11.8 s slower",
+   "reason": "13.1 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Scythe of Vitur"
@@ -705,18 +713,18 @@
      "carriers": 1,
      "drivers": [
       "Wardens (11.9 s)",
-      "Kephri (8.9 s)",
+      "Kephri (10.9 s)",
       "Ba-Ba (6.3 s)",
       "Akkha (0.9 s)"
      ],
-     "lastSaved": 27.84378453208592
+     "lastSaved": 29.909893597384325
     }
    ],
    "perTarget": [
     {
-     "key": "toa-kephri-shielded|",
-     "label": "Kephri (Shielded)",
-     "group": "Kephri (Shielded)",
+     "key": "toa-kephri-shielded-before-supplies|",
+     "label": "Kephri (Shielded) (before supplies)",
+     "group": "Kephri (Shielded) (before supplies)",
      "carriers": {
       "elderMaul": 2
      },
@@ -724,9 +732,9 @@
      "ayak": null
     },
     {
-     "key": "toa-kephri|",
-     "label": "Kephri (Unshielded)",
-     "group": "Kephri (Unshielded)",
+     "key": "toa-kephri-before-supplies|",
+     "label": "Kephri (Unshielded) (before supplies)",
+     "group": "Kephri (Unshielded) (before supplies)",
      "carriers": {
       "elderMaul": 2
      },
@@ -734,9 +742,9 @@
      "ayak": null
     },
     {
-     "key": "toa-zebak|",
-     "label": "Zebak",
-     "group": "Zebak",
+     "key": "toa-zebak-before-supplies|",
+     "label": "Zebak (before supplies)",
+     "group": "Zebak (before supplies)",
      "carriers": {
       "tonalztics": 1
      },
@@ -867,12 +875,12 @@
   "screened": []
  },
  "matrixDps": {
-  "toa-kephri-shielded|": 8.978688829663302,
-  "toa-spitting-scarab|": 13.512919373010053,
-  "toa-soldier-scarab|": 13.876909867373767,
-  "toa-arcane-scarab|": 14.243752849337392,
-  "toa-kephri|": 8.978688829663302,
-  "toa-zebak|": 10.933995336547946,
+  "toa-kephri-shielded-before-supplies|": 7.502929421504052,
+  "toa-spitting-scarab-before-supplies|": 11.719242536244785,
+  "toa-soldier-scarab-before-supplies|": 12.543407780649678,
+  "toa-arcane-scarab-before-supplies|": 12.435485831056345,
+  "toa-kephri-before-supplies|": 7.502929421504052,
+  "toa-zebak-before-supplies|": 9.32823121980418,
   "toa-akkha-shadow|": 12.840594480596106,
   "toa-akkha|Final stand (Protect from Magic + Missiles)": 7.912481065871496,
   "toa-akkha|Praying Melee": 13.020302351135584,
@@ -902,17 +910,17 @@
  "excluded": [],
  "droppedPinned": [],
  "ownershipNotices": [],
- "searchRows": "f2bfcd2689add459e319f95c13fe9c28bd4e86fdc1dd240bd5a6f7585e2819cd",
- "objectiveSeconds": 882.822419785135,
+ "searchRows": "41f9b83a984ed5b2c329560cdbb7b3c4ddc1de9013aab8010cc2ad0417840872",
+ "objectiveSeconds": 932.5073860860662,
  "fightSeconds": null,
  "plannedRoute": {
   "id": "toa-kephri>toa-zebak>toa-akkha>toa-baba>toa-wardens",
-  "seconds": 881.1754736385269,
+  "seconds": 930.860439939458,
   "surgeDoses": null,
   "encounters": [
    {
     "id": "toa-kephri",
-    "seconds": 157.08552681655888,
+    "seconds": 185.77904989811515,
     "events": [
      {
       "npc": "Kephri",
@@ -942,7 +950,11 @@
       "npc": "Kephri",
       "reset": "the final phase",
       "firstRowKey": "kephri-final",
-      "counts": {}
+      "counts": {
+       "elderMaul": 2,
+       "tonalztics": 2,
+       "ayak": 1
+      }
      }
     ],
     "damage": {},
@@ -950,7 +962,7 @@
    },
    {
     "id": "toa-zebak",
-    "seconds": 121.94383592578794,
+    "seconds": 142.93527914516284,
     "events": [
      {
       "npc": "Zebak",

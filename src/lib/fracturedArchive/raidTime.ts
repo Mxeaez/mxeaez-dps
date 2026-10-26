@@ -42,12 +42,13 @@ import {
   atHpLeft, DAMAGE_SPEC_WEAPON_IDS, DAMAGE_SPEC_WEAPONS, damageSpecItemName, damageSpecProfile, DamageSpecProfile, DamageSpecWeapon,
 } from '@/lib/fracturedArchive/damageSpecs';
 import { canWeaponHit } from '@/lib/fracturedArchive/hittable';
+import { assumptionsForTarget } from '@/lib/raids/toa/supplies';
 import {
-  budgetedEncounter, CARRY_SPEC_ENERGY, EncounterAlloc, encounterWallSeconds, EncounterSpecPlan, fixedEncounter,
+  budgetedEncounter, budgetGroups, CARRY_SPEC_ENERGY, EncounterAlloc, encounterWallSeconds, EncounterSpecPlan, fixedEncounter,
   PhaseDamageSpecs, SpecBudgetConfig,
 } from '@/lib/fracturedArchive/encounterBudget';
 import {
-  placeDoses, PoolState, SURGE_COOLDOWN_SECONDS, SURGE_DOSES_PER_POTION,
+  placeDoses, PoolState, regenTicks, SPEC_MAX_ENERGY, SPEC_REGEN_STEP, SURGE_COOLDOWN_SECONDS, SURGE_DOSES_PER_POTION,
 } from '@/lib/fracturedArchive/specBudget';
 import {
   FRACTURED_ARCHIVE_HP_SCALING,
@@ -429,6 +430,13 @@ export interface RaidTimeAssumptions {
   specBudget?: SpecBudgetConfig;
   /** Phase 36 (planner): replay these spec plans instead of allocating (the optimiser's inner loop). */
   fixedAlloc?: Partial<Record<EncounterId, EncounterAlloc>>;
+  /**
+   * Phase 38a: the typical raid length in wall seconds (the raid clock, `raidClock`): the time beyond the route's fight
+   * time is spread before the encounters in proportion to their fight time. Undefined / 0 = fight time only.
+   */
+  raidSeconds?: number;
+  /** Phase 38a (ToB): the surge cooldown pauses between encounters (its clock is fight time only). */
+  surgePausesBetweenEncounters?: boolean;
 }
 
 /**
@@ -509,6 +517,8 @@ export const raidTimeAssumptionsFrom = (
     ...(best.cox ? { cox: best.cox } : {}),
     ...(best.tob ? { tob: best.tob } : {}),
     ...(budget ? { specBudget: budget } : {}),
+    raidSeconds: 60 * Math.max(0, best.raidMinutes ?? raidBase(best.raid).typicalRaidMinutes),
+    ...(raidBase(best.raid).surgePausesBetweenEncounters ? { surgePausesBetweenEncounters: true } : {}),
   };
 };
 
@@ -725,24 +735,67 @@ export interface RouteTime {
   surgeDoses?: EncounterId[];
 }
 
+/** Phase 38a: a route on the raid's wall clock. */
+export interface RaidClock {
+  /** Wall seconds when each encounter's fight starts. */
+  starts: number[];
+  /** Non-fight wall seconds just before each encounter (travel, puzzles, mechanics). */
+  gaps: number[];
+  /** Fight wall seconds of the route. */
+  fight: number;
+}
+
 /**
- * Phase 36: the surge doses of a route: the encounters' start times on the route's clock (wall seconds of the
- * encounters before it, without doses; travel 0 s: the cooldown pauses between ToB rooms and the DPS-only model has no
- * travel elsewhere, so this is exact for ToB and conservative for the others), and `placeDoses` (≥ 300 s apart, at
- * most 4 per potion, the most route time saved).
+ * Phase 38a: the raid wall clock of a route. `walls` = each encounter's fight wall seconds; the non-fight time
+ * max(0, raidSeconds − Σ walls) is spread before the encounters in proportion to their fight time (an encounter with
+ * 30% of the fight time gets 30% of the travel / puzzles / mechanics), so the last fight ends at `raidSeconds` (or at
+ * the fight total when that is longer). Non-finite walls count 0. Phase 41 replaces the proportional spread with
+ * measured room times.
+ */
+export const raidClock = (walls: number[], raidSeconds = 0): RaidClock => {
+  const w = walls.map((x) => (Number.isFinite(x) && x > 0 ? x : 0));
+  const fight = w.reduce((t, x) => t + x, 0);
+  const extra = Number.isFinite(raidSeconds) ? Math.max(0, raidSeconds - fight) : 0;
+  const gaps = w.map((x) => (fight > 0 ? (extra * x) / fight : 0));
+  const starts: number[] = [];
+  let t = 0;
+  w.forEach((x, i) => {
+    t += gaps[i];
+    starts.push(t);
+    t += x;
+  });
+  return { starts, gaps, fight };
+};
+
+/**
+ * Phase 38a: when each encounter starts on the surge cooldown's clock: the raid clock, or fight time only where the
+ * cooldown pauses between encounters (ToB).
+ */
+export const surgeClockStarts = (
+  walls: number[],
+  a: Pick<RaidTimeAssumptions, 'raidSeconds' | 'surgePausesBetweenEncounters'>,
+): number[] => raidClock(walls, a.surgePausesBetweenEncounters ? 0 : (a.raidSeconds ?? 0)).starts;
+
+/** Phase 38a: the span of the surge cooldown's clock for a route with this fight wall time (the doses it allows). */
+export const surgeClockSpan = (
+  fightWall: number,
+  a: Pick<RaidTimeAssumptions, 'raidSeconds' | 'surgePausesBetweenEncounters'>,
+): number => (a.surgePausesBetweenEncounters ? fightWall : Math.max(fightWall, a.raidSeconds ?? 0));
+
+/**
+ * Phase 36: the surge doses of a route: the encounters' start times on the route's clock (phase 38a: the surge clock,
+ * `surgeClockStarts`, from the encounters' wall seconds without doses: the raid clock, or fight time only where the
+ * cooldown pauses between encounters, ToB), and `placeDoses` (≥ 300 s apart, at most 4 per potion, the most route
+ * time saved).
  */
 export const routeSurgeDoses = (
   plain: EncounterTime[],
   dosed: EncounterTime[],
-  a: Pick<RaidTimeAssumptions, 'dpsMultiplier' | 'partySize'>,
+  a: Pick<RaidTimeAssumptions, 'dpsMultiplier' | 'partySize' | 'raidSeconds' | 'surgePausesBetweenEncounters'>,
   potions: number,
 ): EncounterId[] => {
-  let at = 0;
-  const items = plain.map((e, i) => {
-    const item = { id: e.id, at, gain: e.seconds - dosed[i].seconds };
-    at += encounterWallSeconds(e.seconds, a);
-    return item;
-  });
+  const starts = surgeClockStarts(plain.map((e) => encounterWallSeconds(e.seconds, a)), a);
+  const items = plain.map((e, i) => ({ id: e.id, at: starts[i], gain: e.seconds - dosed[i].seconds }));
   return placeDoses(items, SURGE_DOSES_PER_POTION * Math.max(0, Math.floor(potions)), SURGE_COOLDOWN_SECONDS);
 };
 
@@ -766,26 +819,43 @@ export const raidTime = (
   const total = (es: EncounterTime[]) => es.reduce((t, e) => t + e.seconds, 0);
   if (budget && !assumptions.fixedAlloc && budget.carry) {
     // phase 36, energy carried (CARRY_SPEC_ENERGY): sequential, each encounter starts with the previous one's leftover
-    // on the raid clock (travel 0 s); a dose is taken where it saves time and the cooldown allows (greedy, in order)
+    // on the raid clock; a dose is taken where it saves time and the cooldown allows (greedy, in order). Phase 38a: the
+    // non-fight time before each encounter (`raidClock` of the full-bar encounter times) regenerates every pool (+10%
+    // per tick of its period on the clock, capped at 100%) and counts for the surge cooldown (not in ToB).
+    const groups = new Map(budgetGroups(budget).map((g) => [g.id, g.regenSeconds]));
+    const { gaps } = raidClock(route.encounters.map((id) => encounterWallSeconds(cached(id, false).seconds, assumptions)), assumptions.raidSeconds ?? 0);
     let clock = 0;
+    let surgeClock = 0;
     let state: PoolState | undefined;
     let lastDose = -Infinity;
     let doses = SURGE_DOSES_PER_POTION * budget.surgePotions;
     const surgeDoses: EncounterId[] = [];
-    const encounters = route.encounters.map((id) => {
+    const encounters = route.encounters.map((id, i) => {
+      const gap = gaps[i];
+      if (gap > 0 && state) {
+        const s = state;
+        state = Object.fromEntries(Object.entries(s).map(([g, pools]) => {
+          const tick = regenTicks(clock, clock + gap, groups.get(g) ?? 30) * SPEC_REGEN_STEP;
+          return [g, pools.map((x) => Math.min(SPEC_MAX_ENERGY, x + tick)).sort((x, y) => y - x)];
+        }));
+      }
+      clock += gap;
+      if (!assumptions.surgePausesBetweenEncounters) surgeClock += gap;
       const plain = encounterTime(id, kit, assumptions, { clock0: clock, startState: state });
       let e = plain;
-      if (doses > 0 && clock - lastDose >= SURGE_COOLDOWN_SECONDS - 1e-9) {
+      if (doses > 0 && surgeClock - lastDose >= SURGE_COOLDOWN_SECONDS - 1e-9) {
         const dosed = encounterTime(id, kit, assumptions, { clock0: clock, startState: state, surge: true });
         if (dosed.seconds < plain.seconds - 1e-9) {
           e = dosed;
           doses -= 1;
-          lastDose = clock;
+          lastDose = surgeClock;
           surgeDoses.push(id);
         }
       }
       state = e.specPlan?.end;
-      clock += encounterWallSeconds(e.seconds, assumptions);
+      const wall = encounterWallSeconds(e.seconds, assumptions);
+      clock += wall;
+      surgeClock += wall;
       return e;
     });
     return {
@@ -842,7 +912,13 @@ export interface KitLoadout {
   /** Only offered on this phase (search results are per phase); undefined = every phase. */
   phaseKey?: string;
   options: StyleOption[];
-  toPlayer: (monster: Monster, option: StyleOption) => Player;
+  /**
+   * `a` (phase 38a): the target's assumptions when they differ from the kit's (`assumptionsForTarget`: a ToA room before
+   * the supplies, normal potions); undefined = the loadout's own. Every loadout built from the best-setup assumptions
+   * must use it (a re-timer that ignores it times rooms 1-2 of ToA with the salts); a calculator loadout keeps its own
+   * potions.
+   */
+  toPlayer: (monster: Monster, option: StyleOption, a?: BestSetupAssumptions) => Player;
 }
 
 export const presetKitLoadout = (base: Player, preset: PresetDef, assumptions: BestSetupAssumptions): KitLoadout => ({
@@ -850,7 +926,7 @@ export const presetKitLoadout = (base: Player, preset: PresetDef, assumptions: B
   name: preset.name,
   group: preset.group,
   options: presetStyles(preset).flatMap((style) => presetSpells(preset).map((spell) => ({ style, spell }))),
-  toPlayer: (monster, o) => applyPresetToPlayer(base, preset, o.style, o.spell, monster, assumptions),
+  toPlayer: (monster, o, a) => applyPresetToPlayer(base, preset, o.style, o.spell, monster, a ?? assumptions),
 });
 
 /** A search result (the best loadout of a style on one phase), offered on that phase only, with its own style. */
@@ -866,7 +942,7 @@ export const searchRowKitLoadout = (
   group: row.group,
   phaseKey: phaseKey(targetKey, phase),
   options: [{ style: row.style, spell: row.spell }],
-  toPlayer: (monster) => searchRowToPlayer(base, row, monster, assumptions),
+  toPlayer: (monster, _o, a) => searchRowToPlayer(base, row, monster, a ?? assumptions),
 });
 
 /**
@@ -937,8 +1013,10 @@ export const createKitEvaluator = (loadouts: KitLoadout[], assumptions: BestSetu
     }
     return m;
   };
+  // phase 38a: a ToA room before the supplies uses the normal potions (same object for every other target)
+  const targetA = (q: PhaseQuery) => assumptionsForTarget(findTarget(q.targetKey), assumptions);
   return {
-    specDamage: (q, w) => damageSpecProfile(atHpLeft(monsterFor(q).monster, q.hpLeft), w, assumptions),
+    specDamage: (q, w) => damageSpecProfile(atHpLeft(monsterFor(q).monster, q.hpLeft), w, targetA(q)),
     specHits: (q) => specHitsOf(monsterFor({ ...q, drain: 'none', specs: undefined }).monster, assumptions),
     drainKey: (q) => specCountsDrainKey(findTarget(q.targetKey), q.phase, q.drain, assumptions, q.specs?.counts ?? {}),
     evaluations: () => count,
@@ -946,6 +1024,8 @@ export const createKitEvaluator = (loadouts: KitLoadout[], assumptions: BestSetu
       const pk = phaseKey(q.targetKey, q.phase);
       const { monster, drain } = monsterFor(q);
       const monsterKey = `${pk}|${JSON.stringify(monster.inputs.defenceReductions)}`;
+      const ta = targetA(q);
+      const override = ta !== assumptions ? ta : undefined;
       let best: KitChoice | null = null;
       for (const l of loadouts) {
         if (l.phaseKey !== undefined && l.phaseKey !== pk) continue;
@@ -954,7 +1034,7 @@ export const createKitEvaluator = (loadouts: KitLoadout[], assumptions: BestSetu
           let dps = evals.get(key);
           if (dps === undefined) {
             try {
-              dps = evaluateLoadout(l.toPlayer(monster, o), monster, false).dps;
+              dps = evaluateLoadout(l.toPlayer(monster, o, override), monster, false).dps;
             } catch (e) {
               dps = 0; // a broken loadout (e.g. a stale calculator item) must not break the comparison
             }

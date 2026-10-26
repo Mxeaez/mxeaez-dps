@@ -42,6 +42,7 @@ import {
   RaidKit,
   RaidTimeAssumptions,
   raidTimeAssumptionsFrom,
+  surgeClockSpan,
   RaidTimeModel,
   Route,
   RouteComparison,
@@ -56,6 +57,7 @@ import {
 import { EncounterAlloc, encounterWallSeconds } from '@/lib/fracturedArchive/encounterBudget';
 import { createKitMemo } from '@/lib/fracturedArchive/kitMemo';
 import { dosesAllowed, SURGE_DOSES_PER_POTION } from '@/lib/fracturedArchive/specBudget';
+import { assumptionsForTarget } from '@/lib/raids/toa/supplies';
 import { raidBase } from '@/lib/raids/base';
 import { TimeSettings } from '@/lib/raids/types';
 import {
@@ -1732,10 +1734,12 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       if (hit) return hit;
       let best = { dps: 0, option: 0 };
       const playerEq = toPlayerEquipment(eq);
+      // phase 38a: the column's target (tags start with its key) may be a ToA room before the supplies
+      const colA = assumptionsForTarget(findTarget(mt[col].slice(0, mt[col].indexOf('|'))), assumptions);
       c.options.forEach((o, oi) => {
         let dps = 0;
         try {
-          const player = applyLoadoutToPlayer(basePlayer, c.label, c.group, playerEq, o.style, o.spell, ms[col], assumptions);
+          const player = applyLoadoutToPlayer(basePlayer, c.label, c.group, playerEq, o.style, o.spell, ms[col], colA);
           dps = evaluateLoadout(player, ms[col], false).dps;
         } catch {
           dps = 0;
@@ -1807,7 +1811,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         const { monster, tag } = allocMonster(q);
         const m = atHpLeft(monster, q.hpLeft);
         const k = `${tag}|${w}|${m.inputs.monsterCurrentHp}`;
-        if (!specDamageMemo.has(k)) specDamageMemo.set(k, damageSpecProfile(m, w, ringA));
+        if (!specDamageMemo.has(k)) specDamageMemo.set(k, damageSpecProfile(m, w, assumptionsForTarget(findTarget(q.targetKey), ringA)));
         return specDamageMemo.get(k)!;
       },
       specHits: (q) => {
@@ -2434,7 +2438,8 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         const curSurge = surgePotions;
         const route = dpCmp(m, withItems(curA, curDamage, curSurge));
         const wall = route.fastest >= 0 ? route.routes[route.fastest].encounters.reduce((t, e) => t + encounterWallSeconds(e.seconds, fastA), 0) : 0;
-        const maxPotions = dosesAllowed(wall) > SURGE_DOSES_PER_POTION ? 2 : 1;
+        // phase 38a: the doses the surge clock allows (the raid clock; ToB: fight time only)
+        const maxPotions = dosesAllowed(surgeClockSpan(wall, fastA)) > SURGE_DOSES_PER_POTION ? 2 : 1;
         const cands: { key: string, label: string, id: number, a: BestSetupAssumptions, dmg?: DamageSpecWeapon }[] = [
           ...ownedDamage.filter((w) => !curDamage.includes(w)).map((w) => ({
             key: w, label: DAMAGE_SPEC_WEAPONS[w].label, id: damageId(w), a: fitBars(withItems(curA, [...curDamage, w], curSurge), m), dmg: w,
@@ -2698,7 +2703,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         name: c.label,
         group: c.group,
         options: c.options,
-        toPlayer: (monster, o) => applyLoadoutToPlayer(basePlayer, c.label, c.group, eq, o.style, o.spell, monster, assumptions),
+        toPlayer: (monster, o, a) => applyLoadoutToPlayer(basePlayer, c.label, c.group, eq, o.style, o.spell, monster, a ?? assumptions),
       };
     });
     const sortedFinals = [opt.best, ...opt.finals]

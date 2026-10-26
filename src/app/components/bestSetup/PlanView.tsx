@@ -82,7 +82,8 @@ import handsSlot from '@/public/img/slots/hands.png';
 import feetSlot from '@/public/img/slots/feet.png';
 import ringSlot from '@/public/img/slots/ring.png';
 import { isOwned } from '@/lib/fracturedArchive/ownership';
-import { defaultPinnedIds, PlanInputSettings } from '@/lib/raids/settings';
+import { defaultPinnedIds, PlanInputSettings, RAID_MINUTES_RANGE } from '@/lib/raids/settings';
+import { RAID_LENGTH_SOURCES } from '@/lib/raids/base';
 import {
   bestWithoutText, describeNeed, specWeaponLabel, weaponDeltaText,
 } from '@/lib/fracturedArchive/specChoice';
@@ -572,11 +573,13 @@ const PlanView: React.FC<{
   const [mages, setMages] = useState<number | undefined>(initialInputs ? initialInputs.mages : undefined);
   const [nonItem, setNonItem] = useState(initialInputs?.nonItem ?? raid.planDefaults.nonItemSlots);
   const [pinned, setPinned] = useState<number[]>(initialInputs?.pinned ?? defaultPinned);
+  // phase 38a: the typical raid length (the raid clock: surge doses, regen between encounters)
+  const [raidMinutes, setRaidMinutes] = useState<number>(initialInputs?.raidMinutes ?? raid.typicalRaidMinutes);
   useEffect(() => {
     onInputs?.({
-      route, supplies, ringPolicy, nonItem, pinned, ...(mages !== undefined ? { mages } : {}),
+      route, supplies, ringPolicy, nonItem, pinned, raidMinutes, ...(mages !== undefined ? { mages } : {}),
     });
-  }, [onInputs, route, supplies, ringPolicy, mages, nonItem, pinned]);
+  }, [onInputs, route, supplies, ringPolicy, mages, nonItem, pinned, raidMinutes]);
   // a new Heart in the Assumptions box replaces the pinned one (or removes it); the first render keeps the defaults
   const lastHeart = useRef(selectedHeart);
   useEffect(() => {
@@ -596,7 +599,7 @@ const PlanView: React.FC<{
   const job = useRef<PlanJob | null>(null);
   // phase 26: the pinned items the plan keeps (unowned ones are dropped); "compare with max"
   const keptPinned = useMemo(() => ownedPinned(pinned, notOwned).kept, [pinned, notOwned]);
-  const maxKey = `${raid.id}|${JSON.stringify(assumptions)}|${drain}|${route}|${JSON.stringify(supplies)}|${ringPolicy}|${specMode}|${mages ?? 'auto'}|${nonItem}|${JSON.stringify(pinned)}|${JSON.stringify(settings)}`;
+  const maxKey = `${raid.id}|${JSON.stringify(assumptions)}|${drain}|${route}|${JSON.stringify(supplies)}|${ringPolicy}|${specMode}|${mages ?? 'auto'}|${nonItem}|${JSON.stringify(pinned)}|${JSON.stringify(settings)}|${raidMinutes}`;
   const [maxSeconds, setMaxSeconds] = useState<number | undefined>(undefined);
   const [comparing, setComparing] = useState(false);
   const compareJob = useRef<PlanJob | null>(null);
@@ -618,7 +621,8 @@ const PlanView: React.FC<{
       prefix,
       data: {
         basePlayer: generateEmptyPlayer(),
-        assumptions,
+        // phase 38a: the raid clock (only when changed: the default keeps the assumptions as they are)
+        assumptions: raidMinutes !== raid.typicalRaidMinutes ? { ...assumptions, raidMinutes } : assumptions,
         drain,
         settings,
         route,
@@ -872,6 +876,26 @@ const PlanView: React.FC<{
                 <option value="auto">auto (1 if your kit has a magic loadout, else 0)</option>
                 {Array.from({ length: raid.partySize.max + 1 }, (_, i) => <option key={i} value={i}>{i}</option>)}
               </select>
+            </label>
+            <label
+              htmlFor="plan-raid-minutes"
+              className="flex items-center gap-1"
+              title={`The raid's wall clock: the fight time is spread over this length (travel, puzzles and mechanics in proportion to each encounter's fight time), so Surge potion doses (one per 5 minutes) and spec regen between encounters follow it${raid.surgePausesBetweenEncounters ? ' (ToB: the surge cooldown pauses between rooms, so only fight time counts for it)' : ''}. 0 = fight time only. Default ${raid.typicalRaidMinutes} min: ${RAID_LENGTH_SOURCES[raid.id]} (unverified)`}
+            >
+              Typical raid length (min)
+              <input
+                id="plan-raid-minutes"
+                type="number"
+                className="form-control text-xs py-0.5 w-16"
+                min={RAID_MINUTES_RANGE.min}
+                max={RAID_MINUTES_RANGE.max}
+                value={raidMinutes}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  if (Number.isFinite(v)) setRaidMinutes(Math.min(RAID_MINUTES_RANGE.max, Math.max(RAID_MINUTES_RANGE.min, v)));
+                }}
+                data-testid="plan-raid-minutes"
+              />
             </label>
           </div>
         </details>

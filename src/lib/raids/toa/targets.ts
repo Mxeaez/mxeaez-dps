@@ -7,6 +7,7 @@ import {
   P2_TUMEKEN_INITIAL_PHASE,
   P2_WARDEN_PHASES,
 } from '@/lib/raids/toa/constants';
+import { beforeSuppliesTargets } from '@/lib/raids/toa/supplies';
 
 /**
  * Phase 18: Tombs of Amascut targets of the best-setup view (Search boss list, Summary rows, time-model phases). Every
@@ -14,8 +15,7 @@ import {
  * raid level, path level (path monsters) and party size (src/lib/scaling/TombsOfAmascut.ts) and their defence roll by
  * raid level (PlayerVsNPCCalc). Keys start with "toa-" (unique across raids). Encounter sequence: src/lib/raids/toa/time.ts.
  */
-// eslint-disable-next-line import/prefer-default-export
-export const TOA_TARGETS: BestSetupTarget[] = [
+const TOA_ROOM_TARGETS: BestSetupTarget[] = [
   {
     key: 'toa-kephri-shielded',
     label: 'Kephri (Shielded)',
@@ -103,4 +103,16 @@ export const TOA_TARGETS: BestSetupTarget[] = [
     raid: 'toa',
     note: 'Below 5%: heals 20% of max hp, Defence 180 (floor 120).',
   },
+];
+
+/**
+ * Phase 38a: the targets of the rooms fought before the supplies (Kephri's path and Zebak's: the first two rooms of the
+ * fixed route, src/lib/raids/toa/supplies.ts).
+ */
+export const TOA_BEFORE_SUPPLIES_SOURCE_KEYS = ['toa-kephri-shielded', 'toa-kephri', 'toa-spitting-scarab', 'toa-soldier-scarab', 'toa-arcane-scarab', 'toa-zebak'];
+
+/** Every ToA target, then (phase 38a) the copies of the rooms before the supplies (`beforeSupplies`). */
+export const TOA_TARGETS: BestSetupTarget[] = [
+  ...TOA_ROOM_TARGETS,
+  ...beforeSuppliesTargets(TOA_ROOM_TARGETS.filter((t) => TOA_BEFORE_SUPPLIES_SOURCE_KEYS.includes(t.key))),
 ];

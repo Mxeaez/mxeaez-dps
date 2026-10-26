@@ -245,6 +245,11 @@ export interface BestSetupAssumptions {
   damageSpecs?: DamageSpecWeapon[];
   /** Phase 36: Surge potions you carry (4 doses each; the time model places the doses). Undefined = 0. */
   surgePotions?: number;
+  /**
+   * Phase 38a: the typical raid length in minutes (the raid's wall clock: surge doses, regen between encounters).
+   * Undefined = the raid's default (`RaidBase.typicalRaidMinutes`); the Plan tab's Advanced input sets it.
+   */
+  raidMinutes?: number;
   /** Phase 36: extra Solo spec energy (%) for a single boss (the Search tab's "with a surge dose" line: 25). */
   soloExtraEnergy?: number;
 }

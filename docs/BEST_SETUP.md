@@ -1378,6 +1378,41 @@ After a phase that moves numbers:
 
 A phase that claims no number changed must leave both fixtures untouched (`--check` exits 0).
 
+### Raid wall clock + ToA supplies by room (phase 38a)
+
+**The raid clock.** The time model's only clock used to be fight time (Σ encounter wall seconds = seconds × team-DPS
+multiplier ÷ party size: ≈ 3.5 min for the FA headline at party 6), so the surge potion's 5-minute cooldown fitted one
+dose in a 25-minute raid (the user: "we have 4 doses to use throughout the raid, it only uses one"). Now each raid has a
+**typical raid length** (Plan tab → Advanced (plan) → "Typical raid length (min)", saved with the Plan inputs; default
+FA 25, ToA 30, CoX 20, ToB 20 min, `RaidBase.typicalRaidMinutes`, sources in docs/DATA_SOURCES.md *Phase 38a*; 0 =
+fight time only). `raidClock(walls, raidSeconds)` (raidTime.ts) spreads the non-fight time max(0, L − Σ walls) before
+the encounters in proportion to their fight time: gap_i = (L − F) × w_i ÷ F, start_i = Σ_{j<i}(gap_j + w_j) + gap_i,
+so the last fight ends at L. On that clock:
+- **Surge doses** (`routeSurgeDoses` → `placeDoses`, unchanged rules: ≥ 300 s apart, one per encounter at its start,
+  4 per potion, the most route time saved) use the encounters' starts (`surgeClockStarts`). ToB keeps fight time only:
+  its cooldown pauses between rooms (`RaidBase.surgePausesBetweenEncounters`). The planner tries a second potion when
+  the clock allows more than 4 doses (`surgeClockSpan`: 25 min → 6).
+- **Regen between encounters** (only with `CARRY_SPEC_ENERGY`, off: every bar starts an encounter at 100%): each pool
+  gains +10% per regen tick of its period inside the gap before the encounter, capped at 100%; the gaps come from the
+  full-bar encounter times. Death Charge cooldowns (phase 38b) will run on the same clock.
+
+FA headline (party 6, phase 37 seconds: fight 211.3 s of 1500 s): fights start at 179 s (AG), 401 (Bork), 499 (Moia),
+694 (Xarth), 1391 s (Ocellus), so up to 3 doses fit (AG, Moia or Xarth, Ocellus; Bork → Xarth is 294 s). Phase 38a test: hand gains
+2 / 1 / 3 / 1 / 10 s give AG + Moia + Ocellus (the fight-only clock: Ocellus only).
+
+**ToA supplies by room.** The Helpful Spirit's supplies come after two paths and again before the Wardens (wiki), so
+the first two rooms of ToA's fixed route (Kephri, Zebak; src/lib/raids/toa/supplies.ts) are fought with the normal
+potions (Super combat +19, Ranging +13, Saturated heart +13 at 99) instead of the Smelling salts (+26 to every style).
+Their planned phases target copies of the targets (`<key>-before-supplies`, `beforeSupplies`, hidden from Search and
+the Summary); `assumptionsForTarget` swaps the raid potion for the normal one wherever a target's DPS or drains are
+computed (`createKitEvaluator` through `KitLoadout.toPlayer`'s third argument, the planner's DPS matrix and damage-spec
+values, `buildTargetMonster` / `specCountsDrainKey` for the drain hit chances, `runGearSearch`). Slot-neutral (D31).
+
+**Headlines** (`pinHeadlines --full`): FA 21:07.7 → **21:05.3** (doses AG, Xarth, Ocellus, was Ocellus; Crimson kisten
+replaces Burning claws: AG −2.3 s, Xarth −1.0 s, Bork +0.9 s); FA Solo 21:59.0 → **21:56.2** (a third dose on
+Ocellus, −2.8 s); ToA 14:07.8 → **14:38.2** (Kephri +9.6 s, Zebak +20.8 s); CoX, ToB, FA without Obligator /
+Ascension unchanged (no surge potion in their plans; ToB's surge clock is unchanged).
+
 ## Routes tab (phase 16: raid time model)
 
 **Phase 23: the tab is gone.** Its route table is now part of the Plan tab's results (the *planned* kit timed on every

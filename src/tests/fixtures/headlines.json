@@ -4,8 +4,8 @@
   "fa": {
    "raid": "fractured-archive",
    "label": "Fractured Archive (Team defaults)",
-   "total": "21:07.7",
-   "seconds": 1267.6721877342782,
+   "total": "21:05.3",
+   "seconds": 1265.288767752059,
    "route": "archive-guardian>bork-smorks>moia>xarth>ocellus",
    "ring": "Ultor ring",
    "kit": [
@@ -21,35 +21,37 @@
     "tonalztics": 3,
     "ayak": 0
    },
-   "bring": "Bring: Zaryte crossbow, Burning claws, Surge potion",
+   "bring": "Bring: Zaryte crossbow, Crimson kisten, Surge potion",
    "items": [
     "Zaryte crossbow",
-    "Burning claws",
+    "Crimson kisten",
     "Surge potion(4)"
    ],
    "yourShare": null,
    "surgeAt": [
+    "Archive Guardian",
+    "Xarth",
     "Ocellus"
    ],
    "encounters": {
-    "archive-guardian": 175.78,
-    "bork-smorks": 189.79,
+    "archive-guardian": 173.49,
+    "bork-smorks": 190.71,
     "moia": 65.32,
-    "xarth": 181.62,
+    "xarth": 180.61,
     "ocellus": 655.17
    }
   },
   "toa": {
    "raid": "toa",
    "label": "Tombs of Amascut (Team defaults, invocation 500)",
-   "total": "14:07.8",
-   "seconds": 847.8472942522153,
+   "total": "14:38.2",
+   "seconds": 878.209470677732,
    "route": "toa-kephri>toa-zebak>toa-akkha>toa-baba>toa-wardens",
    "ring": "Ultor ring",
    "kit": [
     "Keris partisan of breaching (Torva)",
-    "Tumeken's shadow (Ancestral)",
     "Osmumten's fang (Torva)",
+    "Tumeken's shadow (Ancestral)",
     "Torva + Scythe (slash)",
     "Ascension crossbows + diamond (e) (Masori)",
     "Twisted bow (Masori)"
@@ -69,8 +71,8 @@
    "yourShare": null,
    "surgeAt": [],
    "encounters": {
-    "toa-kephri": 146.63,
-    "toa-zebak": 121.02,
+    "toa-kephri": 156.21,
+    "toa-zebak": 141.81,
     "toa-akkha": 143.26,
     "toa-baba": 92.47,
     "toa-wardens": 344.47
@@ -158,8 +160,8 @@
   "faSolo": {
    "raid": "fractured-archive",
    "label": "Fractured Archive Solo (party 1)",
-   "total": "21:59.0",
-   "seconds": 1319.0208018028497,
+   "total": "21:56.2",
+   "seconds": 1316.248159138081,
    "route": "archive-guardian>ezekiel>moia>xarth>ocellus",
    "ring": "Ultor ring",
    "kit": [
@@ -179,14 +181,15 @@
    "yourShare": null,
    "surgeAt": [
     "Archive Guardian",
-    "Moia"
+    "Moia",
+    "Ocellus"
    ],
    "encounters": {
     "archive-guardian": 180.67,
     "ezekiel": 211.61,
     "moia": 65.32,
     "xarth": 181.62,
-    "ocellus": 679.81
+    "ocellus": 677.04
    }
   },
   "faNotOwned": {

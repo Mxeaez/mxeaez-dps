@@ -534,7 +534,7 @@
   }
  ],
  "pinnedItems": [],
- "comparison": "7ba482c76c651cd8dd4a64e622e05134853371f48ae4787f40e3ca15d055fd12",
+ "comparison": "f90f98b56bee8e38ffdf5a8fe22d9f3913850f5df7fb9d52023d8e87f4cc68c7",
  "planned": 1,
  "rejected": [],
  "alternatives": [
@@ -568,9 +568,9 @@
   {
    "label": "ranged + magic: Tumeken's shadow (Ancestral) / Twisted bow (Masori) / Ascension crossbows + diamond (e) (Masori) / Ascension crossbows + onyx (e) (Masori)",
    "kind": "alternative",
-   "deltaSeconds": -385.3844084812615,
+   "deltaSeconds": -387.3334093605679,
    "deltaSlots": 1,
-   "reason": "385.4 s slower",
+   "reason": "387.3 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Twisted bow",
@@ -581,9 +581,9 @@
   {
    "label": "magic: Tumeken's shadow (Ancestral) / Harmonised Nightmare staff / Harmonised Nightmare staff #3",
    "kind": "alternative",
-   "deltaSeconds": -863.9388278155002,
+   "deltaSeconds": -864.7714351922414,
    "deltaSlots": -5,
-   "reason": "863.9 s slower",
+   "reason": "864.8 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Harmonised Nightmare staff",
@@ -644,7 +644,8 @@
   "surgePotions": 1,
   "surgeAt": [
    "Archive Guardian",
-   "Moia"
+   "Moia",
+   "Ocellus"
   ],
   "items": [
    {
@@ -655,13 +656,13 @@
    },
    {
     "item": "Surge potion(4)",
-    "saved": 10.576966211634044,
+    "saved": 15.787685914198164,
     "slots": 1,
     "how": "a free slot"
    },
    {
     "item": "Burning claws",
-    "saved": 6.0758471374588225,
+    "saved": 3.637770099663385,
     "slots": 1,
     "how": "a free slot"
    }
@@ -731,12 +732,12 @@
   "screened": [
    {
     "ring": "Ultor ring",
-    "seconds": 1319.0208018028497,
+    "seconds": 1316.248159138081,
     "full": true
    },
    {
     "ring": "Bellator ring",
-    "seconds": 1368.9436689114295,
+    "seconds": 1367.1853512397438,
     "full": true
    },
    {
@@ -788,7 +789,7 @@
  "droppedPinned": [],
  "ownershipNotices": [],
  "searchRows": "ed221c142a9da519f5dff841dfe4df0c9622f32a984eb345583c6b3afc6da749",
- "objectiveSeconds": 1319.0208018028497,
+ "objectiveSeconds": 1316.248159138081,
  "fightSeconds": {
   "archive-guardian": 230,
   "ezekiel": 229,
@@ -801,10 +802,11 @@
  },
  "plannedRoute": {
   "id": "archive-guardian>ezekiel>moia>xarth>ocellus",
-  "seconds": 1319.0208018028497,
+  "seconds": 1316.248159138081,
   "surgeDoses": [
    "archive-guardian",
-   "moia"
+   "moia",
+   "ocellus"
   ],
   "encounters": [
    {
@@ -886,7 +888,7 @@
    },
    {
     "id": "ocellus",
-    "seconds": 679.8124161282838,
+    "seconds": 677.0397734635151,
     "events": [
      {
       "npc": "Ocellus",
@@ -898,16 +900,13 @@
     ],
     "damage": {
      "ocellus-p1": {
-      "burningClaws": 1
-     },
-     "ocellus-p3": {
-      "burningClaws": 1
+      "zcb": 1
      },
      "ocellus-p3-last": {
       "zcb": 2
      }
     },
-    "surge": false
+    "surge": true
    }
   ]
  }

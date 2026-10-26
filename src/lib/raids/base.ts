@@ -65,7 +65,26 @@ export interface RaidBase {
    * only in Hard Mode). Undefined = always. Summary rows and the time model don't use it.
    */
   targetVisible?: (target: BestSetupTarget, a: BestSetupAssumptions) => boolean;
+  /**
+   * Phase 38a: the typical raid length in minutes (default of the Plan tab's "Typical raid length", Advanced (plan)):
+   * the raid's wall clock, into which the time model spreads its fight time (raidTime.ts `raidClock`). Sources:
+   * `RAID_LENGTH_SOURCES` (unverified, UNVERIFIED D30).
+   */
+  typicalRaidMinutes: number;
+  /** Phase 38a (ToB): the surge cooldown pauses between encounters (only fight time counts for it). */
+  surgePausesBetweenEncounters?: boolean;
 }
+
+/**
+ * Phase 38a: where each raid's default typical length comes from (docs/DATA_SOURCES.md *Phase 38a*). The wiki publishes
+ * no "typical" time, only time limits and speed tasks, so the ToA / CoX / ToB defaults sit above the speed tasks.
+ */
+export const RAID_LENGTH_SOURCES: Record<RaidId, string> = {
+  'fractured-archive': 'the user\'s in-game raid stats (docs/calibration/fa-times-2026-10-25.md): personal bests 24:50 (3 players), 25:38 (4), 22:01 (5), 24:32 (6)',
+  toa: 'wiki Tombs of Amascut: time-limit invocations 40 / 35 / 30 / 25 min (30 = Run for It); Tombs Speed Runner II: expert within 20 min (Grandmaster)',
+  cox: 'wiki Chambers of Xeric (5-Scale) Speed-Chaser: under 15:00 (Master); (Trio) Speed-Chaser: under 16:30. A typical team is slower',
+  tob: 'wiki Theatre (4-Scale) Speed-Chaser: under 17 min (Master); (5-Scale): under 16 min. A typical team is slower',
+};
 
 const partyInput = (min: number, max: number, title: string): ScalingInputDef => ({
   key: 'partySize',
@@ -94,6 +113,7 @@ export const FRACTURED_ARCHIVE_BASE: RaidBase = {
   searchPool: SEARCH_POOL,
   boostsNeedSupplies: true,
   planDefaults: FA_PLAN_DEFAULTS,
+  typicalRaidMinutes: 25,
 };
 
 export const TOMBS_OF_AMASCUT_BASE: RaidBase = {
@@ -135,6 +155,9 @@ export const TOMBS_OF_AMASCUT_BASE: RaidBase = {
   searchPool: TOA_SEARCH_POOL,
   boostsNeedSupplies: false,
   planDefaults: TOA_PLAN_DEFAULTS,
+  // phase 38a: the copies of the rooms before the supplies are the time model's, not the Search list's
+  targetVisible: (target) => !target.beforeSupplies,
+  typicalRaidMinutes: 30,
 };
 
 const coxOf = (a: BestSetupAssumptions) => a.cox || DEFAULT_COX_INPUTS;
@@ -179,6 +202,7 @@ export const CHAMBERS_OF_XERIC_BASE: RaidBase = {
   // Overloads come from the raid's own herbs
   boostsNeedSupplies: false,
   planDefaults: COX_PLAN_DEFAULTS,
+  typicalRaidMinutes: 20,
 };
 
 const tobOf = (a: BestSetupAssumptions) => a.tob || DEFAULT_TOB_INPUTS;
@@ -225,6 +249,9 @@ export const THEATRE_OF_BLOOD_BASE: RaidBase = {
   planDefaults: TOB_PLAN_DEFAULTS,
   // targets tagged with modes (Hard Mode's Nylocas Prinkipas) are only offered in those modes
   targetVisible: (target, a) => !target.tobModes || target.tobModes.includes(tobOf(a).mode),
+  typicalRaidMinutes: 20,
+  // phase 36: the surge cooldown pauses between ToB rooms
+  surgePausesBetweenEncounters: true,
 };
 
 export const RAID_BASES: RaidBase[] = [FRACTURED_ARCHIVE_BASE, TOMBS_OF_AMASCUT_BASE, CHAMBERS_OF_XERIC_BASE, THEATRE_OF_BLOOD_BASE];

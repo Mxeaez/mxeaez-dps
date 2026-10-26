@@ -19,7 +19,7 @@ import {
  *   { "version": 1, "raid": "toa", "raids": { "<raid id>": {
  *       "assumptions": { ...only the inputs that differ from the raid's defaults },
  *       "time": { ...time-model settings that differ }, "drain": "solo", "specMode": "manual",
- *       "plan": { "route", "supplies": { "brew": 5 }, "ringPolicy", "mages", "nonItem", "pinned": [item ids] } } } }
+ *       "plan": { "route", "supplies": { "brew": 5 }, "ringPolicy", "mages", "nonItem", "pinned": [item ids], "raidMinutes" } } } }
  * Only values that differ from the defaults are written (a later default change still reaches untouched inputs); a raid
  * with nothing changed has no entry, and the key is removed when nothing at all differs.
  *
@@ -44,7 +44,12 @@ export interface PlanInputSettings {
   nonItem: number;
   /** "Items I always bring" (equipment ids + heart pseudo ids). */
   pinned: number[];
+  /** Phase 38a: "Typical raid length" in minutes (the raid clock; default `RaidBase.typicalRaidMinutes`). */
+  raidMinutes: number;
 }
+
+/** Phase 38a: the range of the "Typical raid length" input (minutes). */
+export const RAID_MINUTES_RANGE = { min: 0, max: 120 };
 
 export interface RaidSettings {
   assumptions: BestSetupAssumptions;
@@ -103,6 +108,7 @@ export const defaultPlanInputs = (raid: RaidConfig, a: BestSetupAssumptions = ra
   ringPolicy: DEFAULT_RING_POLICY,
   nonItem: raid.planDefaults.nonItemSlots,
   pinned: defaultPinnedIds(raid, a.potions.magic),
+  raidMinutes: raid.typicalRaidMinutes,
 });
 
 export const defaultRaidSettings = (raid: RaidConfig): RaidSettings => ({
@@ -202,6 +208,7 @@ export const validatePlanInputs = (raid: RaidConfig, raw: unknown, a: BestSetupA
     ringPolicy: oneOf(field(raw, 'ringPolicy'), RING_POLICIES.map((p) => p.id), d.ringPolicy),
     nonItem: int(field(raw, 'nonItem'), 0, MAX_SLOTS, d.nonItem),
     pinned: d.pinned,
+    raidMinutes: num(field(raw, 'raidMinutes'), RAID_MINUTES_RANGE.min, RAID_MINUTES_RANGE.max, d.raidMinutes),
   };
   const mages = field(raw, 'mages');
   if (Number.isInteger(mages) && (mages as number) >= 0 && (mages as number) <= raid.partySize.max) out.mages = mages as number;

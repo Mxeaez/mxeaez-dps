@@ -32,7 +32,7 @@ describe('retime: the headline kits re-timed outside the planner = headlines.jso
   test('CLI: one plan, a table, exit 0; an unknown plan exits 2', () => {
     const ok = cli('retime.mjs', ['toa', '--quiet']);
     expect(ok.status).toBe(0);
-    expect(ok.stdout).toMatch(/toa\s+14:07\.8\s+847\.8473\s+847\.8473\s+0\.00e\+0\s+yes\s+[\d.]+ s\s+OK/);
+    expect(ok.stdout).toMatch(/toa\s+14:38\.2\s+878\.2095\s+878\.2095\s+0\.00e\+0\s+yes\s+[\d.]+ s\s+OK/);
     expect(cli('retime.mjs', ['nope']).status).toBe(2);
   }, 120000);
 });
@@ -52,9 +52,10 @@ describe('drain outcome: one encounter of a headline, for hand-checking', () => 
     expect(d.wall).toBeCloseTo(d.seconds / 6, 9);
     expect(d.wall).toBeGreaterThan(30);
     const pool = Object.fromEntries(d.pools.map((g) => [g.group, g]));
-    // 2 maul bars: 200 + 2 × 10 − 4 × 50 = 20; 3 Tonalztics bars: 300 + 30 − 300 = 30; yours: 100 + 10 − (ZCB 75 + claws 35) = 0
-    expect([pool.elderMaul.balance, pool.tonalztics.balance, pool.me.balance]).toEqual([20, 30, 0]);
-    expect(pool.me.end).toEqual([0]);
+    // 2 maul bars: 200 + 2 × 10 − 4 × 50 = 20; 3 Tonalztics bars: 300 + 30 − 300 = 30; yours (phase 38a: a surge dose
+    // here on the raid clock, Crimson kisten instead of Burning claws): 100 + 10 + 25 − (ZCB 75 + kisten 50) = 10
+    expect([pool.elderMaul.balance, pool.tonalztics.balance, pool.me.balance]).toEqual([20, 30, 10]);
+    expect(pool.me.end).toEqual([10]);
   }, 60000);
 
   test('FA Solo Archive Guardian: 2 Tonalztics + ZCB + the surge dose from one bar', () => {

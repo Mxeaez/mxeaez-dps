@@ -271,11 +271,11 @@
  "kitMarginal": [
   {
    "slots": 1,
-   "seconds": 8.093998955987445
+   "seconds": 8.093998955987672
   },
   {
    "slots": 1,
-   "seconds": 54.680163037872035
+   "seconds": 54.68016303787226
   },
   {
    "slots": 8,
@@ -460,10 +460,10 @@
   },
   {
    "kind": "spec",
-   "label": "Burning claws",
+   "label": "Crimson kisten",
    "item": {
-    "id": 29577,
-    "name": "Burning claws",
+    "id": 33631,
+    "name": "Crimson kisten",
     "version": "",
     "slot": "weapon",
     "twoHanded": true
@@ -508,8 +508,8 @@
    "slot": "weapon"
   },
   {
-   "id": 29577,
-   "name": "Burning claws",
+   "id": 33631,
+   "name": "Crimson kisten",
    "version": "",
    "slot": "weapon",
    "twoHanded": true
@@ -522,7 +522,7 @@
   }
  ],
  "pinnedItems": [],
- "comparison": "7861b22c6e06786aaf73e9edaa8a890259f0e918d217fb7f215b601cf3c4269e",
+ "comparison": "1f0c51743dad8fac1e438b0b33ff05c5a5d71bc258435ae1ae04ad3eef9082dd",
  "planned": 5,
  "rejected": [],
  "alternatives": [
@@ -555,9 +555,9 @@
   {
    "label": "ranged + magic: Tumeken's shadow (Ancestral) / Twisted bow (Masori) / Ascension crossbows + diamond (e) (Masori) / Ascension crossbows + Diamond ascension bolts (e)",
    "kind": "alternative",
-   "deltaSeconds": -336.5854806656955,
+   "deltaSeconds": -336.0640544647056,
    "deltaSlots": 4,
-   "reason": "336.6 s slower",
+   "reason": "336.1 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Twisted bow",
@@ -568,9 +568,9 @@
   {
    "label": "magic: Tumeken's shadow (Ancestral) / Harmonised Nightmare staff / Harmonised Nightmare staff #4",
    "kind": "alternative",
-   "deltaSeconds": -925.4408065718837,
+   "deltaSeconds": -926.7410966761067,
    "deltaSlots": -5,
-   "reason": "925.4 s slower",
+   "reason": "926.7 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Harmonised Nightmare staff",
@@ -621,13 +621,15 @@
   "mode": "auto",
   "drain": "team",
   "bring": [],
-  "text": "Bring: Zaryte crossbow, Burning claws, Surge potion",
+  "text": "Bring: Zaryte crossbow, Crimson kisten, Surge potion",
   "damage": [
    "zcb",
-   "burningClaws"
+   "crimsonKisten"
   ],
   "surgePotions": 1,
   "surgeAt": [
+   "Archive Guardian",
+   "Xarth",
    "Ocellus"
   ],
   "items": [
@@ -644,8 +646,8 @@
     "how": "a free slot"
    },
    {
-    "item": "Burning claws",
-    "saved": 2.0895884263616153,
+    "item": "Crimson kisten",
+    "saved": 4.473008408580881,
     "slots": 1,
     "how": "a free slot"
    }
@@ -661,7 +663,7 @@
      "drivers": [
       "Bork + Smorks (3.1 s)"
      ],
-     "lastSaved": 3.0542188636700303
+     "lastSaved": 3.0688089739257975
     },
     {
      "weapon": "elderMaul",
@@ -669,7 +671,7 @@
      "drivers": [
       "Bork + Smorks (2.8 s)"
      ],
-     "lastSaved": 2.8238118243773442
+     "lastSaved": 2.8238118243775716
     }
    ],
    "perTarget": [
@@ -816,39 +818,39 @@
    "steps": [
     {
      "weapon": "tonalztics",
-     "saved": 218.73264592597343,
-     "seconds": 1320.3404324306216
+     "saved": 218.07676433957454,
+     "seconds": 1317.5554476404754
     },
     {
      "weapon": "tonalztics",
-     "saved": 33.83113947359743,
-     "seconds": 1286.5092929570242
+     "saved": 33.78933632976805,
+     "seconds": 1283.7661113107074
     },
     {
      "weapon": "elderMaul",
-     "saved": 11.07928214540243,
-     "seconds": 1275.4300108116217
+     "saved": 10.4595794992224,
+     "seconds": 1273.306531811485
     },
     {
      "weapon": "tonalztics",
-     "saved": 4.934011252966229,
-     "seconds": 1270.4959995586555
+     "saved": 5.193952235048528,
+     "seconds": 1268.1125795764365
     },
     {
      "weapon": "elderMaul",
-     "saved": 2.8238118243773442,
-     "seconds": 1267.6721877342782
+     "saved": 2.8238118243775716,
+     "seconds": 1265.288767752059
     }
    ]
   },
   "share": {
    "weapon": null,
    "carry": false,
-   "reason": "your spec energy goes to your Zaryte crossbow specs / Burning claws specs / surge doses — let a teammate carry Tonalztics (most needed: 3 carriers)",
+   "reason": "your spec energy goes to your Zaryte crossbow specs / Crimson kisten specs / surge doses — let a teammate carry Tonalztics (most needed: 3 carriers)",
    "manual": false
   },
   "notes": [
-   "Your spec bar goes to Zaryte crossbow / Burning claws / surge doses: 5 carriers (party − 1), 21:07.7 vs 21:43.8 if you carry a drain weapon instead."
+   "Your spec bar goes to Zaryte crossbow / Crimson kisten / surge doses: 5 carriers (party − 1), 21:05.3 vs 21:43.8 if you carry a drain weapon instead."
   ]
  },
  "ring": {
@@ -857,12 +859,12 @@
   "screened": [
    {
     "ring": "Ultor ring",
-    "seconds": 1267.6721877342782,
+    "seconds": 1265.288767752059,
     "full": true
    },
    {
     "ring": "Bellator ring",
-    "seconds": 1320.4479337546468,
+    "seconds": 1316.820022638951,
     "full": true
    },
    {
@@ -914,18 +916,20 @@
  "droppedPinned": [],
  "ownershipNotices": [],
  "searchRows": "7e48c725c031eb389e0a70235a2cfb03a682a75ea0e8730e4c0bc533c184b32f",
- "objectiveSeconds": 1267.6721877342782,
+ "objectiveSeconds": 1265.288767752059,
  "fightSeconds": null,
  "plannedRoute": {
   "id": "archive-guardian>bork-smorks>moia>xarth>ocellus",
-  "seconds": 1267.6721877342782,
+  "seconds": 1265.288767752059,
   "surgeDoses": [
+   "archive-guardian",
+   "xarth",
    "ocellus"
   ],
   "encounters": [
    {
     "id": "archive-guardian",
-    "seconds": 175.7807091304241,
+    "seconds": 173.48552944199616,
     "events": [
      {
       "npc": "Archive Guardian",
@@ -939,13 +943,16 @@
     "damage": {
      "ag-shield": {
       "zcb": 1
+     },
+     "ag-grounded": {
+      "crimsonKisten": 1
      }
     },
-    "surge": false
+    "surge": true
    },
    {
     "id": "bork-smorks",
-    "seconds": 189.7864084326551,
+    "seconds": 190.70788105621534,
     "events": [
      {
       "npc": "Bork",
@@ -966,9 +973,6 @@
     "damage": {
      "bork-12": {
       "zcb": 1
-     },
-     "smorks": {
-      "burningClaws": 1
      }
     },
     "surge": false
@@ -994,7 +998,7 @@
    },
    {
     "id": "xarth",
-    "seconds": 181.61583763619933,
+    "seconds": 180.60612471884792,
     "events": [
      {
       "npc": "Xarth",
@@ -1008,10 +1012,10 @@
     "damage": {
      "xarth": {
       "zcb": 1,
-      "burningClaws": 1
+      "crimsonKisten": 1
      }
     },
-    "surge": false
+    "surge": true
    },
    {
     "id": "ocellus",
