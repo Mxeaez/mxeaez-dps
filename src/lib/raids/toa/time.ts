@@ -23,7 +23,7 @@ import {
   P2_ELIDINIS_INITIAL_PHASE,
   P2_TUMEKEN_INITIAL_PHASE,
 } from '@/lib/raids/toa/constants';
-import { beforeSuppliesKey, TOA_ROOMS_BEFORE_SUPPLIES } from '@/lib/raids/toa/supplies';
+import { beforeSuppliesKey, LIQUID_ADRENALINE_DOSES_PER_DROP, TOA_ROOMS_BEFORE_SUPPLIES } from '@/lib/raids/toa/supplies';
 
 /**
  * Phase 18: Tombs of Amascut time model (Encounters tab, planner). Same contract as the Fractured Archive's
@@ -145,6 +145,17 @@ export const p2WardenTarget = (s: ToaTimeSettings): { targetKey: string, phase: 
  */
 export const TOA_BEFORE_SUPPLIES_ENCOUNTERS: EncounterId[] = TOA_ROUTE_SLOTS.slice(0, TOA_ROOMS_BEFORE_SUPPLIES).map((s) => s.options[0]);
 
+/**
+ * Phase 38b: Liquid adrenaline doses per encounter (drunk at its start, back to back): the first supply drop's 2 doses
+ * over the two rooms after it (one each: Akkha, Ba-Ba), the second drop's 2 on the Wardens. None before the supplies.
+ */
+export const TOA_ADRENALINE_DOSES: Partial<Record<EncounterId, number>> = Object.fromEntries(TOA_ROUTE_SLOTS.map((s, i) => {
+  const id = s.options[0];
+  if (i < TOA_ROOMS_BEFORE_SUPPLIES) return [id, 0];
+  if (i === TOA_ROUTE_SLOTS.length - 1) return [id, LIQUID_ADRENALINE_DOSES_PER_DROP];
+  return [id, LIQUID_ADRENALINE_DOSES_PER_DROP / (TOA_ROUTE_SLOTS.length - 1 - TOA_ROOMS_BEFORE_SUPPLIES)];
+}));
+
 /** A planned phase of a room before the supplies: its target's copy, the label says so. */
 const beforeSupplies = (p: PlannedPhase): PlannedPhase => ({
   ...p, targetKey: beforeSuppliesKey(p.targetKey), label: `${p.label} (before supplies: normal potions)`,
@@ -194,7 +205,12 @@ const toaRoomPlan = (id: EncounterId, a: RaidTimeAssumptions): PlannedPhase[] =>
       }];
       rows.push(
         {
-          key: 'akkha-shadows', label: `Akkha's Shadow × ${AKKHA_SHADOWS} (one per 20% threshold)`, targetKey: 'toa-akkha-shadow', damage: AKKHA_SHADOWS * hp('toa-akkha-shadow'),
+          key: 'akkha-shadows',
+          label: `Akkha's Shadow × ${AKKHA_SHADOWS} (one per 20% threshold)`,
+          targetKey: 'toa-akkha-shadow',
+          damage: AKKHA_SHADOWS * hp('toa-akkha-shadow'),
+          // phase 38b: four kills (Death Charge)
+          kills: AKKHA_SHADOWS,
         },
         {
           key: 'akkha-final', label: `Final stand (${pct(AKKHA_FINAL_STAND_FRACTION)} of hp, melee only)`, targetKey: 'toa-akkha', phase: AKKHA_FINAL_STAND_PHASE, damage: akkha * AKKHA_FINAL_STAND_FRACTION,
@@ -395,4 +411,5 @@ export const TOA_TIME_MODEL: RaidTimeModel = {
   labels: TOA_ENCOUNTER_LABELS,
   encounterPass: toaEncounterPass,
   requiredPhaseTargets: toaRequiredPhaseTargets,
+  adrenalineDoses: TOA_ADRENALINE_DOSES,
 };

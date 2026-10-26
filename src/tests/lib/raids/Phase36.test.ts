@@ -7,7 +7,7 @@ import {
   specCalcNumbers, specSecondsSaved,
 } from '@/lib/fracturedArchive/damageSpecs';
 import {
-  allocateBudget, AllocationProblem, CARRY_SPEC_ENERGY, dosesAllowed, placeDoses, regenTicks, rowSecondsAfter,
+  allocateBudget, AllocationProblem, CARRY_SPEC_ENERGY, costFactorAt, dosesAllowed, placeDoses, regenTicks, rowSecondsAfter,
   spendFromGroup, SPEC_MAX_ENERGY, SURGE_COOLDOWN_SECONDS, SURGE_DOSE_ENERGY,
 } from '@/lib/fracturedArchive/specBudget';
 import {
@@ -155,7 +155,8 @@ const simulateOnce = (p: AllocationProblem, opts: number[], choice: Record<strin
     for (let ei = 0; ei < p.events.length; ei++) {
       for (const sp of p.events[ei].options[opts[ei]].spends) {
         if (sp.row === r && sp.specs) {
-          const paid = spendFromGroup(state[sp.group], sp.specs, sp.cost);
+          // phase 38b: Liquid adrenaline halves the cost on rows starting before `halfCostUntil`
+          const paid = spendFromGroup(state[sp.group], sp.specs, sp.cost * costFactorAt(p, p.rows[r]));
           if (!paid) return Infinity;
           state[sp.group] = paid;
           if (sp.group === 'me') mineSpent = true;
@@ -174,12 +175,13 @@ const simulateOnce = (p: AllocationProblem, opts: number[], choice: Record<strin
     }
     const o = p.rowOutcome(r, opts[row.event]);
     let spent = 0;
-    for (const c of o.damageSpecs) spent += (choice[r][c.weapon] ?? 0) * c.cost;
+    for (const c of o.damageSpecs) spent += (choice[r][c.weapon] ?? 0) * c.cost * costFactorAt(p, row);
     const late = r === drinkAt && !drank;
     if (late && !(spent > 0 || state.me[0] < SPEC_MAX_ENERGY)) return Infinity;
     if (spent > (state.me?.[0] ?? 0) + (late ? SURGE_DOSE_ENERGY : 0) + 1e-9) return Infinity;
     if (state.me) state.me[0] = state.me[0] - spent + (late ? SURGE_DOSE_ENERGY : 0);
-    for (const g of Object.keys(state)) state[g] = state[g].map((e) => Math.min(SPEC_MAX_ENERGY, e)).sort((x, y) => y - x);
+    // phase 38b: the Death Charge restore at the row's end, after the cap (capped again)
+    for (const g of Object.keys(state)) state[g] = state[g].map((e) => Math.min(SPEC_MAX_ENERGY, Math.min(SPEC_MAX_ENERGY, e) + (row.restore ?? 0))).sort((x, y) => y - x);
     total += rowSecondsAfter(o, choice[r]);
   }
   return total;
@@ -380,14 +382,13 @@ describe('the spec budget in the time model', () => {
     // the old model gave every event the full 4 + 4 specs
     expect(total('elderMaul') + total('bgs')).toBeLessThan(3 * 8);
   });
-  test('adds get nothing: no drain specs and no damage specs on the ToA scarabs / Akkha\'s Shadows', () => {
+  test('adds get no drain specs on the ToA scarabs / Akkha\'s Shadows (phase 38b: damage specs are allowed on them)', () => {
     const a = { ...A('toa'), damageSpecs: ['voidwaker' as const, 'dragonClaws' as const] };
     ['toa-kephri', 'toa-akkha'].forEach((id) => {
       const e = enc('toa', id, a);
       e.phases.forEach((p) => {
         if (findTarget(p.targetKey).noDrains === NO_DRAINS_ADDS) {
-          expect(p.damageSpecs ?? []).toEqual([]);
-          expect(damageLimited(p, a.partySize)).toBe(false);
+          expect(damageLimited(p, a.partySize)).toBe(true);
         }
       });
       e.specPlan!.events.forEach((ev) => {

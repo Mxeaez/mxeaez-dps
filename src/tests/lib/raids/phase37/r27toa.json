@@ -84,7 +84,7 @@
    "key": "magic|21018,21793,12002,0,27275,21021,0,21024,31106,31097,28313"
   },
   {
-   "label": "Scythe of Vitur #3",
+   "label": "Scythe of Vitur #4",
    "kind": "search",
    "group": "melee",
    "equipment": {
@@ -138,8 +138,8 @@
      "slot": "feet"
     },
     "ring": {
-     "id": 28316,
-     "name": "Bellator ring",
+     "id": 28307,
+     "name": "Ultor ring",
      "version": "",
      "slot": "ring"
     }
@@ -160,23 +160,24 @@
       "stance": "Accurate"
      },
      "spell": null
+    },
+    {
+     "style": {
+      "name": "Jab",
+      "type": "crush",
+      "stance": "Aggressive"
+     },
+     "spell": null
     }
    ],
-   "source": "search: Zebak (before supplies)",
-   "key": "melee|30750,21295,29801,0,22325,30753,0,30756,22981,31097,28316"
+   "source": "search: Akkha's Shadow",
+   "key": "melee|30750,21295,29801,0,22325,30753,0,30756,22981,31097,28307"
   },
   {
-   "label": "Twisted bow switch +6 on Scythe of Vitur #3",
+   "label": "Twisted bow switch +6 on Tumeken's shadow (Ancestral)",
    "kind": "partial",
    "group": "ranged",
    "equipment": {
-    "weapon": {
-     "id": 20997,
-     "name": "Twisted bow",
-     "version": "",
-     "slot": "weapon",
-     "twoHanded": true
-    },
     "head": {
      "id": 27235,
      "name": "Masori mask (f)",
@@ -220,10 +221,17 @@
      "slot": "feet"
     },
     "ring": {
-     "id": 28316,
-     "name": "Bellator ring",
+     "id": 28313,
+     "name": "Magus ring",
      "version": "",
      "slot": "ring"
+    },
+    "weapon": {
+     "id": 20997,
+     "name": "Twisted bow",
+     "version": "",
+     "slot": "weapon",
+     "twoHanded": true
     },
     "ammo": {
      "id": 33595,
@@ -250,32 +258,32 @@
      "spell": null
     }
    ],
-   "source": "Scythe of Vitur #3 → Twisted bow (Masori): Masori body (f), Masori chaps (f), Zaryte vambraces, Necklace of rupture, Dizana's quiver, Masori mask (f)",
-   "base": "Scythe of Vitur #3",
+   "source": "Tumeken's shadow (Ancestral) → Twisted bow (Masori): Masori body (f), Masori chaps (f), Dizana's quiver, Necklace of rupture, Zaryte vambraces, Masori mask (f)",
+   "base": "Tumeken's shadow (Ancestral)",
    "partner": "Twisted bow (Masori)",
    "pieces": [
     "body",
     "legs",
-    "hands",
-    "neck",
     "cape",
+    "neck",
+    "hands",
     "head"
    ],
-   "key": "ranged|27235,28951,33639,33595,20997,27238,0,27241,26235,31097,28316"
+   "key": "ranged|27235,28951,33639,33595,20997,27238,0,27241,26235,31097,28313"
   }
  ],
  "kitMarginal": [
+  {
+   "slots": 7,
+   "seconds": "Infinity"
+  },
   {
    "slots": 8,
    "seconds": "Infinity"
   },
   {
    "slots": 7,
-   "seconds": "Infinity"
-  },
-  {
-   "slots": 7,
-   "seconds": 13.128989002124626
+   "seconds": 12.771972358322955
   }
  ],
  "slots": {
@@ -414,10 +422,10 @@
   },
   {
    "kind": "switch",
-   "label": "Bellator ring",
+   "label": "Ultor ring",
    "item": {
-    "id": 28316,
-    "name": "Bellator ring",
+    "id": 28307,
+    "name": "Ultor ring",
     "version": "",
     "slot": "ring"
    },
@@ -576,13 +584,13 @@
    "slot": "weapon"
   }
  ],
- "comparison": "eae3adadf512cfa7cde04c80cae80708514cba7cf274fc670d19a8231015794e",
+ "comparison": "f0e3fb84494f488bb91240aafb9ad12de8423f9ea0e44b1ef43acbc07b8d420d",
  "planned": 0,
  "rejected": [
   {
    "label": "Twisted bow (Masori)",
    "kind": "addition",
-   "deltaSeconds": 5.562357079836374,
+   "deltaSeconds": 5.562357079836602,
    "deltaSlots": 1,
    "reason": "needs 1 more slot, 0 free",
    "weapons": [
@@ -590,21 +598,21 @@
    ]
   },
   {
-   "label": "Scythe of Vitur #2",
+   "label": "Scythe of Vitur #3",
    "kind": "addition",
-   "deltaSeconds": 3.061365342742647,
-   "deltaSlots": 4,
-   "reason": "needs 4 more slots, 0 free",
+   "deltaSeconds": 1.5326464362767638,
+   "deltaSlots": 1,
+   "reason": "needs 1 more slot, 0 free",
    "weapons": [
     "Scythe of Vitur"
    ]
   },
   {
-   "label": "Scythe of Vitur #5",
+   "label": "Scythe of Vitur #2",
    "kind": "addition",
-   "deltaSeconds": 2.6577402787966093,
-   "deltaSlots": 4,
-   "reason": "needs 4 more slots, 0 free",
+   "deltaSeconds": 1.4925892912083327,
+   "deltaSlots": 3,
+   "reason": "needs 3 more slots, 0 free",
    "weapons": [
     "Scythe of Vitur"
    ]
@@ -614,9 +622,9 @@
   {
    "label": "melee + magic: Tumeken's shadow (Ancestral) / Scythe of Vitur #3",
    "kind": "alternative",
-   "deltaSeconds": -13.128989002124626,
+   "deltaSeconds": -13.165118617382404,
    "deltaSlots": -7,
-   "reason": "13.1 s slower",
+   "reason": "13.2 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Scythe of Vitur"
@@ -712,12 +720,12 @@
      "weapon": "ayak",
      "carriers": 1,
      "drivers": [
+      "Ba-Ba (12.0 s)",
       "Wardens (11.9 s)",
       "Kephri (10.9 s)",
-      "Ba-Ba (6.3 s)",
       "Akkha (0.9 s)"
      ],
-     "lastSaved": 29.909893597384325
+     "lastSaved": 35.76510866102694
     }
    ],
    "perTarget": [
@@ -882,16 +890,16 @@
   "toa-kephri-before-supplies|": 7.502929421504052,
   "toa-zebak-before-supplies|": 9.32823121980418,
   "toa-akkha-shadow|": 12.840594480596106,
-  "toa-akkha|Final stand (Protect from Magic + Missiles)": 7.912481065871496,
+  "toa-akkha|Final stand (Protect from Magic + Missiles)": 7.6318344799476945,
   "toa-akkha|Praying Melee": 13.020302351135584,
   "toa-akkha|Praying Ranged": 13.020302351135584,
-  "toa-akkha|Praying Magic": 7.912481065871496,
+  "toa-akkha|Praying Magic": 7.6318344799476945,
   "toa-baba|": 8.473693226486764,
   "toa-obelisk|": 13.002331564081635,
   "toa-warden-p3|": 12.49271961193711,
   "toa-warden-p3-enraged|": 12.49271961193711,
   "toa-warden-p2|Praying Melee + Ranged": 14.166666666666668,
-  "toa-warden-core|": 29
+  "toa-warden-core|": 30.333333333333332
  },
  "unusedCarried": [
   {
@@ -911,11 +919,11 @@
  "droppedPinned": [],
  "ownershipNotices": [],
  "searchRows": "41f9b83a984ed5b2c329560cdbb7b3c4ddc1de9013aab8010cc2ad0417840872",
- "objectiveSeconds": 932.5073860860662,
+ "objectiveSeconds": 924.9837317497704,
  "fightSeconds": null,
  "plannedRoute": {
   "id": "toa-kephri>toa-zebak>toa-akkha>toa-baba>toa-wardens",
-  "seconds": 930.860439939458,
+  "seconds": 924.9837317497704,
   "surgeDoses": null,
   "encounters": [
    {
@@ -979,15 +987,15 @@
    },
    {
     "id": "toa-akkha",
-    "seconds": 154.90415103688784,
+    "seconds": 156.4367974731646,
     "events": [
      {
       "npc": "Akkha",
       "firstRowKey": "akkha-Praying Melee",
       "counts": {
-       "elderMaul": 4,
-       "tonalztics": 4,
-       "ayak": 2
+       "elderMaul": 8,
+       "tonalztics": 8,
+       "ayak": 4
       }
      },
      {
@@ -1001,15 +1009,15 @@
    },
    {
     "id": "toa-baba",
-    "seconds": 103.06407253492486,
+    "seconds": 97.28700774488063,
     "events": [
      {
       "npc": "Ba-Ba",
       "firstRowKey": "baba",
       "counts": {
-       "elderMaul": 4,
-       "tonalztics": 4,
-       "ayak": 2
+       "elderMaul": 8,
+       "tonalztics": 8,
+       "ayak": 4
       }
      }
     ],
@@ -1018,28 +1026,29 @@
    },
    {
     "id": "toa-wardens",
-    "seconds": 344.1778873243674,
+    "seconds": 342.5455974884472,
     "events": [
      {
       "npc": "Obelisk",
       "firstRowKey": "wardens-p1",
       "counts": {
-       "elderMaul": 4,
-       "tonalztics": 4,
-       "ayak": 2
+       "elderMaul": 8,
+       "tonalztics": 8,
+       "ayak": 4
       }
      },
      {
       "npc": "Elidinis' Warden",
       "firstRowKey": "wardens-p2-shield",
-      "counts": {}
+      "counts": {
+       "elderMaul": 2,
+       "tonalztics": 2
+      }
      },
      {
       "npc": "Tumeken's Warden",
       "firstRowKey": "wardens-p3",
       "counts": {
-       "elderMaul": 2,
-       "tonalztics": 2,
        "ayak": 1
       }
      },

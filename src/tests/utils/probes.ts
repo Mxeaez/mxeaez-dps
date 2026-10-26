@@ -178,7 +178,12 @@ export interface DrainPool {
   ticks: number;
   /** Energy spent: drain specs (group = weapon) or damage specs (yours). */
   spent: number;
-  /** start + 10 × ticks (+ 25 with the surge dose, yours) − spent; ≥ end when nothing was capped at 100%. */
+  /** Phase 38b: Death Charge energy restored per bar (covered kills × 15% × share). */
+  restored: number;
+  /**
+   * start + 10 × ticks (+ 25 with the surge dose, yours) + Death Charge − spent; ≥ end when nothing was capped at 100%.
+   * Spends on a phase starting inside Liquid adrenaline's window (phase 38b) count half.
+   */
   balance: number;
 }
 
@@ -270,6 +275,9 @@ export const drainOutcome = (name: HeadlineName, encounter: string, retimed?: Re
   });
   const wall = encounterWallSeconds(e.seconds, r.timeA);
   const cfg = specBudgetFrom(a, drain);
+  // phase 38b: Liquid adrenaline halves a phase's spends; Death Charge restores energy on kills
+  const factorOf = (row?: DrainPhaseRow) => (row && sp?.adrenalineSeconds && row.start < sp.adrenalineSeconds - 1e-9 ? 0.5 : 1);
+  const restoredPerBar = sp?.deathCharge ? sp.deathCharge.covered * sp.deathCharge.perKill : 0;
   const pools: DrainPool[] = (cfg ? budgetGroups(cfg) : []).map((g) => {
     const ticks = regenTicks(0, wall, g.regenSeconds);
     // drain specs are paid by the weapon's carriers (Team) or by you (Solo, group 'me'); damage specs by you
@@ -278,11 +286,11 @@ export const drainOutcome = (name: HeadlineName, encounter: string, retimed?: Re
       Object.entries(ev.counts).forEach(([w, n]) => {
         if (g.id === w || (drain === 'solo' && g.id === 'me')) {
           const row = phases.find((p) => p.key === ev.firstRowKey);
-          spent += n * (row?.energy[w as PlannerWeapon] ?? 50);
+          spent += n * (row?.energy[w as PlannerWeapon] ?? 50) * factorOf(row);
         }
       });
     });
-    if (g.id === 'me') phases.forEach((p) => p.damage.forEach((d) => { spent += d.count * d.energy; }));
+    if (g.id === 'me') phases.forEach((p) => p.damage.forEach((d) => { spent += d.count * d.energy * factorOf(p); }));
     const start = sp?.start[g.id] ?? [];
     const sum = (xs: number[]) => xs.reduce((t, x) => t + x, 0);
     return {
@@ -293,7 +301,8 @@ export const drainOutcome = (name: HeadlineName, encounter: string, retimed?: Re
       end: sp?.end[g.id] ?? [],
       ticks,
       spent,
-      balance: sum(start) + g.count * ticks * SPEC_REGEN_STEP + (g.id === 'me' && sp?.surge ? SURGE_DOSE_ENERGY : 0) - spent,
+      restored: g.count * restoredPerBar,
+      balance: sum(start) + g.count * (ticks * SPEC_REGEN_STEP + restoredPerBar) + (g.id === 'me' && sp?.surge ? SURGE_DOSE_ENERGY : 0) - spent,
     };
   });
   return {

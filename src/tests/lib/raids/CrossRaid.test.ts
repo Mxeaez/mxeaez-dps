@@ -197,8 +197,9 @@ const PINNED_ENCOUNTER_SECONDS: Record<string, Record<string, number>> = {
   // option cap, MAX_EVENT_OPTIONS); ToB Bloat
   // 39.2 (unchanged), Sotetseg 77 → 79.2 (the three thirds share the carriers' energy); FA unchanged.
   // Phase 38a (ToA supplies by room: rooms 1-2 with the normal potions): Kephri 157 → 185.1, Zebak 120.8 → 137.8.
+  // Phase 38b (Liquid adrenaline: the carriers' drain specs cost half): Ba-Ba 103.1 → 97.3 (Wardens 349.9 → 349.8).
   toa: {
-    'toa-kephri': 185.1, 'toa-zebak': 137.8, 'toa-akkha': 161.6, 'toa-baba': 103.1, 'toa-wardens': 349.9,
+    'toa-kephri': 185.1, 'toa-zebak': 137.8, 'toa-akkha': 161.6, 'toa-baba': 97.3, 'toa-wardens': 349.8,
   },
   cox: {
     'cox-tekton': 18.6,

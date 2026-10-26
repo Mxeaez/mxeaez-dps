@@ -12,7 +12,8 @@ import type { BestSetupTarget } from '@/lib/raids/types';
  * Saturated heart: the Fractured Archive's defaults), the 3rd room on with the raid potion. ToA's route is fixed
  * (Kephri, Zebak, Akkha, Ba-Ba, then the Wardens; the real path order is the team's choice), so Kephri and Zebak are
  * the rooms before the supplies. Slot-neutral: the normal potions are assumed to sit in the slots the raid's supplies
- * take later (UNVERIFIED D31). Liquid adrenaline (spec cost) is phase 38b; Nectar / Tears change no DPS.
+ * take later (UNVERIFIED D31). Liquid adrenaline (spec cost) is phase 38b (below; raidTime.ts / toa/time.ts `TOA_ADRENALINE_DOSES`); Nectar /
+ * Tears change no DPS.
  *
  * Mechanism: the rooms before the supplies query their own copies of the targets (`<key>-before-supplies`, same
  * monster, `beforeSupplies`), and every DPS / drain computation of such a target uses `assumptionsForTarget`.
@@ -28,6 +29,20 @@ export const TOA_RAID_POTIONS: Potion[] = [Potion.SMELLING_SALTS];
 export const NORMAL_POTIONS: Record<StyleGroup, Potion> = { ...DEFAULT_ASSUMPTIONS.potions };
 
 export const BEFORE_SUPPLIES_SUFFIX = '-before-supplies';
+
+/**
+ * Phase 38b: Liquid adrenaline (wiki, read 2026-10-25): "Drinking it will reduce energy costs for special attacks by half
+ * for 150 seconds"; "a player's special attack bar energy is out of 1000, meaning no rounding is applied". Helpful Spirit
+ * (wiki): the Power bundle is "2 smelling salts and 1 liquid adrenaline", a two-dose potion ("Liquid adrenaline is once
+ * again a two-dose potion"): 2 doses per supply drop. The model's Smelling salts imply the Power bundle, so the
+ * adrenaline comes with them (`suppliesAdrenaline`).
+ */
+export const LIQUID_ADRENALINE_SECONDS = 150;
+export const LIQUID_ADRENALINE_DOSES_PER_DROP = 2;
+
+/** Phase 38b: the supplies carry Liquid adrenaline (the raid potion, Smelling salts, is among the potions: the Power bundle). */
+export const suppliesAdrenaline = (a: Pick<BestSetupAssumptions, 'potions'>): boolean => (Object.values(a.potions) as Potion[])
+  .some((p) => TOA_RAID_POTIONS.includes(p));
 
 /** The key of a target's copy for the rooms before the supplies. */
 export const beforeSuppliesKey = (key: string): string => (key.endsWith(BEFORE_SUPPLIES_SUFFIX) ? key : `${key}${BEFORE_SUPPLIES_SUFFIX}`);

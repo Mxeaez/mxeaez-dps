@@ -1,7 +1,7 @@
 import { PlayerEquipment } from '@/types/Player';
 import Potion from '@/enums/Potion';
 import {
-  CoxInputs, RaidId, ToaInputs, TobInputs,
+  CoxInputs, RaidId, Spellbook, ToaInputs, TobInputs,
 } from '@/lib/raids/types';
 import type { DamageSpecWeapon } from '@/lib/fracturedArchive/damageSpecs';
 
@@ -250,6 +250,11 @@ export interface BestSetupAssumptions {
    * Undefined = the raid's default (`RaidBase.typicalRaidMinutes`); the Plan tab's Advanced input sets it.
    */
   raidMinutes?: number;
+  /**
+   * Phase 38b: the players' spellbook (Arceuus: Death Charge in the spec budget). Undefined = the raid's default
+   * (`RaidBase.spellbook`, Arceuus); the Plan tab's Advanced input sets it.
+   */
+  spellbook?: Spellbook;
   /** Phase 36: extra Solo spec energy (%) for a single boss (the Search tab's "with a surge dose" line: 25). */
   soloExtraEnergy?: number;
 }

@@ -948,3 +948,29 @@ https://oldschool.runescape.wiki/w/Tombs_of_Amascut (*Consumables*): "Consumable
 by the Helpful Spirit in the Nexus ... They can be claimed from the spirit once after completing two paths, and once
 again after completing the remaining two paths and before proceeding to" the Wardens. Boosts:
 Smelling salts 11 + 16%, Super combat 5 + 15%, Ranging potion and Saturated heart 4 + 10% (upstream `src/utils.ts`).
+
+### Phase 38b — Death Charge, Liquid adrenaline (2026-10-25)
+
+Fetched 2026-10-25 with the API (`action=parse&prop=wikitext`, generic User-Agent).
+
+**Death Charge** (https://oldschool.runescape.wiki/w/Death_Charge; `DEATH_CHARGE_*` in src/lib/fracturedArchive/specBudget.ts):
+infobox "spellbook = Arceuus", "cooldown = 100 ticks"; *Effect*: "Casting Death Charge will restore 15% of the player's
+special attack energy after they dealt the killing blow to any monster within one minute after casting the spell.
+However, the special attack energy is restored only once per cast. Death Charge can only be cast once every 60
+seconds."; "Killing a monster while the player's special attack bar is already at 100% will trigger the active effect
+of the spell without actually restoring any special attack energy."; exceptions that "will not trigger the effect"
+include "The obelisk and Energy Siphons during the fight with the Wardens", "The Glowing crystal during the fight with
+Vasa Nistirio", "The Great Olm's left and right hand" (the targets' `noDeathCharge`); *Upgrade*: after the rite of vile
+transference "Death Charge is permanently upgraded to restore 15% special attack energy from two targets per cast (while
+still retaining the one minute expiration timer)". Two kills per cast is the user's ("the next 2 kills after the cast"),
+i.e. the upgraded spell; whose bar a kill feeds in a team (1 ÷ party size per bar) is ours: **unverified**, UNVERIFIED D32.
+
+**Liquid adrenaline** (https://oldschool.runescape.wiki/w/Liquid_adrenaline; `LIQUID_ADRENALINE_*` in
+src/lib/raids/toa/supplies.ts): "Drinking it will reduce energy costs for special attacks by half for 150 seconds";
+"a player's special attack bar energy is out of 1000, meaning no rounding is applied (e.g. a 75% special attack will
+use 37.5%)"; *Changes*: "Liquid adrenaline is once again a two-dose potion". Helpful Spirit
+(https://oldschool.runescape.wiki/w/Helpful_Spirit): supplies "twice throughout the raid: once after completing any two
+paths, and once again after completing the remaining two paths and before proceeding to the final encounter"; the
+Power bundle is "2 smelling salts and 1 liquid adrenaline" (the Chaos bundle: adrenaline "0-1", rare). The model's
+Smelling salts imply the Power bundle, so 2 doses per drop; when they are drunk (one each in rooms 3-4, two on the
+Wardens, at the encounter's start) is ours: **unverified**, UNVERIFIED D33.

@@ -8,7 +8,7 @@ import { PlayerEquipment } from '@/types/Player';
 import Spinner from '@/app/components/Spinner';
 import EquipmentSelect from '@/app/components/player/equipment/EquipmentSelect';
 import { buildTargetMonster, DrainStateId, findTarget } from '@/lib/fracturedArchive/bestSetup';
-import { NO_DRAINS_ADDS } from '@/lib/raids/types';
+import { NO_DRAINS_ADDS, Spellbook, SPELLBOOKS } from '@/lib/raids/types';
 import { BestSetupAssumptions, StyleGroup, TeamSpecAssumptions } from '@/lib/fracturedArchive/presets';
 import {
   enumerateRoutes, formatDuration, PhaseTime,
@@ -83,7 +83,7 @@ import feetSlot from '@/public/img/slots/feet.png';
 import ringSlot from '@/public/img/slots/ring.png';
 import { isOwned } from '@/lib/fracturedArchive/ownership';
 import { defaultPinnedIds, PlanInputSettings, RAID_MINUTES_RANGE } from '@/lib/raids/settings';
-import { RAID_LENGTH_SOURCES } from '@/lib/raids/base';
+import { RAID_LENGTH_SOURCES, SPELLBOOK_NOTES } from '@/lib/raids/base';
 import {
   bestWithoutText, describeNeed, specWeaponLabel, weaponDeltaText,
 } from '@/lib/fracturedArchive/specChoice';
@@ -335,9 +335,9 @@ const PhaseRows: React.FC<{ phases: PhaseTime[], encounter: string, open: boolea
               {`×${d.count}`}
             </span>
           ))}
-          {/* phase 35: adds (and other targets drains never apply to) say why there are no specs */}
+          {/* phase 35: adds (and other targets drains never apply to) say why there are no drains (38b: damage specs may apply) */}
           {!p.choice?.drainLine && findTarget(p.targetKey).noDrains === NO_DRAINS_ADDS && (
-            <span title={`No drains: ${NO_DRAINS_ADDS}`} data-testid="plan-phase-no-drains">no specs (adds)</span>
+            <span title={`No drains: ${NO_DRAINS_ADDS}`} data-testid="plan-phase-no-drains">no drains (adds)</span>
           )}
         </td>
         <td className="px-2 text-right font-mono" data-testid="plan-phase-dps">{p.dps.toFixed(3)}</td>
@@ -575,11 +575,13 @@ const PlanView: React.FC<{
   const [pinned, setPinned] = useState<number[]>(initialInputs?.pinned ?? defaultPinned);
   // phase 38a: the typical raid length (the raid clock: surge doses, regen between encounters)
   const [raidMinutes, setRaidMinutes] = useState<number>(initialInputs?.raidMinutes ?? raid.typicalRaidMinutes);
+  // phase 38b: the players' spellbook (Arceuus: Death Charge)
+  const [spellbook, setSpellbook] = useState<Spellbook>(initialInputs?.spellbook ?? raid.spellbook);
   useEffect(() => {
     onInputs?.({
-      route, supplies, ringPolicy, nonItem, pinned, raidMinutes, ...(mages !== undefined ? { mages } : {}),
+      route, supplies, ringPolicy, nonItem, pinned, raidMinutes, spellbook, ...(mages !== undefined ? { mages } : {}),
     });
-  }, [onInputs, route, supplies, ringPolicy, mages, nonItem, pinned, raidMinutes]);
+  }, [onInputs, route, supplies, ringPolicy, mages, nonItem, pinned, raidMinutes, spellbook]);
   // a new Heart in the Assumptions box replaces the pinned one (or removes it); the first render keeps the defaults
   const lastHeart = useRef(selectedHeart);
   useEffect(() => {
@@ -599,7 +601,7 @@ const PlanView: React.FC<{
   const job = useRef<PlanJob | null>(null);
   // phase 26: the pinned items the plan keeps (unowned ones are dropped); "compare with max"
   const keptPinned = useMemo(() => ownedPinned(pinned, notOwned).kept, [pinned, notOwned]);
-  const maxKey = `${raid.id}|${JSON.stringify(assumptions)}|${drain}|${route}|${JSON.stringify(supplies)}|${ringPolicy}|${specMode}|${mages ?? 'auto'}|${nonItem}|${JSON.stringify(pinned)}|${JSON.stringify(settings)}|${raidMinutes}`;
+  const maxKey = `${raid.id}|${JSON.stringify(assumptions)}|${drain}|${route}|${JSON.stringify(supplies)}|${ringPolicy}|${specMode}|${mages ?? 'auto'}|${nonItem}|${JSON.stringify(pinned)}|${JSON.stringify(settings)}|${raidMinutes}|${spellbook}`;
   const [maxSeconds, setMaxSeconds] = useState<number | undefined>(undefined);
   const [comparing, setComparing] = useState(false);
   const compareJob = useRef<PlanJob | null>(null);
@@ -622,7 +624,12 @@ const PlanView: React.FC<{
       data: {
         basePlayer: generateEmptyPlayer(),
         // phase 38a: the raid clock (only when changed: the default keeps the assumptions as they are)
-        assumptions: raidMinutes !== raid.typicalRaidMinutes ? { ...assumptions, raidMinutes } : assumptions,
+        // phase 38b: the spellbook likewise
+        assumptions: {
+          ...assumptions,
+          ...(raidMinutes !== raid.typicalRaidMinutes ? { raidMinutes } : {}),
+          ...(spellbook !== raid.spellbook ? { spellbook } : {}),
+        },
         drain,
         settings,
         route,
@@ -896,6 +903,22 @@ const PlanView: React.FC<{
                 }}
                 data-testid="plan-raid-minutes"
               />
+            </label>
+            <label
+              htmlFor="plan-spellbook"
+              className="flex items-center gap-1"
+              title={`The players' spellbook. Arceuus: Death Charge (wiki: 15% spec energy for a kill within a minute of the cast, once per 60 s; upgraded: two kills per cast) — each kill an encounter's adds and phases make restores 15% ÷ party size to every spec bar (each player is as likely to land it). Not modelled: ${SPELLBOOK_NOTES[raid.id]}`}
+            >
+              Spellbook
+              <select
+                id="plan-spellbook"
+                className="form-control text-xs py-0.5"
+                value={spellbook}
+                onChange={(e) => setSpellbook(e.target.value as Spellbook)}
+                data-testid="plan-spellbook"
+              >
+                {SPELLBOOKS.map((b) => <option key={b.id} value={b.id}>{b.label}</option>)}
+              </select>
             </label>
           </div>
         </details>

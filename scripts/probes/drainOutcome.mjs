@@ -12,7 +12,8 @@
  *   energy per spec of each weapon used, P(floor), expected and ranked Defence (teamSpecs `defenceOutcome`), the Ayak
  *   drain, your damage specs;
  * - pools: each spec bar group (a carrier weapon, or "me"), its regen period, start / end energy, regen ticks over the
- *   encounter's wall clock (the reported phases' clock), energy spent and start + regen (+ surge) − spent.
+ *   encounter's wall clock (the reported phases' clock), Death Charge energy (phase 38b), energy spent (Liquid
+ *   adrenaline: half on a phase inside its window) and start + regen (+ surge) + Death Charge − spent.
  * Exit 1 when the re-time's spec plan differs from the plan's own (phase37/<name>.json), or a pool spends more than
  * start + regen (+ surge). A few seconds.
  */
@@ -53,8 +54,8 @@ console.log(table(['phase', 'event', 'start', 'end', 'seconds', 'def', 'floor', 
   r.damage.map((x) => `${x.count}× ${x.weapon} (${x.energy}%)`).join(', ') || '-',
 ])));
 console.log('\npools (spec bars)');
-console.log(table(['group', 'bars', 'regen every', 'start %', 'end %', 'regen ticks', 'spent %', 'start + regen - spent', 'check'], d.pools.map((g) => [
-  g.group, g.count, `${g.regenSeconds} s`, g.start.join(' / '), g.end.join(' / '), g.ticks, g.spent, g.balance,
+console.log(table(['group', 'bars', 'regen every', 'start %', 'end %', 'regen ticks', 'death charge %', 'spent %', 'start + regen + DC - spent', 'check'], d.pools.map((g) => [
+  g.group, g.count, `${g.regenSeconds} s`, g.start.join(' / '), g.end.join(' / '), g.ticks, g.restored, g.spent, g.balance,
   g.balance >= -1e-9 ? 'ok' : 'OVERSPENT',
 ])));
 const fails = [];

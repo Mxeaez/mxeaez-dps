@@ -259,7 +259,7 @@ const SummaryView: React.FC<{
                         <div className="text-[11px]" data-testid="summary-drains">
                           {/* phase 35: targets drains never apply to (adds, Vanguards, Verzik) say so; the reason is the tooltip */}
                           {target.noDrains && d.id !== 'none' && (
-                            <span className="text-gray-500 dark:text-gray-400" title={cell.drain.plan} data-testid="summary-no-drains">{target.noDrains === NO_DRAINS_ADDS ? 'no specs (adds)' : 'no specs'}</span>
+                            <span className="text-gray-500 dark:text-gray-400" title={cell.drain.plan} data-testid="summary-no-drains">{target.noDrains === NO_DRAINS_ADDS ? 'no drains (adds)' : 'no drains'}</span>
                           )}
                           {cell.drain.line && cell.drain.line.items.length > 0 && (
                             <DrainBrief

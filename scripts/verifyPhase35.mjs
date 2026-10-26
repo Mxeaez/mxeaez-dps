@@ -2,12 +2,12 @@
  * Phase 35 UI check (not part of the Jest run): adds and short-lived targets get no specs.
  *
  * Usage (dev server running): node scripts/verifyPhase35.mjs [baseUrl]
- * - ToA Search, Spitting Scarab, Team and Solo: the drain box reads "No drains: adds: not worth a spec" (no drain icons,
+ * - ToA Search, Spitting Scarab, Team and Solo: the drain box reads "No drains: adds: not worth a drain spec" (no drain icons,
  *   no "no spec weapons" note, no per-boss minimum table); ranked at the undrained Defence (= the target's Def).
  * - ToA Plan (Team, defaults): 14:12.1; the briefing rows mention no scarab / shadow; the Kephri / Akkha per-phase rows
- *   of the scarabs and shadows have no drain icons and say "no specs (adds)"; the team briefing ("Spec plan") lists no
+ *   of the scarabs and shadows have no drain icons and say "no drains (adds)"; the team briefing ("Spec plan") lists no
  *   add target.
- * - CoX Summary row "Skeletal Mystic": "no specs (adds)" in the Solo / Team cells.
+ * - CoX Summary row "Skeletal Mystic": "no drains (adds)" in the Solo / Team cells.
  * Screenshots docs/screenshots/phase35-*.png.
  */
 import { chromium } from '@playwright/test';
@@ -16,7 +16,7 @@ import { openSections } from './phase34Sections.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
 const ADDS = /Scarab|Shadow/;
-const NOTE = 'No drains: adds: not worth a spec';
+const NOTE = 'No drains: adds: not worth a drain spec';
 
 let failures = 0;
 const check = (ok, msg) => {
@@ -99,7 +99,7 @@ const main = async () => {
       note: e.querySelector('[data-testid="plan-phase-no-drains"]')?.textContent ?? '',
     })));
   addRows.forEach((r) => console.log(`     ${r.target}: ${r.icons} drain icons, "${r.note}"`));
-  check(addRows.length === 4 && addRows.every((r) => r.icons === 0 && r.note === 'no specs (adds)'), 'per-phase rows: the 3 scarabs and the shadows have no specs ("no specs (adds)")');
+  check(addRows.length === 4 && addRows.every((r) => r.icons === 0 && r.note === 'no drains (adds)'), 'per-phase rows: the 3 scarabs and the shadows have no specs ("no drains (adds)")');
   const bossRows = await page.locator('[data-testid="plan-phase-row"]').evaluateAll((els) => els
     .filter((e) => ['toa-kephri-shielded', 'toa-akkha'].includes(e.dataset.target))
     .map((e) => e.querySelectorAll('[data-testid="plan-phase-drains"] [data-testid="drain-line-item"]').length));
@@ -116,7 +116,7 @@ const main = async () => {
     .filter((e) => e.textContent.includes('Skeletal Mystic'))
     .map((e) => Array.from(e.querySelectorAll('[data-testid="summary-no-drains"]')).map((n) => ({ t: n.textContent, title: n.getAttribute('title') }))));
   console.log(`     Skeletal Mystic: ${JSON.stringify(mystic)}`);
-  check(mystic.length === 1 && mystic[0].length === 2 && mystic[0].every((n) => n.t === 'no specs (adds)' && n.title === NOTE), 'Summary: Skeletal Mystic Solo / Team say "no specs (adds)"');
+  check(mystic.length === 1 && mystic[0].length === 2 && mystic[0].every((n) => n.t === 'no drains (adds)' && n.title === NOTE), 'Summary: Skeletal Mystic Solo / Team say "no drains (adds)"');
   const tekton = await page.locator('[data-testid="summary-row"]').evaluateAll((els) => els
     .filter((e) => e.textContent.includes('Tekton'))
     .map((e) => e.querySelectorAll('[data-testid="summary-no-drains"]').length));

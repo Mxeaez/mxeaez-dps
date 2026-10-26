@@ -17,7 +17,7 @@ import {
 import {
   BestSetupAssumptions, DEFAULT_ASSUMPTIONS, PresetDef, StyleGroup,
 } from '@/lib/fracturedArchive/presets';
-import { raidBase, teamDpsMultiplier } from '@/lib/raids/base';
+import { raidBase, spellbookOf, teamDpsMultiplier } from '@/lib/raids/base';
 import {
   CoxInputs, DEFAULT_RAID, RaidId, TimeSettings, ToaInputs, TobInputs,
 } from '@/lib/raids/types';
@@ -42,7 +42,7 @@ import {
   atHpLeft, DAMAGE_SPEC_WEAPON_IDS, DAMAGE_SPEC_WEAPONS, damageSpecItemName, damageSpecProfile, DamageSpecProfile, DamageSpecWeapon,
 } from '@/lib/fracturedArchive/damageSpecs';
 import { canWeaponHit } from '@/lib/fracturedArchive/hittable';
-import { assumptionsForTarget } from '@/lib/raids/toa/supplies';
+import { assumptionsForTarget, LIQUID_ADRENALINE_SECONDS, suppliesAdrenaline } from '@/lib/raids/toa/supplies';
 import {
   budgetedEncounter, budgetGroups, CARRY_SPEC_ENERGY, EncounterAlloc, encounterWallSeconds, EncounterSpecPlan, fixedEncounter,
   PhaseDamageSpecs, SpecBudgetConfig,
@@ -287,6 +287,11 @@ export interface PlannedPhase {
    * (e.g. 'maze 1', 'the stomp': "After maze 1 (Defence restored)"). Phases without it share the drain event of the phase before (Bork armour 8 → 14).
    */
   drainReset?: string;
+  /**
+   * Phase 38b (Death Charge): how many NPCs die in this phase when it is their last (default 1; a row standing for
+   * several adds says how many, e.g. Akkha's four Shadows).
+   */
+  kills?: number;
 }
 
 const pctText = (f: number): string => `${Math.round(f * 1000) / 10}%`;
@@ -457,6 +462,11 @@ export interface RaidTimeModel {
   ) => PhaseTime[];
   /** The target / phase options the model may query (for precomputing per-phase search results). */
   requiredPhaseTargets: (a: RaidTimeAssumptions) => { targetKey: string, phase?: string }[];
+  /**
+   * Phase 38b (ToA): Liquid adrenaline doses drunk at each encounter's start (150 s each, back to back), when the
+   * supplies carry it (`SpecBudgetConfig.adrenaline`). Undefined = none.
+   */
+  adrenalineDoses?: Partial<Record<EncounterId, number>>;
 }
 
 /**
@@ -473,6 +483,9 @@ export const specBudgetFrom = (best: BestSetupAssumptions, drain: DrainStateId):
     damage: (best.damageSpecs ?? []).filter((w) => DAMAGE_SPEC_WEAPON_IDS.includes(w)),
     surgePotions: Math.max(0, Math.floor(best.surgePotions ?? 0)),
     carry: CARRY_SPEC_ENERGY,
+    // phase 38b: Death Charge on the Arceuus spellbook (each player as likely to land a kill), Liquid adrenaline (ToA)
+    ...(spellbookOf(best) === 'arceuus' ? { deathCharge: { share: 1 / Math.max(1, Math.floor(best.partySize)) } } : {}),
+    ...(suppliesAdrenaline(best) ? { adrenaline: true } : {}),
   };
   if (drain === 'solo') {
     const many = 99;
@@ -695,8 +708,17 @@ const encounterTimeOf = (id: EncounterId, kit: RaidKit, a: RaidTimeAssumptions, 
     }
     const first = pass(kit, 'none', a.fallbackFightSeconds);
     const fight = fixed ?? drainFightSecondsOf(sumSeconds(first), a);
+    // phase 38b: Liquid adrenaline doses at the encounter's start
+    const adrenalineSeconds = budget.adrenaline ? (model.adrenalineDoses?.[id] ?? 0) * LIQUID_ADRENALINE_SECONDS : 0;
     const r = budgetedEncounter(kit, a, budget, {
-      drain: a.drain, pass, first, fightSeconds: fight, clock0: opts.clock0 ?? 0, startState: opts.startState, surge: !!opts.surge,
+      drain: a.drain,
+      pass,
+      first,
+      fightSeconds: fight,
+      clock0: opts.clock0 ?? 0,
+      startState: opts.startState,
+      surge: !!opts.surge,
+      ...(adrenalineSeconds > 0 ? { adrenalineSeconds } : {}),
     });
     return {
       id, label, phases: r.phases, seconds: r.seconds, drainFightSeconds: fight, specPlan: r.plan,

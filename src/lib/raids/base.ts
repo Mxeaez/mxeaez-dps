@@ -6,7 +6,7 @@ import { SEARCH_POOL, StylePool } from '@/lib/fracturedArchive/searchCandidates'
 import { BEST_SETUP_TARGETS } from '@/lib/fracturedArchive/targets';
 import {
   BestSetupTarget, DEFAULT_COX_INPUTS, DEFAULT_RAID, DEFAULT_TOA_INPUTS, DEFAULT_TOB_INPUTS, RaidId, ScalingInputDef,
-  TOA_PATHS, TOB_MODES,
+  Spellbook, TOA_PATHS, TOB_MODES,
 } from '@/lib/raids/types';
 import { TOA_TARGETS } from '@/lib/raids/toa/targets';
 import { TOA_DEFAULT_ASSUMPTIONS, TOA_PRESETS } from '@/lib/raids/toa/presets';
@@ -73,7 +73,20 @@ export interface RaidBase {
   typicalRaidMinutes: number;
   /** Phase 38a (ToB): the surge cooldown pauses between encounters (only fight time counts for it). */
   surgePausesBetweenEncounters?: boolean;
+  /**
+   * Phase 38b: the default spellbook of the Plan tab's "Spellbook" input (Advanced (plan)): Arceuus for every raid
+   * (Death Charge in the spec budget). `SPELLBOOK_NOTES` says what it costs.
+   */
+  spellbook: Spellbook;
 }
+
+/** Phase 38b: what the Arceuus default leaves out per raid (shown with the input; not modelled). */
+export const SPELLBOOK_NOTES: Record<RaidId, string> = {
+  'fractured-archive': 'the Xarth route needs one freezer on the Ancient spellbook (no Death Charge for that player)',
+  toa: 'no freezes needed',
+  cox: 'no freezes needed',
+  tob: 'Maiden needs one freezer on the Ancient spellbook (no Death Charge for that player)',
+};
 
 /**
  * Phase 38a: where each raid's default typical length comes from (docs/DATA_SOURCES.md *Phase 38a*). The wiki publishes
@@ -114,6 +127,7 @@ export const FRACTURED_ARCHIVE_BASE: RaidBase = {
   boostsNeedSupplies: true,
   planDefaults: FA_PLAN_DEFAULTS,
   typicalRaidMinutes: 25,
+  spellbook: 'arceuus',
 };
 
 export const TOMBS_OF_AMASCUT_BASE: RaidBase = {
@@ -158,6 +172,7 @@ export const TOMBS_OF_AMASCUT_BASE: RaidBase = {
   // phase 38a: the copies of the rooms before the supplies are the time model's, not the Search list's
   targetVisible: (target) => !target.beforeSupplies,
   typicalRaidMinutes: 30,
+  spellbook: 'arceuus',
 };
 
 const coxOf = (a: BestSetupAssumptions) => a.cox || DEFAULT_COX_INPUTS;
@@ -203,6 +218,7 @@ export const CHAMBERS_OF_XERIC_BASE: RaidBase = {
   boostsNeedSupplies: false,
   planDefaults: COX_PLAN_DEFAULTS,
   typicalRaidMinutes: 20,
+  spellbook: 'arceuus',
 };
 
 const tobOf = (a: BestSetupAssumptions) => a.tob || DEFAULT_TOB_INPUTS;
@@ -252,11 +268,15 @@ export const THEATRE_OF_BLOOD_BASE: RaidBase = {
   typicalRaidMinutes: 20,
   // phase 36: the surge cooldown pauses between ToB rooms
   surgePausesBetweenEncounters: true,
+  spellbook: 'arceuus',
 };
 
 export const RAID_BASES: RaidBase[] = [FRACTURED_ARCHIVE_BASE, TOMBS_OF_AMASCUT_BASE, CHAMBERS_OF_XERIC_BASE, THEATRE_OF_BLOOD_BASE];
 
 export const raidBase = (id: RaidId | undefined): RaidBase => RAID_BASES.find((r) => r.id === (id ?? DEFAULT_RAID)) ?? FRACTURED_ARCHIVE_BASE;
+
+/** Phase 38b: the spellbook of these assumptions (default: the raid's). */
+export const spellbookOf = (a: Pick<BestSetupAssumptions, 'spellbook' | 'raid'>): Spellbook => a.spellbook ?? raidBase(a.raid).spellbook;
 
 /** Every raid's targets (keys are unique across raids). */
 export const ALL_RAID_TARGETS: BestSetupTarget[] = RAID_BASES.flatMap((r) => r.targets);

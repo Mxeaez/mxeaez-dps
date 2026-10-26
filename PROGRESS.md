@@ -3,6 +3,59 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 38b — Death Charge, Liquid adrenaline, damage specs on adds (2026-10-25)
+
+**Numbers moved** (`node scripts/pinHeadlines.mjs --full`, 9 changes): ToA 14:38.2 → **14:30.1**, CoX 7:08.7 →
+**7:06.9**; FA 21:05.3, FA Solo 21:56.2, FA without Obligator / Ascension 24:11.9, ToB 7:23.4 unchanged (their phase37
+fixtures moved only in the new `deathCharge` plan field, end energies, the comparison hash and FA Solo's rejected
+alternatives' deltas). Docs: BEST_SETUP *Death Charge, Liquid adrenaline, damage specs on adds (phase 38b)*,
+DATA_SOURCES *Phase 38b* (wiki Death Charge, Liquid adrenaline, Helpful Spirit), UNVERIFIED D32-D34 (D26 / D28 / D31
+point to them).
+
+- **Death Charge** (specBudget.ts `deathChargeSchedule`, `BudgetRow.restore`; encounterBudget.ts `rowKills`,
+  `withDeathCharge`): wiki "restore 15% ... after they dealt the killing blow to any monster within one minute after
+  casting", "once every 60 seconds", upgraded "two targets per cast" (2 per cast: the user). Kills = each NPC's last row
+  (Akkha's Shadows: `kills: 4`), minus the wiki exceptions (`noDeathCharge`: Glowing crystal, Olm's hands, the Wardens'
+  obelisk); greedy casts, ready at each encounter's start; every bar +15% ÷ party size per covered kill at the row's
+  end, after the cap. Arceuus only: new per-raid Plan input "Spellbook" (Advanced (plan), default Arceuus, saved as
+  `plan.spellbook`; `RaidBase.spellbook`, `spellbookOf`, `SPELLBOOK_NOTES`: the FA Xarth / ToB Maiden freezer on
+  Ancients is noted, not modelled).
+- **Liquid adrenaline** (toa/supplies.ts `LIQUID_ADRENALINE_*`, `suppliesAdrenaline`; toa/time.ts
+  `TOA_ADRENALINE_DOSES`, `RaidTimeModel.adrenalineDoses`; `AllocationProblem.halfCostUntil`, `costFactorAt`): wiki
+  "reduce energy costs for special attacks by half for 150 seconds", no rounding; the Power bundle (implied by the
+  salts) gives 2 doses per drop: Akkha 1, Ba-Ba 1, Wardens 2 (300 s), none before the supplies. Spends on rows starting
+  in the window cost half (drains and damage specs, every bar); the option caps use the halved cost.
+- **Damage specs on adds**: types.ts splits the rule: `noDrains` (adds: "adds: not worth a drain spec") vs the new
+  `noDamageSpecs` (none set); `damageLimited` no longer excludes adds. UI: "no drains (adds)" (Plan rows, Summary).
+- **Moved totals, explained:** ToA: with adrenaline the Zaryte crossbow costs 37.5%, so it replaces Voidwaker (your
+  bar: Akkha 3 ZCB incl. 1 on the Shadows, Ba-Ba 3, Wardens 5; Kephri / Zebak 2 / 1 at 75%), the carriers spec more
+  (Elidinis' Warden now 2 maul + 2 Tonalztics): Akkha 143.26 → 141.74, Ba-Ba 92.47 → 90.20, Wardens 344.47 → 340.10,
+  Kephri 156.21 → 156.32, Zebak 141.81 → 141.74 = −8.1 s; kit, ring, carriers unchanged. CoX: damage specs on adds
+  (2 Burning claws on Vasa's crystals, ZCB + claws on the Mystics, ZCB on the Shamans / small Muttadile / portal,
+  claws on the Ice demon, Tekton, Olm's left claw) and Death Charge (2.5% per mid-fight kill) → Zaryte crossbow +
+  Burning claws replace Dragon claws; the planner re-chose the kit (8 loadouts: Inquisitor's + Obligator, Twisted bow,
+  Scorching bow ... ) and carriers (3 Elder maul + 2 Tonalztics, was + 1 BGS + 1 Tonalztics): Vespula −1.5, Mystics
+  −0.9, Shamans −0.9, Muttadiles −0.5, Tekton +0.4, Olm +1.3, ... = −1.8 s. FA / ToB: their mid-fight kills (Bork
+  before the Smorks) give 2.5-3.75% that buys no spec.
+- Re-pinned with explanations: CrossRaid fast pin ToA Ba-Ba 103.1 → 97.3 (Wardens 349.8); Phase27 ToA switch 930.9 →
+  925.0 (r27toa.json re-captured; r27fa / cox / tob changed only in the comparison hash); Phase35 (the adds string),
+  Phase35b (Elidinis' Warden now specced), Phase36 (adds: damage-limited now), Phase37b (spellbook in the saved
+  plan), Phase37c (retime ToA; drain outcome balances + Death Charge: Xarth 25 / 37.5 / 12.5, Solo AG 25).
+- Probes: `drainOutcome` counts Death Charge (`restored`, a new column) and halves spends inside the adrenaline window
+  (it reported "OVERSPENT" on ToA rooms 3-5 before); `retime`: all six gap 0.
+- **Speed (a cost to flag):** the ToA / CoX headline plans take +31% / +68% CPU (slow suite 235.5 / 527.8 s; adrenaline
+  doubles the spec options per ToA event, damage specs on the adds' rows, CoX's bigger kit with 2 damage spec weapons);
+  `PHASE37_MEMO` toa / cox re-recorded, the catastrophe budgets raised ToA 180 → 300, CoX 315 → 650 s.
+- Tests: new `Phase38b.test.ts` (8, hand-computed: the cast schedule; kills per row and the wiki exceptions; a toy
+  encounter with 2 kills → 60% at row c, 2 + 1 maul specs, 80 s vs 90 s, party 2 → 45%, 90 s; Spellbook default /
+  share / validation; Bork & Smorks 2 kills covered at party 1; adrenaline doses and the window; Zebak with a forced
+  150 s dose: 150% buys 4 ZCB at 37.5% vs 2 at 75%, seconds = s0 × (1 − m × net ÷ damage); Burning claws ×2 on Vasa's
+  crystals with their drain event empty, ×2 on the Ice demon). Fast suite: 1624 tests, the 26 failures of the first
+  run were the re-pins above (each file re-run green: Phase27, 35, 35b, 36, 37, 37b, 37c, 38a, 38b, CrossRaid);
+  `RUN_SLOW_TESTS=1` CrossRaidHeadlines + CrossRaidHeadlinesCox 5 / 5. Verify: `verifyAll 36 38a 35` 3 / 3 OK
+  (verifyPhase35's strings updated); new `verifyPhase38b.mjs` OK (defaults, tooltips, saved across a reload;
+  screenshot phase38b-spellbook.png). tsc, lint clean.
+
 ## Phase 38a — Raid wall clock + ToA supplies by room (2026-10-25)
 
 **Numbers moved** (`node scripts/pinHeadlines.mjs --full`, 7 changes): FA 21:07.7 → **21:05.3**, FA Solo 21:59.0 →

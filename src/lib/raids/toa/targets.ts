@@ -63,7 +63,13 @@ const TOA_ROOM_TARGETS: BestSetupTarget[] = [
     key: 'toa-baba', label: 'Ba-Ba', name: 'Ba-Ba', version: '', raid: 'toa', toaPath: 'baba',
   },
   {
-    key: 'toa-obelisk', label: 'Obelisk (Wardens P1)', name: 'Obelisk (Tombs of Amascut)', version: '', raid: 'toa', npc: 'Obelisk',
+    key: 'toa-obelisk',
+    label: 'Obelisk (Wardens P1)',
+    name: 'Obelisk (Tombs of Amascut)',
+    version: '',
+    raid: 'toa',
+    npc: 'Obelisk',
+    noDeathCharge: 'wiki Death Charge: "The obelisk and Energy Siphons during the fight with the Wardens" will not trigger the effect',
   },
   {
     key: 'toa-warden-p2',

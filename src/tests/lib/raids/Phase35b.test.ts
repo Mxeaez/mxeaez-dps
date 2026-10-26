@@ -170,15 +170,15 @@ describe('ToA / CoX / ToB multi-NPC encounters (default assumptions, presets kit
   test('ToA Wardens: Obelisk / Elidinis\' Warden / Tumeken\'s Warden lines', () => {
     const [w] = encountersOf('toa', ['toa-wardens']);
     const s = summaryOf(w);
-    // phase 36: one spec budget: Elidinis' Warden's P2 gets no specs (the energy goes to the Obelisk and P3), and the
+    // phase 36: one spec budget: Elidinis' Warden's P2 got no specs (the energy went to the Obelisk and P3), and the
     // enrage resets the Defence (wiki): a second Tumeken's Warden event
-    // Phase 37 fix: Elidinis' Warden is listed with "no specs" (it was dropped, so it read as not part of the plan)
+    // Phase 37 fix: Elidinis' Warden is listed even with "no specs" (it was dropped, so it read as not part of the plan)
+    // Phase 38b: Liquid adrenaline (two doses, 300 s from the Wardens' start) halves the spec costs: P2 is specced too
     expect(s.events.map((e) => e.npc)).toEqual(['Obelisk', 'Elidinis\' Warden', 'Tumeken\'s Warden', 'Tumeken\'s Warden']);
-    expect(s.events[1].parts).toEqual([]);
-    expect(s.events[1].text).toBe('Elidinis\' Warden: no specs');
+    expect(s.events[1].text).toBe('Elidinis\' Warden: 1 Elder maul carrier (2 specs) + 1 Tonalztics carrier (2 specs) → Def 0 · 95%');
     const [row] = briefingRows([w], 'team');
     expect(row.specs.map((g) => g.label)).toEqual(['Obelisk', 'Elidinis\' Warden', 'Tumeken\'s Warden', 'Tumeken\'s Warden, after the enrage']);
-    expect(row.specs[1].text).toBe('Elidinis\' Warden: no specs');
+    expect(row.specs[1].text).toBe('Elidinis\' Warden: Elder maul 2 specs + Tonalztics 2 hits → Def 0');
   });
 
   test('CoX Olm: right claw, left claw and head are three lines (and three Wear lines); Vanguards: no specs, Wear per Vanguard', () => {

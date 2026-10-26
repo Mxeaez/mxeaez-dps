@@ -44,8 +44,8 @@
   "toa": {
    "raid": "toa",
    "label": "Tombs of Amascut (Team defaults, invocation 500)",
-   "total": "14:38.2",
-   "seconds": 878.209470677732,
+   "total": "14:30.1",
+   "seconds": 870.0990074548125,
    "route": "toa-kephri>toa-zebak>toa-akkha>toa-baba>toa-wardens",
    "ring": "Ultor ring",
    "kit": [
@@ -64,60 +64,63 @@
     "tonalztics": 0,
     "ayak": 1
    },
-   "bring": "Bring: Voidwaker",
+   "bring": "Bring: Zaryte crossbow",
    "items": [
-    "Voidwaker"
+    "Zaryte crossbow"
    ],
    "yourShare": null,
    "surgeAt": [],
    "encounters": {
-    "toa-kephri": 156.21,
-    "toa-zebak": 141.81,
-    "toa-akkha": 143.26,
-    "toa-baba": 92.47,
-    "toa-wardens": 344.47
+    "toa-kephri": 156.32,
+    "toa-zebak": 141.74,
+    "toa-akkha": 141.74,
+    "toa-baba": 90.2,
+    "toa-wardens": 340.1
    }
   },
   "cox": {
    "raid": "cox",
    "label": "Chambers of Xeric (Team defaults)",
-   "total": "7:08.7",
-   "seconds": 428.67352885970655,
+   "total": "7:06.9",
+   "seconds": 426.8656158919338,
    "route": "cox-tekton>cox-vasa>cox-vanguards>cox-vespula>cox-mystics>cox-shamans>cox-muttadiles>cox-guardians>cox-ice-demon>cox-olm",
    "ring": "Ultor ring",
    "kit": [
-    "Torva + Scythe (slash)",
+    "Inquisitor's + Obligator",
     "Ascension crossbows + diamond (e) (Masori)",
     "Dragon pickaxe",
+    "Twisted bow (Masori)",
+    "Inquisitor's + Scythe (slash)",
+    "Ascension crossbows + Diamond ascension bolts (e) #2",
     "Tumeken's shadow (Ancestral)",
-    "Emberlight",
-    "Ascension crossbows + Diamond ascension bolts (e) #2"
+    "Scorching bow + Seeking dragon arrow #2"
    ],
    "freeSlots": 0,
    "carriers": {
     "elderMaul": 3,
     "dwh": 0,
-    "bgs": 1,
-    "tonalztics": 1,
+    "bgs": 0,
+    "tonalztics": 2,
     "ayak": 0
    },
-   "bring": "Bring: Dragon claws",
+   "bring": "Bring: Zaryte crossbow, Burning claws",
    "items": [
-    "Dragon claws"
+    "Zaryte crossbow",
+    "Burning claws"
    ],
    "yourShare": null,
    "surgeAt": [],
    "encounters": {
-    "cox-tekton": 13.76,
-    "cox-vasa": 21.04,
-    "cox-vanguards": 31.15,
-    "cox-vespula": 23.42,
-    "cox-mystics": 43.9,
-    "cox-shamans": 29.73,
-    "cox-muttadiles": 22.53,
+    "cox-tekton": 14.14,
+    "cox-vasa": 20.85,
+    "cox-vanguards": 31.47,
+    "cox-vespula": 21.96,
+    "cox-mystics": 43.03,
+    "cox-shamans": 28.88,
+    "cox-muttadiles": 22.02,
     "cox-guardians": 35.43,
-    "cox-ice-demon": 6.65,
-    "cox-olm": 201.07
+    "cox-ice-demon": 6.71,
+    "cox-olm": 202.38
    }
   },
   "tob": {

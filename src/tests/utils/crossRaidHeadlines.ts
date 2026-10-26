@@ -125,10 +125,12 @@ export const recomputed = (raid: RaidConfig, res: PlanResult): number => {
  * but the run statistics: src/tests/utils/phase37.ts); its memo counters must stay near the recorded ones (`memoWithin`:
  * deterministic, catches a memo that stops working) and its CPU time within a catastrophe-only budget (5× its phase 37
  * time alone on the dev machine — FA 22 s, ToA 36 s, ToB 25 s, CoX 63 s, FA without Obligator / Ascension 61 s — since
- * under the parallel slow suites a plan's CPU time is 3-4× its time alone).
+ * under the parallel slow suites a plan's CPU time is 3-4× its time alone). Phase 38b: ToA 180 → 300, CoX 315 → 650 (the
+ * slow suite measured 235.5 / 527.8 s: Liquid adrenaline doubles the spec options per ToA event, damage specs on the
+ * adds' rows and CoX's 8-loadout kit with 2 damage spec weapons cost +31% / +68% CPU; the memo counters rose alike).
  */
 export const PHASE37_FIXTURE: Record<string, [string, number]> = {
-  'fractured-archive': ['fa', 110], toa: ['toa', 180], cox: ['cox', 315], tob: ['tob', 125],
+  'fractured-archive': ['fa', 110], toa: ['toa', 300], cox: ['cox', 650], tob: ['tob', 125],
 };
 
 /** Registers the slow headline tests of these raids (and, with `notOwned`, the FA plan without Obligator / Ascension). */

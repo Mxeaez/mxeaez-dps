@@ -73,7 +73,8 @@ const ADD_KEYS = new Set(ADDS.map(([k]) => k));
 describe('adds: noDrains with the adds reason', () => {
   test.each(ADDS)('%s', (key) => {
     expect(findTarget(key).noDrains).toBe(NO_DRAINS_ADDS);
-    expect(NO_DRAINS_ADDS).toBe('adds: not worth a spec');
+    // phase 38b: drains only (damage specs are allowed on adds)
+    expect(NO_DRAINS_ADDS).toBe('adds: not worth a drain spec');
   });
 
   test('the existing reasons are kept (Vanguards, Bloat after a stomp, Verzik)', () => {

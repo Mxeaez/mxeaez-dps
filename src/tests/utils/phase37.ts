@@ -108,15 +108,19 @@ export const PHASE37_MEMO: Record<string, MemoCounters> = {
   fa: {
     encounterRuns: 10648, passRuns: 10445, encounterHits: 444976, passHits: 9904,
   },
-  // phase 38a (rooms 1-2 before the supplies: other drain states and candidates): was 32784 / 10825 / 544791 / 24576
+  // phase 38a (rooms 1-2 before the supplies: other drain states and candidates): was 32784 / 10825 / 544791 / 24576;
+  // phase 38b (Liquid adrenaline: more spec options per event, damage specs on the adds' rows): was 39715 / 11721 /
+  // 728535 / 30660
   toa: {
-    encounterRuns: 39715, passRuns: 11721, encounterHits: 728535, passHits: 30660,
+    encounterRuns: 48604, passRuns: 16842, encounterHits: 915256, passHits: 35030,
   },
   tob: {
     encounterRuns: 25001, passRuns: 23772, encounterHits: 1335979, passHits: 5729,
   },
+  // phase 38b (damage specs on the adds' rows; the plan brings 2 damage spec weapons and keeps 8 loadouts): was 43236 /
+  // 39222 / 1122494 / 27158
   cox: {
-    encounterRuns: 43236, passRuns: 39222, encounterHits: 1122494, passHits: 27158,
+    encounterRuns: 73944, passRuns: 35416, encounterHits: 1961276, passHits: 62818,
   },
   faSolo: {
     encounterRuns: 91778, passRuns: 38942, encounterHits: 3464758, passHits: 56722,

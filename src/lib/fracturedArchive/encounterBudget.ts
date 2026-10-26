@@ -5,15 +5,14 @@ import { findTarget } from '@/lib/fracturedArchive/bestSetup';
 import type {
   PhaseQuery, PhaseTime, RaidKit, RaidTimeAssumptions,
 } from '@/lib/fracturedArchive/raidTime';
-import { NO_DRAINS_ADDS } from '@/lib/raids/types';
 import { PlannerWeapon, SPEC_WEAPONS } from '@/lib/fracturedArchive/specs';
 import {
   bestDamageVariant, DAMAGE_SPEC_WEAPONS, DamageSpecProfile, DamageSpecWeapon, netSpecDamage, specSecondsSaved,
 } from '@/lib/fracturedArchive/damageSpecs';
 import {
-  allocateBudget, AllocationProblem, BudgetEvent, BudgetRow, CARRY_SPEC_ENERGY, DamageChoice, drinkRowOf, EventOption, MY_POOL,
-  OptionSpend, PoolGroup, PoolState, prunedOptions, RowOutcome, rowSecondsAfter, simulateBudget, SPEC_MAX_ENERGY,
-  SURGE_DOSE_ENERGY,
+  ADRENALINE_COST_FACTOR, allocateBudget, AllocationProblem, BudgetEvent, BudgetRow, CARRY_SPEC_ENERGY, DamageChoice,
+  DEATH_CHARGE_ENERGY, deathChargeSchedule, drinkRowOf, EventOption, MY_POOL, OptionSpend, PoolGroup, PoolState,
+  prunedOptions, RowOutcome, rowSecondsAfter, simulateBudget, SPEC_MAX_ENERGY, SURGE_DOSE_ENERGY,
 } from '@/lib/fracturedArchive/specBudget';
 
 /**
@@ -26,8 +25,8 @@ import {
  *   undrained times; it is then re-planned on the clock of its own drained phases (review: the drained fight is
  *   shorter, so fewer regen ticks), {@link CLOCK_ROUNDS} times at most.
  * - **Drain events** ({@link drainEventsOf}) = per NPC its first phase and every Defence reset (drainLine.ts
- *   `encounterDrainSummary`'s grouping). Adds and other `noDrains` targets get no drain specs; adds
- *   (`NO_DRAINS_ADDS`) get no damage specs either.
+ *   `encounterDrainSummary`'s grouping). Adds and other `noDrains` targets get no drain specs (phase 38b: damage specs
+ *   are allowed on adds; a target's `noDamageSpecs` forbids them).
  * - **Options** of an event = spec counts per drain weapon (Solo: the weapons you carry, Eye of Ayak up to the specs
  *   asked for; Team: the carriers' weapons), each weapon's specs made at the first phase of the event it can hit
  *   (`RaidKit.specHits`). A phase's drains = the event's specs of the weapons that can hit it (bestSetup.ts
@@ -55,6 +54,13 @@ export interface SpecBudgetConfig {
   surgePotions: number;
   /** Energy carries from one encounter to the next ({@link CARRY_SPEC_ENERGY}). */
   carry: boolean;
+  /**
+   * Phase 38b: Death Charge (the Arceuus spellbook): each kill a cast covers restores 15% × `share` to every pool
+   * (`share` = 1 ÷ party size: each player is as likely to land the killing blow; Solo party 1 = every kill).
+   */
+  deathCharge?: { share: number };
+  /** Phase 38b: Liquid adrenaline from the raid's supplies (ToA: the Power bundle with the Smelling salts). */
+  adrenaline?: boolean;
 }
 
 export interface EncounterAllocEvent {
@@ -75,6 +81,15 @@ export interface EncounterAlloc {
   surge: boolean;
 }
 
+/** Phase 38b: Death Charge in an encounter (the plan's last clock round). */
+export interface DeathChargePlan {
+  /** Kills that can trigger it (the last row of each NPC; a row's `kills`), and those the casts cover. */
+  kills: number;
+  covered: number;
+  /** Energy (%) each pool gets per covered kill (15 × share). */
+  perKill: number;
+}
+
 export interface EncounterSpecPlan extends EncounterAlloc {
   /** Specs made (drains + damage). */
   specs: number;
@@ -83,6 +98,10 @@ export interface EncounterSpecPlan extends EncounterAlloc {
   /** Energy per pool at the start and the end of the encounter. */
   start: PoolState;
   end: PoolState;
+  /** Phase 38b: Death Charge (undefined: not on the Arceuus spellbook, or no kill in the encounter). */
+  deathCharge?: DeathChargePlan;
+  /** Phase 38b: Liquid adrenaline seconds from the encounter's start (spec costs halved). */
+  adrenalineSeconds?: number;
 }
 
 /** One damage spec weapon's specs on a phase. */
@@ -115,6 +134,57 @@ const targetNoDrains = (targetKey: string): string | undefined => {
   } catch {
     return undefined;
   }
+};
+
+/** Phase 38b: why damage specs never apply to a target (not the adds: damage specs are allowed on them). */
+const targetNoDamageSpecs = (targetKey: string): string | undefined => {
+  try {
+    return findTarget(targetKey).noDamageSpecs;
+  } catch {
+    return undefined;
+  }
+};
+
+/** Phase 38b: whether killing a target can trigger Death Charge (wiki exceptions: Glowing crystal, Olm's hands, obelisk). */
+const triggersDeathCharge = (targetKey: string): boolean => {
+  try {
+    return !findTarget(targetKey).noDeathCharge;
+  } catch {
+    return true;
+  }
+};
+
+/**
+ * Phase 38b: the kills of an encounter's rows (Death Charge): an NPC dies at its last row (`targetNpc`), the row's
+ * `kills` of them (default 1: a row standing for several adds counts once unless the model says how many). Returns per
+ * row the number of kills.
+ */
+export const rowKills = (rows: { key: string, targetKey: string, kills?: number }[]): number[] => {
+  const last = new Map<string, number>();
+  rows.forEach((r, i) => last.set(targetNpc(r.targetKey), i));
+  return rows.map((r, i) => (last.get(targetNpc(r.targetKey)) === i && triggersDeathCharge(r.targetKey)
+    ? Math.max(0, Math.floor(r.kills ?? 1)) : 0));
+};
+
+/**
+ * Phase 38b: the Death Charge restore of each row (energy per pool at its end): a row's k kills are spread evenly over
+ * it (start + j × length ÷ k, j = 1..k), the casts (`deathChargeSchedule`, ready at the encounter's start) cover some,
+ * each covered kill gives 15% × share. Returns the rows with `restore` and the summary.
+ */
+export const withDeathCharge = (rows: BudgetRow[], kills: number[], share: number, clock0: number): { rows: BudgetRow[], plan?: DeathChargePlan } => {
+  const times: { row: number, t: number }[] = [];
+  kills.forEach((k, i) => {
+    for (let j = 1; j <= k; j++) times.push({ row: i, t: rows[i].start + (j / k) * (rows[i].end - rows[i].start) });
+  });
+  if (!times.length || !(share > 0)) return { rows };
+  const covered = deathChargeSchedule(times.map((x) => x.t), clock0);
+  const perKill = DEATH_CHARGE_ENERGY * share;
+  const restore = rows.map(() => 0);
+  covered.forEach((c, j) => { if (c) restore[times[j].row] += perKill; });
+  return {
+    rows: rows.map((r, i) => (restore[i] > 0 ? { ...r, restore: restore[i] } : r)),
+    plan: { kills: times.length, covered: covered.filter((c) => c).length, perKill },
+  };
 };
 
 /**
@@ -208,7 +278,8 @@ export const assignedKit = (
 /** A row's seconds are damage ÷ (multiplier × DPS): damage specs can take damage off it. */
 export const damageLimited = (r: Pick<PhaseTime, 'seconds' | 'damage' | 'dps' | 'targetKey' | 'noDamageSpecs'>, mult: number): boolean => {
   if (r.noDamageSpecs || !(r.dps > 0) || !(r.damage > 0) || !Number.isFinite(r.seconds) || !(r.seconds > 0)) return false;
-  if (targetNoDrains(r.targetKey) === NO_DRAINS_ADDS) return false;
+  // phase 38b: adds (`noDrains`) take damage specs; only a target's own `noDamageSpecs` forbids them
+  if (targetNoDamageSpecs(r.targetKey)) return false;
   const expect = r.damage / (Math.max(1e-12, mult) * r.dps);
   return Math.abs(expect - r.seconds) <= 1e-6 * Math.max(1, r.seconds);
 };
@@ -319,6 +390,8 @@ export interface BudgetContext {
   startState?: PoolState;
   /** A surge dose right after the encounter's first specs. */
   surge: boolean;
+  /** Phase 38b: Liquid adrenaline seconds from the encounter's start (spec costs halved); undefined / 0 = none. */
+  adrenalineSeconds?: number;
   /** Tests: the allocation problem the DP solves (pruned options) and the unpruned one. */
   onProblem?: (pruned: AllocationProblem, full: AllocationProblem) => void;
 }
@@ -441,6 +514,11 @@ export const budgetedEncounter = (
       targetKey: r.targetKey, phase: r.phase, drain: 'none', fightSeconds: ctx.fightSeconds, rowKey: r.key,
     })
     : ALL_TRUE));
+  // phase 38b: Liquid adrenaline from the encounter's start; Death Charge on the rows' kills
+  const adrenaline = ctx.adrenalineSeconds && ctx.adrenalineSeconds > 0 ? ctx.adrenalineSeconds : 0;
+  const costFactor = adrenaline > 0 ? ADRENALINE_COST_FACTOR : 1;
+  const halfCost = adrenaline > 0 ? { halfCostUntil: ctx.clock0 + adrenaline } : {};
+  const kills = cfg.deathCharge ? rowKills(rows0) : rows0.map(() => 0);
   const drainWeapons: PlannerWeapon[] = (cfg.drain === 'solo'
     ? (Object.keys(cfg.solo ?? {}) as PlannerWeapon[]).filter((w) => (cfg.solo![w] ?? 0) > 0)
     : (Object.keys(cfg.carriers ?? {}) as PlannerWeapon[]).filter((w) => (cfg.carriers![w] ?? 0) > 0))
@@ -466,13 +544,14 @@ export const budgetedEncounter = (
     if (!usable.length) return { firstRow: e.rows[0], options: [none] };
     const surgeBonus = cfg.surgePotions > 0 || ctx.surge ? SURGE_DOSE_ENERGY : 0;
     const maxes: [PlannerWeapon, number, number][] = usable.map((w) => {
-      const cost = SPEC_WEAPONS[w].energy;
+      // phase 38b: with Liquid adrenaline a spend may cost half (the DP checks each row's actual cost)
+      const cost = SPEC_WEAPONS[w].energy * costFactor;
       if (cfg.drain === 'solo') {
         // the bar is capped at 100% between rows, so a spend has at most 100% (+ a dose drunk right after one spec)
-        const cap = Math.floor((SPEC_MAX_ENERGY + surgeBonus) / cost);
+        const cap = Math.floor((SPEC_MAX_ENERGY + surgeBonus) / cost + 1e-9);
         return [w, Math.min(cap, Math.floor(cfg.solo![w] ?? 0)), cost];
       }
-      const per = Math.floor(SPEC_MAX_ENERGY / cost);
+      const per = Math.floor(SPEC_MAX_ENERGY / cost + 1e-9);
       return [w, per * Math.floor(cfg.carriers![w] ?? 0), cost];
     });
     const joint = cfg.drain === 'solo'
@@ -560,12 +639,14 @@ export const budgetedEncounter = (
   const noSpecSeconds = rows0.reduce((tt, _, i) => tt + rowOutcome(i, 0).seconds, 0);
   const order: string[] = ['elderMaul', 'dwh', 'tonalztics', 'bgs', 'ayak'];
   const sameCounts = (x: Record<string, number>, y: Record<string, number>) => order.every((w) => (x[w] ?? 0) === (y[w] ?? 0));
-  const solve = (rows: BudgetRow[]) => {
+  const solve = (clockRows: BudgetRow[]) => {
+    const dc = cfg.deathCharge ? withDeathCharge(clockRows, kills, cfg.deathCharge.share, ctx.clock0) : { rows: clockRows };
+    const { rows } = dc;
     const problem: AllocationProblem = {
-      rows, events: pruned, groups, start, damageGroup: MY_POOL, rowOutcome, surge: ctx.surge, keepEnd: cfg.carry,
+      rows, events: pruned, groups, start, damageGroup: MY_POOL, rowOutcome, surge: ctx.surge, keepEnd: cfg.carry, ...halfCost,
     };
     ctx.onProblem?.(problem, {
-      rows, events, groups, start, damageGroup: MY_POOL, rowOutcome: rawOutcome, surge: ctx.surge,
+      rows, events, groups, start, damageGroup: MY_POOL, rowOutcome: rawOutcome, surge: ctx.surge, ...halfCost,
     });
     const result = allocateBudget(problem);
     // top-up: spare energy that changes no seconds still buys reliability — add drain specs (event order, upstream
@@ -573,7 +654,7 @@ export const budgetedEncounter = (
     // P ≥ 95%, else the nearest reachable Defence), so the fewest specs reaching the same ranked Defence can be far less
     // reliable (Kephri: 1 maul spec ranks at Def 60 at 63%; 4 specs reach it at 98%).
     const full: AllocationProblem = {
-      rows, events, groups, start, damageGroup: MY_POOL, rowOutcome: rawOutcome, surge: ctx.surge,
+      rows, events, groups, start, damageGroup: MY_POOL, rowOutcome: rawOutcome, surge: ctx.surge, ...halfCost,
     };
     const chosen = result.options.map((oi, ei) => keep[ei][oi]);
     const decisions = { options: chosen, damage: result.rows.map((r) => r.damage), drinkRow: drinkRowOf(result) };
@@ -613,7 +694,13 @@ export const budgetedEncounter = (
       phases,
       seconds: sum(phases),
       plan: {
-        ...alloc, specs: specsUsed, noSpecSeconds, start, end: sim.feasible ? sim.end : result.end,
+        ...alloc,
+        specs: specsUsed,
+        noSpecSeconds,
+        start,
+        end: sim.feasible ? sim.end : result.end,
+        ...(dc.plan ? { deathCharge: dc.plan } : {}),
+        ...(adrenaline > 0 ? { adrenalineSeconds: adrenaline } : {}),
       },
     };
   };

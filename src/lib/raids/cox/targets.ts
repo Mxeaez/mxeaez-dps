@@ -41,6 +41,7 @@ export const COX_TARGETS: BestSetupTarget[] = [
     raid: 'cox',
     note: 'Immune to ranged, magic ÷3 (upstream); weak to stab. Not CM-scaled.',
     noDrains: NO_DRAINS_ADDS,
+    noDeathCharge: 'wiki Death Charge: "The Glowing crystal during the fight with Vasa Nistirio" will not trigger the effect',
   },
   {
     key: 'cox-vanguard-melee',
@@ -142,6 +143,7 @@ export const COX_TARGETS: BestSetupTarget[] = [
     npc: 'Left claw',
     raid: 'cox',
     note: 'Dragon. Magic and ranged ÷3 (upstream).',
+    noDeathCharge: 'wiki Death Charge: "The Great Olm\'s left and right hand" will not trigger the effect',
   },
   {
     key: 'cox-olm-right',
@@ -150,6 +152,7 @@ export const COX_TARGETS: BestSetupTarget[] = [
     version: 'Right claw (Normal)',
     npc: 'Right claw',
     raid: 'cox',
+    noDeathCharge: 'wiki Death Charge: "The Great Olm\'s left and right hand" will not trigger the effect',
     note: 'Dragon. Ranged ÷3 (upstream), melee ÷3 (wiki "66% damage mitigation from all non-mage attacks").',
   },
   {

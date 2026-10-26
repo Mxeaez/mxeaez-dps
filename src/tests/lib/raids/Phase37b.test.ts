@@ -73,6 +73,7 @@ const changed = (): SavedSettings => {
       nonItem: 2,
       pinned: [planItemByName('Lightbearer').id],
       raidMinutes: 30,
+      spellbook: 'ancients',
     },
   };
   const toa = s.raids.toa;

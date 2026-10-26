@@ -24,6 +24,10 @@
  *   running): the least total seconds; ties (≤ 1e-9 s): fewer specs, then the earlier option / fewer damage specs in
  *   enumeration order. "No specs" is always an option, so the result is never slower than spending nothing, and adding a
  *   pool (a carrier) or energy never makes it slower.
+ * - **Phase 38b, Death Charge** (`BudgetRow.restore`): energy every pool gets at the row's end (the kills of the row,
+ *   {@link deathChargeSchedule}), after the row's damage specs and the cap, capped again. **Liquid adrenaline**
+ *   (`AllocationProblem.halfCostUntil`): every spend (drain or damage spec) on a row starting before that clock time
+ *   costs half (wiki: "reduce energy costs for special attacks by half for 150 seconds", no rounding).
  */
 
 /** Phase 36 decision: false = every encounter starts at 100% (see BEST_SETUP); true = leftover energy carries on. */
@@ -34,6 +38,18 @@ export const SPEC_REGEN_STEP = 10;
 export const SURGE_DOSE_ENERGY = 25;
 export const SURGE_COOLDOWN_SECONDS = 300;
 export const SURGE_DOSES_PER_POTION = 4;
+/**
+ * Phase 38b, Death Charge (wiki, read 2026-10-25): "restore 15% of the player's special attack energy after they dealt the
+ * killing blow to any monster within one minute after casting the spell", "can only be cast once every 60 seconds";
+ * upgraded by the rite of vile transference: "15% special attack energy from two targets per cast (while still retaining
+ * the one minute expiration timer)". Two kills per cast: the user ("the next 2 kills after the cast"; UNVERIFIED D32).
+ */
+export const DEATH_CHARGE_ENERGY = 15;
+export const DEATH_CHARGE_WINDOW_SECONDS = 60;
+export const DEATH_CHARGE_COOLDOWN_SECONDS = 60;
+export const DEATH_CHARGE_KILLS_PER_CAST = 2;
+/** Phase 38b, Liquid adrenaline (wiki): spec costs halved "for 150 seconds". */
+export const ADRENALINE_COST_FACTOR = 0.5;
 /** The group of your own pool (Solo drains, damage specs). */
 export const MY_POOL = 'me';
 
@@ -56,6 +72,8 @@ export interface BudgetRow {
   /** Clock seconds (wall) at the row's start and end. */
   start: number;
   end: number;
+  /** Phase 38b: energy (%) every pool gets at the row's end (Death Charge on the row's kills); undefined = 0. */
+  restore?: number;
 }
 
 export interface OptionSpend {
@@ -116,7 +134,52 @@ export interface AllocationProblem {
    * a carrier group's energy after its last possible spend is ignored (the end state reported for it is then any path's).
    */
   keepEnd?: boolean;
+  /**
+   * Phase 38b (Liquid adrenaline): spends on a row whose start (clock) is before this time cost
+   * {@link ADRENALINE_COST_FACTOR} of their energy. Undefined = full cost everywhere.
+   */
+  halfCostUntil?: number;
 }
+
+/** Phase 38b: the cost factor of spends on a row (Liquid adrenaline active at its start: 0.5, else 1). */
+export const costFactorAt = (p: Pick<AllocationProblem, 'halfCostUntil'>, row: Pick<BudgetRow, 'start'>): number => (
+  p.halfCostUntil !== undefined && row.start < p.halfCostUntil - EPS ? ADRENALINE_COST_FACTOR : 1);
+
+/** Phase 38b: a pool's energy after the row's cap and its Death Charge restore (capped again). */
+const restored = (e: number, row: Pick<BudgetRow, 'restore'>): number => Math.min(SPEC_MAX_ENERGY, Math.min(SPEC_MAX_ENERGY, e) + (row.restore ?? 0));
+
+/**
+ * Phase 38b: Death Charge casts over an encounter's kills (clock times, any order): which kills restore energy. Greedy:
+ * a cast just before the first kill no cast covers, when the cooldown allows (ready at `readyAt`, the encounter's start:
+ * the raid's gaps between encounters exceed the 60 s cooldown); it covers the next kills within its window, at most
+ * `perCast`. Returns a flag per kill (input order).
+ */
+export const deathChargeSchedule = (
+  kills: number[],
+  readyAt = 0,
+  perCast = DEATH_CHARGE_KILLS_PER_CAST,
+  window = DEATH_CHARGE_WINDOW_SECONDS,
+  cooldown = DEATH_CHARGE_COOLDOWN_SECONDS,
+): boolean[] => {
+  const order = kills.map((t, i) => ({ t, i })).sort((a, b) => (a.t - b.t) || (a.i - b.i));
+  const out = kills.map(() => false);
+  let cast = -Infinity;
+  let used = 0;
+  let ready = readyAt;
+  order.forEach(({ t, i }) => {
+    if (!Number.isFinite(t)) return;
+    if (t <= cast + window + EPS && used < perCast) {
+      used += 1;
+      out[i] = true;
+    } else if (t + EPS >= ready) {
+      cast = t;
+      used = 1;
+      ready = t + cooldown;
+      out[i] = true;
+    }
+  });
+  return out;
+};
 
 export interface RowDecision {
   /** The options chosen for the events starting at this row. */
@@ -247,12 +310,13 @@ export const allocateBudget = (p: AllocationProblem): AllocationResult => {
       // (1) spends due at this row
       let s: PoolState | null = { ...state };
       let mineSpent = false;
+      const factor = costFactorAt(p, p.rows[i]);
       for (let ei = 0; ei < p.events.length && s; ei++) {
         if (ch[ei] === undefined || ch[ei] < 0) continue;
         for (const sp of p.events[ei].options[ch[ei]].spends) {
           if (sp.row !== i || sp.specs <= 0) continue;
           const g: number[] | undefined = s[sp.group];
-          const paid: number[] | null = g ? spendFromGroup(g, sp.specs, sp.cost) : null;
+          const paid: number[] | null = g ? spendFromGroup(g, sp.specs, sp.cost * factor) : null;
           if (!paid) {
             s = null;
             break;
@@ -280,7 +344,9 @@ export const allocateBudget = (p: AllocationProblem): AllocationResult => {
       });
       // (4) damage specs on the row, (5) cap
       const ev = row.event;
-      const o = outcome(i, ch[ev] !== undefined && ch[ev] >= 0 ? ch[ev] : 0);
+      const o0 = outcome(i, ch[ev] !== undefined && ch[ev] >= 0 ? ch[ev] : 0);
+      // phase 38b: Liquid adrenaline halves the damage specs' cost too
+      const o = factor === 1 ? o0 : { ...o0, damageSpecs: o0.damageSpecs.map((c) => ({ ...c, cost: c.cost * factor })) };
       const mine = regen[dmgGroup]?.[0] ?? 0;
       // with a pending dose, the row's specs may use it (drunk below 100%, or right after the first spec)
       const combosD = o.damageSpecs.length && regen[dmgGroup]?.length
@@ -296,7 +362,7 @@ export const allocateBudget = (p: AllocationProblem): AllocationResult => {
           const after: PoolState = {};
           Object.keys(regen).forEach((gid) => {
             const list = regen[gid].map((e, k) => (gid === dmgGroup && k === 0 ? e - spent + (drink ? SURGE_DOSE_ENERGY : 0) : e));
-            after[gid] = list.map((e) => Math.min(SPEC_MAX_ENERGY, e)).sort((x, y) => y - x);
+            after[gid] = list.map((e) => restored(e, row)).sort((x, y) => y - x);
           });
           const secs = rowSecondsAfter(o, d);
           const nxt = solve(i + 1, after, ch, dose && !drink);
@@ -464,10 +530,11 @@ export const simulateBudget = (p: AllocationProblem, d: BudgetDecisions): { feas
   let pending = !!p.surge && d.drinkRow >= 0;
   for (let i = 0; i < p.rows.length; i++) {
     let mineSpent = false;
+    const factor = costFactorAt(p, p.rows[i]);
     for (let ei = 0; ei < p.events.length; ei++) {
       for (const sp of p.events[ei].options[d.options[ei]].spends) {
         if (sp.row !== i || sp.specs <= 0) continue;
-        const paid = s[sp.group] ? spendFromGroup(s[sp.group], sp.specs, sp.cost) : null;
+        const paid = s[sp.group] ? spendFromGroup(s[sp.group], sp.specs, sp.cost * factor) : null;
         if (!paid) return { feasible: false, seconds: Infinity, end: s };
         s = { ...s, [sp.group]: paid };
         if (sp.group === dmgGroup) mineSpent = true;
@@ -484,14 +551,14 @@ export const simulateBudget = (p: AllocationProblem, d: BudgetDecisions): { feas
     }
     const o = p.rowOutcome(i, d.options[row.event]);
     const counts = d.damage[i] ?? {};
-    const spent = o.damageSpecs.reduce((t, c) => t + (counts[c.weapon] ?? 0) * c.cost, 0);
+    const spent = o.damageSpecs.reduce((t, c) => t + (counts[c.weapon] ?? 0) * c.cost * factor, 0);
     const mine = s[dmgGroup]?.[0] ?? 0;
     const drink = pending && i === d.drinkRow;
     if (drink && !(spent > 0 || mine < SPEC_MAX_ENERGY - EPS)) return { feasible: false, seconds: Infinity, end: s };
     if (spent > mine + (drink ? SURGE_DOSE_ENERGY : 0) + EPS) return { feasible: false, seconds: Infinity, end: s };
     if (drink) pending = false;
     if (s[dmgGroup]?.length) s[dmgGroup] = [mine - spent + (drink ? SURGE_DOSE_ENERGY : 0), ...s[dmgGroup].slice(1)];
-    for (const gid of Object.keys(s)) s[gid] = s[gid].map((e) => Math.min(SPEC_MAX_ENERGY, e)).sort((x, y) => y - x);
+    for (const gid of Object.keys(s)) s[gid] = s[gid].map((e) => restored(e, row)).sort((x, y) => y - x);
     total += rowSecondsAfter(o, counts);
   }
   return { feasible: true, seconds: total, end: s };

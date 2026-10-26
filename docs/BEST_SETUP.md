@@ -1394,7 +1394,7 @@ so the last fight ends at L. On that clock:
   the clock allows more than 4 doses (`surgeClockSpan`: 25 min → 6).
 - **Regen between encounters** (only with `CARRY_SPEC_ENERGY`, off: every bar starts an encounter at 100%): each pool
   gains +10% per regen tick of its period inside the gap before the encounter, capped at 100%; the gaps come from the
-  full-bar encounter times. Death Charge cooldowns (phase 38b) will run on the same clock.
+  full-bar encounter times. Death Charge (phase 38b) runs per encounter, its cooldown ready at each start.
 
 FA headline (party 6, phase 37 seconds: fight 211.3 s of 1500 s): fights start at 179 s (AG), 401 (Bork), 499 (Moia),
 694 (Xarth), 1391 s (Ocellus), so up to 3 doses fit (AG, Moia or Xarth, Ocellus; Bork → Xarth is 294 s). Phase 38a test: hand gains
@@ -1412,6 +1412,41 @@ values, `buildTargetMonster` / `specCountsDrainKey` for the drain hit chances, `
 replaces Burning claws: AG −2.3 s, Xarth −1.0 s, Bork +0.9 s); FA Solo 21:59.0 → **21:56.2** (a third dose on
 Ocellus, −2.8 s); ToA 14:07.8 → **14:38.2** (Kephri +9.6 s, Zebak +20.8 s); CoX, ToB, FA without Obligator /
 Ascension unchanged (no surge potion in their plans; ToB's surge clock is unchanged).
+
+### Death Charge, Liquid adrenaline, damage specs on adds (phase 38b)
+
+Three more terms in the per-encounter spec budget (encounterBudget.ts → specBudget.ts; sources in docs/DATA_SOURCES.md
+*Phase 38b*; readings UNVERIFIED D32-D34):
+
+- **Death Charge** (Arceuus; Plan tab → Advanced (plan) → "Spellbook", saved as `plan.spellbook`, default Arceuus for
+  every raid, `RaidBase.spellbook`; other books: none). Kills = each NPC's last row in the encounter (`rowKills`; a row's
+  `kills` where the model knows a count: Akkha's 4 Shadows; else 1, so rows standing for several adds under-count),
+  minus the wiki's exceptions (`noDeathCharge`: Glowing crystal, Olm's hands, the Wardens' obelisk). A row's k kills are
+  spread evenly over it; `deathChargeSchedule` casts greedily (cast just before the first uncovered kill once the 60 s
+  cooldown allows, ready at the encounter's start; a cast covers up to 2 kills within 60 s — the upgraded spell, per the
+  user). Each covered kill gives every bar 15% ÷ party size (each player as likely to land the killing blow; Solo party
+  1: 15%), at the row's end, after its damage specs and the 100% cap (`BudgetRow.restore`; a kill at a full bar is
+  wasted, as in game). Kills at an encounter's last row only matter with `CARRY_SPEC_ENERGY` (off). Not modelled: the
+  freezer on Ancients (FA Xarth route, ToB Maiden), the cast's tick.
+- **Liquid adrenaline** (ToA, when the supplies carry the Smelling salts: the Power bundle, 2 salts + 1 two-dose
+  adrenaline per drop). `TOA_ADRENALINE_DOSES`: none before the supplies (Kephri, Zebak), one each for Akkha and Ba-Ba,
+  two (300 s) for the Wardens, drunk at the encounter's start by every player. Every spend (drain or damage spec) on a
+  row starting inside the window costs half (`halfCostUntil`, `costFactorAt`; no rounding: ZCB 37.5%).
+- **Damage specs on adds**: `damageLimited` no longer excludes `NO_DRAINS_ADDS` ("adds: not worth a drain spec"); the
+  adds still get no drain specs. The separate target flag `noDamageSpecs` (none set) forbids damage specs. UI: "no
+  drains (adds)" in the Plan rows and the Summary.
+
+Hand checks (Phase38b.test.ts): toy Solo encounter, kills at 50 and 110 s: 2 maul specs leave 0 + 10 + 15 + 20 + 15 =
+60% at row c (a third spec; 80 s vs 90 s without); party 2: 45%, back to 90 s. Zebak with a forced 150 s dose: 100 + 5
+ticks = 150% buys 4 ZCB specs at 37.5% instead of 2 at 75%. CoX Vasa: 2 Burning claws on the crystals, their drain
+event empty.
+
+**Headlines** (`pinHeadlines --full`): ToA 14:38.2 → **14:30.1** (Zaryte crossbow replaces Voidwaker: with adrenaline
+the ZCB costs 37.5%; Akkha −1.5 s, Ba-Ba −2.3 s, Wardens −4.4 s; Kephri +0.1, Zebak −0.1 before the supplies); CoX
+7:08.7 → **7:06.9** (mostly damage specs on adds — the crystals, Mystics, Shamans, small Muttadile, portal; Death Charge
+adds 2.5% per mid-fight kill — so Zaryte crossbow + Burning claws replace Dragon claws and the planner re-chose the kit
+and carriers: 3 Elder maul + 2 Tonalztics); FA, FA Solo, FA without Obligator / Ascension, ToB unchanged (their mid-fight
+kills — Bork before the Smorks — give 2.5-3.75% that buys nothing).
 
 ## Routes tab (phase 16: raid time model)
 

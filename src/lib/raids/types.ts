@@ -64,9 +64,23 @@ export const DEFAULT_TOB_INPUTS: TobInputs = { mode: 'normal' };
 /**
  * Phase 35: the `noDrains` reason of adds and short-lived targets (ToA scarabs and Akkha's Shadows, CoX Mystics /
  * Shamans / small Muttadile / Glowing crystals / Abyssal portal, ToB wave nylocas, FA jellies). User, 2026-10-24: "you
- * obviously aren't going to Ralos or Elder maul spec the little minions that die in a few hits anyway".
+ * obviously aren't going to Ralos or Elder maul spec the little minions that die in a few hits anyway". Phase 38b: drains
+ * only; damage specs (Burning claws on Vasa's crystals) are allowed on adds (`noDamageSpecs` is the separate rule).
  */
-export const NO_DRAINS_ADDS = 'adds: not worth a spec';
+export const NO_DRAINS_ADDS = 'adds: not worth a drain spec';
+
+/**
+ * Phase 38b: the spellbook of a raid's players (Plan tab, Advanced; default `RaidBase.spellbook`). Arceuus gives Death
+ * Charge (spec energy on kills); the others give nothing the time model counts.
+ */
+export type Spellbook = 'arceuus' | 'ancients' | 'standard' | 'lunar';
+
+export const SPELLBOOKS: { id: Spellbook, label: string }[] = [
+  { id: 'arceuus', label: 'Arceuus (Death Charge)' },
+  { id: 'ancients', label: 'Ancient' },
+  { id: 'standard', label: 'Standard' },
+  { id: 'lunar', label: 'Lunar' },
+];
 
 /** A boss / phase the best-setup view can target (Search boss list, Summary rows, time-model phases). */
 export interface BestSetupTarget {
@@ -93,6 +107,16 @@ export interface BestSetupTarget {
    * spec energy) are planned on them and they rank at full Defence.
    */
   noDrains?: string;
+  /**
+   * Phase 38b: damage specs never apply to this target (with the reason). Separate from `noDrains`: adds take damage
+   * specs (they only get no drains). No target sets it today; fixed-length phases use `PhaseTime.noDamageSpecs`.
+   */
+  noDamageSpecs?: string;
+  /**
+   * Phase 38b: killing this target never triggers Death Charge (wiki Death Charge: "These monsters ... will not trigger
+   * the effect": the Glowing crystal, the Great Olm's left and right hand, the Wardens' obelisk), with the reason.
+   */
+  noDeathCharge?: string;
   /** Expected TTK isn't meaningful (Ocellus P2: the Blade phase is timed, damage transfers 50% to P3). */
   ttkNotApplicable?: boolean;
   note?: string;

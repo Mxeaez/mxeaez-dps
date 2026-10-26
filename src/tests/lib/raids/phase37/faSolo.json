@@ -534,7 +534,7 @@
   }
  ],
  "pinnedItems": [],
- "comparison": "f90f98b56bee8e38ffdf5a8fe22d9f3913850f5df7fb9d52023d8e87f4cc68c7",
+ "comparison": "7a2ebdb931a398b1699a2ae48daca314fe9e3310d31fa0e47590258c33519140",
  "planned": 1,
  "rejected": [],
  "alternatives": [
@@ -568,9 +568,9 @@
   {
    "label": "ranged + magic: Tumeken's shadow (Ancestral) / Twisted bow (Masori) / Ascension crossbows + diamond (e) (Masori) / Ascension crossbows + onyx (e) (Masori)",
    "kind": "alternative",
-   "deltaSeconds": -387.3334093605679,
+   "deltaSeconds": -386.19865828383354,
    "deltaSlots": 1,
-   "reason": "387.3 s slower",
+   "reason": "386.2 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Twisted bow",
@@ -581,9 +581,9 @@
   {
    "label": "magic: Tumeken's shadow (Ancestral) / Harmonised Nightmare staff / Harmonised Nightmare staff #3",
    "kind": "alternative",
-   "deltaSeconds": -864.7714351922414,
+   "deltaSeconds": -862.4291528311442,
    "deltaSlots": -5,
-   "reason": "864.8 s slower",
+   "reason": "862.4 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Harmonised Nightmare staff",

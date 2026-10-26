@@ -270,11 +270,13 @@ describe('ring policy', () => {
    * ToB 455.1 → 457.3 (Sotetseg's thirds share the carriers' energy); FA unchanged. Phase 36 review (regen on the
    * drained clock): ToA 881.1 → 881.2, CoX 448.9 → 452.7 (Olm's phases: fewer regen ticks); FA / ToB unchanged.
    * Phase 38a (ToA rooms 1-2 before the supplies: normal potions, Kephri 157.1 → 185.8 s, Zebak 121.9 → 142.9 s; the
-   * kit adds a Twisted bow): ToA 881.2 → 930.9; FA / CoX / ToB unchanged (no surge potion in these plans).
+   * kit adds a Twisted bow): ToA 881.2 → 930.9; FA / CoX / ToB unchanged (no surge potion in these plans). Phase 38b
+   * (Liquid adrenaline in ToA rooms 3-5: spec costs halved; Death Charge; damage specs on adds): ToA 930.9 → 925.0;
+   * FA / CoX / ToB unchanged.
    */
   test.each([
     ['fractured-archive', 1493.8],
-    ['toa', 930.9],
+    ['toa', 925.0],
     ['cox', 452.7],
     ['tob', 457.3],
   ] as [RaidConfig['id'], number][])('%s: allow switches reproduces the previous planner (%s s)', (id, seconds) => {
