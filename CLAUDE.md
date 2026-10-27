@@ -46,3 +46,12 @@ UNVERIFIED whole; grep them for the term you need. Older progress entries are in
 - Every behavioural change gets a Jest test. Phase-specific rules (weakness, floors, scaling) get a test per boss.
 - Commit at the end of each phase with a message `phase N: <summary>`; append an entry to `PROGRESS.md` in the same commit.
 - Stop and ask the user only for: Cloudflare login/deploy credentials, or a decision that changes product scope.
+
+## Session handoff
+
+Before clearing a session: (1) no subagent is running (finish or let it report; a cleared session cannot resume its
+agents); (2) the working tree is clean and pushed (`git status`, `git log origin/main-mxeaez -1`); (3) the project
+memory (`~/.claude/projects/c--dev-mxeaez-dps/memory/raid4-dps-calc-plan.md`) says: the live commit and headline
+totals, the next ROADMAP row to run, any open decision for the user; (4) ROADMAP rows have their status (done with
+commit, or planned). On resume: read the memory, `git status` + `git log -3`, the next ROADMAP row, the top PROGRESS
+entry, then launch it with the project agent types (builder / numbers-builder / reviewer; no model override).
