@@ -133,6 +133,10 @@ per-phase strings that moved.
   changed files, and re-does the numeric protocol only if the diff touches src/lib maths, pools or the time model.
   Reviews under 1200 words; re-reviews under 600.
 
+- **Probes run against a committed tree.** While a builder has uncommitted work in the working tree, any probe or
+  review must run against `git archive HEAD` (or a worktree), never the working tree; otherwise two runs of "the same
+  code" disagree (2026-10-27).
+
 ### Builder checklist
 1. Read this page + the one row + top 2 PROGRESS entries; nothing else long.
 2. More than one mechanism or ~30+ files? Stop and propose a split.
