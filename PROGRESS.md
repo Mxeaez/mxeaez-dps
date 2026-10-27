@@ -5,6 +5,7 @@ verified, what's unverified / left for later.
 
 ## Phase 38e fix — carrier swaps dropped (2026-10-27)
 
+- **Review (2026-10-27): pass.** retime gap 0 on all six; kit brute force gap 0 (FA small pool; FA without Obligator / Ascension with its own probe, plus a joint kit x item-set search whose best, +1 slot for 0.92 s, fails the 1 s/slot rule). Two low findings: the beam's dedupe key ignores free slots (search incompleteness, no instance found; left, 38g / 38h replace the model); the two slow tests accepted an overfull plan, now assert overfull false and cells <= slots (Phase38e 9/9 with RUN_SLOW_TESTS).
 - **User decision**: the next phase replaces the tick-level spec timing by a per-boss value-per-energy ranking, so
   `swapCarriers` (specChoice.ts), its planner block and its two tests are removed. Kept: the item beam, item swaps, the
   0-slot pin.

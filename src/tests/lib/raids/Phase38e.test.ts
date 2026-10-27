@@ -124,10 +124,11 @@ const sitePlanInputs = (): PlanInputs => {
     expect(seconds).toBeLessThanOrEqual(25 * 60 + 7.95);
     expect(r.specItems.map((x) => x.name)).toContain('Zaryte crossbow');
     const cells = r.inventory.filter((x) => x.kind !== 'free').length;
-    expect(cells <= r.slots!.total || r.slots!.overfull).toBe(true);
+    expect(r.slots!.overfull).toBe(false);
+    expect(cells).toBeLessThanOrEqual(r.slots!.total);
   }, 600000);
 
-  test('the 0-slot pin: an item carried anyway, then a slot from the kit — the cells fit or the kit says overfull', () => {
+  test('the 0-slot pin: an item carried anyway, then a slot from the kit — the cells fit and the kit is not overfull', () => {
     // planInputsFor's FA inputs with the user's overrides: Crimson kisten, then Zaryte crossbow carried anyway (its
     // loadout is in the kit), then Surge re-optimises the kit; before the pin that could drop the ZCB loadout (29 cells)
     const base = planInputsFor(fa, false, ['Obligator']);
@@ -135,7 +136,8 @@ const sitePlanInputs = (): PlanInputs => {
       ...base, assumptions: { ...base.assumptions, partySize: 8 }, ringPolicy: 'switch', route: ROUTE, supplies, nonItemSlots: 1,
     } as PlanInputs, { model: fa.time });
     const cells = r.inventory.filter((x) => x.kind !== 'free').length;
-    expect(cells <= r.slots!.total || r.slots!.overfull).toBe(true);
+    expect(r.slots!.overfull).toBe(false);
+    expect(cells).toBeLessThanOrEqual(r.slots!.total);
     (r.specs.items ?? []).filter((s) => s.how === 'carried anyway').forEach((s) => {
       expect(r.specItems.map((x) => x.name)).toContain(s.item);
     });
