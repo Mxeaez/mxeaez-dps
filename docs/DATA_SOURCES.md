@@ -974,3 +974,14 @@ paths, and once again after completing the remaining two paths and before procee
 Power bundle is "2 smelling salts and 1 liquid adrenaline" (the Chaos bundle: adrenaline "0-1", rare). The model's
 Smelling salts imply the Power bundle, so 2 doses per drop; when they are drunk (one each in rooms 3-4, two on the
 Wardens, at the encounter's start) is ours: **unverified**, UNVERIFIED D33.
+
+### Phase 38c — Ocellus events, ToA path pair, raid clock (2026-10-27)
+
+- **Ocellus's Defence resets P1 → P2 and P2 → P3**: the user, in-game (2026-10-27; not on the wiki's Ocellus page).
+  **Unverified**, UNVERIFIED D35.
+- **Ocellus P2 (The Blade) ≈ 2 minutes, "little damage lands"**: the user, in-game; the model's "Ocellus P2 length"
+  default 120 s. **Unverified**, UNVERIFIED D5 / D35.
+- **ToA: any two paths before the first supply drop**: the wiki (Helpful Spirit, *Phase 38b* above) and the user
+  (*Phase 38a*); which pair is the team's choice, the planner takes the cheapest (UNVERIFIED D31).
+- **Non-fight time defaults** (FA 21.5, ToA 15.5, CoX 12.9, ToB 12.6 min): the phase 38a typical lengths minus the
+  Team headlines' fight wall time (ours). **Unverified**, UNVERIFIED D30.

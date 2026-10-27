@@ -70,7 +70,9 @@ describe('ToA hp: upstream scaling at raid level 500, party 6, path 0', () => {
     // phase 38a: the copies of rooms 1-2 (`-before-supplies`) are the same monsters
     const copies = Object.fromEntries(TOA_TARGETS.filter((t) => t.beforeSupplies)
       .map((t) => [t.key, EXPECTED[t.key.replace('-before-supplies', '')]]));
-    expect(Object.keys(copies).sort()).toEqual(['toa-arcane-scarab', 'toa-kephri', 'toa-kephri-shielded', 'toa-soldier-scarab', 'toa-spitting-scarab', 'toa-zebak']
+    // phase 38c: any path may be done first, so every path room has its copies
+    expect(Object.keys(copies).sort()).toEqual(['toa-arcane-scarab', 'toa-kephri', 'toa-kephri-shielded', 'toa-soldier-scarab', 'toa-spitting-scarab', 'toa-zebak',
+      'toa-akkha', 'toa-akkha-shadow', 'toa-baba']
       .map((k) => `${k}-before-supplies`).sort());
     Object.assign(EXPECTED, copies);
     expect(Object.keys(EXPECTED).sort()).toEqual(TOA_TARGETS.map((t) => t.key).sort());
@@ -196,8 +198,9 @@ describe('ToA encounter damage sequences (src/lib/raids/toa/time.ts)', () => {
   const plan1 = (id: string, s = settings) => toaEncounterPlan(id, timeA('none', s)).map((p) => [p.targetKey, p.phase ?? '', Math.round(p.damage * 10) / 10]);
 
   test('Kephri: 3 shields + overlords + her hp; leaks add per intermission', () => {
-    // phase 38a: rooms 1-2 (Kephri, Zebak) target the copies fought before the supplies (normal potions)
-    expect(plan1('toa-kephri')).toEqual([
+    // phase 38a: a room before the supplies targets the copies (normal potions); phase 38c: its own encounter id
+    expect(plan1('toa-kephri').map((r) => r[0])).toEqual(['toa-kephri-shielded', 'toa-spitting-scarab', 'toa-soldier-scarab', 'toa-arcane-scarab', 'toa-kephri']);
+    expect(plan1('toa-kephri-before-supplies')).toEqual([
       ['toa-kephri-shielded-before-supplies', '', 3 * 2070],
       ['toa-spitting-scarab-before-supplies', '', 550],
       ['toa-soldier-scarab-before-supplies', '', 550],
@@ -205,7 +208,7 @@ describe('ToA encounter damage sequences (src/lib/raids/toa/time.ts)', () => {
       ['toa-kephri-before-supplies', '', 1100],
     ]);
     const leaky = { ...TOA_TIME_DEFAULTS, kephriSwarmLeak: 0.1, kephriOverlords: false };
-    expect(plan1('toa-kephri', leaky)).toEqual([['toa-kephri-shielded-before-supplies', '', 2070 * 3.2], ['toa-kephri-before-supplies', '', 1100]]);
+    expect(plan1('toa-kephri-before-supplies', leaky)).toEqual([['toa-kephri-shielded-before-supplies', '', 2070 * 3.2], ['toa-kephri-before-supplies', '', 1100]]);
   });
 
   test('Akkha: fixed rows = 4 shadows + 20% final stand in melee (his main hp depends on the kit, see below)', () => {
@@ -218,8 +221,10 @@ describe('ToA encounter damage sequences (src/lib/raids/toa/time.ts)', () => {
   });
 
   test('Zebak, Ba-Ba: their hp; Wardens: obelisk, P3 95% + 25% enraged (siphons optional)', () => {
-    expect(plan1('toa-zebak')).toEqual([['toa-zebak-before-supplies', '', 8000]]);
+    expect(plan1('toa-zebak-before-supplies')).toEqual([['toa-zebak-before-supplies', '', 8000]]);
+    expect(plan1('toa-zebak')).toEqual([['toa-zebak', '', 8000]]);
     expect(plan1('toa-baba')).toEqual([['toa-baba', '', 5240]]);
+    expect(plan1('toa-baba-before-supplies')).toEqual([['toa-baba-before-supplies', '', 5240]]);
     expect(plan1('toa-wardens')).toEqual([
       ['toa-obelisk', '', 3590],
       ['toa-warden-p3', '', 11533],
@@ -359,7 +364,7 @@ describe('ToA search and planner', () => {
     expect(r.rows[0].weaponLabel).toMatch(/Keris|fang/);
   }, 60000);
 
-  test('planner on ToA with a reduced pool: one route, fits in 28 slots, melee for the final stand, magic for P2', () => {
+  test('planner on ToA with a reduced pool: six routes (phase 38c), fits in 28 slots, melee for the final stand, magic for P2', () => {
     const res = plan({
       basePlayer: generateEmptyPlayer(),
       assumptions: A,
@@ -378,12 +383,12 @@ describe('ToA search and planner', () => {
       seeds: 4,
     });
     expect(res.cancelled).toBe(false);
-    expect(res.comparison!.routes.length).toBe(1);
+    expect(res.comparison!.routes.length).toBe(6);
     const route = res.comparison!.routes[res.planned];
     expect(Number.isFinite(route.seconds)).toBe(true);
     expect(res.slots!.used).toBeLessThanOrEqual(28);
     expect(res.inventory.length).toBe(28);
-    const akkha = route.encounters.find((e) => e.id === 'toa-akkha')!;
+    const akkha = route.encounters.find((e) => e.id.startsWith('toa-akkha'))!;
     const final = akkha.phases.find((p) => p.phase === AKKHA_FINAL_STAND_PHASE)!;
     expect(final.choice?.group).toBe('melee');
     const wardens = route.encounters.find((e) => e.id === 'toa-wardens')!;

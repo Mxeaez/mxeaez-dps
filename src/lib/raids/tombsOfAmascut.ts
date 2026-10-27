@@ -52,7 +52,9 @@ export const TOMBS_OF_AMASCUT_RAID: RaidConfig = {
   ],
   routesLabel: 'Encounters',
   encounterTarget: TOA_ENCOUNTER_TARGET,
-  hpNote: 'HP scaled by raid level, path level and party size (upstream, verified in-game).',
+  hpNote: 'HP scaled by raid level, path level and party size (upstream, verified in-game). Search / Summary use the '
+    + 'Smelling salts (the raid\'s supplies); in the Plan the two paths done first are fought before the first supply '
+    + 'drop, with the normal potions.',
   defaultSupplies: TOA_DEFAULT_SUPPLIES,
-  planNote: 'ToA: salts, nectar and tears come from the Helpful Spirit after two paths; "Super restore" stands for Sanfew serums / Tears, "Other" for Smelling salts; every style keeps the salts boost from the 3rd room on (phase 38a: the first two rooms, Kephri and Zebak here, use Super combat / Ranging potion / Saturated heart; a second drop comes before the Wardens).',
+  planNote: 'ToA: salts, nectar and tears come from the Helpful Spirit after two paths; "Super restore" stands for Sanfew serums / Tears, "Other" for Smelling salts; every style keeps the salts boost from the 3rd room on (phase 38a: the first two rooms use Super combat / Ranging potion / Saturated heart; phase 38c: the planner picks the pair of paths done first, the cheapest of the six, or the one chosen under Route; a second drop comes before the Wardens).',
 };

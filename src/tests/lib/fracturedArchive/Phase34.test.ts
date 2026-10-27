@@ -121,12 +121,14 @@ describe('raid briefing rows (FA, presets kit): the phase 33 encounter lines are
       'dreadnoth | Tonalztics 5 hits → Def 0',
       'dagonhai | Tonalztics 3 hits → Def 0',
       'xarth | Tonalztics 2 hits → Def 102',
-      'ocellus | P1 at a corner: Tonalztics 2 hits → Def 129 · P3 last quadrant, Deflect Melee: Tonalztics 3 hits → Def 150',
+      // phase 38c: three events (the Defence resets at P2 and P3), P3's specs on quadrants 1-3
+      'ocellus | start: Elder maul 1 spec → Def 140 · after P1: Elder maul 2 specs → Def 106 · after P2: Tonalztics 3 hits → Def 150',
     ]);
     // the tooltip is phase 33's line, unchanged (phase 35b: Bork + Smorks one line per NPC)
     expect(rows.find((r) => r.id === 'bork-smorks')!.drainText).toBe('Bork: 1 Elder maul carrier (1 spec) → Def 195 · Smorks: 2 Elder maul carriers (3 specs) + 2 Tonalztics carriers (4 specs) → Def 15');
     expect(rows.find((r) => r.id === 'archive-guardian')!.drainText).toBe('Flying shield: 2 Tonalztics carriers (4 specs) → Def 156 · 98% · Grounded: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 156 · >99.9%');
-    expect(rows.find((r) => r.id === 'ocellus')!.drainText).toBe('P1 at a corner: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 129 · >99.9% · P3 last quadrant, Deflect Melee: 2 Tonalztics carriers (4 specs) → Def 150 · 84%');
+    // phase 38c: three events (the Defence resets at P2 and P3)
+    expect(rows.find((r) => r.id === 'ocellus')!.drainText).toBe('Start of fight: 1 Elder maul carrier (2 specs) → Def 140 · After P1 (Defence restored), again: 1 Elder maul carrier (2 specs) → Def 106 · After P2 (Defence restored), again: 2 Tonalztics carriers (4 specs) → Def 150 · 84%');
     // carriers are not repeated in the short form
     rows.forEach((r) => expect(r.specsText).not.toMatch(/carrier/));
     expect(rows.find((r) => r.id === 'ocellus')!.loadouts).toEqual(["Inquisitor's + Obligator", 'Twisted bow (Masori)']);

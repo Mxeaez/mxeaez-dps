@@ -2620,7 +2620,8 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         if (target.noDrains) return;
         const m = buildTargetMonster(target, t.phase, 'none', assumptions).monster;
         rts.push({
-          key: k, label: `${target.label}${t.phase ? ` (${t.phase})` : ''}`, group: target.label, model: drainModel(m, assumptions),
+          // phase 38c: a ToA room before the supplies drains with the normal potions
+          key: k, label: `${target.label}${t.phase ? ` (${t.phase})` : ''}`, group: target.label, model: drainModel(m, assumptionsForTarget(target, assumptions)),
         });
       }));
       const party = Math.max(1, Math.floor(assumptions.partySize));
@@ -3080,17 +3081,23 @@ export const planRingRun = (
   return { key: ringRunKey(which.ring, which.screen, which.screen ? which.screenSubset ?? null : null), run, searchRows: res.searchRows };
 };
 
-/** The player of a kit loadout against a monster, with its best style option there (for "Load into calculator"). */
+/**
+ * The player of a kit loadout against a monster, with its best style option there (for "Load into calculator").
+ * `target` (phase 38c): the monster's best-setup target, so a ToA room before the supplies gets the normal potions
+ * (`assumptionsForTarget`), as the plan timed it.
+ */
 export const planLoadoutToPlayer = (
   base: Player,
   c: PlanCandidate,
   monster: Parameters<typeof applyLoadoutToPlayer>[6],
   assumptions: BestSetupAssumptions,
+  target?: { beforeSupplies?: boolean },
 ): Player => {
   const eq = toPlayerEquipment(c.equipment);
+  const a = target ? assumptionsForTarget(target, assumptions) : assumptions;
   let best: { p: Player, dps: number } | null = null;
   for (const o of c.options) {
-    const p = applyLoadoutToPlayer(base, c.label, c.group, eq, o.style, o.spell, monster, assumptions);
+    const p = applyLoadoutToPlayer(base, c.label, c.group, eq, o.style, o.spell, monster, a);
     let d = 0;
     try {
       d = evaluateLoadout(p, monster, false).dps;

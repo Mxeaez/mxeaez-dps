@@ -10,6 +10,7 @@ import { formatProbability, recommendCarriers } from '@/lib/fracturedArchive/tea
 import DrainLineView, { DrainBrief } from '@/app/components/bestSetup/DrainLineView';
 import { briefResultText } from '@/lib/fracturedArchive/drainLine';
 import { SURGE_DOSE_ENERGY } from '@/lib/fracturedArchive/specBudget';
+import { assumptionsForTarget } from '@/lib/raids/toa/supplies';
 
 // Phase 14: the drain plan of the selected drain state (text + P(floor)) and the team carrier table for the selected
 // boss / phase, shown under the Search tab's selectors. All numbers come from specs.ts / teamSpecs.ts (pure).
@@ -40,7 +41,8 @@ const SpecPlanPanel: React.FC<{
     state, rec, floor, surge,
   } = useMemo(() => {
     const built = buildTargetMonster(target, phase, drain, assumptions);
-    const model = drainModel(built.monster, assumptions);
+    // phase 38c: a ToA room before the supplies drains with the normal potions (as buildTargetMonster does)
+    const model = drainModel(built.monster, assumptionsForTarget(target, assumptions));
     return {
       state: built.drain,
       // phase 36: the Solo drains with a surge dose on top (+25% spec energy)

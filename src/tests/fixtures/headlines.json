@@ -4,8 +4,8 @@
   "fa": {
    "raid": "fractured-archive",
    "label": "Fractured Archive (Team defaults)",
-   "total": "21:05.3",
-   "seconds": 1265.288767752059,
+   "total": "21:43.6",
+   "seconds": 1303.637783559419,
    "route": "archive-guardian>bork-smorks>moia>xarth>ocellus",
    "ring": "Ultor ring",
    "kit": [
@@ -38,22 +38,22 @@
     "bork-smorks": 190.71,
     "moia": 65.32,
     "xarth": 180.61,
-    "ocellus": 655.17
+    "ocellus": 693.52
    }
   },
   "toa": {
    "raid": "toa",
    "label": "Tombs of Amascut (Team defaults, invocation 500)",
-   "total": "14:30.1",
-   "seconds": 870.0990074548125,
-   "route": "toa-kephri>toa-zebak>toa-akkha>toa-baba>toa-wardens",
+   "total": "14:20.0",
+   "seconds": 860.0306460556181,
+   "route": "toa-kephri-before-supplies>toa-baba-before-supplies>toa-zebak>toa-akkha>toa-wardens",
    "ring": "Ultor ring",
    "kit": [
     "Keris partisan of breaching (Torva)",
-    "Osmumten's fang (Torva)",
     "Tumeken's shadow (Ancestral)",
-    "Torva + Scythe (slash)",
     "Ascension crossbows + diamond (e) (Masori)",
+    "Osmumten's fang (Torva)",
+    "Torva + Scythe (slash)",
     "Twisted bow (Masori)"
    ],
    "freeSlots": 0,
@@ -71,10 +71,10 @@
    "yourShare": null,
    "surgeAt": [],
    "encounters": {
-    "toa-kephri": 156.32,
-    "toa-zebak": 141.74,
+    "toa-kephri-before-supplies": 156.32,
+    "toa-baba-before-supplies": 102.83,
+    "toa-zebak": 119.04,
     "toa-akkha": 141.74,
-    "toa-baba": 90.2,
     "toa-wardens": 340.1
    }
   },
@@ -163,8 +163,8 @@
   "faSolo": {
    "raid": "fractured-archive",
    "label": "Fractured Archive Solo (party 1)",
-   "total": "21:56.2",
-   "seconds": 1316.248159138081,
+   "total": "22:53.4",
+   "seconds": 1373.3981058413428,
    "route": "archive-guardian>ezekiel>moia>xarth>ocellus",
    "ring": "Ultor ring",
    "kit": [
@@ -172,11 +172,12 @@
     "Twisted bow (Masori)",
     "Inquisitor's + Obligator"
    ],
-   "freeSlots": 3,
+   "freeSlots": 2,
    "carriers": null,
-   "bring": "Bring: Tonalztics, Zaryte crossbow, Burning claws, Surge potion",
+   "bring": "Bring: Tonalztics, Crimson kisten, Zaryte crossbow, Burning claws, Surge potion",
    "items": [
     "Tonalztics of Ralos",
+    "Crimson kisten",
     "Zaryte crossbow",
     "Burning claws",
     "Surge potion(4)"
@@ -192,14 +193,14 @@
     "ezekiel": 211.61,
     "moia": 65.32,
     "xarth": 181.62,
-    "ocellus": 677.04
+    "ocellus": 734.19
    }
   },
   "faNotOwned": {
    "raid": "fractured-archive",
    "label": "Fractured Archive without Obligator / Ascension crossbows",
-   "total": "24:11.9",
-   "seconds": 1451.9287652104222,
+   "total": "24:52.2",
+   "seconds": 1492.2243539833014,
    "route": "archive-guardian>bork-smorks>moia>xarth>ocellus",
    "ring": "Ultor ring",
    "kit": [
@@ -209,11 +210,11 @@
    ],
    "freeSlots": 0,
    "carriers": {
-    "elderMaul": 2,
-    "dwh": 0,
+    "elderMaul": 0,
+    "dwh": 1,
     "bgs": 0,
-    "tonalztics": 2,
-    "ayak": 1
+    "tonalztics": 4,
+    "ayak": 0
    },
    "bring": "Bring: Zaryte crossbow",
    "items": [
@@ -223,10 +224,10 @@
    "surgeAt": [],
    "encounters": {
     "archive-guardian": 191.91,
-    "bork-smorks": 216.68,
+    "bork-smorks": 220.26,
     "moia": 65.97,
     "xarth": 209.7,
-    "ocellus": 767.67
+    "ocellus": 804.39
    }
   }
  }

@@ -246,10 +246,16 @@ export interface BestSetupAssumptions {
   /** Phase 36: Surge potions you carry (4 doses each; the time model places the doses). Undefined = 0. */
   surgePotions?: number;
   /**
-   * Phase 38a: the typical raid length in minutes (the raid's wall clock: surge doses, regen between encounters).
-   * Undefined = the raid's default (`RaidBase.typicalRaidMinutes`); the Plan tab's Advanced input sets it.
+   * Phase 38a: an explicit raid length in minutes (the raid's wall clock: surge doses, regen between encounters).
+   * Undefined (phase 38c: the default) = the raid's non-fight time added to the fight wall (`nonFightMinutes`).
    */
   raidMinutes?: number;
+  /**
+   * Phase 38c: the raid's non-fight time in minutes, added to the route's fight wall time (the raid clock). Undefined =
+   * the raid's default (`RaidBase.nonFightMinutes`); the Plan tab's Advanced input sets it. Ignored when `raidMinutes`
+   * is set (an explicit raid length, phase 38a).
+   */
+  nonFightMinutes?: number;
   /**
    * Phase 38b: the players' spellbook (Arceuus: Death Charge in the spec budget). Undefined = the raid's default
    * (`RaidBase.spellbook`, Arceuus); the Plan tab's Advanced input sets it.

@@ -31,7 +31,7 @@ export const FRACTURED_ARCHIVE_RAID: RaidConfig = {
       key: 'ocellusWalkingFraction', label: 'Ocellus P1 walking', kind: 'percent', title: 'Share of P1\'s hp dealt while he walks to a corner (Protect from Melee)',
     },
     {
-      key: 'ocellusP2Seconds', label: 'Ocellus P2 length', kind: 'number', unit: 's', title: 'P2 (The Blade) is time-limited: its length in seconds (0 = ignore P2). The damage dealt to the Blade × carry-over comes off P3', max: 600,
+      key: 'ocellusP2Seconds', label: 'Ocellus P2 length', kind: 'number', unit: 's', title: 'P2 (The Blade) is time-limited: its length in seconds (0 = ignore P2; default 120 s, the user\'s in-game estimate, unverified). The damage dealt to the Blade × carry-over comes off P3. The Defence resets at P2 and again at P3: three drain events', max: 600,
     },
     {
       key: 'ocellusP2CarryOver', label: 'P2 carry-over', kind: 'percent', title: 'Share of the Blade damage that comes off P3 (wiki: half)',

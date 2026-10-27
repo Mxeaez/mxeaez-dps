@@ -547,10 +547,12 @@ describe('planner: spec modes', () => {
     );
     expect(team.steps!.every((x) => x.saved >= 1 - 1e-9)).toBe(true);
     expect(team.steps!.length).toBe(Object.values(team.carriers!).reduce((a, v) => a + v, 0));
-    // every phase's Team line brings 2 specs per carrier of each weapon it shows (weapons that can hit)
+    // every phase's Team line brings at most 2 specs per carrier of each weapon it shows (weapons that can hit; a bar
+    // holds 100% at an event's start). Phase 38c: Ocellus has three drain events (the Defence resets at P2 and P3), so
+    // the carriers' energy is split between them and a line can bring fewer
     const phases = r.comparison!.routes[r.planned].encounters.flatMap((e) => e.phases);
     phases.forEach((ph) => (ph.choice?.drainLine?.items ?? []).forEach((it) => {
-      expect(it.count).toBe(2 * team.carriers![it.weapon as keyof CarrierCounts]);
+      expect(it.count).toBeLessThanOrEqual(2 * team.carriers![it.weapon as keyof CarrierCounts]);
     }));
     expect(team.rows.every((x) => typeof x.lastSaved === 'number')).toBe(true);
     // review 2: what Search / Summary get after this plan = the briefing's carriers

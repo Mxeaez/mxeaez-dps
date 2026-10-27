@@ -28,7 +28,9 @@ const enc = (id: string, seconds: number) => ({ id, seconds } as unknown as Enco
 describe('the raid clock', () => {
   test('defaults: FA 25 min (the user\'s raid stats), ToA 30, CoX 20, ToB 20 (ToB: surge cooldown paused between rooms)', () => {
     expect(RAIDS.map((r) => [r.id, r.typicalRaidMinutes])).toEqual([['fractured-archive', 25], ['toa', 30], ['cox', 20], ['tob', 20]]);
-    expect(raidTimeAssumptionsFrom(A('fractured-archive'), 'team').raidSeconds).toBe(1500);
+    // phase 38c: the default clock is the fight wall + the non-fight time (Phase38c.test.ts); an explicit raid length
+    // (`raidMinutes`) is this phase's clock
+    expect(raidTimeAssumptionsFrom({ ...A('fractured-archive'), raidMinutes: 25 }, 'team').raidSeconds).toBe(1500);
     expect(raidTimeAssumptionsFrom({ ...A('fractured-archive'), raidMinutes: 0 }, 'team').raidSeconds).toBe(0);
     expect(raidTimeAssumptionsFrom(A('tob'), 'team').surgePausesBetweenEncounters).toBe(true);
     expect(raidTimeAssumptionsFrom(A('toa'), 'team').surgePausesBetweenEncounters).toBeUndefined();
@@ -74,7 +76,10 @@ describe('the raid clock', () => {
     const a = { ...A('fractured-archive'), partySize: 1 };
     const ta0 = raidTimeAssumptionsFrom(a, 'solo', raid.defaultTimeSettings, raid.time);
     // solo with the presets only takes ~25 min of fight: a 50-min raid leaves gaps to regenerate in
-    const ta = { ...ta0, raidSeconds: 3000, specBudget: { ...ta0.specBudget!, carry: true } };
+    // phase 38c: an explicit raid length (the default would be the fight wall + the non-fight time)
+    const ta = {
+      ...ta0, raidSeconds: 3000, nonFightSeconds: undefined, specBudget: { ...ta0.specBudget!, carry: true },
+    };
     expect(budgetGroups(ta.specBudget!).find((g) => g.id === 'me')!.regenSeconds).toBe(30);
     const presets = (['melee', 'ranged', 'magic'] as const).map((g) => raid.presets.find((p) => p.group === g)!);
     const kit = createKitEvaluator(presets.map((p) => presetKitLoadout(generateEmptyPlayer(), p, a)), a);
@@ -101,13 +106,13 @@ describe('the raid clock', () => {
     noGap.encounters.slice(1).forEach((e, i) => expect(e.specPlan!.start.me[0]).toBeCloseTo(noGap.encounters[i].specPlan!.end.me[0], 9));
   });
 
-  test('Plan input: saved and validated (0-120 min), default per raid', () => {
+  test('Plan input: saved and validated (0-120 min), default per raid (phase 38c: "Non-fight time")', () => {
     const fa = raidConfig('fractured-archive');
-    expect(defaultPlanInputs(fa).raidMinutes).toBe(25);
-    expect(defaultPlanInputs(raidConfig('toa')).raidMinutes).toBe(30);
-    expect(validatePlanInputs(fa, { raidMinutes: 40 }, fa.defaultAssumptions).raidMinutes).toBe(40);
-    expect(validatePlanInputs(fa, { raidMinutes: -1 }, fa.defaultAssumptions).raidMinutes).toBe(25);
-    expect(validatePlanInputs(fa, { raidMinutes: 'x' }, fa.defaultAssumptions).raidMinutes).toBe(25);
+    expect(defaultPlanInputs(fa).nonFightMinutes).toBe(21.5);
+    expect(defaultPlanInputs(raidConfig('toa')).nonFightMinutes).toBe(15.5);
+    expect(validatePlanInputs(fa, { nonFightMinutes: 40 }, fa.defaultAssumptions).nonFightMinutes).toBe(40);
+    expect(validatePlanInputs(fa, { nonFightMinutes: 121 }, fa.defaultAssumptions).nonFightMinutes).toBe(21.5);
+    expect(validatePlanInputs(fa, { nonFightMinutes: 'x' }, fa.defaultAssumptions).nonFightMinutes).toBe(21.5);
   });
 });
 
@@ -117,7 +122,8 @@ describe('ToA supplies by room: the raid potion from the 3rd room on', () => {
   const ta = raidTimeAssumptionsFrom(a, 'none', raid.defaultTimeSettings, TOA_TIME_MODEL);
 
   test('Kephri and Zebak (rooms 1-2) use the normal potions; Akkha, Ba-Ba and the Wardens keep the salts', () => {
-    expect(TOA_BEFORE_SUPPLIES_ENCOUNTERS).toEqual(['toa-kephri', 'toa-zebak']);
+    // phase 38c: every path room has a before-supplies encounter; the routes put two of them first (Phase38c.test.ts)
+    expect(TOA_BEFORE_SUPPLIES_ENCOUNTERS).toEqual(['toa-kephri-before-supplies', 'toa-zebak-before-supplies', 'toa-akkha-before-supplies', 'toa-baba-before-supplies']);
     expect(a.potions).toEqual({ melee: Potion.SMELLING_SALTS, ranged: Potion.SMELLING_SALTS, magic: Potion.SMELLING_SALTS });
     expect(NORMAL_POTIONS).toEqual({ melee: Potion.SUPER_COMBAT, ranged: Potion.RANGING, magic: Potion.SATURATED_HEART });
     expect(assumptionsForTarget(findTarget('toa-zebak-before-supplies'), a).potions).toEqual(NORMAL_POTIONS);
@@ -127,9 +133,9 @@ describe('ToA supplies by room: the raid potion from the 3rd room on', () => {
     expect(assumptionsForTarget(findTarget('toa-zebak-before-supplies'), without).withoutPotion).toEqual(['melee']);
     const keys = (id: string) => TOA_TIME_MODEL.encounterPass(id, { best: () => ({ loadout: 'x', style: 'x', dps: 1 }) }, ta, 'none', 90)
       .map((p) => p.targetKey);
-    expect(keys('toa-zebak')).toEqual(['toa-zebak-before-supplies']);
-    expect(keys('toa-kephri').length).toBeGreaterThan(1);
-    expect(keys('toa-kephri').every((k) => k.endsWith('-before-supplies'))).toBe(true);
+    expect(keys('toa-zebak-before-supplies')).toEqual(['toa-zebak-before-supplies']);
+    expect(keys('toa-kephri-before-supplies').length).toBeGreaterThan(1);
+    expect(keys('toa-kephri-before-supplies').every((k) => k.endsWith('-before-supplies'))).toBe(true);
     ['toa-akkha', 'toa-baba', 'toa-wardens'].forEach((id) => expect(keys(id).some((k) => k.endsWith('-before-supplies'))).toBe(false));
     // the copies are the time model's: not in the Search list
     expect(visibleTargets(raid, a).some((t) => t.beforeSupplies)).toBe(false);
@@ -163,7 +169,7 @@ describe('ToA supplies by room: the raid potion from the 3rd room on', () => {
     const byHand = Math.max(...presets.flatMap((p) => presetStyles(p).flatMap((s) => presetSpells(p).map((sp) => evaluateLoadout(applyPresetToPlayer(generateEmptyPlayer(), p, s, sp, m, normal), m, false).dps))));
     expect(early.dps).toBeCloseTo(byHand, 9);
     expect(early.dps).toBeLessThan(salts.dps);
-    const zebak = encounterTime('toa-zebak', kit, ta);
+    const zebak = encounterTime('toa-zebak-before-supplies', kit, ta);
     const hp = zebak.phases[0].damage;
     const mult = ta.dpsMultiplier!;
     expect(zebak.seconds).toBeCloseTo(hp / (early.dps * mult), 9);

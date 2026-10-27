@@ -23,7 +23,9 @@ import {
   P2_ELIDINIS_INITIAL_PHASE,
   P2_TUMEKEN_INITIAL_PHASE,
 } from '@/lib/raids/toa/constants';
-import { beforeSuppliesKey, LIQUID_ADRENALINE_DOSES_PER_DROP, TOA_ROOMS_BEFORE_SUPPLIES } from '@/lib/raids/toa/supplies';
+import {
+  BEFORE_SUPPLIES_SUFFIX, beforeSuppliesKey, LIQUID_ADRENALINE_DOSES_PER_DROP, TOA_ROOMS_BEFORE_SUPPLIES,
+} from '@/lib/raids/toa/supplies';
 
 /**
  * Phase 18: Tombs of Amascut time model (Encounters tab, planner). Same contract as the Fractured Archive's
@@ -33,7 +35,9 @@ import { beforeSuppliesKey, LIQUID_ADRENALINE_DOSES_PER_DROP, TOA_ROOMS_BEFORE_S
  * team in which **every member deals the user's DPS**: time = damage ÷ (team-DPS multiplier × DPS), the multiplier
  * defaulting to the party size (`teamDpsMultiplier`, src/lib/raids/base.ts).
  *
- * ToA has no route choice (the four paths in any order, then the Wardens): one fixed route. Encounter sequences, from
+ * ToA's route: the four paths in any order, then the Wardens. Phase 38c: the order matters only for the supplies (the
+ * first two paths are fought before the first supply drop, `TOA_ROUTES`): six routes, one per pair of paths done first.
+ * Encounter sequences, from
  * https://oldschool.runescape.wiki/w/Tombs_of_Amascut/Strategies and the boss pages (read 2026-10-23, ?action=raw):
  * - Kephri: "After the third shield is cleared ... her fourth and final phase; Kephri's health pool is now able to be
  *   damaged directly" → 3 × the Shielded hp (+ `kephriSwarmLeak` × shield per intermission for leaked swarms), the
@@ -69,30 +73,58 @@ export const TOA_TIME_DEFAULTS: ToaTimeSettings = {
   p3SiphonFraction: 0,
 };
 
-export type ToaEncounterId = 'toa-kephri' | 'toa-zebak' | 'toa-akkha' | 'toa-baba' | 'toa-wardens';
+/** The four path rooms (Scabaras, Crondis, Het, Apmeken), in the canonical order, fought after the first supply drop. */
+export type ToaPathRoom = 'toa-kephri' | 'toa-zebak' | 'toa-akkha' | 'toa-baba';
+export const TOA_PATH_ROOMS: ToaPathRoom[] = ['toa-kephri', 'toa-zebak', 'toa-akkha', 'toa-baba'];
 
-export const TOA_ENCOUNTER_LABELS: Record<ToaEncounterId, string> = {
+/**
+ * Phase 38c: a path room fought before the first supply drop (normal potions, no adrenaline) is its own encounter,
+ * `<room>-before-supplies` (the route cache is per encounter id); the plain id is the room after the drop.
+ */
+export type ToaEncounterId = ToaPathRoom | `${ToaPathRoom}-before-supplies` | 'toa-wardens';
+
+const ROOM_LABELS: Record<ToaPathRoom, string> = {
   'toa-kephri': 'Kephri',
   'toa-zebak': 'Zebak',
   'toa-akkha': 'Akkha',
   'toa-baba': 'Ba-Ba',
-  'toa-wardens': 'Wardens',
 };
+
+/** The room of an encounter id (`toa-akkha-before-supplies` → `toa-akkha`) and whether it is before the supplies. */
+export const toaRoomOf = (id: EncounterId): { room: EncounterId, beforeSupplies: boolean } => (id.endsWith(BEFORE_SUPPLIES_SUFFIX)
+  ? { room: id.slice(0, -BEFORE_SUPPLIES_SUFFIX.length), beforeSupplies: true }
+  : { room: id, beforeSupplies: false });
+
+export const TOA_ENCOUNTER_LABELS = {
+  ...ROOM_LABELS,
+  ...Object.fromEntries(TOA_PATH_ROOMS.map((r) => [beforeSuppliesKey(r), `${ROOM_LABELS[r]} (before supplies)`])),
+  'toa-wardens': 'Wardens',
+} as Record<ToaEncounterId, string>;
 
 /** The target whose icon stands for each encounter (UI). */
-export const TOA_ENCOUNTER_TARGET: Record<ToaEncounterId, string> = {
-  'toa-kephri': 'toa-kephri',
-  'toa-zebak': 'toa-zebak',
-  'toa-akkha': 'toa-akkha',
-  'toa-baba': 'toa-baba',
+export const TOA_ENCOUNTER_TARGET = {
+  ...Object.fromEntries(TOA_PATH_ROOMS.flatMap((r) => [[r, r], [beforeSuppliesKey(r), r]])),
   'toa-wardens': 'toa-warden-p3',
-};
+} as Record<ToaEncounterId, string>;
 
-/** One fixed route: the four paths (Scabaras, Crondis, Het, Apmeken — any order, times don't depend on it), then the Wardens. */
-export const TOA_ROUTE_SLOTS: RouteSlot[] = (Object.keys(TOA_ENCOUNTER_LABELS) as ToaEncounterId[])
-  .map((id, i) => ({ order: i + 1, options: [id] }));
+/**
+ * Phase 38c: the routes, one per pair of paths done first (6): the pair before the supplies, then the other two rooms,
+ * then the Wardens (each pair in the canonical order). The first is Kephri + Zebak (the phase 38a route).
+ */
+export const TOA_ROUTES: EncounterId[][] = TOA_PATH_ROOMS.flatMap((a, i) => TOA_PATH_ROOMS.slice(i + 1).map((b) => [
+  beforeSuppliesKey(a),
+  beforeSuppliesKey(b),
+  ...TOA_PATH_ROOMS.filter((r) => r !== a && r !== b),
+  'toa-wardens',
+]));
 
-export const TOA_ROUTE_ID = TOA_ROUTE_SLOTS.map((s) => s.options[0]).join('>');
+/** The route positions (the encounter table's columns): every id that can stand at each position. */
+export const TOA_ROUTE_SLOTS: RouteSlot[] = TOA_ROUTES[0].map((_, i) => ({
+  order: i + 1, options: Array.from(new Set(TOA_ROUTES.map((r) => r[i]))),
+}));
+
+/** The phase 38a route (Kephri and Zebak before the supplies). */
+export const TOA_ROUTE_ID = TOA_ROUTES[0].join('>');
 
 /** "Strategies → The Wardens → Phase 2": core exposure in ticks by the Warden's remaining hp. */
 export const CORE_EXPOSURE_TICKS: { minFraction: number, ticks: number }[] = [
@@ -140,21 +172,21 @@ export const p2WardenTarget = (s: ToaTimeSettings): { targetKey: string, phase: 
   : { targetKey: 'toa-warden-p2', phase: P2_ELIDINIS_INITIAL_PHASE });
 
 /**
- * Phase 38a: the encounters fought before the first supply drop (the first `TOA_ROOMS_BEFORE_SUPPLIES` rooms of the
- * fixed route: Kephri, Zebak). Their rows target the `-before-supplies` copies (normal potions, supplies.ts).
+ * Phase 38a: the encounters fought before the first supply drop (phase 38c: any path room's `-before-supplies` id; a
+ * route puts `TOA_ROOMS_BEFORE_SUPPLIES` of them first). Their rows target the `-before-supplies` copies (normal
+ * potions, supplies.ts).
  */
-export const TOA_BEFORE_SUPPLIES_ENCOUNTERS: EncounterId[] = TOA_ROUTE_SLOTS.slice(0, TOA_ROOMS_BEFORE_SUPPLIES).map((s) => s.options[0]);
+export const TOA_BEFORE_SUPPLIES_ENCOUNTERS: EncounterId[] = TOA_PATH_ROOMS.map(beforeSuppliesKey);
 
 /**
  * Phase 38b: Liquid adrenaline doses per encounter (drunk at its start, back to back): the first supply drop's 2 doses
- * over the two rooms after it (one each: Akkha, Ba-Ba), the second drop's 2 on the Wardens. None before the supplies.
+ * over the two rooms after it (one each), the second drop's 2 on the Wardens. None before the supplies.
  */
-export const TOA_ADRENALINE_DOSES: Partial<Record<EncounterId, number>> = Object.fromEntries(TOA_ROUTE_SLOTS.map((s, i) => {
-  const id = s.options[0];
-  if (i < TOA_ROOMS_BEFORE_SUPPLIES) return [id, 0];
-  if (i === TOA_ROUTE_SLOTS.length - 1) return [id, LIQUID_ADRENALINE_DOSES_PER_DROP];
-  return [id, LIQUID_ADRENALINE_DOSES_PER_DROP / (TOA_ROUTE_SLOTS.length - 1 - TOA_ROOMS_BEFORE_SUPPLIES)];
-}));
+export const TOA_ADRENALINE_DOSES: Partial<Record<EncounterId, number>> = Object.fromEntries([
+  ...TOA_BEFORE_SUPPLIES_ENCOUNTERS.map((id) => [id, 0]),
+  ...TOA_PATH_ROOMS.map((id) => [id, LIQUID_ADRENALINE_DOSES_PER_DROP / (TOA_PATH_ROOMS.length - TOA_ROOMS_BEFORE_SUPPLIES)]),
+  ['toa-wardens', LIQUID_ADRENALINE_DOSES_PER_DROP],
+]);
 
 /** A planned phase of a room before the supplies: its target's copy, the label says so. */
 const beforeSupplies = (p: PlannedPhase): PlannedPhase => ({
@@ -253,8 +285,9 @@ const toaRoomPlan = (id: EncounterId, a: RaidTimeAssumptions): PlannedPhase[] =>
 
 /** The fixed-damage phases of an encounter (the Wardens' P2 depends on DPS and is built in `toaEncounterPass`). */
 export const toaEncounterPlan = (id: EncounterId, a: RaidTimeAssumptions): PlannedPhase[] => {
-  const rows = toaRoomPlan(id, a);
-  return TOA_BEFORE_SUPPLIES_ENCOUNTERS.includes(id) ? rows.map(beforeSupplies) : rows;
+  const { room, beforeSupplies: early } = toaRoomOf(id);
+  const rows = toaRoomPlan(room, a);
+  return early ? rows.map(beforeSupplies) : rows;
 };
 
 export interface WardensP2Result {
@@ -335,14 +368,17 @@ export const toaEncounterPass = (
     .filter((p) => p.damage > 0)
     .map((p) => ({ ...phaseTime(p, kit, drain, fightSeconds, mult), ...(note ? { note } : {}) }));
   const best = (q: Omit<PhaseQuery, 'drain' | 'fightSeconds'>): KitChoice | null => kit.best({ ...q, drain, fightSeconds });
-  if (id === 'toa-akkha' && toaSettings(a).akkhaPrayerRotation) {
+  const { room, beforeSupplies: early } = toaRoomOf(id);
+  if (room === 'toa-akkha' && toaSettings(a).akkhaPrayerRotation) {
     const hp = toaHp(a, 'toa-akkha', AKKHA_NO_PRAYER_PHASE);
-    const choices = AKKHA_PRAYER_PHASES.map((phase) => best({ targetKey: 'toa-akkha', phase }));
+    // phase 38c: Akkha before the supplies queries his copy (normal potions)
+    const akkha = early ? beforeSuppliesKey('toa-akkha') : 'toa-akkha';
+    const choices = AKKHA_PRAYER_PHASES.map((phase) => best({ targetKey: akkha, phase }));
     const split = akkhaRotation(hp, choices.map((c) => (c?.dps ?? 0) * mult));
     const rotation: PhaseTime[] = AKKHA_PRAYER_PHASES.map((phase, i) => ({
       key: `akkha-${phase}`,
-      label: `Akkha, ${phase} (⅓ of the time)`,
-      targetKey: 'toa-akkha',
+      label: `Akkha, ${phase} (⅓ of the time)${early ? ' (before supplies: normal potions)' : ''}`,
+      targetKey: akkha,
       phase,
       damage: split[i].damage,
       choice: choices[i],
@@ -352,7 +388,7 @@ export const toaEncounterPass = (
     }));
     return [...rotation, ...rows];
   }
-  if (id !== 'toa-wardens') return rows;
+  if (room !== 'toa-wardens') return rows;
 
   // P2, between P1 and P3
   const s = toaSettings(a);
@@ -408,6 +444,7 @@ export const toaRequiredPhaseTargets = (a: RaidTimeAssumptions): { targetKey: st
 export const TOA_TIME_MODEL: RaidTimeModel = {
   id: 'toa',
   routeSlots: TOA_ROUTE_SLOTS,
+  routes: TOA_ROUTES,
   labels: TOA_ENCOUNTER_LABELS,
   encounterPass: toaEncounterPass,
   requiredPhaseTargets: toaRequiredPhaseTargets,

@@ -127,15 +127,24 @@ describe('Death Charge', () => {
 
 describe('Liquid adrenaline (ToA)', () => {
   test('doses: none before the supplies, 1 each in rooms 3-4 (the first drop\'s 2 doses), 2 on the Wardens', () => {
+    // phase 38c: every path room has a before-supplies encounter (0 doses) and an after-supplies one (1 dose)
     expect(TOA_ADRENALINE_DOSES).toEqual({
-      'toa-kephri': 0, 'toa-zebak': 0, 'toa-akkha': 1, 'toa-baba': 1, 'toa-wardens': 2,
+      'toa-kephri-before-supplies': 0,
+      'toa-zebak-before-supplies': 0,
+      'toa-akkha-before-supplies': 0,
+      'toa-baba-before-supplies': 0,
+      'toa-kephri': 1,
+      'toa-zebak': 1,
+      'toa-akkha': 1,
+      'toa-baba': 1,
+      'toa-wardens': 2,
     });
     expect(LIQUID_ADRENALINE_SECONDS).toBe(150);
     expect(specBudgetFrom(A('toa'), 'team')!.adrenaline).toBe(true);
     expect(specBudgetFrom(A('fractured-archive'), 'team')!.adrenaline).toBeUndefined();
     const ta = raidTimeAssumptionsFrom(A('toa'), 'team', raidConfig('toa').defaultTimeSettings, raidConfig('toa').time);
     expect(encounterTime('toa-baba', kitOf('toa', A('toa')), ta).specPlan!.adrenalineSeconds).toBe(150);
-    expect(encounterTime('toa-zebak', kitOf('toa', A('toa')), ta).specPlan!.adrenalineSeconds).toBeUndefined();
+    expect(encounterTime('toa-zebak-before-supplies', kitOf('toa', A('toa')), ta).specPlan!.adrenalineSeconds).toBeUndefined();
     expect(costFactorAt({ halfCostUntil: 150 }, { start: 149 })).toBe(0.5);
     expect(costFactorAt({ halfCostUntil: 150 }, { start: 150 })).toBe(1);
   });
@@ -152,7 +161,8 @@ describe('Liquid adrenaline (ToA)', () => {
     };
     const tb = raidTimeAssumptionsFrom(b, 'solo', toa.defaultTimeSettings, toa.time);
     const kit = kitOf('toa', b);
-    const pass = (k: Parameters<typeof toa.time.encounterPass>[1], d: 'none' | 'team' | 'solo', f: number) => toa.time.encounterPass('toa-zebak', k, tb, d, f);
+    // phase 38c: the before-supplies encounter (the phase 38b 'toa-zebak')
+    const pass = (k: Parameters<typeof toa.time.encounterPass>[1], d: 'none' | 'team' | 'solo', f: number) => toa.time.encounterPass('toa-zebak-before-supplies', k, tb, d, f);
     const first = pass(kit, 'none', tb.fallbackFightSeconds);
     const run = (adrenalineSeconds: number) => budgetedEncounter(kit, tb, { ...tb.specBudget!, deathCharge: undefined }, {
       drain: 'solo', pass, first, fightSeconds: 60, clock0: 0, surge: false, adrenalineSeconds,

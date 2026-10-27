@@ -72,7 +72,7 @@ const changed = (): SavedSettings => {
       mages: 2,
       nonItem: 2,
       pinned: [planItemByName('Lightbearer').id],
-      raidMinutes: 30,
+      nonFightMinutes: 30,
       spellbook: 'ancients',
     },
   };

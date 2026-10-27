@@ -202,7 +202,9 @@ describe('encounter line = the first phase\'s line (FA, presets kit)', () => {
     return encounterTime(id, kit, raidTimeAssumptionsFrom(a, drain, FA.defaultTimeSettings, FA.time));
   };
   const summary = (e: EncounterTime, drain: 'team' | 'solo') => encounterDrainSummary(
-    e.phases.map((p) => ({ key: p.key, label: p.label, drainLine: p.choice?.drainLine })),
+    e.phases.map((p) => ({
+      key: p.key, label: p.label, drainLine: p.choice?.drainLine, drainReset: p.drainReset,
+    })),
     drain,
   )!;
 
@@ -234,13 +236,17 @@ describe('encounter line = the first phase\'s line (FA, presets kit)', () => {
     expect(s.text).toBe('Flying shield: 2 Tonalztics carriers (4 specs) → Def 156 · 98% · Grounded: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 156 · >99.9%');
   });
 
-  test('Ocellus (Team): P1 at a corner, then P3\'s Deflect Melee quadrant (no Elder maul)', () => {
+  test('Ocellus (Team): phase 38c: three events (the Defence resets at P2 and P3), P3\'s specs on quadrants 1-3', () => {
     const e = encounter(TEAM, 'team', 'ocellus');
     const s = summary(e, 'team');
     expect(s.parts[0].phaseKey).toBe('ocellus-p1');
     expect(s.parts[0].line).toBe(e.phases[0].choice!.drainLine);
-    expect(s.parts.map((p) => p.label)).toEqual(['P1 at a corner', 'P3 last quadrant, Deflect Melee']);
-    expect(s.text).toBe('P1 at a corner: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 129 · >99.9% · P3 last quadrant, Deflect Melee: 2 Tonalztics carriers (4 specs) → Def 150 · 84%');
+    expect(s.events!.map((ev) => [ev.reset, ev.phaseKey, ev.parts.map((p) => p.label)])).toEqual([
+      [undefined, 'ocellus-p1', ['P1 at a corner']],
+      ['P1', 'ocellus-p2', ['P2 The Blade']],
+      ['P2', 'ocellus-p3', ['P3 quadrants 1-3']],
+    ]);
+    expect(s.text).toBe('Start of fight: 1 Elder maul carrier (2 specs) → Def 140 · After P1 (Defence restored), again: 1 Elder maul carrier (2 specs) → Def 106 · After P2 (Defence restored), again: 2 Tonalztics carriers (4 specs) → Def 150 · 84%');
   });
 
   test('single-phase encounters: the line is that phase\'s (Xarth)', () => {
@@ -301,9 +307,13 @@ describe('drain events (Defence restored mid-fight)', () => {
     // phase 36: the wiki's other resets (Kephri's final phase, the Warden's enrage, Olm's phases) are flagged too; their
     // labels predate the flag
     expect(flagged.filter((p) => p.reset && p.raid === 'tob').map((p) => p.key)).toEqual(flagged.filter((p) => /Defence restored/.test(p.label)).map((p) => p.key));
+    // phase 38c: Ocellus P2 / P3 (the user, in-game); Kephri twice (before / after the supplies)
     expect(flagged.filter((p) => p.reset).map((p) => `${p.raid}/${p.key}: ${p.reset}`)).toEqual([
+      'fractured-archive/ocellus-p2: P1',
+      'fractured-archive/ocellus-p3: P2',
       'toa/kephri-final: the final phase',
       'toa/wardens-p3-enraged: the enrage',
+      'toa/kephri-final: the final phase',
       'cox/olm-p2-right: phase 1',
       'cox/olm-p2-left: phase 1',
       'cox/olm-p3-right: phase 2',

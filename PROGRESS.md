@@ -3,6 +3,58 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 38c — Ocellus events, ToA path pair, clock default, displays (2026-10-27)
+
+**Numbers moved** (`node scripts/pinHeadlines.mjs --full`, 9 changes): FA 21:05.3 → **21:43.6**, FA Solo 21:56.2 →
+**22:53.4**, FA without Obligator / Ascension 24:11.9 → **24:52.2**, ToA 14:30.1 → **14:20.0**; CoX 7:06.9, ToB 7:23.4
+unchanged. Docs: BEST_SETUP *Ocellus events, ToA path pair, clock default, displays (phase 38c)*, DATA_SOURCES *Phase
+38c*, UNVERIFIED D5 (P2 120 s), D30 (non-fight time), D31 (the pair), new D35 (Ocellus events / the Blade).
+
+- **Ocellus** (raidTime.ts `evalEncounterPass`): the Defence resets P1 → P2 and P2 → P3 (the user, in-game): the Blade
+  row `drainReset: 'P1'`, P3's first row (quadrants 1-3) `drainReset: 'P2'`: three drain events, P3's specs on Q1-3
+  (were on the last quadrant). The P2 query carries its rowKey. "Ocellus P2 length" default 0 → **120 s** (the user:
+  "~2 min, little damage lands"; unverified). Lines: "Start of fight: … · After P1 (Defence restored), again: … · After
+  P2 (Defence restored), again: …". Gap (D35): in FA's "your DPS alone" seconds P2's wall time is 120 ÷ party.
+- **ToA path pair** (toa/time.ts `TOA_ROUTES`, `toaRoomOf`; raidTime.ts `RaidTimeModel.routes`, `modelRoutes`): every
+  path room has a plain (after the supplies) and a `-before-supplies` encounter id (copies now also for Akkha, his
+  Shadows, Ba-Ba); six routes, one per pair done first; `compareRoutes` / the planner take the cheapest (the Plan's
+  Route select = `firstPaths`: "Compare all" or one pair; no separate setting). Adrenaline 0 / 1 / 2 per id.
+- **Raid clock** (raidTime.ts `raidClock(walls, raidSeconds, nonFightSeconds)`, `surgeClockSpan`; base.ts
+  `nonFightMinutes`; settings.ts / PlanView "Non-fight time (min)", `plan.nonFightMinutes`, the old `raidMinutes` key
+  not read): the clock = fight wall + non-fight time (FA 21.5 = 25 min − 210.9 s, ToA 15.5, CoX 12.9, ToB 12.6), so a
+  solo raid is not squeezed (D30). An explicit `raidMinutes` keeps the 38a clock. Moves no headline (every pinned kit
+  re-timed with the 38a clock: the same totals).
+- **Displays**: per-boss 95% table (planner.ts `briefing`, SpecPlanPanel) and "Load worn / Load all"
+  (`planLoadoutToPlayer(…, target)`) use `assumptionsForTarget`; ToA `hpNote` (Search / Summary footer): they use the
+  salts, the Plan fights the first two paths with the normal potions.
+- **Moved totals, explained:** FA: Ocellus 655.17 → 693.52 (P2 +120 s; the Blade takes 15.30 DPS × 120 = 1836, 918
+  off P3: Q1-3 252.7 s, last quadrant 125.2 s; events P1 1 Tonalztics, P2 4 maul + 1 Tonalztics, P3 4 Tonalztics);
+  kit, ring, carriers unchanged. FA Solo: Ocellus 677.04 → 734.19 (P2, 724 carried; P3 2 Tonalztics + Crimson kisten,
+  now brought). FA not owned: Ocellus 767.67 → 804.39, Bork 216.68 → 220.26, carriers re-chosen (1 DWH + 4 Tonalztics,
+  was 2 maul + 2 Tonalztics + 1 Ayak). ToA: pair **Kephri + Ba-Ba** (route
+  `toa-kephri-before-supplies>toa-baba-before-supplies>toa-zebak>toa-akkha>toa-wardens`): with the kit, before − after
+  the supplies = Kephri 11.02, Ba-Ba 12.63, Akkha 20.31, Zebak 22.70 s, so the two cheapest rooms go first; the six
+  routes K+Z 870.10, K+A 867.70, K+B 860.03, Z+A 879.38, Z+B 871.71, A+B 869.31 (Zebak after 141.74 → 119.04, Ba-Ba
+  before 90.20 → 102.83); same six loadouts (listed in another order).
+- **BGS vs Elder maul on Ocellus** (hand check, FA headline assumptions, drainModel): maul −35% of current Def per
+  landed spec (rounded down), BGS −damage dealt. P2 / P3 Def 250: maul 0.782 × 87 = 68 Def per 50% spec vs BGS
+  E[damage] 26.5; P1 Def 215: 0.752 × 75 = 56 vs 28.2. The BGS only catches up below Def ≈ 80 (35% of Def < its damage),
+  i.e. after the maul / Tonalztics; so the carriers are maul + Tonalztics and no plan brings a BGS.
+- Re-pinned with explanations: RaidTime (P2 off in the hand-computed Ocellus test; required targets), RaidConfig / ToA
+  / CrossRaid (6 ToA routes; fast pins FA Ocellus 776.5 → 832, ToA Zebak + Akkha first for the preset kit: Kephri after
+  148.6, Akkha before 180.4), Phase27 (FA 1493.8 → 1544.4, ToA 925.0 → 905.5; r27fa / r27toa.json re-captured),
+  Phase29 (a Team line brings ≤ 2 specs per carrier: three Ocellus events split the energy), Phase33 / 34 / 35b (the
+  Ocellus lines), Phase37b / 38a (the Plan input), Phase38b (ToA ids), Phase37c (retime CLI 14:20.0),
+  `PHASE37_MEMO` r27fa / r27toa / fa / toa / faSolo / faNotOwned re-recorded (ToA encounter runs +43%: 9 encounters).
+- Tests: new `Phase38c.test.ts` (11, hand-computed: Ocellus rows and events at DPS 1 (P2 120 dealt, 3 events, the
+  reset moves to the last quadrant when it is all of P3), the Team spec plan's events / firstRowKey; six ToA routes,
+  adrenaline per id; the cheapest pair at half DPS before the supplies = the two shortest rooms; the clock for party 6
+  vs 1 (starts 322.5 / 745 / 1490 vs 322.5 / 1245 / 2490), the defaults, the Plan input; Load into calculator +19 vs
+  +26 strength; the 95% table's drain model). Fast suite 1612 passed / 24 skipped; `RUN_SLOW_TESTS=1`
+  CrossRaidHeadlines + CrossRaidHeadlinesCox 5 / 5; `retime`: all six gap 0, fastest = pinned route. Verify:
+  `verifyAll 35b 38a` OK (35b's Ocellus line and Kephri id updated; 38a's input → Non-fight time, screenshot
+  phase38a-raid-length.png re-taken). tsc, lint clean.
+
 ## Phase 38b fix — adrenaline window guard (2026-10-27)
 
 - Review finding: a row starting inside Liquid adrenaline's window but running past it priced every damage spec at

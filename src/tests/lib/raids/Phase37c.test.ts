@@ -32,7 +32,7 @@ describe('retime: the headline kits re-timed outside the planner = headlines.jso
   test('CLI: one plan, a table, exit 0; an unknown plan exits 2', () => {
     const ok = cli('retime.mjs', ['toa', '--quiet']);
     expect(ok.status).toBe(0);
-    expect(ok.stdout).toMatch(/toa\s+14:30\.1\s+870\.0990\s+870\.0990\s+0\.00e\+0\s+yes\s+[\d.]+ s\s+OK/);
+    expect(ok.stdout).toMatch(/toa\s+14:20\.0\s+860\.0306\s+860\.0306\s+0\.00e\+0\s+yes\s+[\d.]+ s\s+OK/);
     expect(cli('retime.mjs', ['nope']).status).toBe(2);
   }, 120000);
 });

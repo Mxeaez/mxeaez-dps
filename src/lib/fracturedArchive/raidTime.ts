@@ -106,9 +106,9 @@ export const RAID_TIME_DEFAULTS: RaidTimeSettings = {
   borkStunUptime: 0,
   // Strategies: "While walking to a quadrant, he will have Protect from Melee active"; share unknown, 0 by default.
   ocellusWalkingFraction: 0,
-  // P2 is time-limited (three quadrant cycles, Strategies → Phase 2); its length in seconds is unpublished, so it is
-  // ignored by default.
-  ocellusP2Seconds: 0,
+  // P2 is time-limited (three quadrant cycles, Strategies → Phase 2); its length is unpublished. Phase 38c: 120 s by
+  // default (the user, in-game: "~2 min, little damage lands"; UNVERIFIED D35).
+  ocellusP2Seconds: 120,
   // Strategies → Ocellus / Phase 2: "The Blade stores all damage dealt during this phase and releases it at the end of
   // each quadrant, effectively transferring half of all damage dealt to the boss's phase 3 health bar".
   ocellusP2CarryOver: 0.5,
@@ -440,6 +440,12 @@ export interface RaidTimeAssumptions {
    * time is spread before the encounters in proportion to their fight time. Undefined / 0 = fight time only.
    */
   raidSeconds?: number;
+  /**
+   * Phase 38c: the non-fight wall seconds of the raid (travel, puzzles, mechanics), added to the route's fight wall time
+   * and spread the same way (`raidClock`), so a longer fight (a solo raid) lengthens the raid instead of squeezing the
+   * non-fight time. Takes precedence over `raidSeconds` when set (`raidTimeAssumptionsFrom`: the default).
+   */
+  nonFightSeconds?: number;
   /** Phase 38a (ToB): the surge cooldown pauses between encounters (its clock is fight time only). */
   surgePausesBetweenEncounters?: boolean;
 }
@@ -451,6 +457,11 @@ export interface RaidTimeAssumptions {
 export interface RaidTimeModel {
   id: string;
   routeSlots: RouteSlot[];
+  /**
+   * Phase 38c: the routes, when they are not the cartesian product of `routeSlots` (ToA: one per pair of paths done
+   * before the supplies); `routeSlots` then only names the positions.
+   */
+  routes?: EncounterId[][];
   labels: Record<string, string>;
   /** One pass over an encounter at a drain state / fight length; phases with no damage are left out. */
   encounterPass: (
@@ -530,7 +541,11 @@ export const raidTimeAssumptionsFrom = (
     ...(best.cox ? { cox: best.cox } : {}),
     ...(best.tob ? { tob: best.tob } : {}),
     ...(budget ? { specBudget: budget } : {}),
-    raidSeconds: 60 * Math.max(0, best.raidMinutes ?? raidBase(best.raid).typicalRaidMinutes),
+    // phase 38c: the non-fight time (default) is added to the fight wall; an explicit raid length (`raidMinutes`) is
+    // the phase 38a clock
+    ...(best.raidMinutes !== undefined
+      ? { raidSeconds: 60 * Math.max(0, best.raidMinutes) }
+      : { nonFightSeconds: 60 * Math.max(0, best.nonFightMinutes ?? raidBase(best.raid).nonFightMinutes) }),
     ...(raidBase(best.raid).surgePausesBetweenEncounters ? { surgePausesBetweenEncounters: true } : {}),
   };
 };
@@ -579,7 +594,7 @@ const evalEncounterPass = (
   let carried = 0;
   if (settings.ocellusP2Seconds > 0) {
     const choice = kit.best({
-      targetKey: 'ocellus-p2', drain, fightSeconds,
+      targetKey: 'ocellus-p2', drain, fightSeconds, rowKey: 'ocellus-p2',
     });
     const dps = choice?.dps ?? 0;
     const dealt = dps * mult * settings.ocellusP2Seconds;
@@ -594,19 +609,24 @@ const evalEncounterPass = (
       seconds: settings.ocellusP2Seconds,
       note: `${Math.round(carried)} carried to P3 (${pctText(settings.ocellusP2CarryOver)})`,
       noDamageSpecs: 'a fixed-length phase',
+      // phase 38c: the Defence resets P1 → P2 (the user, in-game): a new drain event ("After P1 (Defence restored)")
+      drainReset: 'P1',
     });
   }
   const p3Total = Math.max(0, targetHp('ocellus-p3', OCELLUS_P3_PHASES[0], a.partySize) - carried);
   const last = Math.min(1, Math.max(0, settings.ocellusLastQuadrantFraction));
+  // phase 38c: the Defence resets again P2 → P3 (the user, in-game): P3's first row starts a new drain event, so its
+  // specs are made on quadrants 1-3 (or on the last quadrant when it is all of P3)
+  const p3Reset = { drainReset: 'P2' };
   const q13: PlannedPhase = {
-    key: 'ocellus-p3', label: `P3 quadrants 1-3${last ? ` (${pctText(1 - last)})` : ''}`, targetKey: 'ocellus-p3', phase: OCELLUS_P3_PHASES[0], damage: p3Total * (1 - last),
+    key: 'ocellus-p3', label: `P3 quadrants 1-3${last ? ` (${pctText(1 - last)})` : ''}`, targetKey: 'ocellus-p3', phase: OCELLUS_P3_PHASES[0], damage: p3Total * (1 - last), ...p3Reset,
   };
   if (q13.damage > 0) rows.push(phaseTime(q13, kit, drain, fightSeconds, mult));
   if (p3Total * last > 0) {
     // Pessimistic: the Deflect that hurts the kit most (= the one blocking the kit's best style; magic is never
     // deflected in our model, so a magic-best kit gets the lower of the two)
     const options = [OCELLUS_P3_DEFLECT_MELEE_PHASE, OCELLUS_P3_DEFLECT_RANGED_PHASE].map((phase) => phaseTime({
-      key: 'ocellus-p3-last', label: `P3 last quadrant, ${phase.replace('Last quadrant: ', '')} (${pctText(last)})`, targetKey: 'ocellus-p3', phase, damage: p3Total * last,
+      key: 'ocellus-p3-last', label: `P3 last quadrant, ${phase.replace('Last quadrant: ', '')} (${pctText(last)})`, targetKey: 'ocellus-p3', phase, damage: p3Total * last, ...(q13.damage > 0 ? {} : p3Reset),
     }, kit, drain, fightSeconds, mult));
     rows.push(options[1].dps < options[0].dps ? options[1] : options[0]);
   }
@@ -771,13 +791,15 @@ export interface RaidClock {
  * Phase 38a: the raid wall clock of a route. `walls` = each encounter's fight wall seconds; the non-fight time
  * max(0, raidSeconds − Σ walls) is spread before the encounters in proportion to their fight time (an encounter with
  * 30% of the fight time gets 30% of the travel / puzzles / mechanics), so the last fight ends at `raidSeconds` (or at
- * the fight total when that is longer). Non-finite walls count 0. Phase 41 replaces the proportional spread with
+ * the fight total when that is longer). Phase 38c: with `nonFightSeconds` that much non-fight time is spread instead
+ * (the raid lasts Σ walls + nonFightSeconds). Non-finite walls count 0. Phase 41 replaces the proportional spread with
  * measured room times.
  */
-export const raidClock = (walls: number[], raidSeconds = 0): RaidClock => {
+export const raidClock = (walls: number[], raidSeconds = 0, nonFightSeconds?: number): RaidClock => {
   const w = walls.map((x) => (Number.isFinite(x) && x > 0 ? x : 0));
   const fight = w.reduce((t, x) => t + x, 0);
-  const extra = Number.isFinite(raidSeconds) ? Math.max(0, raidSeconds - fight) : 0;
+  let extra = Number.isFinite(raidSeconds) ? Math.max(0, raidSeconds - fight) : 0;
+  if (nonFightSeconds !== undefined) extra = Number.isFinite(nonFightSeconds) ? Math.max(0, nonFightSeconds) : 0;
   const gaps = w.map((x) => (fight > 0 ? (extra * x) / fight : 0));
   const starts: number[] = [];
   let t = 0;
@@ -795,14 +817,18 @@ export const raidClock = (walls: number[], raidSeconds = 0): RaidClock => {
  */
 export const surgeClockStarts = (
   walls: number[],
-  a: Pick<RaidTimeAssumptions, 'raidSeconds' | 'surgePausesBetweenEncounters'>,
-): number[] => raidClock(walls, a.surgePausesBetweenEncounters ? 0 : (a.raidSeconds ?? 0)).starts;
+  a: Pick<RaidTimeAssumptions, 'raidSeconds' | 'nonFightSeconds' | 'surgePausesBetweenEncounters'>,
+): number[] => (a.surgePausesBetweenEncounters ? raidClock(walls) : raidClock(walls, a.raidSeconds ?? 0, a.nonFightSeconds)).starts;
 
 /** Phase 38a: the span of the surge cooldown's clock for a route with this fight wall time (the doses it allows). */
 export const surgeClockSpan = (
   fightWall: number,
-  a: Pick<RaidTimeAssumptions, 'raidSeconds' | 'surgePausesBetweenEncounters'>,
-): number => (a.surgePausesBetweenEncounters ? fightWall : Math.max(fightWall, a.raidSeconds ?? 0));
+  a: Pick<RaidTimeAssumptions, 'raidSeconds' | 'nonFightSeconds' | 'surgePausesBetweenEncounters'>,
+): number => {
+  if (a.surgePausesBetweenEncounters) return fightWall;
+  if (a.nonFightSeconds !== undefined) return fightWall + Math.max(0, a.nonFightSeconds);
+  return Math.max(fightWall, a.raidSeconds ?? 0);
+};
 
 /**
  * Phase 36: the surge doses of a route: the encounters' start times on the route's clock (phase 38a: the surge clock,
@@ -813,7 +839,7 @@ export const surgeClockSpan = (
 export const routeSurgeDoses = (
   plain: EncounterTime[],
   dosed: EncounterTime[],
-  a: Pick<RaidTimeAssumptions, 'dpsMultiplier' | 'partySize' | 'raidSeconds' | 'surgePausesBetweenEncounters'>,
+  a: Pick<RaidTimeAssumptions, 'dpsMultiplier' | 'partySize' | 'raidSeconds' | 'nonFightSeconds' | 'surgePausesBetweenEncounters'>,
   potions: number,
 ): EncounterId[] => {
   const starts = surgeClockStarts(plain.map((e) => encounterWallSeconds(e.seconds, a)), a);
@@ -845,7 +871,7 @@ export const raidTime = (
     // non-fight time before each encounter (`raidClock` of the full-bar encounter times) regenerates every pool (+10%
     // per tick of its period on the clock, capped at 100%) and counts for the surge cooldown (not in ToB).
     const groups = new Map(budgetGroups(budget).map((g) => [g.id, g.regenSeconds]));
-    const { gaps } = raidClock(route.encounters.map((id) => encounterWallSeconds(cached(id, false).seconds, assumptions)), assumptions.raidSeconds ?? 0);
+    const { gaps } = raidClock(route.encounters.map((id) => encounterWallSeconds(cached(id, false).seconds, assumptions)), assumptions.raidSeconds ?? 0, assumptions.nonFightSeconds);
     let clock = 0;
     let surgeClock = 0;
     let state: PoolState | undefined;
@@ -906,11 +932,13 @@ export interface RouteComparison {
   fastest: number;
 }
 
+/** Phase 38c: a time model's routes (its own list, else the cartesian product of its slots). */
+export const modelRoutes = (m: Pick<RaidTimeModel, 'routeSlots' | 'routes' | 'labels'>): Route[] => (m.routes
+  ? m.routes.map((encounters) => ({ id: encounters.join('>'), label: encounters.map((e) => m.labels[e] ?? e).join(' → '), encounters }))
+  : enumerateRoutes(m.routeSlots, m.labels));
+
 /** The routes of the assumptions' raid (the Fractured Archive's 8 by default). */
-export const routesFor = (a: Pick<RaidTimeAssumptions, 'model'>): Route[] => {
-  const m = a.model ?? FA_TIME_MODEL;
-  return enumerateRoutes(m.routeSlots, m.labels);
-};
+export const routesFor = (a: Pick<RaidTimeAssumptions, 'model'>): Route[] => modelRoutes(a.model ?? FA_TIME_MODEL);
 
 /** All routes (each encounter evaluated once). */
 export const compareRoutes = (kit: RaidKit, assumptions: RaidTimeAssumptions, routes = routesFor(assumptions)): RouteComparison => {

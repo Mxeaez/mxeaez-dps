@@ -106,13 +106,14 @@ describe('FA (presets kit, 2 Elder maul + 2 Tonalztics carriers)', () => {
     expect(rows[1].wear).toEqual([{ loadouts: rows[1].loadouts }]);
   });
 
-  test('Dagon\'hai trio: one event; Ocellus: one NPC (P1 + P3 parts)', () => {
+  test('Dagon\'hai trio: one event; Ocellus: one NPC, three events (phase 38c: P1, the Blade, P3 quadrants 1-3)', () => {
     expect(summaryOf(dagon).events).toHaveLength(1);
     expect(rows[2].specsText).toBe('Tonalztics 3 hits → Def 0');
     expect(rows[2].wear).toHaveLength(1);
     const s = summaryOf(ocellus);
-    expect(s.events).toHaveLength(1);
-    expect(s.events[0].parts.map((p) => p.label)).toEqual(['P1 at a corner', 'P3 last quadrant, Deflect Melee']);
+    expect(s.events.map((ev) => [ev.reset, ev.parts.map((p) => p.label)])).toEqual([
+      [undefined, ['P1 at a corner']], ['P1', ['P2 The Blade']], ['P2', ['P3 quadrants 1-3']],
+    ]);
     expect(rows[3].wear).toEqual([{ loadouts: rows[3].loadouts }]);
   });
 

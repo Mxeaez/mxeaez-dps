@@ -93,11 +93,13 @@ export const cpuSeconds = <T>(f: () => T): { result: T, seconds: number } => {
  */
 export type MemoCounters = { encounterRuns: number, passRuns: number, encounterHits: number, passHits: number };
 export const PHASE37_MEMO: Record<string, MemoCounters> = {
+  // phase 38c (Ocellus: P2 in the plan, three drain events; ToA: six routes, 9 encounters): r27fa was 1048 / 1126 /
+  // 14200 / 175, r27toa 1009 / 1217 / 10261 / 317
   r27fa: {
-    encounterRuns: 1048, passRuns: 1126, encounterHits: 14200, passHits: 175,
+    encounterRuns: 1143, passRuns: 1242, encounterHits: 18065, passHits: 211,
   },
   r27toa: {
-    encounterRuns: 1009, passRuns: 1217, encounterHits: 10261, passHits: 317,
+    encounterRuns: 1720, passRuns: 1932, encounterHits: 21914, passHits: 589,
   },
   r27tob: {
     encounterRuns: 1678, passRuns: 1809, encounterHits: 58898, passHits: 222,
@@ -105,14 +107,16 @@ export const PHASE37_MEMO: Record<string, MemoCounters> = {
   r27cox: {
     encounterRuns: 1546, passRuns: 3268, encounterHits: 39314, passHits: 3475,
   },
+  // phase 38c (Ocellus: P2 in the plan, three drain events): was 10648 / 10445 / 444976 / 9904
   fa: {
-    encounterRuns: 10648, passRuns: 10445, encounterHits: 444976, passHits: 9904,
+    encounterRuns: 11400, passRuns: 11296, encounterHits: 462408, passHits: 12656,
   },
   // phase 38a (rooms 1-2 before the supplies: other drain states and candidates): was 32784 / 10825 / 544791 / 24576;
   // phase 38b (Liquid adrenaline: more spec options per event, damage specs on the adds' rows): was 39715 / 11721 /
-  // 728535 / 30660
+  // 728535 / 30660; phase 38c (six routes: every path room before and after the supplies, 9 encounters): was 48604 /
+  // 16842 / 915256 / 35030
   toa: {
-    encounterRuns: 48604, passRuns: 16842, encounterHits: 915256, passHits: 35030,
+    encounterRuns: 69292, passRuns: 18123, encounterHits: 1307456, passHits: 56648,
   },
   tob: {
     encounterRuns: 25001, passRuns: 23772, encounterHits: 1335979, passHits: 5729,
@@ -122,11 +126,13 @@ export const PHASE37_MEMO: Record<string, MemoCounters> = {
   cox: {
     encounterRuns: 73944, passRuns: 35416, encounterHits: 1961276, passHits: 62818,
   },
+  // phase 38c (Ocellus: P2 in the plan, three drain events): faSolo was 91778 / 38942 / 3464758 / 56722, faNotOwned
+  // 58528 / 10474 / 1579384 / 59896
   faSolo: {
-    encounterRuns: 91778, passRuns: 38942, encounterHits: 3464758, passHits: 56722,
+    encounterRuns: 84526, passRuns: 42428, encounterHits: 3073298, passHits: 46684,
   },
   faNotOwned: {
-    encounterRuns: 58528, passRuns: 10474, encounterHits: 1579384, passHits: 59896,
+    encounterRuns: 61685, passRuns: 19098, encounterHits: 1614723, passHits: 56262,
   },
 };
 export const memoCountersWithin = (m: MemoCounters | undefined, want: MemoCounters | undefined): boolean => {

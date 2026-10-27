@@ -115,7 +115,9 @@ const TOA_ROOM_TARGETS: BestSetupTarget[] = [
  * Phase 38a: the targets of the rooms fought before the supplies (Kephri's path and Zebak's: the first two rooms of the
  * fixed route, src/lib/raids/toa/supplies.ts).
  */
-export const TOA_BEFORE_SUPPLIES_SOURCE_KEYS = ['toa-kephri-shielded', 'toa-kephri', 'toa-spitting-scarab', 'toa-soldier-scarab', 'toa-arcane-scarab', 'toa-zebak'];
+export const TOA_BEFORE_SUPPLIES_SOURCE_KEYS = ['toa-kephri-shielded', 'toa-kephri', 'toa-spitting-scarab', 'toa-soldier-scarab', 'toa-arcane-scarab', 'toa-zebak',
+  // phase 38c: any two paths may come first (the planner picks the pair)
+  'toa-akkha', 'toa-akkha-shadow', 'toa-baba'];
 
 /** Every ToA target, then (phase 38a) the copies of the rooms before the supplies (`beforeSupplies`). */
 export const TOA_TARGETS: BestSetupTarget[] = [

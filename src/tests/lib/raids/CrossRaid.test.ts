@@ -128,7 +128,8 @@ describe('switching raids: defaults per raid, no leaks', () => {
     expect(() => computeRouteComparison(req, undefined, fa.time)).toThrow(/time model/);
     expect(() => computeRouteComparison({ ...req, assumptions: fa.defaultAssumptions, settings: fa.defaultTimeSettings }, undefined, toa.time))
       .toThrow(/time model/);
-    expect(computeRouteComparison(req, undefined, toa.time).routes.length).toBe(1);
+    // phase 38c: one route per pair of paths done before the supplies
+    expect(computeRouteComparison(req, undefined, toa.time).routes.length).toBe(6);
   });
 });
 
@@ -187,8 +188,10 @@ const PINNED_ENCOUNTER_SECONDS: Record<string, Record<string, number>> = {
   // arrows + anguish): FA AG 201.8 → 191.8, Moia 72 → 68.9, Dagon'hai 240.1 → 233.8, Ocellus 800.5 → 776.5; ToA Zebak
   // 126.9 → 120.8; ToB Maiden 57 → 55.5, Sotetseg 80.4 → 77, Xarpus 66.1 → 64.2; CoX Olm 204.5 → 204.4 (the other
   // CoX encounters are not won by the Twisted bow preset in this kit).
+  // Phase 38c: Ocellus 776.5 → 832 (P2, the Blade, in the plan at 120 s; the Defence resets at P2 and P3: three drain
+  // events).
   'fractured-archive': {
-    'archive-guardian': 191.8, 'bork-smorks': 220.8, moia: 68.9, dagonhai: 233.8, ocellus: 776.5,
+    'archive-guardian': 191.8, 'bork-smorks': 220.8, moia: 68.9, dagonhai: 233.8, ocellus: 832,
   },
   // Phase 35 (no specs on adds): ToA Kephri 153.8 → 155.5, Akkha 160.9 → 161.6; CoX Vasa 20.1 → 22.9, Vespula 23.3 →
   // 24.1, Mystics 44.8 → 52.4, Shamans 32.1 → 37.5, Muttadiles 23.9 → 24.
@@ -198,8 +201,10 @@ const PINNED_ENCOUNTER_SECONDS: Record<string, Record<string, number>> = {
   // 39.2 (unchanged), Sotetseg 77 → 79.2 (the three thirds share the carriers' energy); FA unchanged.
   // Phase 38a (ToA supplies by room: rooms 1-2 with the normal potions): Kephri 157 → 185.1, Zebak 120.8 → 137.8.
   // Phase 38b (Liquid adrenaline: the carriers' drain specs cost half): Ba-Ba 103.1 → 97.3 (Wardens 349.9 → 349.8).
+  // Phase 38c (the pair of paths before the supplies is a route: this kit's cheapest is Zebak + Akkha; Kephri after the
+  // supplies 185.1 → 148.6, Akkha before them 161.6 → 180.4).
   toa: {
-    'toa-kephri': 185.1, 'toa-zebak': 137.8, 'toa-akkha': 161.6, 'toa-baba': 97.3, 'toa-wardens': 349.8,
+    'toa-zebak-before-supplies': 137.8, 'toa-akkha-before-supplies': 180.4, 'toa-kephri': 148.6, 'toa-baba': 97.3, 'toa-wardens': 349.8,
   },
   cox: {
     'cox-tekton': 18.6,

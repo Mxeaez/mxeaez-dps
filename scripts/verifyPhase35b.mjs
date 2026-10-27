@@ -23,7 +23,8 @@ const FA_OTHERS = {
   'archive-guardian': 'Flying shield: Tonalztics 4 hits → Def 156 · Grounded: Tonalztics 4 hits → Def 156',
   moia: 'Tonalztics 2 hits → Def 117',
   xarth: 'Tonalztics 2 hits → Def 102',
-  ocellus: 'P1 at a corner: Tonalztics 2 hits → Def 129 · P3 last quadrant, Deflect Melee: Tonalztics 3 hits → Def 150',
+  // phase 38c: three Ocellus events (the Defence resets at P2 and P3), P3's specs on quadrants 1-3
+  ocellus: 'start: Tonalztics 2 hits → Def 129 · after P1: Elder maul 4 specs + Tonalztics 1 hit → Def 18 · after P2: Tonalztics 3 hits → Def 150',
 };
 
 let failures = 0;
@@ -134,7 +135,8 @@ const main = async () => {
   log(rows);
   const w = rows.find((r) => r.id === 'toa-wardens');
   check(w?.groups.length >= 3 && w.groups[0].startsWith('Obelisk:') && w.groups.some((g) => g.startsWith('Tumeken\'s Warden:')), `Wardens: ${JSON.stringify(w?.groups)}`);
-  const kephri = rows.find((r) => r.id === 'toa-kephri');
+  // phase 38c: Kephri before or after the supplies, whichever pair the plan does first
+  const kephri = rows.find((r) => r.id === 'toa-kephri' || r.id === 'toa-kephri-before-supplies');
   check(kephri && !/Scarab/.test(kephri.specs) && !/Scarab/.test(kephri.title), `Kephri: no scarab line ("${kephri?.specs}")`);
   await page.mouse.move(0, 0);
   await page.locator('[data-testid="plan-briefing"]').screenshot({ path: 'docs/screenshots/phase35b-toa.png' });

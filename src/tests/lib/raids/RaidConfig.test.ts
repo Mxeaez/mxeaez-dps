@@ -88,7 +88,8 @@ describe('RaidConfig: every raid', () => {
       test('routes enumerate; every phase the time model queries is a target of this raid', () => {
         const a = raidTimeAssumptionsFrom(raid.defaultAssumptions, 'none', raid.defaultTimeSettings, raid.time);
         const routes = routesFor(a);
-        expect(routes.length).toBe(raid.id === 'fractured-archive' ? 8 : 1);
+        // phase 38c: ToA has one route per pair of paths done before the supplies
+        expect(routes.length).toBe(({ 'fractured-archive': 8, toa: 6 } as Record<string, number>)[raid.id] ?? 1);
         routes.forEach((r) => r.encounters.forEach((e) => {
           expect(raid.time.labels[e]).toBeTruthy();
           expect(raid.targets.map((t) => t.key)).toContain(raid.encounterTarget[e]);
@@ -169,11 +170,13 @@ describe('RaidConfig: the Fractured Archive is the phase 8-17 data, unchanged', 
 });
 
 describe('RaidConfig: Tombs of Amascut', () => {
-  test('one fixed route, shown as Encounters', () => {
+  test('six routes (phase 38c: the pair of paths before the supplies), shown as Encounters', () => {
     const a = raidTimeAssumptionsFrom(TOMBS_OF_AMASCUT_RAID.defaultAssumptions, 'none', TOMBS_OF_AMASCUT_RAID.defaultTimeSettings, TOMBS_OF_AMASCUT_RAID.time);
-    const [route] = routesFor(a);
+    const routes = routesFor(a);
+    expect(routes).toHaveLength(6);
+    const [route] = routes;
     expect(route.id).toBe(TOA_ROUTE_ID);
-    expect(route.encounters).toEqual(['toa-kephri', 'toa-zebak', 'toa-akkha', 'toa-baba', 'toa-wardens']);
+    expect(route.encounters).toEqual(['toa-kephri-before-supplies', 'toa-zebak-before-supplies', 'toa-akkha', 'toa-baba', 'toa-wardens']);
     expect(TOMBS_OF_AMASCUT_RAID.routesLabel).toBe('Encounters');
   });
 

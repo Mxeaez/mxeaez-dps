@@ -5,7 +5,7 @@ import {
   COMFORT_SUPPLY_TYPES, DEFAULT_RING_POLICY, DEFAULT_SPEC_MODE, equipmentById, heartById, heartByPotion, planItemByName,
   RING_POLICIES, RingPolicy, SPEC_MODES, SpecMode, SupplyCounts,
 } from '@/lib/fracturedArchive/planner';
-import { enumerateRoutes } from '@/lib/fracturedArchive/raidTime';
+import { modelRoutes } from '@/lib/fracturedArchive/raidTime';
 import {
   DEFAULT_RAID, RaidConfig, raidConfig, RaidId, RAIDS, TimeSettings, withScalingInput,
 } from '@/lib/raids';
@@ -20,7 +20,7 @@ import { Spellbook, SPELLBOOKS } from '@/lib/raids/types';
  *   { "version": 1, "raid": "toa", "raids": { "<raid id>": {
  *       "assumptions": { ...only the inputs that differ from the raid's defaults },
  *       "time": { ...time-model settings that differ }, "drain": "solo", "specMode": "manual",
- *       "plan": { "route", "supplies": { "brew": 5 }, "ringPolicy", "mages", "nonItem", "pinned": [item ids], "raidMinutes",
+ *       "plan": { "route", "supplies": { "brew": 5 }, "ringPolicy", "mages", "nonItem", "pinned": [item ids], "nonFightMinutes",
  *         "spellbook" } } } }
  * Only values that differ from the defaults are written (a later default change still reaches untouched inputs); a raid
  * with nothing changed has no entry, and the key is removed when nothing at all differs.
@@ -46,13 +46,16 @@ export interface PlanInputSettings {
   nonItem: number;
   /** "Items I always bring" (equipment ids + heart pseudo ids). */
   pinned: number[];
-  /** Phase 38a: "Typical raid length" in minutes (the raid clock; default `RaidBase.typicalRaidMinutes`). */
-  raidMinutes: number;
+  /**
+   * Phase 38c: "Non-fight time" in minutes (the raid clock = the fight wall + this; default `RaidBase.nonFightMinutes`).
+   * Replaces phase 38a's "Typical raid length" (`raidMinutes`, no longer read).
+   */
+  nonFightMinutes: number;
   /** Phase 38b: "Spellbook" (Arceuus: Death Charge; default `RaidBase.spellbook`). */
   spellbook: Spellbook;
 }
 
-/** Phase 38a: the range of the "Typical raid length" input (minutes). */
+/** Phase 38a: the range of the raid clock input (minutes; phase 38c: "Non-fight time"). */
 export const RAID_MINUTES_RANGE = { min: 0, max: 120 };
 
 export interface RaidSettings {
@@ -112,7 +115,7 @@ export const defaultPlanInputs = (raid: RaidConfig, a: BestSetupAssumptions = ra
   ringPolicy: DEFAULT_RING_POLICY,
   nonItem: raid.planDefaults.nonItemSlots,
   pinned: defaultPinnedIds(raid, a.potions.magic),
-  raidMinutes: raid.typicalRaidMinutes,
+  nonFightMinutes: raid.nonFightMinutes,
   spellbook: raid.spellbook,
 });
 
@@ -202,7 +205,7 @@ export const validateTime = (raid: RaidConfig, raw: unknown): TimeSettings => {
 
 export const validatePlanInputs = (raid: RaidConfig, raw: unknown, a: BestSetupAssumptions): PlanInputSettings => {
   const d = defaultPlanInputs(raid, a);
-  const routes = ['all', ...enumerateRoutes(raid.time.routeSlots, raid.time.labels).map((r) => r.id)];
+  const routes = ['all', ...modelRoutes(raid.time).map((r) => r.id)];
   const supplies = field(raw, 'supplies');
   const out: PlanInputSettings = {
     route: oneOf(field(raw, 'route'), routes, d.route),
@@ -213,7 +216,7 @@ export const validatePlanInputs = (raid: RaidConfig, raw: unknown, a: BestSetupA
     ringPolicy: oneOf(field(raw, 'ringPolicy'), RING_POLICIES.map((p) => p.id), d.ringPolicy),
     nonItem: int(field(raw, 'nonItem'), 0, MAX_SLOTS, d.nonItem),
     pinned: d.pinned,
-    raidMinutes: num(field(raw, 'raidMinutes'), RAID_MINUTES_RANGE.min, RAID_MINUTES_RANGE.max, d.raidMinutes),
+    nonFightMinutes: num(field(raw, 'nonFightMinutes'), RAID_MINUTES_RANGE.min, RAID_MINUTES_RANGE.max, d.nonFightMinutes),
     spellbook: oneOf(field(raw, 'spellbook'), SPELLBOOKS.map((b) => b.id), d.spellbook),
   };
   const mages = field(raw, 'mages');

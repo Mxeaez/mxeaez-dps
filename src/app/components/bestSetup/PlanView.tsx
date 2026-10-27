@@ -11,7 +11,7 @@ import { buildTargetMonster, DrainStateId, findTarget } from '@/lib/fracturedArc
 import { NO_DRAINS_ADDS, Spellbook, SPELLBOOKS } from '@/lib/raids/types';
 import { BestSetupAssumptions, StyleGroup, TeamSpecAssumptions } from '@/lib/fracturedArchive/presets';
 import {
-  enumerateRoutes, formatDuration, PhaseTime,
+  formatDuration, modelRoutes, PhaseTime,
 } from '@/lib/fracturedArchive/raidTime';
 import {
   COMFORT_SUPPLY_TYPES,
@@ -554,7 +554,7 @@ const PlanView: React.FC<{
   const notOwnedKey = JSON.stringify(notOwnedProp ?? []);
   const notOwned = useMemo(() => JSON.parse(notOwnedKey) as string[], [notOwnedKey]);
   const settings = timeSettings ?? raid.defaultTimeSettings;
-  const routes = useMemo(() => enumerateRoutes(raid.time.routeSlots, raid.time.labels), [raid]);
+  const routes = useMemo(() => modelRoutes(raid.time), [raid]);
   // phase 21: per-raid defaults (src/lib/raids/planDefaults.ts); the view is remounted on a raid change
   // the pinned heart (magic boost) follows the Assumptions box's Heart; another magic potion there = no heart pinned
   const selectedHeart = heartByPotion(assumptions.potions.magic);
@@ -573,15 +573,15 @@ const PlanView: React.FC<{
   const [mages, setMages] = useState<number | undefined>(initialInputs ? initialInputs.mages : undefined);
   const [nonItem, setNonItem] = useState(initialInputs?.nonItem ?? raid.planDefaults.nonItemSlots);
   const [pinned, setPinned] = useState<number[]>(initialInputs?.pinned ?? defaultPinned);
-  // phase 38a: the typical raid length (the raid clock: surge doses, regen between encounters)
-  const [raidMinutes, setRaidMinutes] = useState<number>(initialInputs?.raidMinutes ?? raid.typicalRaidMinutes);
+  // phase 38a: the raid clock (surge doses, regen between encounters); phase 38c: its non-fight time, added to the fight
+  const [nonFightMinutes, setNonFightMinutes] = useState<number>(initialInputs?.nonFightMinutes ?? raid.nonFightMinutes);
   // phase 38b: the players' spellbook (Arceuus: Death Charge)
   const [spellbook, setSpellbook] = useState<Spellbook>(initialInputs?.spellbook ?? raid.spellbook);
   useEffect(() => {
     onInputs?.({
-      route, supplies, ringPolicy, nonItem, pinned, raidMinutes, spellbook, ...(mages !== undefined ? { mages } : {}),
+      route, supplies, ringPolicy, nonItem, pinned, nonFightMinutes, spellbook, ...(mages !== undefined ? { mages } : {}),
     });
-  }, [onInputs, route, supplies, ringPolicy, mages, nonItem, pinned, raidMinutes, spellbook]);
+  }, [onInputs, route, supplies, ringPolicy, mages, nonItem, pinned, nonFightMinutes, spellbook]);
   // a new Heart in the Assumptions box replaces the pinned one (or removes it); the first render keeps the defaults
   const lastHeart = useRef(selectedHeart);
   useEffect(() => {
@@ -601,7 +601,7 @@ const PlanView: React.FC<{
   const job = useRef<PlanJob | null>(null);
   // phase 26: the pinned items the plan keeps (unowned ones are dropped); "compare with max"
   const keptPinned = useMemo(() => ownedPinned(pinned, notOwned).kept, [pinned, notOwned]);
-  const maxKey = `${raid.id}|${JSON.stringify(assumptions)}|${drain}|${route}|${JSON.stringify(supplies)}|${ringPolicy}|${specMode}|${mages ?? 'auto'}|${nonItem}|${JSON.stringify(pinned)}|${JSON.stringify(settings)}|${raidMinutes}|${spellbook}`;
+  const maxKey = `${raid.id}|${JSON.stringify(assumptions)}|${drain}|${route}|${JSON.stringify(supplies)}|${ringPolicy}|${specMode}|${mages ?? 'auto'}|${nonItem}|${JSON.stringify(pinned)}|${JSON.stringify(settings)}|${nonFightMinutes}|${spellbook}`;
   const [maxSeconds, setMaxSeconds] = useState<number | undefined>(undefined);
   const [comparing, setComparing] = useState(false);
   const compareJob = useRef<PlanJob | null>(null);
@@ -627,7 +627,7 @@ const PlanView: React.FC<{
         // phase 38b: the spellbook likewise
         assumptions: {
           ...assumptions,
-          ...(raidMinutes !== raid.typicalRaidMinutes ? { raidMinutes } : {}),
+          ...(nonFightMinutes !== raid.nonFightMinutes ? { nonFightMinutes } : {}),
           ...(spellbook !== raid.spellbook ? { spellbook } : {}),
         },
         drain,
@@ -755,13 +755,13 @@ const PlanView: React.FC<{
   const loadWorn = () => {
     const monster = monsterForFirstPhase();
     if (!result || !monster) return;
-    const player = planLoadoutToPlayer(generateEmptyPlayer(), result.kit[0], monster, resultAssumptions());
+    const player = planLoadoutToPlayer(generateEmptyPlayer(), result.kit[0], monster, resultAssumptions(), findTarget(firstPhase!.targetKey));
     openInCalculator(player, monster).catch(console.error);
   };
   const loadAll = () => {
     const monster = monsterForFirstPhase();
     if (!result || !monster) return;
-    const players = result.kit.map((c) => planLoadoutToPlayer(generateEmptyPlayer(), c, monster, resultAssumptions()));
+    const players = result.kit.map((c) => planLoadoutToPlayer(generateEmptyPlayer(), c, monster, resultAssumptions(), findTarget(firstPhase!.targetKey)));
     openLoadoutsInCalculator(players, monster).catch(console.error);
   };
 
@@ -885,23 +885,23 @@ const PlanView: React.FC<{
               </select>
             </label>
             <label
-              htmlFor="plan-raid-minutes"
+              htmlFor="plan-non-fight-minutes"
               className="flex items-center gap-1"
-              title={`The raid's wall clock: the fight time is spread over this length (travel, puzzles and mechanics in proportion to each encounter's fight time), so Surge potion doses (one per 5 minutes) and spec regen between encounters follow it${raid.surgePausesBetweenEncounters ? ' (ToB: the surge cooldown pauses between rooms, so only fight time counts for it)' : ''}. 0 = fight time only. Default ${raid.typicalRaidMinutes} min: ${RAID_LENGTH_SOURCES[raid.id]} (unverified)`}
+              title={`The raid's wall clock = the route's fight time + this non-fight time (travel, puzzles and mechanics), spread before each encounter in proportion to its fight time; Surge potion doses (one per 5 minutes) and spec regen between encounters follow it${raid.surgePausesBetweenEncounters ? ' (ToB: the surge cooldown pauses between rooms, so only fight time counts for it)' : ''}. A longer fight (a solo raid) makes a longer raid. 0 = fight time only. Default ${raid.nonFightMinutes} min = a typical ${raid.typicalRaidMinutes} min raid minus the Team headline's fight time; the ${raid.typicalRaidMinutes} min: ${RAID_LENGTH_SOURCES[raid.id]} (unverified)`}
             >
-              Typical raid length (min)
+              Non-fight time (min)
               <input
-                id="plan-raid-minutes"
+                id="plan-non-fight-minutes"
                 type="number"
                 className="form-control text-xs py-0.5 w-16"
                 min={RAID_MINUTES_RANGE.min}
                 max={RAID_MINUTES_RANGE.max}
-                value={raidMinutes}
+                value={nonFightMinutes}
                 onChange={(e) => {
                   const v = Number(e.target.value);
-                  if (Number.isFinite(v)) setRaidMinutes(Math.min(RAID_MINUTES_RANGE.max, Math.max(RAID_MINUTES_RANGE.min, v)));
+                  if (Number.isFinite(v)) setNonFightMinutes(Math.min(RAID_MINUTES_RANGE.max, Math.max(RAID_MINUTES_RANGE.min, v)));
                 }}
-                data-testid="plan-raid-minutes"
+                data-testid="plan-non-fight-minutes"
               />
             </label>
             <label

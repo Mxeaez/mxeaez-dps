@@ -2,10 +2,35 @@
  "cancelled": false,
  "kit": [
   {
-   "label": "Twisted bow switch +6 on Inquisitor's mace (full crush)",
+   "label": "Twisted bow switch +6 on Scythe of Vitur",
    "kind": "partial",
    "group": "ranged",
    "equipment": {
+    "weapon": {
+     "id": 20997,
+     "name": "Twisted bow",
+     "version": "",
+     "slot": "weapon",
+     "twoHanded": true
+    },
+    "head": {
+     "id": 27235,
+     "name": "Masori mask (f)",
+     "version": "",
+     "slot": "head"
+    },
+    "body": {
+     "id": 27238,
+     "name": "Masori body (f)",
+     "version": "",
+     "slot": "body"
+    },
+    "legs": {
+     "id": 27241,
+     "name": "Masori chaps (f)",
+     "version": "",
+     "slot": "legs"
+    },
     "cape": {
      "id": 28951,
      "name": "Dizana's quiver",
@@ -36,31 +61,6 @@
      "version": "",
      "slot": "ring"
     },
-    "head": {
-     "id": 27235,
-     "name": "Masori mask (f)",
-     "version": "",
-     "slot": "head"
-    },
-    "body": {
-     "id": 27238,
-     "name": "Masori body (f)",
-     "version": "",
-     "slot": "body"
-    },
-    "legs": {
-     "id": 27241,
-     "name": "Masori chaps (f)",
-     "version": "",
-     "slot": "legs"
-    },
-    "weapon": {
-     "id": 20997,
-     "name": "Twisted bow",
-     "version": "",
-     "slot": "weapon",
-     "twoHanded": true
-    },
     "ammo": {
      "id": 33595,
      "name": "Seeking dragon arrow",
@@ -86,8 +86,8 @@
      "spell": null
     }
    ],
-   "source": "Inquisitor's mace (full crush) → Twisted bow (Masori): Masori body (f), Necklace of rupture, Zaryte vambraces, Masori chaps (f), Dizana's quiver, Masori mask (f)",
-   "base": "Inquisitor's mace (full crush)",
+   "source": "Scythe of Vitur → Twisted bow (Masori): Masori body (f), Necklace of rupture, Zaryte vambraces, Masori chaps (f), Dizana's quiver, Masori mask (f)",
+   "base": "Scythe of Vitur",
    "partner": "Twisted bow (Masori)",
    "pieces": [
     "body",
@@ -477,13 +477,13 @@
    "slot": "ring"
   }
  ],
- "comparison": "793a426be463255232a733627d3f2828505869df4505bdd8198f3cc448222761",
+ "comparison": "904170ff8a47563a60f62216f38bacb81bf32bdd6a9c6fafa9561d9cff52a47c",
  "planned": 1,
  "rejected": [
   {
    "label": "Twisted bow (Masori)",
    "kind": "addition",
-   "deltaSeconds": 22.13441818838828,
+   "deltaSeconds": 15.698577051670327,
    "deltaSlots": 1,
    "reason": "needs 1 more slot, 0 free",
    "weapons": [
@@ -503,7 +503,7 @@
   {
    "label": "Twisted bow + Seeking dragon arrow",
    "kind": "addition",
-   "deltaSeconds": 2.3345306826936394,
+   "deltaSeconds": 1.3763751718704498,
    "deltaSlots": 5,
    "reason": "needs 5 more slots, 0 free",
    "weapons": [
@@ -513,34 +513,35 @@
  ],
  "alternatives": [
   {
-   "label": "melee + ranged + magic: Twisted bow switch +6 on Inquisitor's mace (full crush) / Scythe of Vitur / Tumeken's shadow (Ancestral)",
+   "label": "melee + ranged + magic: Scythe of Vitur / Twisted bow switch +6 on Scythe of Vitur / Tumeken's shadow (Ancestral)",
    "kind": "alternative",
    "deltaSeconds": 11.372274583722628,
    "deltaSlots": 7,
    "reason": "does not fit (35 of 28 slots)",
    "weapons": [
-    "Twisted bow",
     "Scythe of Vitur",
+    "Twisted bow",
     "Tumeken's shadow"
    ]
   },
   {
-   "label": "melee + magic: Tumeken's shadow (Ancestral) / Scythe of Vitur",
+   "label": "melee + magic: Tumeken's shadow (Ancestral) / Scythe of Vitur / Scythe of Vitur + Oathplate chest",
    "kind": "alternative",
-   "deltaSeconds": -93.45330845072476,
-   "deltaSlots": -1,
-   "reason": "93.5 s slower",
+   "deltaSeconds": -86.1696571807538,
+   "deltaSlots": 0,
+   "reason": "86.2 s slower",
    "weapons": [
     "Tumeken's shadow",
+    "Scythe of Vitur",
     "Scythe of Vitur"
    ]
   },
   {
    "label": "ranged + magic: Tumeken's shadow (Ancestral) / Twisted bow (Masori)",
    "kind": "alternative",
-   "deltaSeconds": -127.28196659472928,
+   "deltaSeconds": -118.18018737150192,
    "deltaSlots": -1,
-   "reason": "127.3 s slower",
+   "reason": "118.2 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Twisted bow"
@@ -549,21 +550,21 @@
   {
    "label": "magic: Tumeken's shadow (Ancestral)",
    "kind": "alternative",
-   "deltaSeconds": -625.3377592380525,
+   "deltaSeconds": -607.8000023512091,
    "deltaSlots": -10,
-   "reason": "625.3 s slower",
+   "reason": "607.8 s slower",
    "weapons": [
     "Tumeken's shadow"
    ]
   },
   {
-   "label": "melee: Inquisitor's mace (full crush)",
+   "label": "melee: Scythe of Vitur #4",
    "kind": "alternative",
    "deltaSeconds": "-Infinity",
    "deltaSlots": -8,
    "reason": "cannot clear the route",
    "weapons": [
-    "Inquisitor's mace"
+    "Scythe of Vitur"
    ]
   },
   {
@@ -607,17 +608,19 @@
     {
      "weapon": "elderMaul",
      "carriers": 2,
-     "drivers": [],
-     "lastSaved": 0
+     "drivers": [
+      "Ocellus (6.7 s)"
+     ],
+     "lastSaved": 6.696982678515269
     },
     {
      "weapon": "tonalztics",
      "carriers": 2,
      "drivers": [
-      "Ocellus (19.3 s)",
+      "Ocellus (23.5 s)",
       "Archive Guardian (3.5 s)"
      ],
-     "lastSaved": 22.79301254146435
+     "lastSaved": 27.015258927075593
     }
    ],
    "perTarget": [
@@ -679,6 +682,17 @@
       "tonalztics": 1
      },
      "pFloor": 0.9861678902339941,
+     "ayak": 0
+    },
+    {
+     "key": "ocellus-p2|",
+     "label": "Ocellus P2 (The Blade)",
+     "group": "Ocellus P2 (The Blade)",
+     "carriers": {
+      "elderMaul": 2,
+      "tonalztics": 2
+     },
+     "pFloor": 0.9812819524464742,
      "ayak": 0
     },
     {
@@ -745,6 +759,7 @@
   "moia|": 11.036477579707563,
   "dagonhai|Shielded (shield gauge)": 13.385111772491891,
   "ocellus-p1|At a corner": 10.577438056830585,
+  "ocellus-p2|": 14.370223088405137,
   "ocellus-p3|Quadrants 1-3": 10.634027878616607,
   "ocellus-p3|Last quadrant: Deflect Melee": 8.166997701078248,
   "ocellus-p3|Last quadrant: Deflect Ranged": 10.634027878616607,
@@ -797,12 +812,12 @@
  "excluded": [],
  "droppedPinned": [],
  "ownershipNotices": [],
- "searchRows": "949c153bf9636a4c3ceab6f3f5aa4970c19bf2ad918d8f5d52af56d723b27dde",
- "objectiveSeconds": 1493.7972908497654,
+ "searchRows": "03bd7ba7d4b446d2588fe9e14c7874c61a8535ad061004b3c3b29ead530d3c6e",
+ "objectiveSeconds": 1544.415342088077,
  "fightSeconds": null,
  "plannedRoute": {
   "id": "archive-guardian>ezekiel>moia>xarth>ocellus",
-  "seconds": 1493.7972908497654,
+  "seconds": 1544.415342088077,
   "surgeDoses": null,
   "encounters": [
    {
@@ -870,13 +885,28 @@
    },
    {
     "id": "ocellus",
-    "seconds": 767.3335202725954,
+    "seconds": 817.951571510907,
     "events": [
      {
       "npc": "Ocellus",
       "firstRowKey": "ocellus-p1",
       "counts": {
-       "elderMaul": 4,
+       "elderMaul": 2
+      }
+     },
+     {
+      "npc": "Ocellus",
+      "reset": "P1",
+      "firstRowKey": "ocellus-p2",
+      "counts": {
+       "elderMaul": 2
+      }
+     },
+     {
+      "npc": "Ocellus",
+      "reset": "P2",
+      "firstRowKey": "ocellus-p3",
+      "counts": {
        "tonalztics": 4
       }
      }

@@ -1448,6 +1448,67 @@ adds 2.5% per mid-fight kill — so Zaryte crossbow + Burning claws replace Drag
 and carriers: 3 Elder maul + 2 Tonalztics); FA, FA Solo, FA without Obligator / Ascension, ToB unchanged (their mid-fight
 kills — Bork before the Smorks — give 2.5-3.75% that buys nothing).
 
+### Ocellus events, ToA path pair, clock default, displays (phase 38c)
+
+**Ocellus: three drain events.** The user (in-game): Ocellus's Defence resets from P1 to P2 and again from P2 to P3.
+The Blade (P2) row carries `drainReset: 'P1'` and P3's first row (quadrants 1-3; the last quadrant when it is all of
+P3) `drainReset: 'P2'` (raidTime.ts `evalEncounterPass`), so `drainEventsOf` makes three events and each one's specs
+are made at its first row: P3's on quadrants 1-3 (before, one event made every spec on P1 and the P3 drains showed up
+on the last quadrant as "P3 last quadrant, Deflect Melee: …"). Briefing: "Start of fight: … · After P1 (Defence
+restored), again: … · After P2 (Defence restored), again: …". The P2 query now carries its `rowKey` (its event's
+counts). **The Blade is in the plan by default**: "Ocellus P2 length" 0 → **120 s** (the user: "~2 min, little damage
+lands"; UNVERIFIED D5 / D35): P2 lasts 120 s of model time, the DPS on the Blade × 120 s is dealt and 50% of it comes
+off P3's hp. Known gap: the FA model's seconds are "your DPS alone" (multiplier 1), so the fixed 120 s is also 120 s of
+that clock and its wall time is 120 ÷ party size (20 s at party 6) for regen ticks and the raid clock (pessimistic for
+the P3 event's energy).
+
+**ToA: the pair of paths before the supplies is a route.** Each path room has two encounter ids: the plain id (after
+the first supply drop: the salts, adrenaline) and `<room>-before-supplies` (normal potions, no adrenaline; its rows
+target the `-before-supplies` copies, now also for Akkha, his Shadows and Ba-Ba). `TOA_ROUTES` (toa/time.ts) = the 6
+pairs, each `[pair before, the other two after, Wardens]` in the canonical order (Kephri, Zebak, Akkha, Ba-Ba);
+`RaidTimeModel.routes` / `modelRoutes` (raidTime.ts) list them instead of the slots' cartesian product, so
+`compareRoutes` times all six with the kit and the planner keeps the cheapest (the Plan tab's Route select is the
+`firstPaths` choice: "Compare all" = the cheapest pair, or one pair). Adrenaline: 0 doses before the supplies, 1 per
+room after, 2 on the Wardens (`TOA_ADRENALINE_DOSES`). A route costs Σ rooms after + Σ over the pair (before − after),
+so the cheapest pair is the two rooms that lose least without the salts.
+
+**Raid clock = fight wall + non-fight time.** Phase 38a's fixed typical length squeezed a longer fight (FA Solo: 1316 s
+of fight in a 1500 s raid left 184 s of travel). Now the Plan tab's input is **"Non-fight time (min)"** (saved as
+`plan.nonFightMinutes`; phase 38a's `plan.raidMinutes` is no longer read), default `RaidBase.nonFightMinutes` = the
+typical length − the Team headline's fight wall at the default party: FA 25 min − 210.9 s = **21.5**, ToA 30 − 870.1 s
+= **15.5**, CoX 20 − 426.9 s = **12.9**, ToB 20 − 443.4 s = **12.6** (UNVERIFIED D30). `raidClock(walls, 0,
+nonFightSeconds)` spreads it exactly as before (∝ fight time), so the raid lasts Σ walls + non-fight time;
+`surgeClockSpan` = fight wall + non-fight time. An explicit `raidMinutes` on the assumptions keeps the phase 38a
+clock (tests). Hand check (Phase38c.test.ts): FA seconds 600 / 600 / 1200 → party 6 walls 100 / 100 / 200, starts
+322.5 / 745 / 1490, end 1690; party 1 walls 600 / 600 / 1200, starts 322.5 / 1245 / 2490, end 3690 (the 25-min clock:
+no gaps at all).
+
+**Displays.** The rooms before the supplies now use the normal potions everywhere the plan shows them: the Team
+briefing's per-boss 95% table (planner.ts `briefing`: `drainModel(m, assumptionsForTarget(target, a))`), the Search
+box's per-boss table (SpecPlanPanel; no effect on the Search targets, which are the salts versions), "Load worn / Load
+all" (`planLoadoutToPlayer(…, target)`: the route's first phase's target) and a note in the Search / Summary footer
+(ToA `hpNote`: they use the salts; the Plan fights the first two paths with the normal potions).
+
+**BGS vs Elder maul on Ocellus (hand check, FA headline assumptions).** Elder maul: −35% of the current Defence per
+landed spec (rounded down); BGS: −damage dealt (Defence first). At P2 / P3's Def 250: maul 0.782 (P3 hit chance) ×
+87 = **68 Def per spec**; BGS E[damage] 26.5 → **26.5 Def per spec**, both 50% energy: the maul drains ≈ 2.6× as
+much. P1 (Def 215, floor 129): maul 0.752 × 75 = 56 vs BGS 28.2. The BGS only catches up where 35% of the Defence
+is below its expected damage (Def ≲ 80), i.e. after the maul / Tonalztics have done their work, and a carrier holds one
+weapon. So the planner's carriers are Elder maul + Tonalztics and the FA plans bring no BGS.
+
+**Headlines** (`pinHeadlines --full`; the clock change moves none: every headline kit re-timed with the phase 38a
+clock gives the same totals):
+
+| Plan | Before | After | Why |
+|---|---|---|---|
+| FA | 21:05.3 | **21:43.6** | Ocellus 655.17 → 693.52: P2 adds 120 s; the Blade takes 1836 (15.30 DPS × 120), 918 off P3 (P3 Q1-3 252.7 s, last quadrant 125.2 s); events P1 1 Tonalztics, P2 4 maul + 1 Tonalztics, P3 4 Tonalztics; kit, ring, carriers unchanged |
+| FA Solo | 21:56.2 | **22:53.4** | Ocellus 677.04 → 734.19 (P2 120 s, 724 carried; P2 gets no spec, P3 2 Tonalztics + Crimson kisten, now brought) |
+| FA without Obligator / Ascension | 24:11.9 | **24:52.2** | Ocellus 767.67 → 804.39, Bork 216.68 → 220.26: the carriers re-chosen for three Ocellus events (1 DWH + 4 Tonalztics, was 2 maul + 2 Tonalztics + 1 Ayak) |
+| ToA | 14:30.1 | **14:20.0** | pair Kephri + Ba-Ba (was Kephri + Zebak): before − after with the kit Kephri 11.02, Ba-Ba 12.63, Akkha 20.31, Zebak 22.70 s; Zebak after the supplies 141.74 → 119.04, Ba-Ba before them 90.20 → 102.83 |
+| CoX, ToB | 7:06.9, 7:23.4 | unchanged | no Ocellus / pair; the clock moves no surge dose |
+
+ToA's six routes with the headline kit: K+Z 870.10, K+A 867.70, **K+B 860.03**, Z+A 879.38, Z+B 871.71, A+B 869.31.
+
 ## Routes tab (phase 16: raid time model)
 
 **Phase 23: the tab is gone.** Its route table is now part of the Plan tab's results (the *planned* kit timed on every

@@ -71,6 +71,12 @@ export interface RaidBase {
    * `RAID_LENGTH_SOURCES` (unverified, UNVERIFIED D30).
    */
   typicalRaidMinutes: number;
+  /**
+   * Phase 38c: the raid's non-fight time in minutes (default of the Plan tab's "Non-fight time"): the typical length
+   * minus the Team headline's fight wall time at the default party size, so the clock is fight wall + this (a solo raid's
+   * longer fight lengthens the raid instead of squeezing the travel; UNVERIFIED D30).
+   */
+  nonFightMinutes: number;
   /** Phase 38a (ToB): the surge cooldown pauses between encounters (only fight time counts for it). */
   surgePausesBetweenEncounters?: boolean;
   /**
@@ -127,6 +133,8 @@ export const FRACTURED_ARCHIVE_BASE: RaidBase = {
   boostsNeedSupplies: true,
   planDefaults: FA_PLAN_DEFAULTS,
   typicalRaidMinutes: 25,
+  // 25 min − the FA headline's 210.9 s of fight wall (party 6) = 21.49
+  nonFightMinutes: 21.5,
   spellbook: 'arceuus',
 };
 
@@ -172,6 +180,8 @@ export const TOMBS_OF_AMASCUT_BASE: RaidBase = {
   // phase 38a: the copies of the rooms before the supplies are the time model's, not the Search list's
   targetVisible: (target) => !target.beforeSupplies,
   typicalRaidMinutes: 30,
+  // 30 min − the ToA headline's 870.1 s of fight wall (phase 38b) = 15.50
+  nonFightMinutes: 15.5,
   spellbook: 'arceuus',
 };
 
@@ -218,6 +228,8 @@ export const CHAMBERS_OF_XERIC_BASE: RaidBase = {
   boostsNeedSupplies: false,
   planDefaults: COX_PLAN_DEFAULTS,
   typicalRaidMinutes: 20,
+  // 20 min − the CoX headline's 426.9 s of fight wall = 12.89
+  nonFightMinutes: 12.9,
   spellbook: 'arceuus',
 };
 
@@ -266,6 +278,8 @@ export const THEATRE_OF_BLOOD_BASE: RaidBase = {
   // targets tagged with modes (Hard Mode's Nylocas Prinkipas) are only offered in those modes
   targetVisible: (target, a) => !target.tobModes || target.tobModes.includes(tobOf(a).mode),
   typicalRaidMinutes: 20,
+  // 20 min − the ToB headline's 443.4 s of fight wall = 12.61 (its surge clock is fight time only)
+  nonFightMinutes: 12.6,
   // phase 36: the surge cooldown pauses between ToB rooms
   surgePausesBetweenEncounters: true,
   spellbook: 'arceuus',

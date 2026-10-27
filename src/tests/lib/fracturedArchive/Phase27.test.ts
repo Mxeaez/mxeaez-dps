@@ -272,11 +272,13 @@ describe('ring policy', () => {
    * Phase 38a (ToA rooms 1-2 before the supplies: normal potions, Kephri 157.1 → 185.8 s, Zebak 121.9 → 142.9 s; the
    * kit adds a Twisted bow): ToA 881.2 → 930.9; FA / CoX / ToB unchanged (no surge potion in these plans). Phase 38b
    * (Liquid adrenaline in ToA rooms 3-5: spec costs halved; Death Charge; damage specs on adds): ToA 930.9 → 925.0;
-   * FA / CoX / ToB unchanged.
+   * FA / CoX / ToB unchanged. Phase 38c (Ocellus P2 in the plan at 120 s, three drain events; ToA's pair of paths before
+   * the supplies is a route, this kit's cheapest Zebak + Akkha): FA 1493.8 → 1544.4 (Ocellus 767.3 → 818.0), ToA 925.0
+   * → 905.5; CoX / ToB unchanged.
    */
   test.each([
-    ['fractured-archive', 1493.8],
-    ['toa', 925.0],
+    ['fractured-archive', 1544.4],
+    ['toa', 905.5],
     ['cox', 452.7],
     ['tob', 457.3],
   ] as [RaidConfig['id'], number][])('%s: allow switches reproduces the previous planner (%s s)', (id, seconds) => {
