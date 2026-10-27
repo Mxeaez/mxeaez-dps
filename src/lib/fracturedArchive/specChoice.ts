@@ -607,3 +607,113 @@ export const pickSpecItem = <T>(
   });
   return pick;
 };
+
+/**
+ * Phase 38e: the net saving of one item step: the route seconds it saved less `slotSeconds` per free slot it used up
+ * (free before − free after). A free slot taken: saved − slotSeconds × slots (pickSpecItem's rank); an item carried
+ * anyway: saved; a slot from the kit (the kit re-optimised with the item carried): saved + slotSeconds × the slots the
+ * new kit leaves free (credit for a slot left free).
+ */
+export const itemStepNet = (saved: number, freeBefore: number, freeAfter: number, slotSeconds = SHARE_MAX_SLOT_SECONDS): number => (
+  saved - slotSeconds * (freeBefore - freeAfter)
+);
+
+export interface ItemBeamChild<S> {
+  state: S;
+  seconds: number;
+  /** The rank among its siblings (itemStepNet). */
+  net: number;
+}
+
+/**
+ * Phase 38e: a small beam over the planner's item steps (damage spec weapons / Surge potions). From each state of a
+ * layer, `expand` gives its accepted next steps; the best `width` by net saving (ties: the earlier) go on for the first
+ * `depth` layers, the best one after that (greedy). Children with the same `keyOf` (the same item set reached in
+ * another order) keep the faster. Returns the fastest state seen (ties: the earlier; the root when nothing helps).
+ * width 1 = the phase 36 greedy.
+ */
+export const itemBeam = <S>(
+  root: S,
+  rootSeconds: number,
+  keyOf: (s: S) => string,
+  expand: (s: S, seconds: number) => ItemBeamChild<S>[],
+  opts: { width?: number, depth?: number, maxSteps?: number } = {},
+): { state: S, seconds: number, expanded: number } => {
+  const width = opts.width ?? 2;
+  const depth = opts.depth ?? 3;
+  const maxSteps = opts.maxSteps ?? 12;
+  let layer: { state: S, seconds: number }[] = [{ state: root, seconds: rootSeconds }];
+  let best = layer[0];
+  let expanded = 0;
+  for (let step = 0; step < maxSteps && layer.length; step++) {
+    const w = step < depth ? width : 1;
+    const next = new Map<string, { state: S, seconds: number }>();
+    for (const n of layer) {
+      expanded += 1;
+      const kids = expand(n.state, n.seconds).map((k, i) => ({ k, i }));
+      kids.sort((a, b) => (Math.abs(a.k.net - b.k.net) > EPS ? b.k.net - a.k.net : a.i - b.i));
+      for (const { k } of kids.slice(0, w)) {
+        const key = keyOf(k.state);
+        const prev = next.get(key);
+        if (!prev || k.seconds < prev.seconds - EPS) next.set(key, { state: k.state, seconds: k.seconds });
+      }
+    }
+    layer = Array.from(next.values());
+    for (const n of layer) {
+      if (n.seconds < best.seconds - EPS) best = n;
+    }
+  }
+  return { state: best.state, seconds: best.seconds, expanded };
+};
+
+/**
+ * Phase 38e: swaps on a carrier set (after the greedy, which never revisits a carrier): repeatedly the one change that
+ * lowers the route time most, while it saves ≥ `minSaving` (default 0.05 s): one carrier of a weapon for one of another
+ * (same caps as {@link greedyCarriers}), or one carrier dropped. `steps` (the greedy's) lose the last step of the weapon
+ * swapped out and gain one for the weapon swapped in. Deterministic (ties: the order of `weapons`, drops first).
+ */
+export const swapCarriers = (p: {
+  weapons: PlannerWeapon[],
+  total: number,
+  perWeapon?: number,
+  caps?: Partial<CarrierCounts>,
+  time: (c: CarrierCounts) => number,
+  start: CarrierCounts,
+  steps?: CarrierStep[],
+  minSaving?: number,
+}): { carriers: CarrierCounts, steps: CarrierStep[], seconds: number } => {
+  const minSaving = p.minSaving ?? 0.05;
+  const cap = (w: PlannerWeapon) => Math.min(p.perWeapon ?? p.total, p.caps?.[w] ?? Infinity);
+  let cur: CarrierCounts = { ...NO_CARRIERS, ...p.start };
+  let t = p.time(cur);
+  let steps = [...(p.steps ?? [])];
+  for (let guard = 0; guard < 8; guard++) {
+    let pick: { out: PlannerWeapon, into: PlannerWeapon | null, c: CarrierCounts, t: number } | null = null;
+    // out: any weapon carried (also one no longer in `weapons`, e.g. Eye of Ayak once the kit has no mage)
+    const now = cur;
+    const outs = [...p.weapons, ...(Object.keys(now) as PlannerWeapon[]).filter((x) => !p.weapons.includes(x))];
+    for (const w of outs) {
+      if (now[w] > 0) {
+        const into: (PlannerWeapon | null)[] = [null, ...p.weapons.filter((v) => v !== w && now[v] < cap(v))];
+        for (const v of into) {
+          const c: CarrierCounts = { ...now, [w]: now[w] - 1 };
+          if (v) c[v] += 1;
+          const tc = p.time(c);
+          if (!pick || tc < pick.t - EPS) {
+            pick = {
+              out: w, into: v, c, t: tc,
+            };
+          }
+        }
+      }
+    }
+    if (!pick || !(t - pick.t >= minSaving - EPS)) break;
+    const { out, into } = pick;
+    const last = steps.map((s) => s.weapon).lastIndexOf(out);
+    steps = steps.filter((_, i) => i !== last);
+    if (into) steps.push({ weapon: into, saved: t - pick.t, seconds: pick.t });
+    cur = pick.c;
+    t = pick.t;
+  }
+  return { carriers: cur, steps, seconds: t };
+};

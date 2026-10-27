@@ -108,24 +108,26 @@ export const PHASE37_MEMO: Record<string, MemoCounters> = {
     encounterRuns: 1546, passRuns: 3268, encounterHits: 39314, passHits: 3475,
   },
   // phase 38c (Ocellus: P2 in the plan, three drain events; fix round: P2's wall time): was 10648 / 10445 / 444976 /
-  // 9904
+  // 9904; phase 38e (the item beam: a kit re-optimised per candidate when no slot is free, the beam's states, swaps):
+  // fa was 11075 / 10789 / 444757 / 12739, toa 69292 / 18123 / 1307456 / 56648, tob 25001 / 23772 / 1335979 / 5729,
+  // cox 73944 / 35416 / 1961276 / 62818, faNotOwned 26777 / 19128 / 776583 / 19830
   fa: {
-    encounterRuns: 11075, passRuns: 10789, encounterHits: 444757, passHits: 12739,
+    encounterRuns: 11555, passRuns: 10810, encounterHits: 444757, passHits: 20118,
   },
   // phase 38a (rooms 1-2 before the supplies: other drain states and candidates): was 32784 / 10825 / 544791 / 24576;
   // phase 38b (Liquid adrenaline: more spec options per event, damage specs on the adds' rows): was 39715 / 11721 /
   // 728535 / 30660; phase 38c (six routes: every path room before and after the supplies, 9 encounters): was 48604 /
   // 16842 / 915256 / 35030
   toa: {
-    encounterRuns: 69292, passRuns: 18123, encounterHits: 1307456, passHits: 56648,
+    encounterRuns: 153876, passRuns: 21727, encounterHits: 2843862, passHits: 139267,
   },
   tob: {
-    encounterRuns: 25001, passRuns: 23772, encounterHits: 1335979, passHits: 5729,
+    encounterRuns: 84006, passRuns: 26294, encounterHits: 3797706, passHits: 63619,
   },
   // phase 38b (damage specs on the adds' rows; the plan brings 2 damage spec weapons and keeps 8 loadouts): was 43236 /
   // 39222 / 1122494 / 27158
   cox: {
-    encounterRuns: 73944, passRuns: 35416, encounterHits: 1961276, passHits: 62818,
+    encounterRuns: 164139, passRuns: 43916, encounterHits: 4139701, passHits: 150807,
   },
   // phase 38c (Ocellus: P2 in the plan, three drain events): faSolo was 91778 / 38942 / 3464758 / 56722, faNotOwned
   // 58528 / 10474 / 1579384 / 59896
@@ -133,7 +135,7 @@ export const PHASE37_MEMO: Record<string, MemoCounters> = {
     encounterRuns: 84526, passRuns: 42428, encounterHits: 3073298, passHits: 46684,
   },
   faNotOwned: {
-    encounterRuns: 26777, passRuns: 19128, encounterHits: 776583, passHits: 19830,
+    encounterRuns: 74380, passRuns: 20169, encounterHits: 1863420, passHits: 73678,
   },
 };
 export const memoCountersWithin = (m: MemoCounters | undefined, want: MemoCounters | undefined): boolean => {

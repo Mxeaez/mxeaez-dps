@@ -128,9 +128,12 @@ export const recomputed = (raid: RaidConfig, res: PlanResult): number => {
  * under the parallel slow suites a plan's CPU time is 3-4× its time alone). Phase 38b: ToA 180 → 300, CoX 315 → 650 (the
  * slow suite measured 235.5 / 527.8 s: Liquid adrenaline doubles the spec options per ToA event, damage specs on the
  * adds' rows and CoX's 8-loadout kit with 2 damage spec weapons cost +31% / +68% CPU; the memo counters rose alike).
+ * Phase 38e: FA 110 → 200, ToA 300 → 450, ToB 125 → 220, CoX 650 → 800, FA without Obligator / Ascension 305 → 400 (the
+ * item beam re-optimises the kit for every candidate when no slot is free: the slow suite measured FA 130.8 s; alone FA
+ * 78, ToA 163, ToB 75, CoX 269, FA without 135 s).
  */
 export const PHASE37_FIXTURE: Record<string, [string, number]> = {
-  'fractured-archive': ['fa', 110], toa: ['toa', 300], cox: ['cox', 650], tob: ['tob', 125],
+  'fractured-archive': ['fa', 200], toa: ['toa', 450], cox: ['cox', 800], tob: ['tob', 220],
 };
 
 /** Registers the slow headline tests of these raids (and, with `notOwned`, the FA plan without Obligator / Ascension). */
@@ -173,7 +176,7 @@ export const headlineTests = (ids: string[], notOwned: boolean): void => (proces
       // phase 37: bit-identical to phase 36, within a CPU budget (see PHASE37_FIXTURE)
       expect(normalised(res)).toEqual(phase37Fixture('faNotOwned'));
       expect(memoWithin(res, 'faNotOwned')).toBe(true);
-      expect(cpu).toBeLessThan(305);
+      expect(cpu).toBeLessThan(400);
       const total = res.comparison!.routes[res.planned].seconds;
       expect(formatDuration(total)).toBe(ONLY_OWNED_HEADLINE[0]);
       expect(Math.abs(total - ONLY_OWNED_HEADLINE[1])).toBeLessThanOrEqual(1e-6);

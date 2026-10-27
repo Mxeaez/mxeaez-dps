@@ -78,7 +78,8 @@ const main = async () => {
   check(!!parallelSeen, `progress: "${parallelSeen}"`);
   const total = await text(page.locator('[data-testid="plan-total"]'));
   check(total === headlineTotal('cox'), `CoX total ${total} (the headline fixture: ${headlineTotal('cox')})`);
-  check(secs <= 60, `CoX plan in ≤ 60 s (${secs.toFixed(1)} s)`);
+  // phase 38e: 60 → 120 s (the item beam: CoX 51 → 74 s alone in the browser)
+  check(secs <= 120, `CoX plan in ≤ 120 s (${secs.toFixed(1)} s)`);
   const olm = page.locator('[data-testid="plan-briefing-row"][data-encounter="cox-olm"]');
   const groups = await olm.locator('[data-testid="plan-briefing-group"]').evaluateAll((els) => els.map((e) => e.dataset.text));
   groups.forEach((g) => console.log(`     Olm: ${g}`));

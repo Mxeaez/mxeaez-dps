@@ -71,6 +71,9 @@ import {
   carriersText,
   CarrierStep,
   greedyCarriers,
+  itemBeam,
+  ItemBeamChild,
+  itemStepNet,
   mostNeededWeapon,
   mySpecsForSubset,
   NO_CARRIERS,
@@ -84,6 +87,7 @@ import {
   SPEC_CANDIDATES,
   specWeaponLabel,
   SUBSET_GUARD_FACTOR,
+  swapCarriers,
   SubsetSearchResult,
   TeamRoles,
   teamRoles,
@@ -1316,6 +1320,9 @@ const SEARCH_TOP_N = 80;
 
 /** Best optimiser kits re-timed exactly before the winner is picked (matters for Solo drains). */
 const RETIME_TOP = 5;
+/** Phase 38e: the item steps' beam (specChoice.ts itemBeam): the best 2 by net saving for the first 3 steps. */
+const ITEM_BEAM_WIDTH = 2;
+const ITEM_BEAM_DEPTH = 3;
 
 export interface PlanProgress {
   stage: 'search' | 'matrix' | 'partials' | 'optimise' | 'rings' | 'final';
@@ -2401,7 +2408,6 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       const withItems = (a: BestSetupAssumptions, dmg: DamageSpecWeapon[], surge: number): BestSetupAssumptions => ({
         ...a, damageSpecs: [...dmg], surgePotions: surge,
       });
-      const inKit = (id: number, m: number[]) => runCarried.includes(id) || m.some((x) => items[x].includes(id));
       // phase 36 review: Team (auto carriers) — with items your bar is yours, so the carriers must fit in party − 1: the
       // carrier whose removal costs least on this kit makes way (specBudgetFrom would cut the last one in order)
       const teamParty = Math.max(1, Math.floor(assumptions.partySize));
@@ -2428,64 +2434,160 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         }
         return cur;
       };
-      const rejected = new Set<string>();
-      let curT = cmpSeconds(dpCmp(opt.best.members, withItems(assumptions, damageBring, surgePotions)));
-      for (let guard = 0; guard < 12; guard++) {
-        const m = opt.best.members;
-        // this step's state (the closures below must not see later changes)
-        const curA = assumptions;
-        const curDamage = [...damageBring];
-        const curSurge = surgePotions;
-        const route = dpCmp(m, withItems(curA, curDamage, curSurge));
-        const wall = route.fastest >= 0 ? route.routes[route.fastest].encounters.reduce((t, e) => t + encounterWallSeconds(e.seconds, fastA), 0) : 0;
-        // phase 38a: the doses the surge clock allows (the raid clock; ToB: fight time only)
-        const maxPotions = dosesAllowed(surgeClockSpan(wall, fastA)) > SURGE_DOSES_PER_POTION ? 2 : 1;
-        const cands: { key: string, label: string, id: number, a: BestSetupAssumptions, dmg?: DamageSpecWeapon }[] = [
-          ...ownedDamage.filter((w) => !curDamage.includes(w)).map((w) => ({
-            key: w, label: DAMAGE_SPEC_WEAPONS[w].label, id: damageId(w), a: fitBars(withItems(curA, [...curDamage, w], curSurge), m), dmg: w,
-          })),
-          ...(curSurge < maxPotions ? [{
-            key: `surge${curSurge + 1}`, label: SURGE_ITEMS[curSurge].name, id: SURGE_ITEMS[curSurge].id, a: fitBars(withItems(curA, curDamage, curSurge + 1), m),
-          }] : []),
-        ].filter((c) => !rejected.has(c.key));
-        const picked = pickSpecItem(cands.map((c) => ({ item: c, seconds: cmpSeconds(dpCmp(m, c.a)), slots: c.dmg && inKit(c.id, m) ? 0 : 1 })), curT);
-        if (!picked) break;
-        const p = { c: picked.item, t: picked.seconds, slots: picked.slots };
-        const withId = p.slots ? [...runCarried, p.c.id] : runCarried;
-        const free = total - opt.best.used;
-        let accepted = false;
-        if (p.slots === 0 || free >= p.slots) {
-          const rescore = (x: KitSolution): KitSolution => ({ ...x, used: usedWith(withId, x.members) });
-          opt = { ...opt, best: rescore(opt.best), finals: opt.finals.map(rescore) };
-          accepted = true;
-          itemSteps.push({
-            item: p.c.label, saved: curT - p.t, slots: p.slots, how: p.slots ? 'a free slot' : 'carried anyway',
-          });
-          curT = p.t;
-        } else {
-          // no free slot: the kit re-optimised with the item carried (its spec plan from the current kit)
-          const ta = fixedFor(p.c.a, m);
-          const opt2 = optimiseFor(dps, withId, seedsFor(dps, seedCount, ta), `spec items: ${p.c.label}`, ta);
-          const t2 = cmpSeconds(dpCmp(opt2.best.members, p.c.a));
-          if (opt2.best.used <= total && curT - t2 >= p.slots * SHARE_MAX_SLOT_SECONDS - 1e-9) {
-            opt = opt2;
-            accepted = true;
-            itemSteps.push({
-              item: p.c.label, saved: curT - t2, slots: p.slots, how: 'a slot from the kit (re-optimised)',
-            });
-            curT = t2;
-          } else {
-            rejected.add(p.c.key);
-            itemNotes.push(`${p.c.label}: saves ${(curT - p.t).toFixed(1)} s with a free slot, but none is free and the kit without a slot for it loses more`);
-          }
-        }
-        if (accepted) {
-          runCarried = withId;
-          if (p.c.dmg) damageBring.push(p.c.dmg);
-          else surgePotions += 1;
-          assumptions = withItems(p.c.a, damageBring, surgePotions);
-        }
+      // phase 38e: the item steps as a small beam (specChoice.ts itemBeam: the best ITEM_BEAM_WIDTH by net saving for
+      // ITEM_BEAM_DEPTH steps, then greedy; the fastest state wins), each step ranked by what it really gives: with a
+      // free slot (or carried anyway) on the kit as is, with none on the kit re-optimised with the item carried
+      // (itemStepNet: a slot the new kit leaves free is credited). Then swaps (an item for one not brought, same kit).
+      // An accepted item is pinned in the carried list, also at 0 slots (a later re-optimisation must keep it).
+      interface ItemState {
+        opt: KitOptimum, a: BestSetupAssumptions, carried: number[], damage: DamageSpecWeapon[], surge: number,
+        /** notes: the rejections on the way here; own: those of its own expansion (filled when it is expanded) */
+        steps: PlanItemStep[], notes: Map<string, string>, own?: Map<string, string>,
       }
+      const inKitOf = (id: number, m: number[], carriedIds: number[]) => carriedIds.includes(id) || m.some((x) => items[x].includes(id));
+      const pinItem = (carriedIds: number[], id: number) => (carriedIds.includes(id) ? carriedIds : [...carriedIds, id]);
+      const rescoreWith = (o: KitOptimum, carriedIds: number[]): KitOptimum => {
+        const rescore = (x: KitSolution): KitSolution => ({ ...x, used: usedWith(carriedIds, x.members) });
+        return { ...o, best: rescore(o.best), finals: o.finals.map(rescore) };
+      };
+      // phase 38a: the doses the surge clock allows (the raid clock; ToB: fight time only)
+      const maxPotionsOn = (m: number[], a: BestSetupAssumptions) => {
+        const route = dpCmp(m, a);
+        const wall = route.fastest >= 0 ? route.routes[route.fastest].encounters.reduce((t, e) => t + encounterWallSeconds(e.seconds, fastA), 0) : 0;
+        return dosesAllowed(surgeClockSpan(wall, fastA)) > SURGE_DOSES_PER_POTION ? 2 : 1;
+      };
+      const expandItems = (s: ItemState, curT: number): ItemBeamChild<ItemState>[] => {
+        const m = s.opt.best.members;
+        const maxPotions = maxPotionsOn(m, withItems(s.a, s.damage, s.surge));
+        const cands: { key: string, label: string, id: number, a: BestSetupAssumptions, dmg?: DamageSpecWeapon }[] = [
+          ...ownedDamage.filter((w) => !s.damage.includes(w)).map((w) => ({
+            key: w, label: DAMAGE_SPEC_WEAPONS[w].label, id: damageId(w), a: fitBars(withItems(s.a, [...s.damage, w], s.surge), m), dmg: w,
+          })),
+          ...(s.surge < maxPotions ? [{
+            key: `surge${s.surge + 1}`, label: SURGE_ITEMS[s.surge].name, id: SURGE_ITEMS[s.surge].id, a: fitBars(withItems(s.a, s.damage, s.surge + 1), m),
+          }] : []),
+        ];
+        const free = total - s.opt.best.used;
+        const notes = new Map(s.notes); // the children's: these + this expansion's rejections (filled below)
+        const own = new Map<string, string>();
+        const kids: ItemBeamChild<ItemState>[] = [];
+        cands.forEach((c) => {
+          const slots = c.dmg && inKitOf(c.id, m, s.carried) ? 0 : 1;
+          const t = cmpSeconds(dpCmp(m, c.a));
+          if (!pickSpecItem([{ item: c, seconds: t, slots }], curT)) return; // < 1 s per slot even with a free slot
+          const withId = pinItem(s.carried, c.id);
+          const child = (o: KitOptimum, tt: number, how: string): ItemBeamChild<ItemState> => ({
+            state: {
+              opt: o,
+              a: c.a,
+              carried: withId,
+              damage: c.dmg ? [...s.damage, c.dmg] : s.damage,
+              surge: c.dmg ? s.surge : s.surge + 1,
+              steps: [...s.steps, {
+                item: c.label, saved: curT - tt, slots, how,
+              }],
+              notes,
+            },
+            seconds: tt,
+            net: itemStepNet(curT - tt, free, total - o.best.used),
+          });
+          if (slots === 0 || free >= slots) {
+            kids.push(child(rescoreWith(s.opt, withId), t, slots ? 'a free slot' : 'carried anyway'));
+            return;
+          }
+          // no free slot: the kit re-optimised with the item carried (its spec plan from the current kit)
+          const ta = fixedFor(c.a, m);
+          const opt2 = optimiseFor(dps, withId, seedsFor(dps, seedCount, ta), `spec items: ${c.label}`, ta);
+          const t2 = cmpSeconds(dpCmp(opt2.best.members, c.a));
+          if (opt2.best.used <= total && curT - t2 >= slots * SHARE_MAX_SLOT_SECONDS - 1e-9) {
+            kids.push(child(opt2, t2, 'a slot from the kit (re-optimised)'));
+          } else {
+            own.set(c.key, `${c.label}: saves ${(curT - t).toFixed(1)} s with a free slot, but none is free and the kit without a slot for it loses more`);
+          }
+        });
+        own.forEach((v, k) => notes.set(k, v));
+        Object.assign(s, { own });
+        return kids;
+      };
+      const rootCarried = runCarried;
+      const root: ItemState = {
+        opt, a: assumptions, carried: runCarried, damage: [], surge: 0, steps: [], notes: new Map(),
+      };
+      const itemKey = (s: ItemState) => JSON.stringify([[...s.damage].sort(), s.surge]);
+      const beam = itemBeam(root, cmpSeconds(dpCmp(opt.best.members, withItems(assumptions, [], 0))), itemKey, expandItems, {
+        width: ITEM_BEAM_WIDTH, depth: ITEM_BEAM_DEPTH, maxSteps: 12,
+      });
+      let best = beam.state;
+      let curT = beam.seconds;
+      // swaps: one item brought for one not brought (a damage spec weapon / a Surge potion) on the same kit, while one
+      // saves ≥ 0.05 s and 1 s per slot it adds
+      for (let guard = 0; guard < 4 && best.steps.length; guard++) {
+        const cur = best;
+        const baseT = curT;
+        const m = cur.opt.best.members;
+        const maxPotions = maxPotionsOn(m, withItems(cur.a, cur.damage, cur.surge));
+        const outs = [
+          ...cur.damage.map((w) => ({
+            dmg: cur.damage.filter((x) => x !== w), surge: cur.surge, id: damageId(w), label: DAMAGE_SPEC_WEAPONS[w].label,
+          })),
+          ...(cur.surge ? [{
+            dmg: cur.damage, surge: cur.surge - 1, id: SURGE_ITEMS[cur.surge - 1].id, label: SURGE_ITEMS[cur.surge - 1].name,
+          }] : []),
+        ];
+        const ins: { w?: DamageSpecWeapon, id: number, label: string }[] = ownedDamage.filter((w) => !cur.damage.includes(w))
+          .map((w) => ({ w, id: damageId(w), label: DAMAGE_SPEC_WEAPONS[w].label }));
+        let pick: { s: ItemState, t: number, net: number } | null = null;
+        outs.forEach((o) => {
+          const inList = [...ins, ...(o.surge === cur.surge && cur.surge < maxPotions
+            ? [{ id: SURGE_ITEMS[cur.surge].id, label: SURGE_ITEMS[cur.surge].name }] : [])];
+          inList.forEach((i) => {
+            const dmg = i.w ? [...o.dmg, i.w] : o.dmg;
+            const surge = i.w ? o.surge : o.surge + 1;
+            const carried2 = pinItem(rootCarried.includes(o.id) ? cur.carried : cur.carried.filter((id) => id !== o.id), i.id);
+            const used2 = usedWith(carried2, m);
+            if (used2 > total) return;
+            const a2 = fitBars(withItems(cur.a, dmg, surge), m);
+            const t = cmpSeconds(dpCmp(m, a2));
+            const saved = baseT - t;
+            const added = used2 - cur.opt.best.used;
+            if (!(saved >= Math.max(0.05, added * SHARE_MAX_SLOT_SECONDS) - 1e-9)) return;
+            const net = itemStepNet(saved, total - cur.opt.best.used, total - used2);
+            if (pick && net <= pick.net + 1e-9) return;
+            pick = {
+              t,
+              net,
+              s: {
+                opt: rescoreWith(cur.opt, carried2),
+                a: a2,
+                carried: carried2,
+                damage: dmg,
+                surge,
+                steps: [...cur.steps.filter((st) => st.item !== o.label), {
+                  item: i.label, saved, slots: Math.max(0, added), how: `swapped in for ${o.label} (same kit)`,
+                }],
+                notes: cur.notes,
+                own: cur.own,
+              },
+            };
+          });
+        });
+        if (!pick) break;
+        const { s: sw, t: tw } = pick as { s: ItemState, t: number, net: number };
+        best = sw;
+        curT = tw;
+      }
+      if (best.steps.length) {
+        opt = best.opt;
+        runCarried = best.carried;
+        damageBring = [...best.damage];
+        surgePotions = best.surge;
+        assumptions = withItems(best.a, damageBring, surgePotions);
+        itemSteps = best.steps;
+      }
+      new Map([...Array.from(best.notes), ...Array.from(best.own ?? [])]).forEach((note, key) => {
+        const brought = damageBring.includes(key as DamageSpecWeapon) || (/^surge\d$/.test(key) && Number(key.slice(5)) <= surgePotions);
+        if (!brought) itemNotes.push(note);
+      });
       // Solo: a drain weapon whose slot is worth < 1 s with the damage specs / doses brought is left at home
       if (soloWithSubset && (damageBring.length || surgePotions)) {
         let sub = SPEC_CANDIDATES.filter((w) => runSpecItems.some((it) => it.id === specId(w)));
@@ -2542,6 +2644,21 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
               return false;
             });
             specSteps = kept;
+          }
+          // phase 38e: swaps on those carriers (one weapon for another, or one dropped) while one saves ≥ 0.05 s
+          const sw = swapCarriers({
+            weapons: carrierWeaponsFor(m),
+            total: party - 1,
+            perWeapon: party - 1,
+            caps: { ayak: magesOf(m) },
+            time: (c) => cmpSeconds(teamCmp(c, m)),
+            start: specCarriers,
+            steps: specSteps ?? [],
+          });
+          if (sw.seconds < specT - 1e-9) {
+            specT = sw.seconds;
+            specCarriers = sw.carriers;
+            specSteps = sw.steps;
           }
         } else {
           specT = cmpSeconds(dpCmp(m, assumptions));
@@ -2754,7 +2871,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     const supplies = kitSupplies(comfort, kit.map((c) => c.group), boostsNeedSupplies);
     // phase 31: the heart is magic's potion: an item carried with the kit (deduplicated with a pinned heart)
     const heartItems = boostsNeedSupplies && kit.some((c) => c.group === 'magic') ? [heartPlanItem(heart)] : [];
-    const slots = kitSlotUsage(kitOrder.map((i) => items[i]), 0, [...runCarried, ...heartItems.map((h) => h.id)], supplies, inputs.nonItemSlots, total, raidSupplied, quiver, kitOrder.map((i) => ammoWorn[i]));
+    const slots = kitSlotUsage(kitOrder.map((i) => items[i]), 0, [...runCarried, ...runSpecItems.map((it) => it.id), ...heartItems.map((h) => h.id)], supplies, inputs.nonItemSlots, total, raidSupplied, quiver, kitOrder.map((i) => ammoWorn[i]));
     const inventory = inventoryGrid(kit, 0, runSpecItems, pinnedItems, supplies, inputs.nonItemSlots, total, raidSupplied, { potionItems: heartItems, quiver });
     const quiverAmmo = quiverHeldAmmo(kit, 0, [...runSpecItems, ...pinnedItems], quiver);
     const keptAmmo = wornKeptAmmo(kit, 0);

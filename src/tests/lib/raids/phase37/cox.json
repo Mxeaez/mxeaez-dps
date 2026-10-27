@@ -1338,6 +1338,7 @@
   },
   "notes": [
    "Dragon claws: saves 2.2 s with a free slot, but none is free and the kit without a slot for it loses more",
+   "Crimson kisten: saves 2.0 s with a free slot, but none is free and the kit without a slot for it loses more",
    "Your spec bar goes to Zaryte crossbow / Burning claws: 5 carriers (party − 1), 7:06.9 vs 7:10.4 if you carry a drain weapon instead."
   ]
  },
@@ -1362,12 +1363,12 @@
    },
    {
     "ring": "Ring of shadows",
-    "seconds": 433.34337399301586,
+    "seconds": 433.22593789091513,
     "full": true
    },
    {
     "ring": "Venator ring",
-    "seconds": 435.64439819955396,
+    "seconds": 435.4594972972667,
     "full": true
    },
    {

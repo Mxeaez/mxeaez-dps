@@ -127,8 +127,8 @@
   "tob": {
    "raid": "tob",
    "label": "Theatre of Blood (Team defaults)",
-   "total": "7:23.4",
-   "seconds": 443.42442596609663,
+   "total": "7:23.2",
+   "seconds": 443.1528376909873,
    "route": "tob-maiden>tob-bloat>tob-nylocas>tob-sotetseg>tob-xarpus>tob-verzik",
    "ring": "Ultor ring",
    "kit": [
@@ -140,8 +140,8 @@
    ],
    "freeSlots": 0,
    "carriers": {
-    "elderMaul": 1,
-    "dwh": 0,
+    "elderMaul": 0,
+    "dwh": 1,
     "bgs": 0,
     "tonalztics": 2,
     "ayak": 0
@@ -154,10 +154,10 @@
    "surgeAt": [],
    "encounters": {
     "tob-maiden": 50.67,
-    "tob-bloat": 27.03,
-    "tob-nylocas": 39.81,
-    "tob-sotetseg": 74.48,
-    "tob-xarpus": 55.71,
+    "tob-bloat": 27.09,
+    "tob-nylocas": 39.85,
+    "tob-sotetseg": 73.48,
+    "tob-xarpus": 56.34,
     "tob-verzik": 195.72
    }
   },
@@ -200,16 +200,15 @@
   "faNotOwned": {
    "raid": "fractured-archive",
    "label": "Fractured Archive without Obligator / Ascension crossbows",
-   "total": "24:40.8",
-   "seconds": 1480.7536556655427,
-   "route": "archive-guardian>bork-smorks>moia>xarth>ocellus",
+   "total": "24:40.3",
+   "seconds": 1480.3261321792847,
+   "route": "archive-guardian>ezekiel>moia>xarth>ocellus",
    "ring": "Ultor ring",
    "kit": [
-    "Twisted bow switch +5 on Tumeken's shadow (Ancestral)",
-    "Tumeken's shadow (Ancestral)",
+    "Twisted bow (Masori)",
     "Inquisitor's + Scythe (slash)"
    ],
-   "freeSlots": 0,
+   "freeSlots": 4,
    "carriers": {
     "elderMaul": 1,
     "dwh": 0,
@@ -217,18 +216,25 @@
     "tonalztics": 4,
     "ayak": 0
    },
-   "bring": "Bring: Zaryte crossbow",
+   "bring": "Bring: Crimson kisten, Zaryte crossbow, Burning claws, Surge potion",
    "items": [
-    "Zaryte crossbow"
+    "Crimson kisten",
+    "Zaryte crossbow",
+    "Burning claws",
+    "Surge potion(4)"
    ],
    "yourShare": null,
-   "surgeAt": [],
+   "surgeAt": [
+    "Archive Guardian",
+    "Xarth",
+    "Ocellus"
+   ],
    "encounters": {
-    "archive-guardian": 191.91,
-    "bork-smorks": 220.2,
-    "moia": 65.97,
-    "xarth": 209.7,
-    "ocellus": 792.97
+    "archive-guardian": 186.44,
+    "ezekiel": 237.73,
+    "moia": 65.32,
+    "xarth": 206.83,
+    "ocellus": 784.01
    }
   }
  }

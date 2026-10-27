@@ -3,6 +3,49 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 38e — item beam, swaps, 0-slot pin, carrier swaps (2026-10-27)
+
+**Numbers moved** (`node scripts/pinHeadlines.mjs --full`): ToB 7:23.4 → **7:23.2**, FA without Obligator / Ascension
+24:40.8 → **24:40.3**; FA 21:40.7, FA Solo 22:53.4, ToA 14:20.0, CoX 7:06.9 unchanged (ToA / CoX fixtures: notes only,
+plus CoX's rejected rings' full runs 0.1-0.2 s faster). `retime`: all six gap 0. Docs: BEST_SETUP *Item beam, swaps,
+0-slot pin (phase 38e)*.
+
+- **Item steps** (planner.ts after the carriers; specChoice.ts `itemBeam`, `itemStepNet`): each candidate that passes
+  `pickSpecItem`'s 1 s/slot rule with a free slot is evaluated for real (no free slot: the kit re-optimised with it
+  carried, every such candidate, not only the first-ranked one), ranked by `itemStepNet` (saved − 1 s × free slots used
+  up; a re-optimised kit's free slots are credited); a beam: the best 2 per state for 3 steps, then greedy, same item
+  set keeps the faster, the fastest state wins. Then swaps (one item for one not brought, same kit, ≥ 0.05 s and 1 s per
+  added slot). Rejection notes come from the chosen path (ToA's in candidate order now).
+- **0-slot pin**: an item accepted at 0 slots is pinned in the carried list (`pinItem`); `kitSlotUsage` also counts the
+  spec items the grid lists (the 29-cells-in-28 / `overfull` false case).
+- **Carrier swaps** (specChoice.ts `swapCarriers`; Team with your damage specs / doses, auto carriers): one carrier for
+  another weapon or dropped, while one saves ≥ 0.05 s; can swap out a weapon no longer offered (Eye of Ayak without a
+  mage). Added beyond the ROADMAP row because the row's target (the user's plan ≤ 25:07.4) needs it at HEAD: the 38c
+  fix had already moved that plan to ZCB + Surge + kisten (25:07.9), and the gap left was the carriers (2 DWH + 1 BGS +
+  3 Tonalztics + 1 Eye of Ayak, the Ayak saving 0 s on the final kit).
+- **User's party-8 FA plan** (Plan tab inputs, party 8, no Obligator, ring switches, one route, P2 off): 25:18.1 (the
+  report) / 25:07.9 (HEAD) → **25:07.0**; kit (Ascension diamond, ZCB + Ruby #2, Inquisitor's + Scythe, Twisted bow)
+  and items (ZCB, Surge, Crimson kisten) unchanged; carriers → 2 DWH + 1 BGS + 4 Tonalztics. The planInputsFor variant
+  (party 8, same overrides): 25:41.8 → 25:41.5 (Crimson kisten first, ZCB carried anyway and pinned, Surge).
+- **Kit changes per headline**: ToB carriers 1 Elder maul + 2 Tonalztics → **1 DWH + 2 Tonalztics** (kit, items
+  unchanged; Sotetseg 74.48 → 73.48, Xarpus 55.71 → 56.34, Bloat +0.06, Nylocas +0.04). FA without Obligator: kit
+  Twisted bow switch on Tumeken's shadow + Tumeken's shadow + Inquisitor's + Scythe (0 free) → **Twisted bow (Masori) +
+  Inquisitor's + Scythe (4 free)**; items Zaryte crossbow → **Crimson kisten (13.90 s, kit re-optimised: the shadow
+  loadouts go), Zaryte crossbow (3.42), Surge (5.45, free slot), Burning claws (2.87, free slot)**; route via Ezekiel
+  (was Bork + Smorks); Guardian 191.91 → 186.44, Moia 65.97 → 65.32, Xarth 209.70 → 206.83, Ocellus 792.97 → 784.01,
+  Ezekiel 237.73 vs Bork 220.20. Others: no kit / item / carrier change.
+- **Speed** (browser, `yarn dev`, defaults, Playwright, two runs each, HEAD → 38e): FA 27.0 → 35.1 s (+30%), ToA 42.4 →
+  50.9 s (+20%), ToB 24.5 → 36.7 s (+50%), CoX 51.4 → 74.0 s (+44%). Above the old 25% cap, under the 2× flag (the user
+  relaxed the cap on 2026-10-27; the beam was kept at width 2 / depth 3). Today's HEAD is already slower than phase 37's
+  FA 19 / ToA 17 / ToB 21 / CoX 38 s (phases 38a-c).
+- Tests: new Phase38e.test.ts (itemStepNet, itemBeam toys by hand incl. the user's step-0 numbers, swapCarriers by hand,
+  29 items → overfull; slow: the user's plan ≤ 25:07.4 with ZCB and cells ≤ slots, the 0-slot path's cells).
+- Re-pinned: `PHASE37_MEMO` fa / toa / tob / cox / faNotOwned (the beam's extra re-optimisations: CoX encounter runs
+  73944 → 164139, ToA 69292 → 153876, ToB 25001 → 84006, FA without 26777 → 74380), the headline CPU budgets
+  (`PHASE37_FIXTURE`: FA 200, ToA 450, ToB 220, CoX 800, FA without 400 s; the slow suite measured FA 130.8 s),
+  verifyPhase37 CoX limit 60 → 120 s. Fast suite green (1621 passed); slow CrossRaidHeadlines* / Phase27 / Phase31 /
+  Phase36 / Phase37 / Phase38e green; retime probe all six gap 0; verifyAll 36 37 OK; tsc, lint clean.
+
 ## Phase 38c fix — dedupe rule in the brute force, P2's wall time (2026-10-27)
 
 - **Review finding 1** (`bruteForceKits.mjs toa --pool tiny` on Kephri + Ba-Ba: Twisted bow + Shadow + Scythe #3

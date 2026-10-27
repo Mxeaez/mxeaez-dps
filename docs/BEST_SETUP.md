@@ -1518,6 +1518,47 @@ unchanged. The brute-force probe (`bruteForceKits`) now applies the planner's de
 Twisted bow + Shadow + Scythe #3 3.08 s faster than the planner's Shadow + Scythe #3, but the bow takes 7 slots and the
 rule asks 1 s per slot, so the planner prunes it by design; under the rule the gap is 0.
 
+### Item beam, swaps, 0-slot pin (phase 38e)
+
+**Why.** The user's party-8 FA plan (2026-10-27) brought Crimson kisten + Voidwaker (25:18.1) where Zaryte crossbow
+first gave 25:07.4: the phase 36 item greedy ranked the candidates by their free-slot saving (kisten 33.29 vs ZCB
+32.41 s), paid for the slot by re-optimising only the one it picked (kisten: 24.51 s), and never revisited.
+
+**Item steps** (planner.ts, after the carriers; specChoice.ts `itemBeam`, `itemStepNet`): every candidate (an owned
+damage spec weapon not brought, the next Surge potion) that saves ≥ 1 s per slot with a free slot (`pickSpecItem`'s
+rule) is evaluated for real: with a free slot (or 0 slots, its loadout is in the kit) on the kit as is; with none, on
+the kit re-optimised with it carried (accepted when it saves ≥ 1 s per slot, as before). The children are ranked by
+`itemStepNet` = seconds saved − 1 s × (free slots before − free slots after): a free slot taken costs 1 s, a
+re-optimised kit that leaves slots free is credited for them. A beam over the steps: the best **2** children of each
+state for the first **3** steps (`ITEM_BEAM_WIDTH` / `ITEM_BEAM_DEPTH`), then one (greedy), at most 12 steps; states
+with the same item set reached in another order keep the faster; the fastest state seen wins (route seconds on the
+matrix, `cmpSeconds`). Width 1 is the phase 36 greedy (Phase38e.test.ts toy: greedy A → AB 88 s, beam B → BC 86 s).
+A candidate rejected in one state is tried again in later states (phase 36 dropped it for good).
+
+**Swaps** (same kit): one item brought for one not brought (a damage spec weapon, or a Surge potion), while one saves
+≥ 0.05 s and 1 s per slot it adds (≤ 4 rounds). **Carrier swaps** (specChoice.ts `swapCarriers`, the Team plan with your
+damage specs / doses, auto carriers): after the party − 1 greedy / fitted carriers, one carrier of a weapon for one of
+another (same caps), or one dropped, while one saves ≥ 0.05 s; a carrier of a weapon no longer offered (Eye of Ayak
+once the kit has no mage) can be swapped out. The user's plan carried 2 DWH + 1 BGS + 3 Tonalztics + 1 Eye of Ayak
+(Ayak saving 0 s on the final kit); the swap Ayak → a 4th Tonalztics gives 25:07.0.
+
+**0-slot pin.** An item accepted at 0 slots (its loadout in the kit) is now added to the carried list too
+(`pinItem`), so a later re-optimisation cannot drop the loadout and leave the item uncounted (before: 29 cells in 28
+slots with `overfull` false). The slot count (`kitSlotUsage`) also counts the spec items listed in the inventory grid.
+
+**Headlines** (`pinHeadlines --full`): FA, FA Solo, ToA, CoX unchanged (ToA: the rejected-item notes in another order;
+CoX: a Crimson kisten note, the rejected rings' full runs 0.1-0.2 s faster); ToB 7:23.4 → **7:23.2** (carriers 1 Elder
+maul + 2 Tonalztics → 1 DWH + 2 Tonalztics, a carrier swap: Sotetseg 74.48 → 73.48, Xarpus 55.71 → 56.34, Bloat /
+Nylocas +0.06 / +0.04 s); FA without Obligator / Ascension 24:40.8 → **24:40.3** (Crimson kisten first, 13.90 s with
+the kit re-optimised: the Tumeken's shadow loadouts go, then Zaryte crossbow 3.42 s, Surge 5.45 s and Burning claws
+2.87 s on free slots; kit Twisted bow (Masori) + Inquisitor's + Scythe, 4 slots free; route via Ezekiel instead of
+Bork + Smorks). The user's party-8 plan: 25:07.9 at HEAD (the 38c fix had already moved it off the kisten) →
+**25:07.0**.
+
+**Speed** (browser, dev server, defaults, two runs each): FA 27.0 → 35.1 s, ToA 42.4 → 50.9 s, ToB 24.5 → 36.7 s, CoX
+51.4 → 74.0 s (+20-50%, under 2×; the user relaxed the 25% cap on 2026-10-27 for better kits).
+
+
 ## Routes tab (phase 16: raid time model)
 
 **Phase 23: the tab is gone.** Its route table is now part of the Plan tab's results (the *planned* kit timed on every
