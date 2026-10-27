@@ -87,7 +87,6 @@ import {
   SPEC_CANDIDATES,
   specWeaponLabel,
   SUBSET_GUARD_FACTOR,
-  swapCarriers,
   SubsetSearchResult,
   TeamRoles,
   teamRoles,
@@ -2644,21 +2643,6 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
               return false;
             });
             specSteps = kept;
-          }
-          // phase 38e: swaps on those carriers (one weapon for another, or one dropped) while one saves ≥ 0.05 s
-          const sw = swapCarriers({
-            weapons: carrierWeaponsFor(m),
-            total: party - 1,
-            perWeapon: party - 1,
-            caps: { ayak: magesOf(m) },
-            time: (c) => cmpSeconds(teamCmp(c, m)),
-            start: specCarriers,
-            steps: specSteps ?? [],
-          });
-          if (sw.seconds < specT - 1e-9) {
-            specT = sw.seconds;
-            specCarriers = sw.carriers;
-            specSteps = sw.steps;
           }
         } else {
           specT = cmpSeconds(dpCmp(m, assumptions));

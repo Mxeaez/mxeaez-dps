@@ -3,6 +3,27 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 38e fix — carrier swaps dropped (2026-10-27)
+
+- **User decision**: the next phase replaces the tick-level spec timing by a per-boss value-per-energy ranking, so
+  `swapCarriers` (specChoice.ts), its planner block and its two tests are removed. Kept: the item beam, item swaps, the
+  0-slot pin.
+- **Headlines** (`pinHeadlines --full`): ToB 7:23.2 → **7:23.4** (back to 1 Elder maul + 2 Tonalztics; phase37/tob.json
+  identical to b37192b0 again); FA without Obligator / Ascension **24:40.3** stays (the beam's kit and items); FA
+  21:40.7, FA Solo 22:53.4, ToA 14:20.0, CoX 7:06.9 unchanged. Net 38e vs b37192b0: only FA without Obligator moved.
+- **User's party-8 plan**: **25:07.9** (the beam alone, same as b37192b0: ZCB + Surge + Crimson kisten, carriers 2 DWH +
+  1 BGS + 3 Tonalztics + 1 Eye of Ayak, the Ayak saving 0 s; a 4th Tonalztics would give 25:07.0, left for the new spec
+  model). The slow test now asserts ≤ 25:07.95 with ZCB brought (no ≤ 25:07.4).
+- `PHASE37_MEMO` re-measured (all within 2% of the 38e pins: fa 11507 / 10789 / 444757 / 19359, toa 153849 / 21674 /
+  2843862 / 138797, tob 82173 / 24732 / 3799983 / 62574, cox 164099 / 43579 / 4139701 / 149355, faNotOwned 74332 /
+  20132 / 1863420 / 72932).
+- **Fast suite time** (675 s here, 1619 passed): `Phase35.test.ts` alone is the long pole, 673 s in the suite; its one
+  reduced ToA plan (camp one ring: every ring screened + guarded full runs) takes **418 s alone at b37192b0 → 635 s
+  alone now** (+52%, the item beam), so it was already slow before 38e. Next: Phase27 116, Phase29 79, Phase28 68,
+  Phase37 64, Phase37c 57, CrossRaid 50, Phase30 46, Phase33 44, Phase31 39 s; Phase27 / 29 alone: 79 / 40 s at
+  b37192b0 vs 79 / 45 s now (unchanged). Not fixed in this round.
+- Fast suite green; slow CrossRaidHeadlines* + Phase38e green; tsc, lint clean.
+
 ## Phase 38e — item beam, swaps, 0-slot pin, carrier swaps (2026-10-27)
 
 **Numbers moved** (`node scripts/pinHeadlines.mjs --full`): ToB 7:23.4 → **7:23.2**, FA without Obligator / Ascension

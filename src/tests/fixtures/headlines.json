@@ -127,8 +127,8 @@
   "tob": {
    "raid": "tob",
    "label": "Theatre of Blood (Team defaults)",
-   "total": "7:23.2",
-   "seconds": 443.1528376909873,
+   "total": "7:23.4",
+   "seconds": 443.42442596609663,
    "route": "tob-maiden>tob-bloat>tob-nylocas>tob-sotetseg>tob-xarpus>tob-verzik",
    "ring": "Ultor ring",
    "kit": [
@@ -140,8 +140,8 @@
    ],
    "freeSlots": 0,
    "carriers": {
-    "elderMaul": 0,
-    "dwh": 1,
+    "elderMaul": 1,
+    "dwh": 0,
     "bgs": 0,
     "tonalztics": 2,
     "ayak": 0
@@ -154,10 +154,10 @@
    "surgeAt": [],
    "encounters": {
     "tob-maiden": 50.67,
-    "tob-bloat": 27.09,
-    "tob-nylocas": 39.85,
-    "tob-sotetseg": 73.48,
-    "tob-xarpus": 56.34,
+    "tob-bloat": 27.03,
+    "tob-nylocas": 39.81,
+    "tob-sotetseg": 74.48,
+    "tob-xarpus": 55.71,
     "tob-verzik": 195.72
    }
   },

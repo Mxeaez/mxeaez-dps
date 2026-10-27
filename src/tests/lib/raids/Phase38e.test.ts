@@ -4,16 +4,15 @@ import {
   DEFAULT_SPEC_MODE, kitSlotUsage, plan, PlanInputs,
 } from '@/lib/fracturedArchive/planner';
 import {
-  CarrierCounts, itemBeam, ItemBeamChild, itemStepNet, NO_CARRIERS, pickSpecItem, swapCarriers,
+  itemBeam, ItemBeamChild, itemStepNet, pickSpecItem,
 } from '@/lib/fracturedArchive/specChoice';
 import { raidConfig } from '@/lib/raids';
 import { WORKER_JSON_REPLACER, WORKER_JSON_REVIVER } from '@/utils';
 import { planInputsFor } from '@/tests/utils/crossRaid';
-
 // Phase 38e: the planner's item steps (damage spec weapons / Surge potions) as a small beam ranked by each step's real
 // result (a slot from the kit = the kit re-optimised with the item), swaps after it, an item accepted at 0 slots pinned
-// in the carried list, and swaps on the team's carriers. Docs: docs/BEST_SETUP.md *Item beam, swaps, 0-slot pin (phase
-// 38e)*.
+// in the carried list. (Carrier swaps were built and dropped in the fix round: the next phase changes the spec model.)
+// Docs: docs/BEST_SETUP.md *Item beam, swaps, 0-slot pin (phase 38e)*.
 
 describe('itemStepNet: seconds saved less 1 s per free slot used up', () => {
   test('by hand', () => {
@@ -80,42 +79,6 @@ describe('itemBeam: greedy order vs the first look', () => {
   });
 });
 
-describe('swapCarriers: one carrier for another, or one dropped', () => {
-  const c = (x: Partial<CarrierCounts>): CarrierCounts => ({ ...NO_CARRIERS, ...x });
-
-  test('an Eye of Ayak carrier that saves nothing (no mage) is swapped for a 4th Tonalztics: 91 → 88 s', () => {
-    // time = 100 − 3 per Tonalztics; Ayak not in the weapons (the kit has no mage)
-    const time = (x: CarrierCounts) => 100 - 3 * x.tonalztics;
-    const steps = [
-      { weapon: 'tonalztics' as const, saved: 3, seconds: 97 },
-      { weapon: 'tonalztics' as const, saved: 3, seconds: 94 },
-      { weapon: 'tonalztics' as const, saved: 3, seconds: 91 },
-      { weapon: 'ayak' as const, saved: 0, seconds: 91 },
-    ];
-    const r = swapCarriers({
-      weapons: ['elderMaul', 'tonalztics', 'dwh', 'bgs'], total: 4, time, start: c({ tonalztics: 3, ayak: 1 }), steps,
-    });
-    expect(r.carriers).toEqual(c({ tonalztics: 4 }));
-    expect(r.seconds).toBe(88);
-    expect(r.steps.map((s) => s.weapon)).toEqual(['tonalztics', 'tonalztics', 'tonalztics', 'tonalztics']);
-    expect(r.steps[3]).toEqual({ weapon: 'tonalztics', saved: 3, seconds: 88 });
-  });
-
-  test('a carrier that costs time is dropped (+1 s per BGS): 96 → 95 s; a 0.04 s gain is not taken', () => {
-    const time = (x: CarrierCounts) => 100 - 5 * x.elderMaul + x.bgs;
-    const r = swapCarriers({
-      weapons: ['elderMaul', 'bgs'], total: 2, perWeapon: 1, time, start: c({ elderMaul: 1, bgs: 1 }),
-    });
-    // swapping the BGS for a second maul is capped (perWeapon 1): drop it
-    expect(r.carriers).toEqual(c({ elderMaul: 1 }));
-    expect(r.seconds).toBe(95);
-    const tiny = swapCarriers({
-      weapons: ['elderMaul', 'bgs'], total: 2, time: (x) => 100 - 0.04 * x.bgs, start: c({ elderMaul: 1 }),
-    });
-    expect(tiny.carriers).toEqual(c({ elderMaul: 1 }));
-  });
-});
-
 describe('slots: 29 items in 28 slots is overfull', () => {
   test('kitSlotUsage by hand: 29 carried items, no supplies → used 29 / 28, overfull', () => {
     const ids = Array.from({ length: 29 }, (_, i) => 1000 + i);
@@ -155,10 +118,10 @@ const sitePlanInputs = (): PlanInputs => {
 };
 
 (process.env.RUN_SLOW_TESTS ? describe : describe.skip)('the user\'s party-8 FA plan (slow)', () => {
-  test('≤ 25:07.4 (was 25:18.1 with Crimson kisten + Voidwaker); Zaryte crossbow brought; never more cells than slots', () => {
+  test('25:07.9 (was 25:18.1 with Crimson kisten + Voidwaker on 38c; the beam alone): Zaryte crossbow + Surge + Crimson kisten; never more cells than slots', () => {
     const r = plan(sitePlanInputs(), { model: fa.time });
     const seconds = r.comparison!.routes[r.planned].seconds;
-    expect(seconds).toBeLessThanOrEqual(25 * 60 + 7.4);
+    expect(seconds).toBeLessThanOrEqual(25 * 60 + 7.95);
     expect(r.specItems.map((x) => x.name)).toContain('Zaryte crossbow');
     const cells = r.inventory.filter((x) => x.kind !== 'free').length;
     expect(cells <= r.slots!.total || r.slots!.overfull).toBe(true);
