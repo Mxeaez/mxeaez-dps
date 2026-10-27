@@ -5,7 +5,7 @@ import {
   compareRoutes, createKitEvaluator, encounterTime, FA_TIME_MODEL, presetKitLoadout, RAID_TIME_DEFAULTS, raidClock,
   raidTimeAssumptionsFrom, RaidKit, routesFor, surgeClockSpan, surgeClockStarts,
 } from '@/lib/fracturedArchive/raidTime';
-import { drainEventsOf, encounterWallSeconds } from '@/lib/fracturedArchive/encounterBudget';
+import { drainEventsOf, encounterWallSeconds, rowWallSeconds } from '@/lib/fracturedArchive/encounterBudget';
 import { dosesAllowed } from '@/lib/fracturedArchive/specBudget';
 import { drainModel } from '@/lib/fracturedArchive/specs';
 import { planLoadoutToPlayer } from '@/lib/fracturedArchive/planner';
@@ -17,6 +17,8 @@ import { assumptionsForTarget } from '@/lib/raids/toa/supplies';
 import {
   TOA_ADRENALINE_DOSES, TOA_ROUTE_ID, TOA_ROUTES, TOA_TIME_MODEL,
 } from '@/lib/raids/toa/time';
+import { bruteForceKits, bruteForceOk } from '@/tests/utils/probes';
+import { headline } from '@/tests/utils/headlines';
 
 // Phase 38c: Ocellus's three drain events (the Defence resets P1 → P2 → P3) with the Blade in the plan (120 s), ToA's
 // pair of paths done before the supplies chosen as a route, the raid clock = fight wall + non-fight time, and the
@@ -49,6 +51,11 @@ describe('Ocellus: three drain events, P3 specs on quadrants 1-3, the Blade at 1
     const { events, rowEvent } = drainEventsOf(rows);
     expect(events.map((e) => [e.reset, e.rows])).toEqual([[undefined, [0]], ['P1', [1]], ['P2', [2, 3]]]);
     expect(rowEvent).toEqual([0, 1, 2, 2]);
+    // fix round: P2 lasts 120 s on the spec budget's clock (fixedWall), not 120 ÷ party size; the others ÷ party
+    const party6 = { dpsMultiplier: 1, partySize: 6 };
+    expect(p2.fixedWall).toBe(true);
+    expect(rowWallSeconds(p2, party6)).toBe(120);
+    expect(rowWallSeconds(rows[0], party6)).toBeCloseTo(rows[0].seconds / 6, 9);
     // all of P3 in the last quadrant: the reset moves to it
     const allLast = FA_TIME_MODEL.encounterPass('ocellus', one, { ...ta, settings: { ...RAID_TIME_DEFAULTS, ocellusLastQuadrantFraction: 1 } }, 'none', 90);
     expect(allLast.map((r) => [r.key, r.drainReset])).toEqual([['ocellus-p1', undefined], ['ocellus-p2', 'P1'], ['ocellus-p3-last', 'P2']]);
@@ -180,4 +187,19 @@ describe('displays use the before-supplies assumptions for the rooms before the 
   test('the Search / Summary note says the salts are used there', () => {
     expect(raid.hpNote).toContain('Search / Summary use the Smelling salts');
   });
+});
+
+// fix round: the reviewer's `bruteForceKits.mjs toa --pool tiny` on the Kephri + Ba-Ba route found Twisted bow + Shadow +
+// Scythe #3 3.08 s faster than the planner's Shadow + Scythe #3; the Twisted bow takes 7 more slots and the planner's
+// dedupe rule (optimiseKit `prune`) asks 1 s per slot, so that kit is not a plan. The probe now keeps only kits that pass
+// the rule (`bestAny` = the fastest of all, for reference). Slow (a full camp-one reduced plan, ~4 min).
+(process.env.RUN_SLOW_TESTS ? describe : describe.skip)('brute force, ToA tiny pool, Kephri + Ba-Ba (slow)', () => {
+  test('gap 0 under the dedupe rule; the faster kit it rejects breaks the rule', () => {
+    const b = bruteForceKits('toa', { pool: 'tiny' });
+    expect(b.route).toBe(headline('toa').route);
+    expect(b.gap).toBeLessThanOrEqual(1e-6);
+    expect(bruteForceOk(b)).toBe(true);
+    expect(b.pruned).toBeGreaterThan(0);
+    expect(b.bestAny).toBeLessThanOrEqual(b.best);
+  }, 900000);
 });

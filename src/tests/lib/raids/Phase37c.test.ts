@@ -38,11 +38,12 @@ describe('retime: the headline kits re-timed outside the planner = headlines.jso
 });
 
 describe('drain outcome: one encounter of a headline, for hand-checking', () => {
-  test('FA Xarth (Team): 4 Elder maul + 6 Tonalztics, Def 170 → floor 102, the pools balance', () => {
+  test('FA Xarth (Team): 2 Elder maul + 8 Tonalztics, Def 170 → floor 102, the pools balance', () => {
     expect(headlineWithEncounter('xarth')).toBe('fa');
     const d = drainOutcome('fa', 'xarth');
     expect(d.eventsMatch).toBe(true);
-    expect(d.events).toEqual([{ npc: 'Xarth', firstRowKey: 'xarth', counts: { elderMaul: 4, tonalztics: 6 } }]);
+    // phase 38c fix: the headline's carriers are 1 Elder maul + 4 Tonalztics (were 2 + 3)
+    expect(d.events).toEqual([{ npc: 'Xarth', firstRowKey: 'xarth', counts: { elderMaul: 2, tonalztics: 8 } }]);
     const [x] = d.phases;
     // Xarth at party 6 (the r32 review's independent drain probe): Def 170, floor 102, 50% energy per spec
     expect([x.def, x.floor, x.energy]).toEqual([170, 102, { elderMaul: 50, tonalztics: 50 }]);
@@ -52,10 +53,10 @@ describe('drain outcome: one encounter of a headline, for hand-checking', () => 
     expect(d.wall).toBeCloseTo(d.seconds / 6, 9);
     expect(d.wall).toBeGreaterThan(30);
     const pool = Object.fromEntries(d.pools.map((g) => [g.group, g]));
-    // 2 maul bars: 200 + 2 × 10 − 4 × 50 = 20; 3 Tonalztics bars: 300 + 30 − 300 = 30; yours (phase 38a: a surge dose
-    // here on the raid clock, Crimson kisten instead of Burning claws): 100 + 10 + 25 − (ZCB 75 + kisten 50) = 10;
-    // phase 38b: Xarth's death (Death Charge, party 6) adds 15 ÷ 6 = 2.5% per bar at the end: 25, 37.5, 12.5
-    expect([pool.elderMaul.balance, pool.tonalztics.balance, pool.me.balance]).toEqual([25, 37.5, 12.5]);
+    // phase 38c fix: 1 maul bar: 100 + 10 − 2 × 50 = 10; 4 Tonalztics bars: 400 + 40 − 400 = 40; yours (phase 38a: a
+    // surge dose here on the raid clock, Crimson kisten): 100 + 10 + 25 − (ZCB 75 + kisten 50) = 10;
+    // phase 38b: Xarth's death (Death Charge, party 6) adds 15 ÷ 6 = 2.5% per bar at the end: 12.5, 50, 12.5
+    expect([pool.elderMaul.balance, pool.tonalztics.balance, pool.me.balance]).toEqual([12.5, 50, 12.5]);
     expect(pool.me.end).toEqual([12.5]);
   }, 60000);
 

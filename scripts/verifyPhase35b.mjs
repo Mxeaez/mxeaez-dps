@@ -16,15 +16,16 @@ import { headlineTotal } from './headlines.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
 // phase 36: one spec budget for Bork and the Smorks (and the planner's 2 Elder maul + 4 Tonalztics carriers)
-const BORK_SPECS = 'Bork: Elder maul 2 specs → Def 180 · Smorks: Elder maul 1 spec + Tonalztics 9 hits → Def 13'; // phase 36 review
-// phase 36 review: 2 Elder maul + 3 Tonalztics carriers (you damage-spec)
-const BORK_LINE = 'Bork: 2 Elder maul carriers (3 specs) → Def 180 · 86% · Smorks: 1 Elder maul carrier (1 spec) + 3 Tonalztics carriers (6 specs) → Def 13';
+// phase 38c fix: the headline's carriers are 1 Elder maul + 4 Tonalztics
+const BORK_SPECS = 'Bork: Elder maul 2 specs + Tonalztics 1 hit → Def 184 · Smorks: Tonalztics 9 hits → Def 13';
+// (the phase 36 review's 2 Elder maul + 3 Tonalztics became 1 + 4 in phase 38c's fix round)
+const BORK_LINE = 'Bork: 1 Elder maul carrier (2 specs) + 1 Tonalztics carrier (1 spec) → Def 184 · Smorks: 4 Tonalztics carriers (7 specs) → Def 13';
 const FA_OTHERS = {
   'archive-guardian': 'Flying shield: Tonalztics 4 hits → Def 156 · Grounded: Tonalztics 4 hits → Def 156',
   moia: 'Tonalztics 2 hits → Def 117',
   xarth: 'Tonalztics 2 hits → Def 102',
   // phase 38c: three Ocellus events (the Defence resets at P2 and P3), P3's specs on quadrants 1-3
-  ocellus: 'start: Tonalztics 2 hits → Def 129 · after P1: Elder maul 4 specs + Tonalztics 1 hit → Def 18 · after P2: Tonalztics 3 hits → Def 150',
+  ocellus: 'start: Tonalztics 2 hits → Def 129 · after P1: Elder maul 2 specs + Tonalztics 4 hits → Def 1 · after P2: Tonalztics 3 hits → Def 150',
 };
 
 let failures = 0;

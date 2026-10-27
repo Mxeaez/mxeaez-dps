@@ -326,6 +326,15 @@ const wallOf = (seconds: number, a: Pick<RaidTimeAssumptions, 'dpsMultiplier' | 
 /** Wall-clock seconds of an encounter (for the surge cooldown and the energy carry). */
 export const encounterWallSeconds = (seconds: number, a: Pick<RaidTimeAssumptions, 'dpsMultiplier' | 'partySize'>): number => wallOf(seconds, a);
 
+/**
+ * Phase 38c fix: a row's wall seconds on the spec budget's clock: seconds × multiplier ÷ party size, except a
+ * fixed-length phase (`fixedWall`: Ocellus P2), which lasts its seconds whatever the multiplier.
+ */
+export const rowWallSeconds = (
+  r: Pick<PhaseTime, 'seconds' | 'fixedWall'>,
+  a: Pick<RaidTimeAssumptions, 'dpsMultiplier' | 'partySize'>,
+): number => (r.fixedWall ? Math.max(0, Number.isFinite(r.seconds) ? r.seconds : 0) : wallOf(r.seconds, a));
+
 /** Every pool at 100%. */
 export const fullPools = (groups: PoolGroup[]): PoolState => Object.fromEntries(groups.map((g) => [g.id, Array(g.count).fill(SPEC_MAX_ENERGY)]));
 
@@ -493,7 +502,7 @@ export const budgetedEncounter = (
     const at = new Map<string, { start: number, end: number }>();
     let t = ctx.clock0;
     pass.forEach((r) => {
-      const w = wallOf(r.seconds, a);
+      const w = rowWallSeconds(r, a);
       const cur = at.get(r.key);
       at.set(r.key, { start: cur ? cur.start : t, end: t + w });
       t += w;

@@ -274,10 +274,10 @@ describe('ring policy', () => {
    * (Liquid adrenaline in ToA rooms 3-5: spec costs halved; Death Charge; damage specs on adds): ToA 930.9 → 925.0;
    * FA / CoX / ToB unchanged. Phase 38c (Ocellus P2 in the plan at 120 s, three drain events; ToA's pair of paths before
    * the supplies is a route, this kit's cheapest Zebak + Akkha): FA 1493.8 → 1544.4 (Ocellus 767.3 → 818.0), ToA 925.0
-   * → 905.5; CoX / ToB unchanged.
+   * → 905.5; CoX / ToB unchanged. Phase 38c fix (P2's 120 s on the spec budget's wall clock): FA 1544.4 → 1534.7.
    */
   test.each([
-    ['fractured-archive', 1544.4],
+    ['fractured-archive', 1534.7],
     ['toa', 905.5],
     ['cox', 452.7],
     ['tob', 457.3],

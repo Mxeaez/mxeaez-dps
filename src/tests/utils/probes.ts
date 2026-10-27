@@ -4,12 +4,12 @@ import {
   RouteComparison, routesFor, specBudgetFrom,
 } from '@/lib/fracturedArchive/raidTime';
 import {
-  budgetGroups, encounterWallSeconds,
+  budgetGroups, rowWallSeconds,
 } from '@/lib/fracturedArchive/encounterBudget';
 import { regenTicks, SPEC_REGEN_STEP, SURGE_DOSE_ENERGY } from '@/lib/fracturedArchive/specBudget';
 import {
   comfortSupplies, ownedPinned, plan, PlanCandidate, PlanHooks, PlanResult, planAssumptions,
-  RingPolicy, ringAssumptions, toPlayerEquipment,
+  RingPolicy, ringAssumptions, switchSavingRequired, toPlayerEquipment,
 } from '@/lib/fracturedArchive/planner';
 import { mySpecsForSubset } from '@/lib/fracturedArchive/specChoice';
 import { applyLoadoutToPlayer } from '@/lib/fracturedArchive/loadout';
@@ -226,7 +226,8 @@ export const drainOutcome = (name: HeadlineName, encounter: string, retimed?: Re
   let clock = 0;
   const phases: DrainPhaseRow[] = e.phases.map((p) => {
     const start = clock;
-    clock += encounterWallSeconds(p.seconds, r.timeA);
+    // phase 38c fix: a fixed-length phase (Ocellus P2) lasts its seconds (rowWallSeconds, as the spec budget)
+    clock += rowWallSeconds(p, r.timeA);
     const event = sp?.rowEvent[p.key] ?? -1;
     const counts = event >= 0 ? sp!.events[event].counts : {};
     const target = findTarget(p.targetKey);
@@ -273,7 +274,7 @@ export const drainOutcome = (name: HeadlineName, encounter: string, retimed?: Re
       magicDefAfter: nAyak > 0 ? ay.magicDefAfter : null,
     };
   });
-  const wall = encounterWallSeconds(e.seconds, r.timeA);
+  const wall = clock;
   const cfg = specBudgetFrom(a, drain);
   // phase 38b: Liquid adrenaline halves a phase's spends; Death Charge restores energy on kills
   const factorOf = (row?: DrainPhaseRow) => (row && sp?.adrenalineSeconds && row.start < sp.adrenalineSeconds - 1e-9 ? 0.5 : 1);
@@ -346,6 +347,14 @@ export interface BruteForce {
   bestKit: string[];
   /** planned − best (> 1e-6: the planner missed a faster kit). */
   gap: number;
+  /**
+   * Phase 38c fix: the fastest kit of all, ignoring the planner's dedupe rule (`best` keeps only kits where every
+   * loadout saves at least `switchSavingRequired` of the slots it takes: a kit the planner would prune is no answer).
+   */
+  bestAny: number;
+  bestAnyKit: string[];
+  /** Kits dropped by the dedupe rule. */
+  pruned: number;
   /** Largest kit tried (≥ the planner's). */
   maxKit: number;
   /** The five fastest kits. */
@@ -402,10 +411,22 @@ export const bruteForceKits = (raid: RaidId, opts: {
     for (let j = from; j < pickable.length; j++) walk(j + 1, [...m, pickable[j]]);
   };
   walk(0, []);
+  // phase 38c fix: the planner's dedupe rule (optimiseKit `prune`): a loadout must save switchSavingRequired(the slots
+  // it adds); a kit breaking it for any member is not a plan the planner may return (every subset is in `timed`)
+  const keyOf = (m: number[]) => [...m].sort((a, b) => a - b).join(',');
+  const secondsOf = new Map(timed.map((t) => [keyOf(t.members), t.seconds]));
+  const dedupeOk = (t: { seconds: number, members: number[] }) => !Number.isFinite(t.seconds) || t.members.length < 2
+    || t.members.every((_, j) => {
+      const fewer = t.members.filter((__, k) => k !== j);
+      const loss = (secondsOf.get(keyOf(fewer)) ?? s.exactSeconds(fewer)) - t.seconds;
+      return loss >= switchSavingRequired(s.used(t.members) - s.used(fewer)) - BRUTE_TOLERANCE;
+    });
   // fastest first; ties: enumeration order (the first found wins, as in Phase36's test)
-  const sorted = timed.map((t, i) => ({ ...t, i }))
+  const sortedAll = timed.map((t, i) => ({ ...t, i }))
     .sort((x, y) => (x.seconds < y.seconds ? -1 : Number(x.seconds > y.seconds)) || x.i - y.i);
+  const sorted = sortedAll.filter(dedupeOk);
   const best = sorted.length ? sorted[0] : { seconds: Infinity, members: [] as number[] };
+  const bestAny = sortedAll.length ? sortedAll[0] : { seconds: Infinity, members: [] as number[] };
   return {
     raid,
     route,
@@ -420,6 +441,9 @@ export const bruteForceKits = (raid: RaidId, opts: {
     best: best.seconds,
     bestKit: names(best.members),
     gap: planned - best.seconds,
+    bestAny: bestAny.seconds,
+    bestAnyKit: names(bestAny.members),
+    pruned: sortedAll.length - sorted.length,
     maxKit,
     top: sorted.slice(0, 5).map((t) => ({ seconds: t.seconds, kit: names(t.members) })),
     planMs,

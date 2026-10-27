@@ -1458,9 +1458,10 @@ on the last quadrant as "P3 last quadrant, Deflect Melee: …"). Briefing: "Star
 restored), again: … · After P2 (Defence restored), again: …". The P2 query now carries its `rowKey` (its event's
 counts). **The Blade is in the plan by default**: "Ocellus P2 length" 0 → **120 s** (the user: "~2 min, little damage
 lands"; UNVERIFIED D5 / D35): P2 lasts 120 s of model time, the DPS on the Blade × 120 s is dealt and 50% of it comes
-off P3's hp. Known gap: the FA model's seconds are "your DPS alone" (multiplier 1), so the fixed 120 s is also 120 s of
-that clock and its wall time is 120 ÷ party size (20 s at party 6) for regen ticks and the raid clock (pessimistic for
-the P3 event's energy).
+off P3's hp. The FA model's seconds are "your DPS alone" (multiplier 1), so the fixed 120 s is also 120 s of that
+clock; fix round: the P2 row carries `fixedWall`, so the spec budget's clock (`rowWallSeconds`) gives it 120 s of wall
+time (was 120 ÷ party size, 20 s at party 6: 4 regen ticks fewer before P3); the raid clock still divides the
+encounter's seconds by the party size.
 
 **ToA: the pair of paths before the supplies is a route.** Each path room has two encounter ids: the plain id (after
 the first supply drop: the salts, adrenaline) and `<room>-before-supplies` (normal potions, no adrenaline; its rows
@@ -1490,9 +1491,9 @@ all" (`planLoadoutToPlayer(…, target)`: the route's first phase's target) and 
 (ToA `hpNote`: they use the salts; the Plan fights the first two paths with the normal potions).
 
 **BGS vs Elder maul on Ocellus (hand check, FA headline assumptions).** Elder maul: −35% of the current Defence per
-landed spec (rounded down); BGS: −damage dealt (Defence first). At P2 / P3's Def 250: maul 0.782 (P3 hit chance) ×
-87 = **68 Def per spec**; BGS E[damage] 26.5 → **26.5 Def per spec**, both 50% energy: the maul drains ≈ 2.6× as
-much. P1 (Def 215, floor 129): maul 0.752 × 75 = 56 vs BGS 28.2. The BGS only catches up where 35% of the Defence
+landed spec (rounded down); BGS: −damage dealt (Defence first). At Def 250: P3 maul 0.782 (hit chance) × 87 =
+**68 Def per spec** vs BGS E[damage] **26.5**; P2 maul 0.829 × 87 = **72** vs BGS 25.2; both 50% energy: the maul
+drains ≈ 2.6-2.9× as much. P1 (Def 215, floor 129): maul 0.752 × 75 = 56 vs BGS 28.2. The BGS only catches up where 35% of the Defence
 is below its expected damage (Def ≲ 80), i.e. after the maul / Tonalztics have done their work, and a carrier holds one
 weapon. So the planner's carriers are Elder maul + Tonalztics and the FA plans bring no BGS.
 
@@ -1508,6 +1509,14 @@ clock gives the same totals):
 | CoX, ToB | 7:06.9, 7:23.4 | unchanged | no Ocellus / pair; the clock moves no surge dose |
 
 ToA's six routes with the headline kit: K+Z 870.10, K+A 867.70, **K+B 860.03**, Z+A 879.38, Z+B 871.71, A+B 869.31.
+
+**Fix round** (P2's wall time; `pinHeadlines --full`): FA 21:43.6 → **21:40.7** (Ocellus 693.52 → 690.80: 7 regen
+ticks instead of 3; the carriers re-chosen, 1 Elder maul + 4 Tonalztics, events P1 4 Tonalztics, P2 2 maul + 4
+Tonalztics, P3 4 Tonalztics; Burning claws added, on P1; Bork 190.71 → 190.53); FA without Obligator / Ascension
+24:52.2 → **24:40.8** (Ocellus 804.39 → 792.97, an Elder maul carrier instead of the DWH); FA Solo, ToA, CoX, ToB
+unchanged. The brute-force probe (`bruteForceKits`) now applies the planner's dedupe rule: ToA tiny, K+B, camp-one found
+Twisted bow + Shadow + Scythe #3 3.08 s faster than the planner's Shadow + Scythe #3, but the bow takes 7 slots and the
+rule asks 1 s per slot, so the planner prunes it by design; under the rule the gap is 0.
 
 ## Routes tab (phase 16: raid time model)
 
@@ -1540,7 +1549,7 @@ damage is infinite (shown ∞; e.g. a melee-only kit on the AG shield). Settings
 | Bork + Smorks | killed evenly: Bork's 1500 in four quarters at armour 8 / 10 / 12 / 14 (each × (1 − `borkStunUptime`)), + 1500 × `borkStunUptime` (default 0) at Stunned; Smorks 600 |
 | Ezekiel / Moia / Dreadnoth / Xarth | 3000 / 785 / 2100 (jellies ignored) / 2600 |
 | Dagon'hai trio | `dagonhaiEncounterDamage(640)` = 3207 at Shielded |
-| Ocellus | P1 2500 × (1 − `ocellusWalkingFraction`, default 0) at a corner, the rest at Walking; P2 lasts `ocellusP2Seconds` (default 0 = ignored) and the damage dealt to the Blade in that time × `ocellusP2CarryOver` 50% comes off P3's 5250; P3 remainder × (1 − `ocellusLastQuadrantFraction` 25%) at Quadrants 1-3, the rest at the Deflect option that is worse for the kit (= the one blocking the kit's best style; for a magic-best kit, where magic is never deflected in our model, the lower of the two) |
+| Ocellus | P1 2500 × (1 − `ocellusWalkingFraction`, default 0) at a corner, the rest at Walking; P2 lasts `ocellusP2Seconds` (default 120 s: phase 38c, D5 / D35) and the damage dealt to the Blade in that time × `ocellusP2CarryOver` 50% comes off P3's 5250; P3 remainder × (1 − `ocellusLastQuadrantFraction` 25%) at Quadrants 1-3, the rest at the Deflect option that is worse for the kit (= the one blocking the kit's best style; for a magic-best kit, where magic is never deflected in our model, the lower of the two) |
 
 - **Drains** (None / Solo / Team = the drain buttons above the tab): per encounter, a first pass without drains gives
   the encounter's time; that × team-DPS multiplier ÷ party size (phase 28; = the time when the multiplier is the party

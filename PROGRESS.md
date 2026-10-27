@@ -3,6 +3,30 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 38c fix — dedupe rule in the brute force, P2's wall time (2026-10-27)
+
+- **Review finding 1** (`bruteForceKits.mjs toa --pool tiny` on Kephri + Ba-Ba: Twisted bow + Shadow + Scythe #3
+  916.08 s vs the planner's Shadow + Scythe #3 919.16 s): not a keying bug. Instrumented, the optimiser's own estimate of
+  the bow kit was 915.62 s, and its `prune` (the dedupe rule) drops it: the bow adds 7 slots (19 → 26) and must save
+  `switchSavingRequired(7)` = 7 s; it saves 3.08 s. The probe timed every kit without the rule, so the route that made
+  the bow marginal exposed it (K+Z: no such kit). `bruteForceKits` (src/tests/utils/probes.ts) now keeps only kits where
+  every loadout saves at least that (`bestAny` / `pruned` report the rest): ToA tiny K+B gap **0** (92 kits, the bow
+  kit pruned). New slow Phase38c test (RUN_SLOW_TESTS): that case, gap 0, `pruned` > 0.
+- **Finding 2**: `PhaseTime.fixedWall` (Ocellus P2) and `rowWallSeconds` (encounterBudget.ts): P2 lasts 120 s on the
+  spec budget's clock (was 120 ÷ party: 20 s at party 6). The drainOutcome probe uses the same clock (it reported FA
+  Ocellus "OVERSPENT" without it). The raid clock still divides the encounter's seconds by the party.
+- **Headlines** (`pinHeadlines --full`): FA 21:43.6 → **21:40.7** (Ocellus 693.52 → 690.80, 7 regen ticks before the
+  end instead of 3; carriers re-chosen 1 Elder maul + 4 Tonalztics, was 2 + 3; Burning claws added (on P1); Ocellus
+  events P1 4 Tonalztics, P2 2 maul + 4 Tonalztics, P3 4 Tonalztics; Bork 190.71 → 190.53); FA without Obligator /
+  Ascension 24:52.2 → **24:40.8** (Ocellus 804.39 → 792.97; an Elder maul carrier instead of the DWH); FA Solo
+  (fixture: 2 lines), ToA 14:20.0, CoX, ToB unchanged. `retime`: all six gap 0.
+- Docs: D35 (the P2 specs live on the Blade credit; with carry-over 0 they move to P1 / P3; ask the user for the Blade
+  damage), BEST_SETUP (P2 default 120 s in the Ocellus model row; the fix round; BGS paragraph: P3 0.782, P2 0.829 → 72).
+- Re-pinned: Phase27 FA 1544.4 → 1534.7 (r27fa.json re-captured), CrossRaid fast pin Ocellus 832 → 823.8, Phase33 /
+  34 Ocellus lines, Phase37c Xarth (2 maul + 8 Tonalztics; balances 12.5 / 50 / 12.5), `PHASE37_MEMO` r27fa / fa /
+  faNotOwned, verifyPhase35b (Bork / Ocellus strings). Fast suite green; Phase38c slow test; verifyAll 35b OK; tsc,
+  lint clean.
+
 ## Phase 38c — Ocellus events, ToA path pair, clock default, displays (2026-10-27)
 
 **Numbers moved** (`node scripts/pinHeadlines.mjs --full`, 9 changes): FA 21:05.3 → **21:43.6**, FA Solo 21:56.2 →
@@ -37,8 +61,8 @@ unchanged. Docs: BEST_SETUP *Ocellus events, ToA path pair, clock default, displ
   routes K+Z 870.10, K+A 867.70, K+B 860.03, Z+A 879.38, Z+B 871.71, A+B 869.31 (Zebak after 141.74 → 119.04, Ba-Ba
   before 90.20 → 102.83); same six loadouts (listed in another order).
 - **BGS vs Elder maul on Ocellus** (hand check, FA headline assumptions, drainModel): maul −35% of current Def per
-  landed spec (rounded down), BGS −damage dealt. P2 / P3 Def 250: maul 0.782 × 87 = 68 Def per 50% spec vs BGS
-  E[damage] 26.5; P1 Def 215: 0.752 × 75 = 56 vs 28.2. The BGS only catches up below Def ≈ 80 (35% of Def < its damage),
+  landed spec (rounded down), BGS −damage dealt. Def 250: P3 maul 0.782 × 87 = 68 Def per 50% spec vs BGS
+  E[damage] 26.5 (P2 0.829 → 72 vs 25.2); P1 Def 215: 0.752 × 75 = 56 vs 28.2. The BGS only catches up below Def ≈ 80 (35% of Def < its damage),
   i.e. after the maul / Tonalztics; so the carriers are maul + Tonalztics and no plan brings a BGS.
 - Re-pinned with explanations: RaidTime (P2 off in the hand-computed Ocellus test; required targets), RaidConfig / ToA
   / CrossRaid (6 ToA routes; fast pins FA Ocellus 776.5 → 832, ToA Zebak + Akkha first for the preset kit: Kephri after

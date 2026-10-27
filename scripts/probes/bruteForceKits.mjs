@@ -14,7 +14,8 @@
  * src/tests/utils/probes.ts `bruteForceKits`), then times every kit of the chosen ring's candidates (up to --max-kit
  * loadouts, within the slots with the plan's carried items) exactly — createKitEvaluator + compareRoutes under the plan's
  * final carriers, damage specs and surge potions, each kit with its own spec budget — and prints the five fastest, the
- * planner's kit and the gap.
+ * planner's kit and the gap. Phase 38c fix: only kits that pass the planner's dedupe rule count (every loadout saves at
+ * least `switchSavingRequired` of its slots: 1 s per slot); the fastest kit of all is printed for reference.
  * Exit 1 when a kit is faster than the planner's by > 1e-6 s (or the planner's own kit re-times differently).
  * Runtime (dev machine): FA small 90 s (336 kits, = Phase36's slow test), FA tiny 30 s (90 kits), ToB tiny 65 s.
  */
@@ -54,13 +55,14 @@ const b = p.bruteForceKits(raid, {
 });
 console.log(`${raid}, pool ${pool}, route ${b.route}, ring ${b.ring ?? '(as searched)'}`);
 console.log(`candidates (${b.candidates.length}): ${b.candidates.map((c, i) => `[${i}] ${c}`).join('; ')}`);
-console.log(`\n${b.kits} kits of up to ${b.maxKit} loadouts (from ${b.tried} candidates) timed; the fastest:`);
+console.log(`\n${b.kits} kits of up to ${b.maxKit} loadouts (from ${b.tried} candidates) timed, ${b.pruned} dropped by the dedupe rule; the fastest kept:`);
 console.log(table(['#', 'seconds', 'kit'], b.top.map((t, i) => [i + 1, fmt(t.seconds, 4), t.kit.join(' + ')])));
 console.log('');
 console.log(table(['', 'seconds', 'kit'], [
   ['planner', fmt(b.planned, 4), b.plannedKit.join(' + ')],
   ['planner (kit space re-time)', fmt(b.plannedInSpace, 4), ''],
   ['brute force', fmt(b.best, 4), b.bestKit.join(' + ')],
+  ['(any kit, no dedupe rule)', fmt(b.bestAny, 4), b.bestAnyKit.join(' + ')],
 ]));
 const ok = p.bruteForceOk(b);
 console.log(`\ngap (planner − brute force): ${b.gap.toFixed(6)} s; ${(b.ms / 1000).toFixed(1)} s (plan ${(b.planMs / 1000).toFixed(1)} s); ${ok ? 'OK' : 'FAIL'}`);

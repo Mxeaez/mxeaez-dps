@@ -387,6 +387,11 @@ export interface PhaseTime {
   damageSpecs?: PhaseDamageSpecs[];
   /** Phase 36: why damage specs don't apply (a fixed-length phase, the Dawnbringer specs). */
   noDamageSpecs?: string;
+  /**
+   * Phase 38c fix: `seconds` are real (wall) seconds whatever the team-DPS multiplier (Ocellus P2, a fixed-length
+   * phase): the spec budget's clock takes them as they are instead of seconds × multiplier ÷ party size.
+   */
+  fixedWall?: boolean;
 }
 
 export interface EncounterTime {
@@ -609,6 +614,7 @@ const evalEncounterPass = (
       seconds: settings.ocellusP2Seconds,
       note: `${Math.round(carried)} carried to P3 (${pctText(settings.ocellusP2CarryOver)})`,
       noDamageSpecs: 'a fixed-length phase',
+      fixedWall: true,
       // phase 38c: the Defence resets P1 → P2 (the user, in-game): a new drain event ("After P1 (Defence restored)")
       drainReset: 'P1',
     });

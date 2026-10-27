@@ -246,7 +246,7 @@ describe('encounter line = the first phase\'s line (FA, presets kit)', () => {
       ['P1', 'ocellus-p2', ['P2 The Blade']],
       ['P2', 'ocellus-p3', ['P3 quadrants 1-3']],
     ]);
-    expect(s.text).toBe('Start of fight: 1 Elder maul carrier (2 specs) → Def 140 · After P1 (Defence restored), again: 1 Elder maul carrier (2 specs) → Def 106 · After P2 (Defence restored), again: 2 Tonalztics carriers (4 specs) → Def 150 · 84%');
+    expect(s.text).toBe('Start of fight: 1 Tonalztics carrier (2 specs) → Def 129 · 99% · After P1 (Defence restored), again: 2 Elder maul carriers (4 specs) → Def 69 · After P2 (Defence restored), again: 2 Tonalztics carriers (4 specs) → Def 150 · 84%');
   });
 
   test('single-phase encounters: the line is that phase\'s (Xarth)', () => {
