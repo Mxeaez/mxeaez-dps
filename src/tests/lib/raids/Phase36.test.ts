@@ -7,8 +7,8 @@ import {
   specCalcNumbers, specSecondsSaved,
 } from '@/lib/fracturedArchive/damageSpecs';
 import {
-  allocateBudget, AllocationProblem, CARRY_SPEC_ENERGY, costFactorAt, dosesAllowed, placeDoses, regenTicks, rowSecondsAfter,
-  spendFromGroup, SPEC_MAX_ENERGY, SURGE_COOLDOWN_SECONDS, SURGE_DOSE_ENERGY,
+  allocateBudget, AllocationProblem, CARRY_SPEC_ENERGY, costFactorAt, damageSpecCost, dosesAllowed, placeDoses, regenTicks, rowSecondsAfter,
+  spendFromGroup, SPEC_MAX_ENERGY, SURGE_COOLDOWN_SECONDS, SURGE_DOSE_ENERGY, ticksBefore,
 } from '@/lib/fracturedArchive/specBudget';
 import {
   budgetedEncounter, budgetGroups, capOptions, CLOCK_ROUNDS, damageLimited, drainEventsOf, MAX_EVENT_OPTIONS, rowHpLeft,
@@ -169,14 +169,16 @@ const simulateOnce = (p: AllocationProblem, opts: number[], choice: Record<strin
       drank = true;
     }
     const row = p.rows[r];
+    const paidMe = state.me?.[0] ?? 0;
     for (const g of Object.keys(state)) {
       const reg = regenTicks(row.start, row.end, p.groups.find((x) => x.id === g)!.regenSeconds) * 10;
       state[g] = state[g].map((e) => e + reg);
     }
     const o = p.rowOutcome(r, opts[row.event]);
-    let spent = 0;
-    for (const c of o.damageSpecs) spent += (choice[r][c.weapon] ?? 0) * c.cost * costFactorAt(p, row);
     const late = r === drinkAt && !drank;
+    // phase 38b fix: under Liquid adrenaline the specs funded after the window closes cost full
+    const before = paidMe + (p.halfCostUntil !== undefined ? ticksBefore(row, p.halfCostUntil, p.groups.find((x) => x.id === 'me')?.regenSeconds ?? 30) * 10 : 0);
+    const spent = damageSpecCost(p, row, o.damageSpecs, choice[r], before + (late ? SURGE_DOSE_ENERGY : 0));
     if (late && !(spent > 0 || state.me[0] < SPEC_MAX_ENERGY)) return Infinity;
     if (spent > (state.me?.[0] ?? 0) + (late ? SURGE_DOSE_ENERGY : 0) + 1e-9) return Infinity;
     if (state.me) state.me[0] = state.me[0] - spent + (late ? SURGE_DOSE_ENERGY : 0);

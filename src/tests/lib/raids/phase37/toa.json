@@ -1117,7 +1117,7 @@
    "steps": [
     {
      "weapon": "elderMaul",
-     "saved": 51.2602749215896,
+     "saved": 51.28139250506706,
      "seconds": 883.7925462952326
     },
     {
@@ -1134,7 +1134,7 @@
    "manual": false
   },
   "notes": [
-   "Surge potion(4): saves 3.2 s with a free slot, but none is free and the kit without a slot for it loses more",
+   "Surge potion(4): saves 2.4 s with a free slot, but none is free and the kit without a slot for it loses more",
    "Voidwaker: saves 1.3 s with a free slot, but none is free and the kit without a slot for it loses more",
    "Burning claws: saves 1.1 s with a free slot, but none is free and the kit without a slot for it loses more",
    "Your spec bar goes to Zaryte crossbow: 2 carriers (party − 1), 14:30.1 vs 14:42.1 if you carry a drain weapon instead."
@@ -1151,22 +1151,22 @@
    },
    {
     "ring": "Venator ring",
-    "seconds": 873.5375595014232,
-    "full": true
-   },
-   {
-    "ring": "Bellator ring",
-    "seconds": 876.2223586137397,
+    "seconds": 874.0153720019516,
     "full": true
    },
    {
     "ring": "Lightbearer",
-    "seconds": 876.2484152785578,
+    "seconds": 876.3723589873398,
+    "full": true
+   },
+   {
+    "ring": "Bellator ring",
+    "seconds": 876.9935337778172,
     "full": true
    },
    {
     "ring": "Magus ring",
-    "seconds": 877.7226274922182,
+    "seconds": 878.4843394020606,
     "full": true
    },
    {

@@ -1,7 +1,8 @@
 import { describe, expect, test } from '@jest/globals';
 import { generateEmptyPlayer } from '@/state';
 import {
-  allocateBudget, AllocationProblem, BudgetRow, costFactorAt, deathChargeSchedule, DEATH_CHARGE_ENERGY, simulateBudget,
+  allocateBudget, AllocationProblem, BudgetRow, costFactorAt, damageSpecCost, deathChargeSchedule, DEATH_CHARGE_ENERGY,
+  simulateBudget,
 } from '@/lib/fracturedArchive/specBudget';
 import {
   budgetedEncounter, damageLimited, rowKills, withDeathCharge,
@@ -139,7 +140,7 @@ describe('Liquid adrenaline (ToA)', () => {
     expect(costFactorAt({ halfCostUntil: 150 }, { start: 150 })).toBe(1);
   });
 
-  test('a ZCB spec on Zebak costs 37.5% instead of 75%: 4 specs instead of 2 (by hand)', () => {
+  test('a ZCB spec on Zebak costs 37.5% instead of 75% inside the window: 3 specs instead of 2 (by hand)', () => {
     // Zebak (room 2) has no adrenaline in the model (before the supplies); the dose is given to the budget directly
     const toa = raidConfig('toa');
     const b: BestSetupAssumptions = {
@@ -168,11 +169,47 @@ describe('Liquid adrenaline (ToA)', () => {
     expect(Math.floor(plain.seconds / 30)).toBe(5);
     expect(plain.plan.damage.zebak).toEqual({ zcb: 2 });
     expect(plain.seconds).toBeCloseTo(secondsAfter(2), 6);
-    // with Liquid adrenaline (the whole row starts inside its 150 s): 150% → 4 specs at 37.5%, still 5 ticks
+    // with Liquid adrenaline (150 s; the row runs to ~151 s, past the window): 100 + 4 ticks before 150 s = 140% →
+    // 3 specs at 37.5% (112.5%); a 4th would be funded by the tick at 150 s, after the window: 75% more, 187.5 > 150
+    // (fix round: it was priced at 37.5%, 4 specs)
     expect(Math.floor(dosed.seconds / 30)).toBe(5);
-    expect(dosed.plan.damage.zebak).toEqual({ zcb: 4 });
-    expect(dosed.seconds).toBeCloseTo(secondsAfter(4), 6);
-    expect(dosed.plan.end.me[0]).toBeCloseTo(0, 9);
+    expect(dosed.plan.damage.zebak).toEqual({ zcb: 3 });
+    expect(dosed.seconds).toBeCloseTo(secondsAfter(3), 6);
+    expect(dosed.plan.end.me[0]).toBeCloseTo(150 - 112.5, 9);
+  });
+});
+
+describe('Liquid adrenaline: a row crossing the end of the window (fix round)', () => {
+  // one row, 0-200 s, window to 100 s, 30 s regen: ticks at 30 / 60 / 90 s before the window closes (100 + 30 = 130%),
+  // 120 / 150 / 180 s after it (160% in all); a damage spec costs 50% (25% inside the window), net 10 of 1000 damage
+  const problem = (halfCostUntil?: number): AllocationProblem => ({
+    rows: [{
+      key: 'a', event: 0, start: 0, end: 200,
+    }],
+    events: [{ firstRow: 0, options: [{ counts: {}, spends: [] }] }],
+    groups: [{ id: 'me', count: 1, regenSeconds: 30 }],
+    start: { me: [100] },
+    rowOutcome: () => ({ seconds: 200, damage: 1000, damageSpecs: [{ weapon: 'x', cost: 50, net: 10 }] }),
+    ...(halfCostUntil !== undefined ? { halfCostUntil } : {}),
+  });
+  test('specs funded before the window closes cost half, the rest full (by hand)', () => {
+    const p = problem(100);
+    const row = p.rows[0];
+    const choice = [{ weapon: 'x', cost: 50 }];
+    // 130% before the close pays 5 half-price specs (125%); a 6th is full price: 125 + 50 = 175
+    expect(damageSpecCost(p, row, choice, { x: 5 }, 130)).toBe(125);
+    expect(damageSpecCost(p, row, choice, { x: 6 }, 130)).toBe(175);
+    // a row inside the window: all half; a row starting after it: all full
+    expect(damageSpecCost(p, { start: 0, end: 90 }, choice, { x: 6 }, 0)).toBe(150);
+    expect(damageSpecCost(p, { start: 100, end: 200 }, choice, { x: 2 }, 200)).toBe(100);
+    // the DP: 5 specs (125% of 160%; a 6th would cost 175%) → 200 × (1 − 5 × 10 ÷ 1000) = 190 s; 35% left
+    const r = allocateBudget(p);
+    expect(r.rows[0].damage).toEqual({ x: 5 });
+    expect(r.seconds).toBeCloseTo(190, 9);
+    expect(simulateBudget(p, { options: [0], damage: [{ x: 5 }], drinkRow: -1 }).end.me[0]).toBeCloseTo(35, 9);
+    expect(simulateBudget(p, { options: [0], damage: [{ x: 6 }], drinkRow: -1 }).feasible).toBe(false);
+    // no window: 160% buys 3 full-price specs → 194 s
+    expect(allocateBudget(problem()).seconds).toBeCloseTo(194, 9);
   });
 });
 

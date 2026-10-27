@@ -3,6 +3,20 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 38b fix — adrenaline window guard (2026-10-27)
+
+- Review finding: a row starting inside Liquid adrenaline's window but running past it priced every damage spec at
+  half. Now (specBudget.ts `damageSpecCost`, `ticksBefore`; the DP and `simulateBudget` alike) the specs the energy
+  before the close pays for (after the row's drain spends + the dose + regen ticks strictly before `halfCostUntil`)
+  cost half, min(n, floor(left ÷ half)) per weapon, the rest full. Drain spends keep the row's start.
+- Phase38b: the forced-dose Zebak case is 3 ZCB, not 4 (100 + 4 ticks before 150 s = 140% → 3 × 37.5%; the 4th would
+  cost 75%); new test of a 0-200 s row with the window to 100 s: 130% before the close → 5 half-price specs (125%), a
+  6th costs 175% in all > 160% → 190 s. Phase36's brute-force simulator prices the same way.
+- `pinHeadlines --full --check`: every total, kit, ring and carrier unchanged; phase37/toa.json moved only in
+  side figures (the other rings' totals, e.g. Venator 873.54 → 874.02, Lightbearer / Bellator order; a maul
+  carrier's "saved" 51.26 → 51.28; the Surge potion note 3.2 → 2.4 s), re-pinned. `retime`: all six gap 0. Phase38b /
+  Phase36 green; tsc, lint clean.
+
 ## Phase 38b — Death Charge, Liquid adrenaline, damage specs on adds (2026-10-25)
 
 **Numbers moved** (`node scripts/pinHeadlines.mjs --full`, 9 changes): ToA 14:38.2 → **14:30.1**, CoX 7:08.7 →
