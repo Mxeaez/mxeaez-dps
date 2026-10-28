@@ -61,7 +61,7 @@ about (1 - the calculator's Accuracy) of hits to be 0 (e.g. 68.2% accuracy on AG
 fewer zeros means each roll has its own accuracy roll. Also note your highest Thrust hit on a 5x5 boss (we show 58 at 99s with the
 Torva setup; the size bonus per hit or on the max would differ). Block **D**: boss, accuracy shown, thrusts, zeros, highest hit.
 
-**A3: Ocellus last quadrant, is magic deflected?** (A3). During Deflect Melee in P3, attack with Tumeken's shadow (or any spell) and
+**A3: Ocellus last quadrant, is magic deflected?** (A3). Done 2026-10-28: not deflected (user). During Deflect Melee in P3, attack with Tumeken's shadow (or any spell) and
 note whether hits are normal or 0; do the same during Deflect Ranged if you can. Block **E**: which deflect, weapon, normal or 0.
 
 **A7: Bork flat armour steps 8 / 10 / 12 / 14** (A7). With one weapon, record your highest hit on Bork while the Smorks are above 75%

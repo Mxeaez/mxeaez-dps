@@ -18,4 +18,6 @@ One block per item of `docs/calibration/checklist.md`. Write the date, the party
 
 ## E. UNVERIFIED A3 (Ocellus last quadrant, magic)
 
+2026-10-28, user: magic is **not** deflected. Matches the model; A3 verified.
+
 ## F. UNVERIFIED A7 (Bork armour steps)
