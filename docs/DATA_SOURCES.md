@@ -985,3 +985,68 @@ Wardens, at the encounter's start) is ours: **unverified**, UNVERIFIED D33.
   (*Phase 38a*); which pair is the team's choice, the planner takes the cheapest (UNVERIFIED D31).
 - **Non-fight time defaults** (FA 21.5, ToA 15.5, CoX 12.9, ToB 12.6 min): the phase 38a typical lengths minus the
   Team headlines' fight wall time (ours). **Unverified**, UNVERIFIED D30.
+
+## Phase 38i — Gearscape cross-check of the FA numbers (2026-10-28)
+
+Compare only, no calculation change. Scripts: `scripts/probes/gearscapeOurs.mjs` (our side), `scripts/probes/gearscapeCompare.mjs`
+(both sides, ~2 min). Gearscape (https://gearscape.net/calculators/dps, read 2026-10-28, generic User-Agent) is a Nuxt app; the
+script commits the setup into its Vuex store (`setup/setSlotItem`, `setup/setStyle`, `player/setPotion`, `player/setPrayer`,
+`setup/setExtras`, `calculator/setTarget`), calls the page's own `loadTarget`, and reads the result card (Dps, Max Hit, Accuracy).
+It works without a login. Stats checked against `https://api.gearscape.net/api/monster/id/<id>` (the 2026-10-22 floors check still holds).
+
+**Setups** (the planner's presets, default player: 99s, Super combat / Ranging / Saturated heart, Piety / Rigour / Augury, elemental
+fragments, party 6, no drains): Twisted bow (Masori, Seeking dragon arrows), Scythe (Torva), Obligator (Torva), Tumeken's shadow
+(Ancestral); our best style per row is set on Gearscape too. 14 rows x 4 setups = 56 cells.
+
+**Result**: max hit, accuracy and DPS are identical (DPS to 3 decimals) in 32 cells, differ by <1% in 9 more (Obligator everywhere, and
+Smorks Twisted bow, below), and the other 15 are the Bork armour rows, Bork stunned and Ocellus P1 walking (the >3% list below). Accuracy matches in every
+cell (so Defence, bonuses, levels, boosts, prayers, floors and weaknesses agree) except where a boss is melee-immune or
+auto-hit. **No data error on our side was found, so no fix row.**
+
+Cells (Max hit, accuracy, DPS: ours / Gearscape; a single value = same):
+
+| Boss / phase | Twisted bow (style): max hit, acc, DPS ours / Gearscape | Scythe (style): max hit, acc, DPS ours / Gearscape | Obligator (style): max hit, acc, DPS ours / Gearscape | Shadow (style): max hit, acc, DPS ours / Gearscape |
+|---|---|---|---|---|
+| AG Flying | Rapid: 83, 61.9%, 8.58 / 8.58 | Reap: 0, 38.8 / 0.0%, 0.00 / 0.00 | Thrust: 0, 68.2 / 0.0%, 0.00 / 0.00 | Accurate: 70, 72.0%, 8.41 / 8.41 |
+| AG Grounded | Rapid: 83, 63.0%, 8.72 / 8.72 | Reap: 87, 43.8%, 6.38 / 6.38 | Thrust: 58, 68.2%, 10.70 / 10.62 | Accurate: 70, 72.0%, 8.41 / 8.41 |
+| Bork armour 8 | Rapid: 40 / 38, 57.4%, 3.20 / 3.03 | Reap: 63 / 57, 30.3%, 2.46 / 2.11 | Thrust: 50 / 48, 63.5%, 8.26 / 7.77 | Accurate: 68, 79.9%, 8.81 / 8.81 |
+| Bork armour 10 | Rapid: 38, 57.4%, 2.89 / 3.03 | Chop: 58, 29.7%, 2.12 / 2.12 | Thrust: 48, 63.5%, 7.84 / 7.77 | Accurate: 68, 79.9%, 8.81 / 8.81 |
+| Bork armour 12 | Rapid: 36 / 38, 57.4%, 2.60 / 3.03 | Chop: 52 / 58, 29.7%, 1.83 / 2.12 | Thrust: 46 / 48, 63.5%, 7.42 / 7.77 | Accurate: 68, 79.9%, 8.81 / 8.81 |
+| Bork armour 14 | Rapid: 34 / 38, 57.4%, 2.32 / 3.03 | Chop: 48 / 58, 29.7%, 1.59 / 2.12 | Thrust: 44 / 48, 63.5%, 6.99 / 7.77 | Accurate: 68, 79.9%, 8.81 / 8.81 |
+| Bork stunned | Rapid: 48, 57.4%, 4.61 / 4.61 | Chop: 88, 100.0 / 29.7%, 14.71 / 4.37 | Thrust: 58, 100.0 / 63.5%, 15.68 / 9.89 | Accurate: 70 / 68, 79.9%, 9.33 / 8.81 |
+| Smorks | Rapid: 69, 57.8%, 6.47 / 6.49 | Reap: 81, 33.9%, 4.28 / 4.28 | Thrust: 56, 34.7%, 5.20 / 5.16 | Accurate: 70, 49.9%, 5.82 / 5.82 |
+| Ezekiel | Rapid: 83, 53.6%, 7.43 / 7.43 | Chop: 88, 69.9%, 10.29 / 10.29 | Thrust: 58, 80.7%, 12.64 / 12.55 | Accurate: 70, 69.3%, 8.09 / 8.09 |
+| Xarth | Rapid: 83, 59.5%, 8.25 / 8.25 | Reap: 87, 58.4%, 8.49 / 8.49 | Thrust: 58, 78.9%, 12.36 / 12.27 | Accurate: 70, 46.5%, 5.43 / 5.43 |
+| Ocellus P1 at a corner | Rapid: 83, 65.7%, 9.11 / 9.11 | Reap: 87, 51.0%, 7.41 / 7.41 | Thrust: 58, 61.0%, 9.56 / 9.49 | Accurate: 70, 67.2%, 7.85 / 7.85 |
+| Ocellus P1 walking (Prot Melee) | Rapid: 83, 65.7%, 9.11 / 9.11 | Reap: 0 / 87, 51.0%, 0.00 / 7.41 | Thrust: 0 / 58, 61.0%, 0.00 / 9.49 | Accurate: 70, 67.2%, 7.85 / 7.85 |
+| Ocellus P2 (Blade) | Rapid: 78, 64.1%, 8.34 / 8.34 | Reap: 87, 38.1%, 5.54 / 5.54 | Thrust: 58, 73.1%, 11.45 / 11.37 | Accurate: 70, 79.1%, 9.23 / 9.23 |
+| Ocellus P3 quadrants 1-3 | Rapid: 83, 40.0%, 5.54 / 5.54 | Reap: 87, 42.8%, 6.22 / 6.22 | Thrust: 58, 65.8%, 10.31 / 10.24 | Accurate: 70, 54.6%, 6.37 / 6.37 |
+
+**Differences over 3% and why**
+
+1. **Bork armour 8 / 10 / 12 / 14 (Twisted bow, Scythe, Obligator): phase data.** Gearscape's Bork has one fixed `flat`: 10
+   (api id 16640) and no phase input; ours steps 8 / 10 / 12 / 14 with the Smorks' HP (wiki infobox `flatarmour = 8-14`, UNVERIFIED
+   A7). At our armour 10 row Scythe and Obligator match Gearscape exactly (max hit 58 / 48, same DPS to 3 decimals); the other rows
+   differ by the armour step only (max hit 63 vs 57 at 8, 52 / 48 vs 58 at 12 / 14 ...). Shadow is unaffected (68 on both: the
+   2 magic resistance is applied on both sides).
+2. **Bork armour 10, Twisted bow, -4.6% at the same max hit (38) and accuracy**: mechanic order. The Seeking dragon arrow's
+   minimum hit 3 is applied in ours before the NPC's flat armour (`PlayerVsNPCCalc.ts`: ammo min hit, then `flatAddTransformer(-flatArmour)`),
+   so 3 - 10 = 0; Gearscape's mean (15.86 per accurate roll) fits exactly "armour first, then min 3" (777 / 49 over rolls 0-48),
+   ours (15.12) fits "min 3, then armour". Which is right is unverified (checklist: A7, low Twisted bow hits on Bork). It only
+   touches Seeking-arrow users on Bork, where the bow is far behind (3 vs 8 DPS) so no ranking changes. Not a fix row.
+3. **Bork stunned (Scythe +237%, Obligator +59%): mechanic.** "All melee attacks are dealt as successful hits" (wiki, Bork;
+   `hasGuaranteedMeleeAccuracy`): ours 100% accuracy; Gearscape keeps the normal roll (its stunned version only drops `flat`).
+   **Shadow +6%** (70 vs 68): ours drops the 2 magic resistance while stunned, Gearscape keeps it (UNVERIFIED A6).
+4. **Ocellus P1 "walking to a corner" (Scythe, Obligator -100%): phase.** Ours models the Protect from Melee state (melee deals 0);
+   Gearscape has no prayer state for Ocellus, so it shows the melee numbers (Twisted bow / Shadow identical on both).
+
+**Under 3%, for the record**: Obligator is 0.7-0.9% higher in ours on every boss (e.g. AG Grounded 10.70 vs 10.62). Cause found
+by enumeration: ours applies the size bonus to each hit after the best-of-4 pick (`obligatorHitDistribution`: mean 47.03 per
+accurate hit = floor(d x 1.4) over rolls 0-42), Gearscape to the max hit and then picks the best of 4 over 0-58 (46.69, which
+reproduces its DPS 10.620). That is the open question already in `OBLIGATOR_SIZE_BONUS_PERCENT` ("per hit or to the max hit",
+UNVERIFIED A1). Smorks Twisted bow: ours 0.4% lower at the same max hit (69) and accuracy; cause not found (probably the same Seeking min-hit
+ordering against the Smorks' flat reduction; not checked).
+AG Flying: melee shows accuracy 38.8% / 68.2% in ours vs 0% in Gearscape, DPS 0 on both (display only).
+
+Gearscape quirks noted again: its Ocellus "Phase 2 (the Blade)" (id 16674) has our Blade stats here (accuracy identical), and its
+Bork (Stunned) has the same stats as Bork minus `flat`.

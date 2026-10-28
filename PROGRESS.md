@@ -3,6 +3,23 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 38i - reality check of the FA data against Gearscape (2026-10-28)
+
+Compare only; no src/lib change (ROADMAP 38i). Details and the full cell table: docs/DATA_SOURCES.md *Phase 38i*.
+
+- **Gearscape can be automated** (Nuxt/Vuex store commits + the page's own `loadTarget`, then read the result card; no login).
+  `scripts/probes/gearscapeOurs.mjs` (ours; `--drain team` for drained numbers) and `gearscapeCompare.mjs` (both, ~2 min).
+- 14 FA rows (AG Flying / Grounded, Bork armour 8/10/12/14 + stunned, Smorks, Ezekiel, Xarth, Ocellus P1 x2 / P2 / P3) x 4 setups
+  (Twisted bow, Scythe, Obligator, Shadow) at the planner's default player: accuracy equal in every cell; DPS equal in 32 of 56,
+  <1% in 9 more (Obligator: size bonus per hit in ours vs on the max hit in Gearscape, UNVERIFIED A1; reproduced by enumeration).
+- **>3%, all explained, none a data error of ours**: Bork armour rows (Gearscape has a fixed flat 10, ours 8-14; our armour 10 row
+  matches), Bork armour 10 Twisted bow -4.6% (Seeking min hit 3 before vs after the flat armour; Gearscape's mean fits "after"
+  exactly), Bork stunned (ours: melee auto-hit, Gearscape rolls; shadow +6%: ours drops the 2 magic resistance, A6), Ocellus P1
+  walking (ours Protect from Melee = 0, Gearscape has no prayer state). No new fix row.
+- **docs/calibration/checklist.md** (+ results.md to fill): drain specs thrown / landed vs our hit chance per boss, DPS Counter vs
+  our drained DPS, A11, A1, A3, A7 with what to record.
+- Gates: `pinHeadlines --full --check` no change (fa 22:07.3, faSolo 23:39.1, faNotOwned 25:11.1); fast suite 1376 passed / 196 skipped; lint clean.
+
 ## Phase 38g-2 - one drain plan: the combination and order that land most often (FA, 2026-10-28)
 
 Numbers phase, display only (ROADMAP 38g-2; docs/BEST_SETUP.md *One drain plan (phase 38g-2, FA)*). No headline moved.
