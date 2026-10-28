@@ -2252,7 +2252,9 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       const k = `${totalCarriers}|${mages}`;
       let c = headcountMemo.get(k);
       if (!c) {
-        c = kitCarriers(allRoleTargets(), { partySize: Math.max(1, totalCarriers), mages, threshold: assumptions.floorThreshold }).carriers;
+        c = kitCarriers(allRoleTargets(), {
+          partySize: Math.max(1, totalCarriers), mages, threshold: assumptions.floorThreshold, party: Math.max(1, Math.floor(assumptions.partySize)),
+        }).carriers;
         headcountMemo.set(k, c);
       }
       return { ...c };

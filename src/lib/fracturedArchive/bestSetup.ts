@@ -356,7 +356,13 @@ export const drainStateFor = (m: Monster, id: DrainStateId, assumptions: BestSet
     // planner builds many drain states and shows few; reading the property, a spread, JSON or a worker message computes it)
     const ayak = id === 'solo' ? assumptions.mySpecs.ayak > 0 : (assumptions.team.carriers.ayak ?? 0) > 0;
     const factsOpts = {
-      drain: id, partySize: assumptions.partySize, threshold: assumptions.floorThreshold, paid: attemptsMade.filter((w) => w !== 'ayak').length, ayak,
+      drain: id,
+      partySize: assumptions.partySize,
+      threshold: assumptions.floorThreshold,
+      paid: attemptsMade.filter((w) => w !== 'ayak').length,
+      ayak,
+      // phase 38g fix: Solo counts the specs to the floor over the weapons you bring
+      ...(id === 'solo' ? { weapons: DEFENCE_DRAIN_ORDER.filter((w) => assumptions.mySpecs[w]) } : {}),
     };
     let facts: DrainLine['facts'];
     Object.defineProperty(line, 'facts', {

@@ -694,8 +694,10 @@
     {
      "weapon": "elderMaul",
      "carriers": 2,
-     "drivers": [],
-     "lastSaved": 0
+     "drivers": [
+      "Akkha (before supplies) (3.3 s)"
+     ],
+     "lastSaved": 3.2626456603038605
     },
     {
      "weapon": "tonalztics",

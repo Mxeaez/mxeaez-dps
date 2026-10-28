@@ -79,16 +79,25 @@ export const DrainBrief: React.FC<{
   result?: string,
   /** Tooltip of the whole line (the sentence form). */
   title?: string,
+  /**
+   * Phase 38g fix (Search, Solo): the landed specs / hits read "2 must land" / "4 hits must land", so the best case doesn't
+   * read as the 95% count of the drain facts line.
+   */
+  mustLand?: boolean,
   size?: number,
   className?: string,
 }> = ({
-  items, result, title, size = 26, className,
+  items, result, title, mustLand, size = 26, className,
 }) => (
   <span className={`inline-flex flex-wrap items-center gap-x-3 gap-y-0.5 ${className ?? ''}`} title={title} data-testid="drain-brief">
     {items.length === 0 && <span className="text-gray-500 dark:text-gray-400">no specs</span>}
     {briefItems(items).map((it) => {
-      const text = briefText(it);
-      const dim = it.count === 0 || text === 'not needed';
+      const base = briefText(it);
+      const landed = typeof it.landed === 'number' && it.landed > 0 ? it.landed : undefined;
+      let text = base;
+      if (mustLand && landed !== undefined && (it.weapon === 'elderMaul' || it.weapon === 'dwh')) text = `${landed} must land`;
+      if (mustLand && landed !== undefined && it.weapon === 'tonalztics') text = `${landed} hit${landed === 1 ? '' : 's'} must land`;
+      const dim = it.count === 0 || base === 'not needed';
       return (
         <span
           key={it.weapon}

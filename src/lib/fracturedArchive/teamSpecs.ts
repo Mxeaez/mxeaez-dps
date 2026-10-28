@@ -529,8 +529,10 @@ export const neededSpecs = (
   model: Pick<DrainModel, 'def' | 'floor' | 'magicLevel' | 'magicDef' | 'canHit' | 'hitChance' | 'expectedDamage' | 'outcomes'>,
   available: Partial<Record<PlannerWeapon, number>>,
   threshold = DEFAULT_FLOOR_THRESHOLD,
+  /** Phase 38g fix: the most specs tried (default MAX_FLOOR_SPECS; Team facts: 2 per party member). */
+  maxSpecs = MAX_FLOOR_SPECS,
 ): NeededSpecs => {
-  const key = JSON.stringify([model, available, threshold]);
+  const key = JSON.stringify([model, available, threshold, maxSpecs]);
   const hit = neededMemo.get(key);
   if (hit) return hit;
   const order = drainOrder(model).map((x) => x.weapon).filter((w) => (available[w] ?? 0) > 0);
@@ -540,7 +542,7 @@ export const neededSpecs = (
     defence = {};
     pFloor = 1;
   } else if (order.length) {
-    const most = Math.min(MAX_FLOOR_SPECS, order.reduce((t, w) => t + (available[w] ?? 0), 0));
+    const most = Math.min(maxSpecs, order.reduce((t, w) => t + (available[w] ?? 0), 0));
     // the count vectors by total, n = 1, 2, …: a vector's Defence distribution = its parent's (one spec fewer of its last
     // weapon in upstream order) after that spec, the same distribution `defenceOutcome` builds; per total the best (max
     // P(floor), then the lowest expected Defence, then more of the weapon higher in the drain order); the first total
@@ -624,6 +626,66 @@ export const neededSpecs = (
 /** Phase 38g: the total of a counts record. */
 export const countsTotal = (c: Partial<Record<string, number>> | null | undefined): number => Object.values(c ?? {})
   .reduce((t: number, n) => t + (n ?? 0), 0);
+
+/** Phase 38g fix: the lowest Defence reached with P ≥ threshold (the distribution's threshold quantile). */
+export const defenceAtThreshold = (
+  model: Pick<DrainModel, 'def' | 'floor' | 'magicLevel' | 'outcomes'>,
+  attempts: DefenceDrainWeapon[],
+  threshold = DEFAULT_FLOOR_THRESHOLD,
+): number => {
+  let cum = 0;
+  for (const s of defenceDistribution(model, inUpstreamOrder(attempts))) {
+    cum += s.p;
+    if (cum >= threshold - 1e-12) return s.def;
+  }
+  return model.def;
+};
+
+export interface HelpfulSpecs {
+  /** The lowest Defence reached at the threshold with every spec of the sequence. */
+  dStar: number;
+  /** The fewest specs of the sequence (a prefix, in drain order) reaching `dStar` at the threshold, per weapon. */
+  counts: Partial<Record<DefenceDrainWeapon, number>>;
+  specs: number;
+}
+
+const helpfulMemo = new Map<string, HelpfulSpecs>();
+
+/**
+ * Phase 38g fix (the user, 2026-10-28: "cap at what helps"): when the floor can't be reached at the threshold, d* = the
+ * lowest Defence the available specs (`sequence`, in drain order) reach at the threshold, and only the fewest of them
+ * (a prefix of the sequence) that still reach d* at the threshold are spent; the rest stay for later events.
+ */
+export const helpfulSpecs = (
+  model: Pick<DrainModel, 'def' | 'floor' | 'magicLevel' | 'outcomes'>,
+  sequence: DefenceDrainWeapon[],
+  threshold = DEFAULT_FLOOR_THRESHOLD,
+): HelpfulSpecs => {
+  const key = JSON.stringify([model, sequence, threshold]);
+  const hit = helpfulMemo.get(key);
+  if (hit) return hit;
+  const dStar = defenceAtThreshold(model, sequence, threshold);
+  let n = sequence.length;
+  if (dStar >= model.def) n = 0;
+  else {
+    for (let k = 1; k <= sequence.length; k++) {
+      if (defenceAtThreshold(model, sequence.slice(0, k), threshold) <= dStar) {
+        n = k;
+        break;
+      }
+    }
+  }
+  const counts: Partial<Record<DefenceDrainWeapon, number>> = {};
+  sequence.slice(0, n).forEach((w) => { counts[w] = (counts[w] ?? 0) + 1; });
+  const out = { dStar, counts, specs: n };
+  if (helpfulMemo.size >= 20000) helpfulMemo.clear();
+  helpfulMemo.set(key, out);
+  return out;
+};
+
+/** Phase 38g fix: each weapon of `weapons` (in this order) `per` times, at most `max` attempts in all. */
+export const drainSequence = (weapons: DefenceDrainWeapon[], per: (w: DefenceDrainWeapon) => number, max = Infinity): DefenceDrainWeapon[] => weapons
+  .flatMap((w) => Array(Math.max(0, Math.floor(per(w)))).fill(w) as DefenceDrainWeapon[]).slice(0, max);
 
 /**
  * Phase 29 review 2: one weapon of a Team drain line. Phase 32 wording (drainLine.ts `neededText`): "needs 4 landed

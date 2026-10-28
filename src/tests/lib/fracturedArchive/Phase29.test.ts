@@ -15,7 +15,6 @@ import {
   bringText,
   CarrierCounts,
   carriersText,
-  greedyCarriers,
   mostNeededWeapon,
   NO_CARRIERS,
   pickSeeds,
@@ -178,23 +177,7 @@ describe('seeds (review fix)', () => {
   });
 });
 
-describe('team carriers: greedy on route time (review fix)', () => {
-  // toy: route 1000 s; 1st Tonalztics carrier −200 s, 2nd −1.5 s, 3rd −0.4 s; 1st maul −20 s, 2nd −0.8 s
-  const time = (c: CarrierCounts) => 1000
-    - [0, 200, 201.5, 201.9, 201.9, 201.9, 201.9][c.tonalztics]
-    - [0, 20, 20.8, 20.8, 20.8, 20.8, 20.8][c.elderMaul];
-  test('adds a carrier only while it saves ≥ 1 s (a second Tonalztics: 1.5 s yes; a second maul: 0.8 s no)', () => {
-    const g = greedyCarriers({ weapons: ['elderMaul', 'tonalztics'], total: 6, time });
-    expect(g.carriers).toEqual({ ...NO_CARRIERS, tonalztics: 2, elderMaul: 1 });
-    expect(g.steps.map((x) => [x.weapon, Number(x.saved.toFixed(1))])).toEqual([['tonalztics', 200], ['elderMaul', 20], ['tonalztics', 1.5]]);
-    expect(g.seconds).toBeCloseTo(778.5, 6);
-    // a 2 s bar stops before the second Tonalztics; the party size caps the total
-    expect(greedyCarriers({
-      weapons: ['elderMaul', 'tonalztics'], total: 6, time, minSaving: 2,
-    }).carriers).toEqual({ ...NO_CARRIERS, tonalztics: 1, elderMaul: 1 });
-    expect(greedyCarriers({ weapons: ['elderMaul', 'tonalztics'], total: 1, time }).carriers).toEqual({ ...NO_CARRIERS, tonalztics: 1 });
-  });
-
+describe('team carriers (phase 38g: by headcount, specChoice.ts kitCarriers; the route-time greedy is gone)', () => {
   test('The Smorks (floor 0): % drains stall above 0, so only Tonalztics reach the floor', () => {
     const smorks = drainModel(undrained('smorks'), A);
     expect(smorks.floor).toBe(0);
@@ -203,14 +186,7 @@ describe('team carriers: greedy on route time (review fix)', () => {
     expect(defenceOutcome(smorks, Array(10).fill('tonalztics')).pFloor).toBeGreaterThan(0.95);
   });
 
-  test('Eye of Ayak capped at the mages (review 2: 5 Ayak carriers on ToA → 1 with one mage)', () => {
-    // toy shaped like the ToA steps: maul −47.3, then each Ayak carrier saves 13-18 s
-    const ayakSaves = [0, 13.25, 24.1, 40.77, 58.57, 74.53, 74.53];
-    const t = (c: CarrierCounts) => 900 - (c.elderMaul ? 47.3 : 0) - ayakSaves[c.ayak];
-    expect(greedyCarriers({ weapons: ['elderMaul', 'ayak'], total: 6, time: t }).carriers).toMatchObject({ elderMaul: 1, ayak: 5 });
-    expect(greedyCarriers({
-      weapons: ['elderMaul', 'ayak'], total: 6, time: t, caps: { ayak: 1 },
-    }).carriers).toMatchObject({ elderMaul: 1, ayak: 1 });
+  test('manual carriers: the first party-size count, Eye of Ayak capped at the mages (review 2)', () => {
     // the manual counts: the first `party` in teamSpecPlan's order, Ayak at most the mages
     expect(effectiveCarriers({
       elderMaul: 2, dwh: 0, bgs: 0, tonalztics: 5, ayak: 1,
@@ -536,12 +512,12 @@ describe('planner: spec modes', () => {
     // manual carriers (plan()'s default): the briefing = the Advanced counts (2 maul, 2 Tonalztics, 1 Ayak)
     expect(roles.mode).toBe('manual');
     expect(roles.carriers).toEqual({ ...A.team.carriers, ayak: 0 }); // review 2: Ayak capped at the mages (0)
-    // mages in party > 0 makes Eye of Ayak a candidate; phase 38g: by headcount (a boss whose magic defence the mages'
-    // drain needs gets its fewest Ayak carriers at 95%), capped at the mages
+    // mages in party > 0 makes Eye of Ayak a candidate; phase 38g fix: it competes for the party's bars with the Defence
+    // carriers (the user, 2026-10-28), capped at the mages
     const m = plan(inputs({ specMode: 'auto', carrierMode: 'auto', magesInParty: 2 }), MELEE_RANGED);
     expect(m.specs.team!.mages).toBe(2);
-    expect(m.specs.team!.carriers!.ayak).toBeGreaterThanOrEqual(1);
     expect(m.specs.team!.carriers!.ayak).toBeLessThanOrEqual(2);
+    expect(Object.values(m.specs.team!.carriers!).reduce((x, n) => x + n, 0)).toBeLessThanOrEqual(6);
   }, 300000);
 
   test('Team, planner picks the carriers: the drain state uses exactly the briefing\'s carriers', () => {

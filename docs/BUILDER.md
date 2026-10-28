@@ -22,7 +22,7 @@ of `PROGRESS.md`. `docs/BEST_SETUP.md` is the long reference (one section per ph
 | Time model: routes, encounters, phases, kit evaluator | `raidTime.ts` (`compareRoutes`, `encounterTime`, `createKitEvaluator`, `specBudgetFrom`) |
 | One spec budget per encounter (drain events, DP, regen, surge) | `encounterBudget.ts` (glue: events, `eventWantedCounts` = one fixed drain set per event (38g), `budgetedEncounter`) + `specBudget.ts` (pure DP, `placeDoses`) |
 | Damage specs (Voidwaker, claws, ZCB, kisten) | `damageSpecs.ts` (E[spec], net, `damageSpecRanking` for the Specs box) |
-| Spec weapons: Solo subset search, team carriers, your share | `specChoice.ts` (`greedyCarriers`, `assignMe`, `teamRoles`) |
+| Spec weapons: Solo subset search, team carriers, your share | `specChoice.ts` (`kitCarriers` (38g: by headcount), `assignMe`, `teamRoles`) |
 | Planner | `planner.ts` `plan()`: 1. phase targets + searches → 2. full candidates (presets + search rows) → 3. DPS matrix → 4. partial switches → 5. optimise (`optimiseKit`; carrier greedy, item greedy for damage specs / surge, `fitBars`) → 6. exact re-times of the best `RETIME_TOP` kits (`createKitEvaluator`) → 7. "why" (rejected / alternatives). Around it: the ring policy (camp one ring: every ring screened, guarded full runs, `guardedFullRuns`) |
 | Speed (exact memos) | `kitMemo.ts` + `traceMemo.ts` (encounter / pass memos), `parallelRings.ts` (ring runs in helper workers, `planRingRun`) |
 | Briefing / display strings | `briefing.ts` (`briefingRows`, drain summaries), `potionChoices.ts`, `loadoutIcons.ts` |

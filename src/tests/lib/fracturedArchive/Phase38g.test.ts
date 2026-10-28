@@ -11,10 +11,10 @@ import {
   createKitEvaluator, encounterTime, EncounterTime, presetKitLoadout, raidTimeAssumptionsFrom,
 } from '@/lib/fracturedArchive/raidTime';
 import { runGearSearch } from '@/lib/fracturedArchive/search';
-import { kitCarriers, RoleTarget } from '@/lib/fracturedArchive/specChoice';
+import { kitCarriers, NO_CARRIERS, RoleTarget } from '@/lib/fracturedArchive/specChoice';
 import { drainModel, DrainModel } from '@/lib/fracturedArchive/specs';
 import {
-  applyOutcome, drainOrder, MAX_FLOOR_SPECS, neededSpecs, passingTeams, recommendCarriers,
+  applyOutcome, drainOrder, helpfulSpecs, MAX_FLOOR_SPECS, neededSpecs, passingTeams, recommendCarriers,
 } from '@/lib/fracturedArchive/teamSpecs';
 import { assumptionsForTarget } from '@/lib/raids/toa/supplies';
 import { raidConfig } from '@/lib/raids';
@@ -118,9 +118,48 @@ describe('specs to the floor at 95%, not if every spec lands (hand-computed, Eld
     }
     expect(chain).toEqual([215, 140, 91, 60, 39, 26, 17, 12, 8]);
     expect(neededSpecs(m, { elderMaul: MAX_FLOOR_SPECS }).defence).toBeNull();
-    const f = drainFacts(m, { drain: 'team', partySize: 6 });
+    // fix round (the user: "cap at what helps"): d* = the lowest Defence 6 maul specs reach at 95% (one landed spec each
+    // step: 215 → 140 → 91 → 60), and the fewest of them that still reach it. With h per spec: P(≥ 2 of 6) ≈ 98% and
+    // P(≥ 3 of 6) ≈ 92%, so d* = 91; P(≥ 2 of 4) ≈ 89%, P(≥ 2 of 5) ≈ 96%: 5 specs
+    const h = m.hitChance.elderMaul;
+    expect(atLeast(2, 6, h)).toBeGreaterThanOrEqual(0.95);
+    expect(atLeast(3, 6, h)).toBeLessThan(0.95);
+    expect(fewest(2, h)).toBe(5);
+    const six = helpfulSpecs(m, Array(6).fill('elderMaul'));
+    expect(six).toEqual({ dStar: 91, counts: { elderMaul: 5 }, specs: 5 });
+    // Team: 2 maul carriers (4 specs): P(≥ 1 of 4) ≈ 99%, P(≥ 2 of 4) ≈ 89% → d* = 140; P(≥ 1 of 3) ≈ 96% → 3 specs, so 2
+    // whole carriers (4 specs)
+    expect(1 - (1 - h) ** 3).toBeGreaterThanOrEqual(0.95);
+    expect(1 - (1 - h) ** 2).toBeLessThan(0.95);
+    expect(helpfulSpecs(m, Array(4).fill('elderMaul'))).toEqual({ dStar: 140, counts: { elderMaul: 3 }, specs: 3 });
+    // the facts line, party 4: floor 0 out of reach in 2 × 4 = 8 specs (fix round B1: the count goes as far as the carriers)
+    const f = drainFacts(m, { drain: 'team', partySize: 4 });
     expect(f.specs).toBeNull();
-    expect(f.text).toMatch(/floor not reached in 8 specs; no team of ≤ 6 reaches 95%$/);
+    expect(f.text).toMatch(/floor not reached in 8 specs; ~\d+ specs to Def \d+ at 95%; \d+ bring [A-Za-z ]+ for Def \d+$/);
+    expect(f.help!.specs).toBeGreaterThan(0);
+    expect(drainFacts(m, { drain: 'team', partySize: 4, paid: 4 }).short).toBe('floor not reached, the team has ~4');
+  });
+
+  test('fix round B1: the Team count goes as far as 2 specs per party member (the Smorks: Tonalztics reach floor 0 within 12)', () => {
+    const m = modelOf('fractured-archive', 'smorks');
+    expect(m.floor).toBe(0);
+    const f = drainFacts(m, { drain: 'team', partySize: 6 });
+    expect(f.specs).not.toBeNull();
+    expect(f.specs!).toBeLessThanOrEqual(12);
+    expect(f.text).not.toMatch(/floor not reached/);
+    // the 8-spec Solo count does not reach it
+    expect(drainFacts(m, { drain: 'solo', partySize: 1 }).specs).toBeNull();
+  });
+
+  test('fix round B2: Solo counts over the weapons you bring (FA Solo Ezekiel with Tonalztics: ~5 specs; every weapon: ~3)', () => {
+    const fa = raidConfig('fractured-archive');
+    const a: BestSetupAssumptions = {
+      ...fa.defaultAssumptions, partySize: 1, mySpecs: { ...fa.defaultAssumptions.mySpecs, tonalztics: true },
+    };
+    const ez = buildTargetMonster(findTarget('ezekiel'), undefined, 'solo', a).drain;
+    expect(ez.line!.facts!.text).toMatch(/, ~5 specs to the floor$/);
+    expect(ez.line!.facts!.text).toMatch(/^Drain: Elder maul \(lands /); // the order still lists every weapon
+    expect(drainFacts(modelOf('fractured-archive', 'ezekiel', undefined, a), { drain: 'solo', partySize: 1 }).specs).toBe(3);
   });
 });
 
@@ -137,7 +176,8 @@ describe('carriers by headcount (no seconds)', () => {
     expect(eventWantedCounts({ drain: 'team', carriers: { elderMaul: 2 } }, [k])).toEqual({ elderMaul: 4 });
     // Solo: your specs to the floor at 95% (the bar pays what it can; see below)
     expect(eventWantedCounts({ drain: 'solo', solo: { elderMaul: 99 } }, [k])).toEqual({ elderMaul: 4 });
-    // no team within the kit reaches the floor (Tekton): every carrier whose weapon can hit
+    // no team within the kit reaches the floor (Tekton): the fix round's "cap at what helps", d* = Def 140 with 4 specs,
+    // reached by 3 = 2 whole carriers (see the Tekton test)
     const t = modelOf('cox', 'cox-tekton');
     expect(eventWantedCounts({ drain: 'team', carriers: { elderMaul: 2, tonalztics: 1 } }, [t])).toEqual({ elderMaul: 4 });
   });
@@ -156,9 +196,11 @@ describe('carriers by headcount (no seconds)', () => {
     const ag = target('ag-flying');
     // Bork: 2 Elder maul; AG flying (Tonalztics only): 2 Tonalztics → 2 + 2 within a party of 4
     expect(kitCarriers([bork, ag], { partySize: 4, mages: 0 }).carriers).toMatchObject({ elderMaul: 2, tonalztics: 2 });
-    // a party of 3 can't hold 2 + 2: the kit covering both with 3 carriers, or the most bosses
-    const three = kitCarriers([bork, ag], { partySize: 3, mages: 0 });
-    expect(Object.values(three.carriers).reduce((t, n) => t + n, 0)).toBeLessThanOrEqual(3);
+    // a party of 3 can't hold 2 + 2: one boss is covered either way; the user (fix round): a kit that leaves you out wins
+    // (2 Tonalztics, not 2 Elder maul + 1 Tonalztics)
+    expect(kitCarriers([bork, ag], { partySize: 3, mages: 0 })).toEqual({ carriers: { ...NO_CARRIERS, tonalztics: 2 }, uncovered: ['bork'] });
+    // 3 bars in a party of 4 (your bar is yours): the walk never makes you a carrier; on equal coverage the higher worst P(floor)
+    expect(kitCarriers([bork, ag], { partySize: 3, mages: 0, party: 4 }).uncovered).toHaveLength(1);
   });
 });
 

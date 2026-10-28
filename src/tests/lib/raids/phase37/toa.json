@@ -171,94 +171,6 @@
    "key": "magic|21018,21793,12002,0,27275,21021,0,21024,31106,31097,28307"
   },
   {
-   "label": "Ascension crossbows + diamond (e) (Masori)",
-   "kind": "preset",
-   "group": "ranged",
-   "equipment": {
-    "head": {
-     "id": 27235,
-     "name": "Masori mask (f)",
-     "version": "",
-     "slot": "head"
-    },
-    "body": {
-     "id": 27238,
-     "name": "Masori body (f)",
-     "version": "",
-     "slot": "body"
-    },
-    "legs": {
-     "id": 27241,
-     "name": "Masori chaps (f)",
-     "version": "",
-     "slot": "legs"
-    },
-    "cape": {
-     "id": 28951,
-     "name": "Dizana's quiver",
-     "version": "Charged",
-     "slot": "cape"
-    },
-    "neck": {
-     "id": 33639,
-     "name": "Necklace of rupture",
-     "version": "",
-     "slot": "neck"
-    },
-    "hands": {
-     "id": 26235,
-     "name": "Zaryte vambraces",
-     "version": "",
-     "slot": "hands"
-    },
-    "feet": {
-     "id": 31097,
-     "name": "Avernic treads (max)",
-     "version": "",
-     "slot": "feet"
-    },
-    "ring": {
-     "id": 28307,
-     "name": "Ultor ring",
-     "version": "",
-     "slot": "ring"
-    },
-    "weapon": {
-     "id": 34681,
-     "name": "Ascension crossbows",
-     "version": "",
-     "slot": "weapon",
-     "twoHanded": true
-    },
-    "ammo": {
-     "id": 34696,
-     "name": "Diamond ascension bolts (e)",
-     "version": "",
-     "slot": "ammo"
-    }
-   },
-   "options": [
-    {
-     "style": {
-      "name": "Accurate",
-      "type": "ranged",
-      "stance": "Accurate"
-     },
-     "spell": null
-    },
-    {
-     "style": {
-      "name": "Rapid",
-      "type": "ranged",
-      "stance": "Rapid"
-     },
-     "spell": null
-    }
-   ],
-   "source": "preset",
-   "key": "ranged|27235,28951,33639,34696,34681,27238,0,27241,26235,31097,28307"
-  },
-  {
    "label": "Osmumten's fang (Torva)",
    "kind": "preset",
    "group": "melee",
@@ -428,6 +340,94 @@
    "key": "melee|26382,21295,29801,0,22325,26384,0,26386,22981,31097,28307"
   },
   {
+   "label": "Ascension crossbows + diamond (e) (Masori)",
+   "kind": "preset",
+   "group": "ranged",
+   "equipment": {
+    "head": {
+     "id": 27235,
+     "name": "Masori mask (f)",
+     "version": "",
+     "slot": "head"
+    },
+    "body": {
+     "id": 27238,
+     "name": "Masori body (f)",
+     "version": "",
+     "slot": "body"
+    },
+    "legs": {
+     "id": 27241,
+     "name": "Masori chaps (f)",
+     "version": "",
+     "slot": "legs"
+    },
+    "cape": {
+     "id": 28951,
+     "name": "Dizana's quiver",
+     "version": "Charged",
+     "slot": "cape"
+    },
+    "neck": {
+     "id": 33639,
+     "name": "Necklace of rupture",
+     "version": "",
+     "slot": "neck"
+    },
+    "hands": {
+     "id": 26235,
+     "name": "Zaryte vambraces",
+     "version": "",
+     "slot": "hands"
+    },
+    "feet": {
+     "id": 31097,
+     "name": "Avernic treads (max)",
+     "version": "",
+     "slot": "feet"
+    },
+    "ring": {
+     "id": 28307,
+     "name": "Ultor ring",
+     "version": "",
+     "slot": "ring"
+    },
+    "weapon": {
+     "id": 34681,
+     "name": "Ascension crossbows",
+     "version": "",
+     "slot": "weapon",
+     "twoHanded": true
+    },
+    "ammo": {
+     "id": 34696,
+     "name": "Diamond ascension bolts (e)",
+     "version": "",
+     "slot": "ammo"
+    }
+   },
+   "options": [
+    {
+     "style": {
+      "name": "Accurate",
+      "type": "ranged",
+      "stance": "Accurate"
+     },
+     "spell": null
+    },
+    {
+     "style": {
+      "name": "Rapid",
+      "type": "ranged",
+      "stance": "Rapid"
+     },
+     "spell": null
+    }
+   ],
+   "source": "preset",
+   "key": "ranged|27235,28951,33639,34696,34681,27238,0,27241,26235,31097,28307"
+  },
+  {
    "label": "Twisted bow (Masori)",
    "kind": "preset",
    "group": "ranged",
@@ -527,19 +527,19 @@
   },
   {
    "slots": 1,
-   "seconds": 5.122031699750323
+   "seconds": 17.076323289285938
   },
   {
    "slots": 1,
-   "seconds": 16.945481286054246
+   "seconds": 18.718085106383114
   },
   {
    "slots": 1,
-   "seconds": 18.718085106382887
+   "seconds": 5.205226086721268
   },
   {
    "slots": 1,
-   "seconds": 4.529447396446585
+   "seconds": 4.5294473964468125
   }
  ],
  "slots": {
@@ -817,7 +817,7 @@
   }
  ],
  "pinnedItems": [],
- "comparison": "887a8ab11ef71466571f023f91c6d0ec3a4ae7c99aaeb0a27a058c7103efc026",
+ "comparison": "f0dfd33258ade88f220dd73e433560357bbfcc6d238d5b98fae2851fd1f8a458",
  "planned": 2,
  "rejected": [
   {
@@ -853,15 +853,15 @@
  ],
  "alternatives": [
   {
-   "label": "melee + magic: Tumeken's shadow (Ancestral) / Scythe of Vitur / Osmumten's fang (Torva) / Keris partisan of breaching (Torva)",
+   "label": "melee + magic: Tumeken's shadow (Ancestral) / Osmumten's fang (Torva) / Scythe of Vitur / Keris partisan of breaching (Torva)",
    "kind": "alternative",
-   "deltaSeconds": -19.821237520323166,
+   "deltaSeconds": -29.906376696856796,
    "deltaSlots": -6,
-   "reason": "19.8 s slower",
+   "reason": "29.9 s slower",
    "weapons": [
     "Tumeken's shadow",
-    "Scythe of Vitur",
     "Osmumten's fang",
+    "Scythe of Vitur",
     "Keris partisan of breaching"
    ]
   },
@@ -942,7 +942,7 @@
   "items": [
    {
     "item": "Zaryte crossbow",
-    "saved": 11.516962170200259,
+    "saved": 11.89111978947767,
     "slots": 1,
     "how": "a slot from the kit (re-optimised)"
    }
@@ -960,18 +960,15 @@
     },
     {
      "weapon": "tonalztics",
-     "carriers": 1,
+     "carriers": 2,
      "drivers": [],
      "lastSaved": 0
     },
     {
-     "weapon": "ayak",
+     "weapon": "bgs",
      "carriers": 1,
-     "drivers": [
-      "Wardens (12.8 s)",
-      "Akkha (0.8 s)"
-     ],
-     "lastSaved": 13.625546481376205
+     "drivers": [],
+     "lastSaved": 0
     }
    ],
    "perTarget": [
@@ -1105,13 +1102,13 @@
      "ayak": 0
     }
    ],
-   "text": "6-man: 2 Elder maul, 1 Tonalztics, 1 Eye of Ayak",
+   "text": "6-man: 2 Elder maul, 2 Tonalztics, 1 BGS",
    "carriers": {
     "elderMaul": 2,
     "dwh": 0,
-    "bgs": 0,
-    "tonalztics": 1,
-    "ayak": 1
+    "bgs": 1,
+    "tonalztics": 2,
+    "ayak": 0
    },
    "mode": "auto"
   },
@@ -1125,7 +1122,7 @@
    "Voidwaker: saves 1.7 s with a free slot, but none is free and the kit without a slot for it loses more",
    "Burning claws: saves 1.1 s with a free slot, but none is free and the kit without a slot for it loses more",
    "Surge potion(4): saves 2.3 s with a free slot, but none is free and the kit without a slot for it loses more",
-   "Your spec bar goes to Zaryte crossbow: 4 carriers (party − 1), 14:22.6 vs 14:34.1 if you carry a drain weapon instead."
+   "Your spec bar goes to Zaryte crossbow: 5 carriers (party − 1), 14:36.3 vs 14:48.1 if you carry a drain weapon instead."
   ]
  },
  "ring": {
@@ -1134,32 +1131,32 @@
   "screened": [
    {
     "ring": "Ultor ring",
-    "seconds": 862.6287533265815,
+    "seconds": 876.2542998079578,
     "full": true
    },
    {
     "ring": "Bellator ring",
-    "seconds": 872.7558818447114,
+    "seconds": 886.3577359200744,
     "full": true
    },
    {
     "ring": "Venator ring",
-    "seconds": 874.5121683549908,
-    "full": true
-   },
-   {
-    "ring": "Ring of shadows",
-    "seconds": 875.4147049908299,
+    "seconds": 887.8810645169606,
     "full": true
    },
    {
     "ring": "Magus ring",
-    "seconds": 876.0810845746696,
+    "seconds": 888.3117783408554,
+    "full": true
+   },
+   {
+    "ring": "Ring of shadows",
+    "seconds": 888.5239981697792,
     "full": true
    },
    {
     "ring": "Lightbearer",
-    "seconds": 894.2482331655913,
+    "seconds": 908.2479372662447,
     "full": false,
     "atLeast": 0
    }
@@ -1174,19 +1171,19 @@
   "toa-zebak-before-supplies|": 9.32823121980418,
   "toa-akkha-shadow|": 13.250201794597965,
   "toa-akkha|Final stand (Protect from Magic + Missiles)": 9.035148722463616,
-  "toa-akkha|Praying Melee": 12.92337280527188,
-  "toa-akkha|Praying Ranged": 12.92337280527188,
+  "toa-akkha|Praying Melee": 12.728521140419247,
+  "toa-akkha|Praying Ranged": 12.728521140419247,
   "toa-akkha|Praying Magic": 10.771281099956592,
   "toa-baba|": 9.321912145428367,
-  "toa-obelisk|": 12.90388763878662,
-  "toa-warden-p3|": 12.351331220383415,
-  "toa-warden-p3-enraged|": 12.351331220383415,
+  "toa-obelisk|": 11.949114481008714,
+  "toa-warden-p3|": 11.782864895400502,
+  "toa-warden-p3-enraged|": 11.782864895400502,
   "toa-warden-p2|Praying Melee + Ranged": 14.166666666666668,
   "toa-warden-core|": 31.333333333333336,
   "toa-akkha-shadow-before-supplies|": 11.55782588356027,
   "toa-akkha-before-supplies|Final stand (Protect from Magic + Missiles)": 8.43128323235314,
-  "toa-akkha-before-supplies|Praying Melee": 11.588031850809376,
-  "toa-akkha-before-supplies|Praying Ranged": 11.588031850809376,
+  "toa-akkha-before-supplies|Praying Melee": 11.392804416178336,
+  "toa-akkha-before-supplies|Praying Ranged": 11.392804416178336,
   "toa-akkha-before-supplies|Praying Magic": 9.096900051392142,
   "toa-zebak|": 10.933995336547946,
   "toa-baba-before-supplies|": 8.386127138852585,
@@ -1201,11 +1198,11 @@
  "droppedPinned": [],
  "ownershipNotices": [],
  "searchRows": "33a2f575d76fbed5cbb02dc64ef9f30a829b9edee10a1f6075965bd95a22a173",
- "objectiveSeconds": 862.6287533265815,
+ "objectiveSeconds": 876.2542998079578,
  "fightSeconds": null,
  "plannedRoute": {
   "id": "toa-kephri-before-supplies>toa-baba-before-supplies>toa-zebak>toa-akkha>toa-wardens",
-  "seconds": 862.6287533265815,
+  "seconds": 876.2542998079578,
   "surgeDoses": null,
   "encounters": [
    {
@@ -1216,8 +1213,7 @@
       "npc": "Kephri",
       "firstRowKey": "kephri-shield",
       "counts": {
-       "elderMaul": 4,
-       "ayak": 2
+       "elderMaul": 4
       }
      },
      {
@@ -1260,9 +1256,7 @@
       "npc": "Ba-Ba",
       "firstRowKey": "baba",
       "counts": {
-       "elderMaul": 4,
-       "tonalztics": 2,
-       "ayak": 2
+       "tonalztics": 4
       }
      }
     ],
@@ -1281,8 +1275,7 @@
       "npc": "Zebak",
       "firstRowKey": "zebak",
       "counts": {
-       "tonalztics": 2,
-       "ayak": 2
+       "tonalztics": 2
       }
      }
     ],
@@ -1295,15 +1288,15 @@
    },
    {
     "id": "toa-akkha",
-    "seconds": 141.74053419083975,
+    "seconds": 142.55130858760188,
     "events": [
      {
       "npc": "Akkha",
       "firstRowKey": "akkha-Praying Melee",
       "counts": {
        "tonalztics": 2,
-       "ayak": 2,
-       "elderMaul": 4
+       "elderMaul": 2,
+       "bgs": 2
       }
      },
      {
@@ -1324,31 +1317,27 @@
    },
    {
     "id": "toa-wardens",
-    "seconds": 340.16715732486335,
+    "seconds": 352.9819294094776,
     "events": [
      {
       "npc": "Obelisk",
       "firstRowKey": "wardens-p1",
       "counts": {
-       "elderMaul": 4,
-       "tonalztics": 2,
-       "ayak": 2
+       "tonalztics": 4
       }
      },
      {
       "npc": "Elidinis' Warden",
       "firstRowKey": "wardens-p2-shield",
       "counts": {
-       "elderMaul": 2,
-       "tonalztics": 2
+       "bgs": 2
       }
      },
      {
       "npc": "Tumeken's Warden",
       "firstRowKey": "wardens-p3",
       "counts": {
-       "tonalztics": 1,
-       "ayak": 2
+       "tonalztics": 2
       }
      },
      {
@@ -1356,17 +1345,16 @@
       "reset": "the enrage",
       "firstRowKey": "wardens-p3-enraged",
       "counts": {
-       "elderMaul": 4,
-       "ayak": 2
+       "elderMaul": 4
       }
      }
     ],
     "damage": {
      "wardens-p1": {
-      "zcb": 1
+      "zcb": 2
      },
      "wardens-p3": {
-      "zcb": 4
+      "zcb": 3
      }
     },
     "surge": false

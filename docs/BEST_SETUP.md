@@ -1597,6 +1597,16 @@ event would use better is gone (Ocellus: P2's 8 specs leave P3 2 Tonalztics spec
 carrier, the left claw none; ToB Sotetseg: maze 2 gets none); Solo pays the drains before damage specs. Every headline
 is slower: see PROGRESS phase 38g.
 
+**Fix round** (review + the user, 2026-10-28). The facts line counts Team specs up to 2 per party member (was 8: the
+Smorks read "not reached in 8 specs; 5 bring Tonalztics"), Solo over the weapons you bring (the order still lists every
+weapon). **Cap at what helps**: an event whose floor is out of reach at 95% (no team within the kit: Tekton, Olm's
+claws, the Smorks) gets d* = the lowest Defence the available specs reach at 95% (`defenceAtThreshold`), and spends
+only the fewest specs in drain order that still reach d* (`helpfulSpecs`; Team in whole carriers); the line reads
+"floor not reached in 8 specs; ~7 specs to Def 60 at 95%; 4 bring Elder maul for Def 60" and "(floor not reached, the
+team has ~4)". Ocellus P2 keeps its drain (the user). `kitCarriers`: Eye of Ayak competes in the carrier walk (was
+reserved first) and on equal coverage the kit with more carriers wins (spare party slots filled). Search, Solo: the
+short line reads "2 must land" (the best case) so it doesn't read as the 95% count. `greedyCarriers` deleted.
+
 ## Routes tab (phase 16: raid time model)
 
 **Phase 23: the tab is gone.** Its route table is now part of the Plan tab's results (the *planned* kit timed on every

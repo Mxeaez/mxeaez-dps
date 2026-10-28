@@ -424,15 +424,15 @@
  "kitMarginal": [
   {
    "slots": 8,
-   "seconds": 25.73397891700961
+   "seconds": 25.678752591817442
   },
   {
    "slots": 1,
-   "seconds": 20.9168615892213
+   "seconds": 20.291206591604464
   },
   {
    "slots": 1,
-   "seconds": 3.9338641403473957
+   "seconds": 3.6263997012479763
   },
   {
    "slots": 1,
@@ -440,7 +440,7 @@
   },
   {
    "slots": 2,
-   "seconds": 16.777898572567096
+   "seconds": 16.703840452983854
   }
  ],
  "slots": {
@@ -695,12 +695,13 @@
   },
   {
    "kind": "spec",
-   "label": "Tonalztics of Ralos",
+   "label": "Dragon claws",
    "item": {
-    "id": 28922,
-    "name": "Tonalztics of Ralos",
-    "version": "Charged",
-    "slot": "weapon"
+    "id": 13652,
+    "name": "Dragon claws",
+    "version": "",
+    "slot": "weapon",
+    "twoHanded": true
    }
   },
   {
@@ -710,20 +711,21 @@
  ],
  "specItems": [
   {
-   "id": 28922,
-   "name": "Tonalztics of Ralos",
-   "version": "Charged",
-   "slot": "weapon"
+   "id": 13652,
+   "name": "Dragon claws",
+   "version": "",
+   "slot": "weapon",
+   "twoHanded": true
   }
  ],
  "pinnedItems": [],
- "comparison": "253aadb8859bb5a4267d32837ff81f508a1e5fcd5582589cc661e5d4bacaa87b",
+ "comparison": "288f5d4794b4a7b0a30c90fa9c37f2843cf4f0ebb921352c439c71a49db2f3fb",
  "planned": 0,
  "rejected": [
   {
    "label": "Torva + Scythe (slash)",
    "kind": "addition",
-   "deltaSeconds": 0.4974058137132147,
+   "deltaSeconds": 0.4669127101698223,
    "deltaSlots": 2,
    "reason": "needs 2 more slots, 0 free",
    "weapons": [
@@ -733,7 +735,7 @@
   {
    "label": "Scythe of Vitur #5",
    "kind": "addition",
-   "deltaSeconds": 0.24493567741615152,
+   "deltaSeconds": 0.23602381736742473,
    "deltaSlots": 1,
    "reason": "needs 1 more slot, 0 free",
    "weapons": [
@@ -743,7 +745,7 @@
   {
    "label": "Scythe of Vitur #2",
    "kind": "addition",
-   "deltaSeconds": 0.17648820616392413,
+   "deltaSeconds": 0.17521896593018482,
    "deltaSlots": 3,
    "reason": "needs 3 more slots, 0 free",
    "weapons": [
@@ -755,9 +757,9 @@
   {
    "label": "Lighter kit: Torva helm + Oathplate + Scythe (slash) / Torva helm + Oathplate + Scythe (slash) + Salve amulet(ei) / Dawnbringer (Ancestral) / Tumeken's shadow (Ancestral) / Ascension crossbows switch +1 on Tumeken's shadow (Ancestral)",
    "kind": "alternative",
-   "deltaSeconds": -4.388954372866749,
+   "deltaSeconds": -4.333728047674583,
    "deltaSlots": -6,
-   "reason": "−6 slots for +4.4 s (each freed slot cost < 1 s)",
+   "reason": "−6 slots for +4.3 s (each freed slot cost < 1 s)",
    "weapons": [
     "Scythe of Vitur",
     "Scythe of Vitur",
@@ -767,21 +769,20 @@
    ]
   },
   {
-   "label": "melee + ranged: Torva helm + Oathplate + Scythe (slash) / Ascension crossbows + Onyx ascension bolts (e) / Scythe of Vitur #2",
+   "label": "melee + ranged: Torva helm + Oathplate + Scythe (slash) / Ascension crossbows + Onyx ascension bolts (e)",
    "kind": "alternative",
-   "deltaSeconds": -19.098773340267485,
-   "deltaSlots": -6,
-   "reason": "19.1 s slower",
+   "deltaSeconds": -22.827603128096086,
+   "deltaSlots": -10,
+   "reason": "22.8 s slower",
    "weapons": [
     "Scythe of Vitur",
-    "Ascension crossbows",
-    "Scythe of Vitur"
+    "Ascension crossbows"
    ]
   },
   {
    "label": "melee + magic: Torva helm + Oathplate + Scythe (slash) / Tumeken's shadow (Ancestral) / Scythe of Vitur #2 / Dawnbringer switch +5 on Torva helm + Oathplate + Scythe (slash) / Torva + Scythe (slash)",
    "kind": "alternative",
-   "deltaSeconds": -24.382600206179518,
+   "deltaSeconds": -24.383746926154288,
    "deltaSlots": -5,
    "reason": "24.4 s slower",
    "weapons": [
@@ -795,7 +796,7 @@
   {
    "label": "melee: Torva helm + Oathplate + Scythe (slash) / Torva + Scythe (slash) / Scythe of Vitur #2",
    "kind": "alternative",
-   "deltaSeconds": -79.84228413820756,
+   "deltaSeconds": -79.76937273859909,
    "deltaSlots": -14,
    "reason": "79.8 s slower",
    "weapons": [
@@ -805,27 +806,27 @@
    ]
   },
   {
-   "label": "ranged + magic: Ascension crossbows + diamond (e) (Masori) / Tumeken's shadow (Ancestral) / Dawnbringer switch +5 on Ascension crossbows + diamond (e) (Masori) / Ascension crossbows + Diamond ascension bolts (e) #2 / Ascension crossbows + Onyx ascension bolts (e) / Tumeken's shadow / Twisted bow (Masori)",
+   "label": "ranged + magic: Ascension crossbows + diamond (e) (Masori) / Tumeken's shadow (Ancestral) / Dawnbringer switch +5 on Ascension crossbows + diamond (e) (Masori) / Ascension crossbows + Diamond ascension bolts (e) #2 / Ascension crossbows + Onyx ascension bolts (e) / Twisted bow (Masori) / Tumeken's shadow",
    "kind": "alternative",
-   "deltaSeconds": -134.22533972900737,
+   "deltaSeconds": -130.4747055941371,
    "deltaSlots": -2,
-   "reason": "134.2 s slower",
+   "reason": "130.5 s slower",
    "weapons": [
     "Ascension crossbows",
     "Tumeken's shadow",
     "Dawnbringer",
     "Ascension crossbows",
     "Ascension crossbows",
-    "Tumeken's shadow",
-    "Twisted bow"
+    "Twisted bow",
+    "Tumeken's shadow"
    ]
   },
   {
    "label": "magic: Eye of Ayak / Dawnbringer / Tumeken's shadow (Ancestral) / Tumeken's shadow",
    "kind": "alternative",
-   "deltaSeconds": -307.6118521571515,
+   "deltaSeconds": -304.3610259977809,
    "deltaSlots": -15,
-   "reason": "307.6 s slower",
+   "reason": "304.4 s slower",
    "weapons": [
     "Eye of Ayak",
     "Dawnbringer",
@@ -836,9 +837,9 @@
   {
    "label": "ranged: Ascension crossbows + diamond (e) (Masori) / Twisted bow (Masori) / Ascension crossbows + Diamond ascension bolts (e) #2 / Ascension crossbows + Onyx ascension bolts (e)",
    "kind": "alternative",
-   "deltaSeconds": -312.0131987936468,
+   "deltaSeconds": -306.22216382079324,
    "deltaSlots": -11,
-   "reason": "312.0 s slower",
+   "reason": "306.2 s slower",
    "weapons": [
     "Ascension crossbows",
     "Twisted bow",
@@ -870,10 +871,19 @@
  "specs": {
   "mode": "auto",
   "drain": "team",
-  "bring": [
-   "tonalztics"
+  "bring": [],
+  "text": "Bring: Dragon claws",
+  "damage": [
+   "dragonClaws"
   ],
-  "text": "Bring: Tonalztics",
+  "items": [
+   {
+    "item": "Dragon claws",
+    "saved": 9.098641880146886,
+    "slots": 1,
+    "how": "a slot from the kit (re-optimised)"
+   }
+  ],
   "team": {
    "partySize": 4,
    "mages": 1,
@@ -884,16 +894,10 @@
      "carriers": 3,
      "drivers": [
       "Sotetseg (5.2 s)",
-      "Xarpus (4.2 s)",
+      "Xarpus (4.1 s)",
       "Pestilent Bloat (0.7 s)"
      ],
-     "lastSaved": 10.191902105989868
-    },
-    {
-     "weapon": "ayak",
-     "carriers": 1,
-     "drivers": [],
-     "lastSaved": 0
+     "lastSaved": 10.073972392603991
     }
    ],
    "perTarget": [
@@ -969,24 +973,25 @@
      "ayak": 0
     }
    ],
-   "text": "4-man: 3 Tonalztics, 1 Eye of Ayak",
+   "text": "4-man: 3 Tonalztics",
    "carriers": {
     "elderMaul": 0,
     "dwh": 0,
     "bgs": 0,
     "tonalztics": 3,
-    "ayak": 1
+    "ayak": 0
    },
    "mode": "auto"
   },
   "share": {
-   "weapon": "tonalztics",
-   "carry": true,
-   "reason": "Tonalztics (most needed: 3 carriers): its slot was worth only 0.1 s of gear",
-   "manual": false,
-   "slotValueSeconds": 0.062008437650092674
+   "weapon": null,
+   "carry": false,
+   "reason": "your spec energy goes to your Dragon claws specs — let a teammate carry Tonalztics (most needed: 3 carriers)",
+   "manual": false
   },
-  "notes": []
+  "notes": [
+   "Your spec bar goes to Dragon claws: 3 carriers (party − 1), 7:28.8 vs 7:37.9 if you carry a drain weapon instead."
+  ]
  },
  "ring": {
   "policy": "camp-one",
@@ -994,49 +999,47 @@
   "screened": [
    {
     "ring": "Ultor ring",
-    "seconds": 457.33526673532583,
+    "seconds": 448.8268072454743,
     "full": true
    },
    {
     "ring": "Bellator ring",
-    "seconds": 459.7107030765799,
+    "seconds": 451.073219549123,
     "full": true
    },
    {
     "ring": "Magus ring",
-    "seconds": 467.3343536835013,
-    "full": false,
-    "atLeast": 9.999086948175488
+    "seconds": 456.8656011125493,
+    "full": true
    },
    {
     "ring": "Ring of shadows",
-    "seconds": 467.4355082973137,
-    "full": false,
-    "atLeast": 10.100241561987843
+    "seconds": 458.0339909874666,
+    "full": true
    },
    {
     "ring": "Venator ring",
-    "seconds": 472.40097831220004,
+    "seconds": 471.66069997886297,
     "full": false,
-    "atLeast": 15.065711576874207
+    "atLeast": 0
    },
    {
     "ring": "Lightbearer",
-    "seconds": 472.4469512238509,
+    "seconds": 471.9408735638441,
     "full": false,
-    "atLeast": 15.111684488525043
+    "atLeast": 0
    }
   ]
  },
  "matrixDps": {
   "tob-maiden|": 14.786822332723174,
-  "tob-bloat|": 16.070564844808086,
+  "tob-bloat|": 16.22948828044227,
   "tob-bloat-restored|": 14.640253924100433,
-  "tob-nylo-boss-melee|": 13.854380648968483,
-  "tob-nylo-boss-ranged|": 14.786822332723174,
+  "tob-nylo-boss-melee|": 14.439339325267454,
+  "tob-nylo-boss-ranged|": 13.833909664269925,
   "tob-nylo-boss-magic|": 11.080277022028898,
   "tob-sotetseg|": 11.874661128869144,
-  "tob-xarpus|": 14.041567425384152,
+  "tob-xarpus|": 14.415940978215497,
   "tob-verzik-p1|": 4.809027777777778,
   "tob-verzik-p1|Shield (Dawnbringer with a teammate)": 4.0140762586084975,
   "tob-verzik-p2|": 9.807197807324965,
@@ -1047,16 +1050,16 @@
  "droppedPinned": [],
  "ownershipNotices": [],
  "searchRows": "3aaa899e5f75b9428064f66b33206015d781db822a9247af45dc5f2e498df7b5",
- "objectiveSeconds": 457.33526673532583,
+ "objectiveSeconds": 448.8268072454743,
  "fightSeconds": null,
  "plannedRoute": {
   "id": "tob-maiden>tob-bloat>tob-nylocas>tob-sotetseg>tob-xarpus>tob-verzik",
-  "seconds": 457.33526673532583,
+  "seconds": 448.8268072454743,
   "surgeDoses": null,
   "encounters": [
    {
     "id": "tob-maiden",
-    "seconds": 51.76906726646413,
+    "seconds": 50.67418771256529,
     "events": [
      {
       "npc": "The Maiden of Sugadinti",
@@ -1066,19 +1069,22 @@
       }
      }
     ],
-    "damage": {},
+    "damage": {
+     "maiden-30": {
+      "dragonClaws": 2
+     }
+    },
     "surge": false
    },
    {
     "id": "tob-bloat",
-    "seconds": 28.124812968540258,
+    "seconds": 27.088181838000317,
     "events": [
      {
       "npc": "Pestilent Bloat",
       "firstRowKey": "bloat-first",
       "counts": {
-       "tonalztics": 6,
-       "ayak": 2
+       "tonalztics": 6
       }
      },
      {
@@ -1088,12 +1094,16 @@
       "counts": {}
      }
     ],
-    "damage": {},
+    "damage": {
+     "bloat-rest": {
+      "dragonClaws": 2
+     }
+    },
     "surge": false
    },
    {
     "id": "tob-nylocas",
-    "seconds": 41.29377857638648,
+    "seconds": 40.0727920092742,
     "events": [
      {
       "npc": "Nylocas Vasilias",
@@ -1103,19 +1113,22 @@
       }
      }
     ],
-    "damage": {},
+    "damage": {
+     "vasilias-melee": {
+      "dragonClaws": 2
+     }
+    },
     "surge": false
    },
    {
     "id": "tob-sotetseg",
-    "seconds": 79.62687358130201,
+    "seconds": 78.04615080615837,
     "events": [
      {
       "npc": "Sotetseg",
       "firstRowKey": "sotetseg-1",
       "counts": {
-       "tonalztics": 4,
-       "ayak": 2
+       "tonalztics": 4
       }
      },
      {
@@ -1133,12 +1146,16 @@
       "counts": {}
      }
     ],
-    "damage": {},
+    "damage": {
+     "sotetseg-3": {
+      "dragonClaws": 2
+     }
+    },
     "surge": false
    },
    {
     "id": "tob-xarpus",
-    "seconds": 58.42029419857006,
+    "seconds": 57.22224862850442,
     "events": [
      {
       "npc": "Xarpus",
@@ -1148,12 +1165,16 @@
       }
      }
     ],
-    "damage": {},
+    "damage": {
+     "xarpus-p3": {
+      "dragonClaws": 2
+     }
+    },
     "surge": false
    },
    {
     "id": "tob-verzik",
-    "seconds": 198.10044014406293,
+    "seconds": 195.72324625097173,
     "events": [
      {
       "npc": "Verzik Vitur",
@@ -1161,7 +1182,14 @@
       "counts": {}
      }
     ],
-    "damage": {},
+    "damage": {
+     "verzik-p2": {
+      "dragonClaws": 2
+     },
+     "verzik-p3": {
+      "dragonClaws": 1
+     }
+    },
     "surge": false
    }
   ]

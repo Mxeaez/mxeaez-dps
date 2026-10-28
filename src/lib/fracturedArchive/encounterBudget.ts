@@ -9,7 +9,7 @@ import {
   DrainModel, PlannerWeapon, SPEC_WEAPONS, specAttempts,
 } from '@/lib/fracturedArchive/specs';
 import {
-  ayakOutcome, ayakSpecsToThreshold, bestAttempts, DEFAULT_FLOOR_THRESHOLD, DEFENCE_DRAIN_ORDER, DefenceDrainWeapon, drainOrder,
+  ayakOutcome, ayakSpecsToThreshold, DEFAULT_FLOOR_THRESHOLD, DEFENCE_DRAIN_ORDER, drainOrder, drainSequence, helpfulSpecs,
   MAX_FLOOR_SPECS, neededSpecs, recommendCarriers,
 } from '@/lib/fracturedArchive/teamSpecs';
 import {
@@ -363,10 +363,11 @@ export const budgetGroups = (cfg: SpecBudgetConfig): PoolGroup[] => {
  * one per phase that drains apply to; null = unknown). Per phase:
  * - **Team**: the fewest of the kit's carriers reaching P(floor from the first round) ≥ threshold (teamSpecs.ts
  *   `recommendCarriers` within `cfg.carriers`), each carrier making its first-round specs (2 for a 50% spec); when no team
- *   within them does, every carrier whose weapon can hit. Eye of Ayak: the fewest of its carriers reaching P(magic def 0)
+ *   within them does (phase 38g fix, the user: "cap at what helps"), the fewest of the kit's specs in drain order reaching
+ *   d* = the lowest Defence all of them reach at 95% (teamSpecs.ts `helpfulSpecs`), in whole carriers. Eye of Ayak: the fewest of its carriers reaching P(magic def 0)
  *   ≥ threshold, else all of them.
  * - **Solo**: the fewest of your specs reaching the floor at the threshold (teamSpecs.ts `neededSpecs` with your
- *   weapons, at most MAX_FLOOR_SPECS); unreachable: the best MAX_FLOOR_SPECS (`bestAttempts`). Eye of Ayak: the fewest
+ *   weapons, at most MAX_FLOOR_SPECS); unreachable: the fewest (in drain order) reaching d* (`helpfulSpecs`). Eye of Ayak: the fewest
  *   (≤ the specs asked for) reaching magic def 0 at the threshold, else all asked for.
  * Per weapon the most any phase of the event wants. A phase already at the floor (magic def ≤ 0) wants none.
  */
@@ -418,9 +419,16 @@ const phaseWantedCounts = (
       const rec = recommendCarriers(m, {
         partySize: Math.max(1, total), threshold, available: kit, bestOnly: true,
       });
-      const carriers: Partial<Record<DefenceDrainWeapon, number>> = rec.best?.carriers
-        ?? Object.fromEntries(DEFENCE_DRAIN_ORDER.filter((w) => m.canHit[w] && (kit[w] ?? 0) > 0).map((w) => [w, kit[w]!]));
-      DEFENCE_DRAIN_ORDER.forEach((w) => more(w, (carriers[w] ?? 0) * perCarrier(w)));
+      if (rec.best) {
+        const carriers = rec.best.carriers;
+        DEFENCE_DRAIN_ORDER.forEach((w) => more(w, (carriers[w] ?? 0) * perCarrier(w)));
+      } else {
+        // phase 38g fix (the user, 2026-10-28): no team within the kit reaches the floor at 95%: the fewest of the kit's
+        // specs (in drain order) reaching d* = the lowest Defence all of them reach at 95%, in whole carriers
+        const seq = drainSequence(drainOrder(m).map((x) => x.weapon), (w) => Math.floor(kit[w] ?? 0) * perCarrier(w));
+        const h = helpfulSpecs(m, seq, threshold);
+        DEFENCE_DRAIN_ORDER.forEach((w) => more(w, Math.ceil((h.counts[w] ?? 0) / perCarrier(w)) * perCarrier(w)));
+      }
     }
     const ayakKit = Math.floor(kit.ayak ?? 0);
     if (ayakKit > 0 && m.canHit.ayak && m.magicDef > 0) {
@@ -437,13 +445,8 @@ const phaseWantedCounts = (
     const weapons = yours.filter((w) => m.canHit[w]);
     if (weapons.length && m.def > m.floor) {
       const nd = neededSpecs(m, Object.fromEntries(weapons.map((w) => [w, MAX_FLOOR_SPECS])), threshold);
-      let counts = nd.defence;
-      if (!counts) {
-        const c: Partial<Record<DefenceDrainWeapon, number>> = {};
-        bestAttempts(m, weapons, MAX_FLOOR_SPECS, threshold).attempts.forEach((w) => { c[w] = (c[w] ?? 0) + 1; });
-        counts = c;
-      }
-      const got = counts;
+      // phase 38g fix: unreachable at 95%: the fewest specs (in drain order) reaching d* (helpfulSpecs)
+      const got = nd.defence ?? helpfulSpecs(m, drainSequence(drainOrder(m, weapons).map((x) => x.weapon), () => MAX_FLOOR_SPECS, MAX_FLOOR_SPECS), threshold).counts;
       DEFENCE_DRAIN_ORDER.forEach((w) => more(w, got[w] ?? 0));
     }
     const asked = Math.floor(cfg.solo?.ayak ?? 0);

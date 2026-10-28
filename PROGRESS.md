@@ -3,6 +3,43 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 38g fix round — review B1 / B2, the user's decisions (2026-10-28)
+
+Review of 7278baad: FAIL on two display bugs; the user decided three open points. One fix commit.
+
+- **B1**: the Team facts line counted at most 8 specs while carriers go to 2 × party (the Smorks read "not reached in 8
+  specs; 5 bring Tonalztics"): `neededSpecs(…, maxSpecs)`, Team max(8, 2 × party). The floor out of reach with `paid`
+  known: "(floor not reached, you have ~N)"; specs mixing more than a single / hammer + finisher team show their carriers.
+- **B2**: Solo counted the specs to the floor over every weapon (faSolo Ezekiel "~3", the maul's): now over the weapons
+  you bring (Tonalztics: "~5"); the order still lists all. Search, Solo: the short line reads "2 must land" (`mustLand`).
+- **Decision 1**: Ocellus P2 keeps its drain (no change).
+- **Decision 2, cap at what helps**: an event whose floor no kit team reaches at 95% gets d* = the lowest Defence the
+  available specs reach at 95% (`defenceAtThreshold`) and spends only the fewest specs in drain order still reaching d*
+  (`helpfulSpecs`; Team in whole carriers); was "every carrier". Hand-checked on Tekton (maul h ≈ 0.67): 6 specs → d* =
+  91 with 5; 4 specs → d* = 140 with 3. The line: "floor not reached in 8 specs; ~7 specs to Def 60 at 95%; 4 bring Elder
+  maul for Def 60".
+- **Decision 3, `kitCarriers`**: Eye of Ayak competes in the carrier walk (was reserved first); on equal coverage (the
+  user's intent: carriers must not crowd out your items) (a) a kit that leaves you out wins (new `party` option), (b) then
+  the higher worst-covered-boss P(floor), (c) only then more carriers. max-over-bosses is kept only when it doesn't make you a
+  carrier. `greedyCarriers` deleted.
+- **Headlines** (before 38g → 7278baad → fix): FA 21:40.7 → 22:07.3 → **22:07.3**; FA Solo 22:53.4 → 23:39.1 →
+  **23:39.1**; ToA 14:20.0 → 14:22.6 → **14:36.3**; CoX 7:06.9 → 7:27.3 → **7:24.0**; ToB 7:23.4 → 7:37.3 → **7:28.8**; FA
+  without Obligator / Ascension 24:40.3 → 25:17.4 → **25:11.1**. Why the carriers changed:
+  - FA: 2 Elder maul (Bork / Ezekiel) + 3 Tonalztics (Ocellus P3's last quadrant) = 5 of 6, unchanged.
+  - ToA: max over bosses 3 Ayak (Obelisk, > the 1 mage: covers nothing) + 2 maul + 2 Tonalztics + 2 BGS = 9 > 5 bars:
+    2 maul + 2 Tonalztics cover every boss, + 1 BGS raises the worst boss's P(floor) (rule b): 2 + 1 BGS + 2, no Ayak (was
+    2 maul + 1 Tonalztics + 1 Ayak); Wardens 340.2 → 353.0 s.
+  - CoX: 2 maul + 3 Tonalztics, the Ayak carrier no longer reserved; your bar is free again: Dragon claws + Zaryte crossbow
+    (7278baad: none, your share Tonalztics).
+  - ToB: 3 Tonalztics, no Ayak; Dragon claws again (7278baad: your share Tonalztics).
+  - FA without Obligator / Ascension: 2 maul + 4 Tonalztics = the party (no 5-carrier kit covers every boss), so you carry
+    (your share Tonalztics, no items; route via Bork + Smorks, kit + Tumeken's shadow, 0 free).
+- Pins: Phase38g (Tekton / B1 / B2 / kit tests), Phase29 (Ayak with mages), Phase36 (party 6 now carries by headcount),
+  `PHASE37_MEMO` re-measured (r27 unchanged), phase37/*.json + headlines.json re-pinned.
+- Run: fast suite 1609 passed (29 s); slow suites (CrossRaid Phase2 Phase3) green after the two pin updates; verifyAll 38g
+  29 30 31 32 33 34 35b OK (30 alone: its icon checks time out under parallel load); tsc, lint clean.
+- 38h scope (still seconds-based): the Solo bring-subset choice (`deltaSeconds`) and items vs one fewer carrier.
+
 ## Phase 38g — drains as facts: order to the floor, carriers by headcount (2026-10-28)
 
 Numbers phase (ROADMAP 38g; docs/BEST_SETUP.md *Drains as facts (phase 38g)*). No drain choice rests on seconds any more.

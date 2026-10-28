@@ -68,7 +68,7 @@ const SpecPlanPanel: React.FC<{
         {noSpecsNote && <span className="text-orange-700 dark:text-orange-300" data-testid="drain-no-specs">{noSpecsNote}</span>}
         {noDrains && <span className="text-orange-700 dark:text-orange-300" data-testid="drain-no-drains">{state.plan}</span>}
         {!noSpecsNote && !noDrains && (state.line
-          ? <DrainBrief items={state.line.items} result={briefResultText(state.line, state.line.items, true)} title={state.line.text} />
+          ? <DrainBrief items={state.line.items} result={briefResultText(state.line, state.line.items, true)} title={state.line.text} mustLand={drain === 'solo'} />
           : <span>{state.plan}</span>)}
         {/* the full text stays available (tooltip of the line, and here for tests / copy) */}
         <span className="sr-only" data-testid="drain-plan">{state.plan}</span>
@@ -78,7 +78,7 @@ const SpecPlanPanel: React.FC<{
       {surge?.line && !noSpecsNote && !noDrains && (
         <div className="flex flex-wrap items-center gap-2" data-testid="drain-surge" data-plan={surge.plan} title={`With a Surge potion dose (+${SURGE_DOSE_ENERGY}% spec energy): ${surge.plan}`}>
           <span className="text-gray-600 dark:text-gray-300">with a surge dose:</span>
-          <DrainBrief items={surge.line.items} result={briefResultText(surge.line, surge.line.items, true)} title={surge.line.text} />
+          <DrainBrief items={surge.line.items} result={briefResultText(surge.line, surge.line.items, true)} title={surge.line.text} mustLand />
         </div>
       )}
       <details data-testid="spec-plan-details">

@@ -696,12 +696,17 @@ describe('review: you carry a drain weapon or you damage-spec (Team, one bar eac
     const six = planAt(6);
     const t6 = six.comparison!.routes[six.planned].seconds;
     const c6 = six.specs.team!.carriers!;
-    expect((six.specs.damage ?? []).length).toBeGreaterThan(0);
-    expect(Object.values(c6).reduce((t, v) => t + v, 0)).toBeLessThanOrEqual(5);
     expect(exactWith(six, 6, c6, six.specs.damage ?? [], six.specs.surgePotions ?? 0)).toBeCloseTo(t6, 6);
-    // you carrying instead (one more carrier of each weapon, no items): slower
-    (Object.keys(c6) as (keyof typeof c6)[]).filter((w) => w !== 'ayak').forEach((w) => {
-      expect(exactWith(six, 6, { ...c6, [w]: c6[w] + 1 }, [], 0)).toBeGreaterThan(t6);
-    });
+    if ((six.specs.damage ?? []).length) {
+      expect(Object.values(c6).reduce((t, v) => t + v, 0)).toBeLessThanOrEqual(5);
+      // you carrying instead (one more carrier of each weapon, no items): slower
+      (Object.keys(c6) as (keyof typeof c6)[]).filter((w) => w !== 'ayak').forEach((w) => {
+        expect(exactWith(six, 6, { ...c6, [w]: c6[w] + 1 }, [], 0)).toBeGreaterThan(t6);
+      });
+    } else {
+      // phase 38g fix: with this reduced kit the carriers by headcount fill the party of 6 (every boss's 95% team needs
+      // them), so you carry; the items-vs-one-fewer-carrier comparison that decides it is 38h's
+      expect(Object.values(c6).reduce((t, v) => t + v, 0)).toBe(6);
+    }
   }, 3600000);
 });

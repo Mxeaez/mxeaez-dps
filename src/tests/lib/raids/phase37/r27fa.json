@@ -477,7 +477,7 @@
    "slot": "ring"
   }
  ],
- "comparison": "5a7d1eacb52d1685d70c014043c36488856820ee74430309c08f831bedaea1f1",
+ "comparison": "726f43fe13c1b2b7abb9dda15580e78b76068f73525599667d889b0cf241091a",
  "planned": 1,
  "rejected": [
   {
@@ -617,10 +617,10 @@
      "weapon": "tonalztics",
      "carriers": 2,
      "drivers": [
-      "Ocellus (70.0 s)",
+      "Ocellus (141 s)",
       "Archive Guardian (3.5 s)"
      ],
-     "lastSaved": 73.44114932949924
+     "lastSaved": 144.95405784689228
     }
    ],
    "perTarget": [

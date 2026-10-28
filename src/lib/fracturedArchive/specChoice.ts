@@ -352,46 +352,6 @@ export interface CarrierStep {
   seconds: number;
 }
 
-/**
- * The team's carriers, greedy: from no carriers, repeatedly add the one carrier (of any weapon) that lowers the route
- * time most, while that saves ≥ `minSaving` (default {@link SHARE_MAX_SLOT_SECONDS}); at most `perWeapon` of a weapon
- * and `total` in all (the party size). Deterministic (ties: the order of `weapons`).
- */
-export const greedyCarriers = (p: {
-  weapons: PlannerWeapon[],
-  total: number,
-  perWeapon?: number,
-  /** Review 2: per-weapon caps on top of `perWeapon` (Eye of Ayak: the mages in the party). */
-  caps?: Partial<CarrierCounts>,
-  time: (c: CarrierCounts) => number,
-  minSaving?: number,
-  start?: CarrierCounts,
-}): { carriers: CarrierCounts, steps: CarrierStep[], seconds: number } => {
-  // eslint-disable-next-line @typescript-eslint/no-use-before-define
-  const minSaving = p.minSaving ?? SHARE_MAX_SLOT_SECONDS;
-  let cur: CarrierCounts = { ...NO_CARRIERS, ...(p.start || {}) };
-  let t = p.time(cur);
-  const steps: CarrierStep[] = [];
-  const count = (c: CarrierCounts) => Object.values(c).reduce((a, v) => a + v, 0);
-  for (;;) {
-    if (count(cur) >= p.total) break;
-    let pick: { w: PlannerWeapon, c: CarrierCounts, t: number } | null = null;
-    for (const w of p.weapons) {
-      if (cur[w] >= Math.min(p.perWeapon ?? p.total, p.caps?.[w] ?? Infinity)) continue;
-      const c = { ...cur, [w]: cur[w] + 1 };
-      const tc = p.time(c);
-      if (!pick || tc < pick.t - EPS) pick = { w, c, t: tc };
-    }
-    if (!pick) break;
-    const saved = pick.t === t ? 0 : t - pick.t;
-    if (!(saved >= minSaving - EPS)) break;
-    cur = pick.c;
-    t = pick.t;
-    steps.push({ weapon: pick.w, saved, seconds: t });
-  }
-  return { carriers: cur, steps, seconds: t };
-};
-
 // --- Team: roles and your share ------------------------------------------------------------------------------------
 
 export interface RoleTarget {
@@ -436,7 +396,7 @@ export interface TeamRoles {
   text: string;
   /**
    * Phase 29 review: the carriers the Team drain state uses (rows = these): 'auto' = picked by the planner
-   * (`greedyCarriers`, `steps` = what each carrier saved in the order added), 'manual' = Advanced's counts.
+   * (phase 38g: by headcount, `kitCarriers`; `steps` unused since), 'manual' = Advanced's counts.
    */
   carriers?: CarrierCounts;
   mode?: 'auto' | 'manual';
@@ -534,58 +494,82 @@ export const teamRoles = (
 
 /**
  * Phase 38g: the kit's carriers by headcount, no seconds: per weapon the most any boss / phase needs (`teamRoles`: each
- * boss's fewest carriers at the threshold, `recommendCarriers`; Eye of Ayak capped at the mages). When those add up to
- * more than the party, the fewest carriers within the party (each weapon at most that maximum) that still give every
- * boss one of its teams at the threshold (`passingTeams`); when no such kit fits, the one covering the most bosses
- * (then fewer carriers, then the higher sum of the bosses' best P(floor) within it, then more of the weapon first in
- * ROLE_ORDER). `uncovered` = the bosses / phases left without a team at the threshold.
+ * boss's fewest carriers at the threshold, `recommendCarriers`; Eye of Ayak: the fewest Ayak carriers to magic def 0,
+ * capped at the mages). When those add up to more than the bars (`partySize`: the party, or the party − 1 when your bar
+ * is yours), or they make you a carrier, every kit within the bars (each weapon at most that maximum; fix round, the user
+ * 2026-10-28: Eye of Ayak competes in the same walk, not reserved first) is scored by: the needs it covers (a boss's
+ * Defence: one of its 95% teams fits, `passingTeams`; its magic defence: its Ayak carriers fit); then (the user: carriers
+ * must not crowd out your items) a kit that leaves you out (fewer carriers than `party`, the real party size); then the
+ * worst covered boss's best P(floor) within it (higher); only then more carriers (spare slots filled); then more of the
+ * weapon first in ROLE_ORDER. `uncovered` = the needs left without a team.
  */
 export const kitCarriers = (
   targets: RoleTarget[],
-  opts: { partySize: number, mages: number, threshold?: number },
+  opts: {
+    partySize: number, mages: number, threshold?: number,
+    /** The real party size (default `partySize`): a kit of this many carriers makes you one. */
+    party?: number,
+  },
 ): { carriers: CarrierCounts, uncovered: string[] } => {
   const threshold = opts.threshold ?? DEFAULT_FLOOR_THRESHOLD;
   const party = Math.max(1, Math.floor(opts.partySize));
-  const roles = teamRoles(targets, { partySize: party, mages: opts.mages, threshold });
+  const realParty = Math.max(1, Math.floor(opts.party ?? opts.partySize));
+  const leavesYou = (total: number) => (realParty > 1 && total < realParty ? 1 : 0);
+  const mages = Math.max(0, Math.floor(opts.mages));
+  const roles = teamRoles(targets, { partySize: party, mages, threshold });
   const max: CarrierCounts = { ...NO_CARRIERS };
-  roles.rows.forEach((r) => { max[r.weapon] = r.weapon === 'ayak' ? Math.min(r.carriers, Math.max(0, opts.mages)) : r.carriers; });
+  roles.rows.forEach((r) => { max[r.weapon] = r.weapon === 'ayak' ? Math.min(r.carriers, mages) : r.carriers; });
   const sum = (c: Partial<CarrierCounts>) => Object.values(c).reduce((t: number, v) => t + (v ?? 0), 0);
-  if (sum(max) <= party) return { carriers: max, uncovered: [] };
-  const ayak = Math.min(max.ayak, party);
-  const room = party - ayak;
-  const weapons: DefenceDrainWeapon[] = ['elderMaul', 'tonalztics', 'dwh', 'bgs'];
-  const bosses = targets.filter((t) => t.model.def > t.model.floor)
-    .map((t) => ({ label: t.label, teams: passingTeams(t.model, { partySize: Math.max(1, room), threshold }) }))
+  if (sum(max) <= party && (leavesYou(sum(max)) || realParty <= 1)) return { carriers: max, uncovered: [] };
+  const weapons: PlannerWeapon[] = ['elderMaul', 'tonalztics', 'dwh', 'bgs', 'ayak'];
+  const defence: DefenceDrainWeapon[] = ['elderMaul', 'tonalztics', 'dwh', 'bgs'];
+  const needs = targets.filter((t) => t.model.def > t.model.floor)
+    .map((t) => ({ label: t.label, teams: passingTeams(t.model, { partySize: party, threshold }) }))
     .filter((b) => b.teams.length);
-  const fits = (c: Partial<Record<DefenceDrainWeapon, number>>, k: Partial<Record<DefenceDrainWeapon, number>>) => weapons.every((w) => (c[w] ?? 0) <= (k[w] ?? 0));
-  let best: { k: Partial<Record<DefenceDrainWeapon, number>>, covered: number, total: number, p: number } | null = null;
-  const walk = (i: number, k: Partial<Record<DefenceDrainWeapon, number>>, total: number) => {
-    if (i === weapons.length) {
-      let covered = 0;
-      let p = 0;
-      bosses.forEach((b) => {
-        const within = b.teams.filter((c) => fits(c.carriers, k));
-        if (within.length) {
-          covered += 1;
-          p += Math.max(...within.map((c) => c.pFloor));
-        }
-      });
-      if (!best || covered > best.covered || (covered === best.covered && (total < best.total
-        || (total === best.total && p > best.p + 1e-12)))) {
-        best = {
-          k: { ...k }, covered, total, p,
-        };
+  const ayakNeeds = roles.perTarget.filter((n) => (n.ayak ?? 0) > 0 && (n.ayak ?? 0) <= mages)
+    .map((n) => ({ label: `${n.label} (Eye of Ayak)`, ayak: n.ayak as number }));
+  const fits = (c: Partial<Record<DefenceDrainWeapon, number>>, k: Partial<CarrierCounts>) => defence.every((w) => (c[w] ?? 0) <= (k[w] ?? 0));
+  type Best = { k: Partial<CarrierCounts>, covered: number, free: number, worst: number, total: number };
+  let best: Best | null = null;
+  const score = (k: Partial<CarrierCounts>, total: number) => {
+    let covered = 0;
+    let worst = 1;
+    needs.forEach((b) => {
+      const within = b.teams.filter((c) => fits(c.carriers, k));
+      if (within.length) {
+        covered += 1;
+        worst = Math.min(worst, Math.max(...within.map((c) => c.pFloor)));
       }
+    });
+    ayakNeeds.forEach((a) => { if ((k.ayak ?? 0) >= a.ayak) covered += 1; });
+    const free = leavesYou(total);
+    const b = best as Best | null;
+    const better = !b || covered > b.covered || (covered === b.covered && (free > b.free || (free === b.free
+      && (worst > b.worst + 1e-12 || (Math.abs(worst - b.worst) <= 1e-12 && total > b.total)))));
+    if (better) {
+      best = {
+        k: { ...k }, covered, free, worst, total,
+      };
+    }
+  };
+  const walk = (i: number, k: Partial<CarrierCounts>, total: number) => {
+    if (i === weapons.length) {
+      score(k, total);
       return;
     }
     const w = weapons[i];
     // more of the earlier weapon first, so that ties keep it
-    for (let n = Math.min(max[w], room - total); n >= 0; n--) walk(i + 1, { ...k, [w]: n }, total + n);
+    for (let n = Math.min(max[w], party - total); n >= 0; n--) walk(i + 1, { ...k, [w]: n }, total + n);
   };
   walk(0, {}, 0);
-  const k = (best as { k: Partial<Record<DefenceDrainWeapon, number>> } | null)?.k ?? {};
-  const carriers: CarrierCounts = { ...NO_CARRIERS, ...k, ayak };
-  return { carriers, uncovered: bosses.filter((b) => !b.teams.some((c) => fits(c.carriers, k))).map((b) => b.label) };
+  const k = (best as Best | null)?.k ?? {};
+  return {
+    carriers: { ...NO_CARRIERS, ...k },
+    uncovered: [
+      ...needs.filter((b) => !b.teams.some((c) => fits(c.carriers, k))).map((b) => b.label),
+      ...ayakNeeds.filter((a) => (k.ayak ?? 0) < a.ayak).map((a) => a.label),
+    ],
+  };
 };
 
 /** The weapon whose carrier count is hardest to fill (most carriers; ties: ROLE_ORDER), among `allowed`. */

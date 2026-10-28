@@ -93,8 +93,8 @@ export const cpuSeconds = <T>(f: () => T): { result: T, seconds: number } => {
  */
 export type MemoCounters = { encounterRuns: number, passRuns: number, encounterHits: number, passHits: number };
 export const PHASE37_MEMO: Record<string, MemoCounters> = {
-  // phase 38g (one fixed drain set per event: one model pass per solve instead of one per event option, so far fewer
-  // pass hits; carriers by headcount, no carrier greedy): every entry re-measured
+  // phase 38g + fix round (one fixed drain set per event: one model pass per solve instead of one per event option,
+  // so far fewer pass hits; carriers by headcount, no carrier greedy): every entry re-measured
   // phase 38c (Ocellus: P2 in the plan, three drain events; ToA: six routes, 9 encounters): r27fa was 1048 / 1126 /
   // 14200 / 175, r27toa 1009 / 1217 / 10261 / 317
   r27fa: {
@@ -121,23 +121,23 @@ export const PHASE37_MEMO: Record<string, MemoCounters> = {
   // 728535 / 30660; phase 38c (six routes: every path room before and after the supplies, 9 encounters): was 48604 /
   // 16842 / 915256 / 35030
   toa: {
-    encounterRuns: 159690, passRuns: 15836, encounterHits: 2402511, passHits: 144407,
+    encounterRuns: 148925, passRuns: 14881, encounterHits: 1997296, passHits: 134574,
   },
   tob: {
-    encounterRuns: 12945, passRuns: 12897, encounterHits: 1330161, passHits: 175,
+    encounterRuns: 81307, passRuns: 24069, encounterHits: 4006607, passHits: 57518,
   },
   // phase 38b (damage specs on the adds' rows; the plan brings 2 damage spec weapons and keeps 8 loadouts): was 43236 /
   // 39222 / 1122494 / 27158
   cox: {
-    encounterRuns: 20186, passRuns: 20099, encounterHits: 1475044, passHits: 318,
+    encounterRuns: 160802, passRuns: 21682, encounterHits: 4931388, passHits: 139912,
   },
   // phase 38c (Ocellus: P2 in the plan, three drain events): faSolo was 91778 / 38942 / 3464758 / 56722, faNotOwned
   // 58528 / 10474 / 1579384 / 59896
   faSolo: {
-    encounterRuns: 84175, passRuns: 41045, encounterHits: 3156921, passHits: 44550,
+    encounterRuns: 84288, passRuns: 39263, encounterHits: 3156808, passHits: 46445,
   },
   faNotOwned: {
-    encounterRuns: 56416, passRuns: 15410, encounterHits: 1547080, passHits: 42394,
+    encounterRuns: 9153, passRuns: 9086, encounterHits: 583727, passHits: 227,
   },
 };
 export const memoCountersWithin = (m: MemoCounters | undefined, want: MemoCounters | undefined): boolean => {
