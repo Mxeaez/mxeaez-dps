@@ -234,7 +234,8 @@ export const orderedDistribution = (
  * Tonalztics hits, BGS damage). A state reached in another order (Tonalztics before the maul) can leave a higher
  * Defence than its landed drains do in upstream's order (a flat drain before a % drain removes less); then the maul /
  * DWH specs stay and the flat part is re-split: as many of its Tonalztics hits as fit, the rest as BGS damage (a flat
- * Defence drain while the Defence stays above 0).
+ * Defence drain while the Defence stays above 0). "BGS damage" here stands for any flat Defence drain: it appears in the
+ * calculator's reductions even when nobody brings a BGS (review 38h-1).
  */
 export const reproducingCounts = (
   model: Pick<DrainModel, 'def' | 'floor' | 'magicLevel'>,
@@ -248,6 +249,7 @@ export const reproducingCounts = (
   const d1 = d;
   for (let i = 0; i < c.tonalztic; i++) d = applyOutcome(model, 'tonalztics', d, hit);
   d = Math.max(model.floor, d - c.bgs);
+  // d1 < def is unreachable for FA weapons: d1 >= def whenever a flat drain precedes a % one (review 38h-1)
   if (d === def || d1 < def) return c;
   const flat = d1 - def;
   const k = Math.trunc(model.magicLevel / 8);

@@ -23,7 +23,7 @@ Numbers phase (ROADMAP 38h-1; docs/BEST_SETUP.md *The bars pay the line's plan (
   at the drained rolls: P(floor) 28.5% → 51.4%, ranked Def 36 → 13). **faSolo 23:39.1 unchanged** (its phase37 fixture
   moved only the comparison hash and one DPS-matrix cell: Ocellus P2 Solo drain state 15.08 → 15.45 DPS, a fixed-length
   phase, so no seconds). **faNotOwned 25:11.1 → 24:40.2** (−30.9 s): at the drained rolls 2 Elder maul + 3 Tonalztics
-  carriers cover every boss (the Smorks: 97.7%, was below 95%, which needed a 4th Tonalztics carrier = you), so you are no
+  carriers cover every boss (the Smorks: 97.7% with every carrier's 2 specs; the budget's plan Elder maul ×3 → Tonalztics ×6 = 95.0%; was below 95%, which needed a 4th Tonalztics carrier = you), so you are no
   longer a carrier: you bring Crimson kisten, Zaryte crossbow, Burning claws and a surge potion; the kit drops Tumeken's
   shadow (4 free slots) and the fastest route takes Ezekiel instead of Bork + Smorks (AG 196.47 → 186.44, Moia 71.13 →
   65.32, Xarth 214.79 → 206.83, Ocellus 800.13 → 783.89). r27fa re-pinned by hand (1564.4 → 1562.5 s; memo 1168 / 1159 /

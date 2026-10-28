@@ -1678,7 +1678,13 @@ P(floor) 90%, Def 5; the line's "4 bring Tonalztics" is then marked short).
 **Interleaved orders** (T M T, scratch probe, every FA phase with drains, Team party 6 and Solo, every sequence of the
 plan's length and one fewer, interleaved included, at the drained rolls): no interleaved order gains anything (best
 any-order P(floor) = the block plan's, 0.000 points on all 23 phases × 2) and none reaches 95% with one spec fewer (closest:
-Ocellus P3 Q1-3 3 specs 91.9%, Bork 3 specs 90.1%). **Block orders suffice**; `bestDrainPlan`'s `expand` is unchanged.
+Ocellus P3 Q1-3 3 specs 91.9%, Bork 3 specs 90.1%). **Block orders suffice for the line's plans**; `bestDrainPlan`'s `expand` is unchanged. Review 38h-1: within a kit an
+interleaved order can gain (the Smorks with 2 maul + 3 Tonalztics carriers: T T T M M M T T T 97.5% vs the block plan's
+95.0%, same 9 specs, no seconds since both are above 95%; 8 specs 93.1% vs 89.7%, still short); reconsider `expand` for
+`kitDrainPlan` in 38h-2. Also noted: in the AG event the shield's Tonalztics ×4 are rolled at Grounded's hit chance
+(96.2%) for Grounded's state while thrown on the shield (94.3%, floors at 99.0%); both above 95%, ranked Def unchanged.
+Specs the bars can't pay are cut, not re-planned (Ocellus P3, the Smorks in fa: the cut equals the re-plan today, one
+weapon left); 38h-2 adds a two-weapon-remainder test.
 
 **Open.** The "needs N landed hits once 1 Elder maul spec lands" wording (`landedNeed`) still explains in upstream's
 order (maul first) while the plan sends Tonalztics first (AG Grounded); counts and chance agree. When the bars can't pay
