@@ -49,6 +49,10 @@ A numbers phase: change the code → `node scripts/pinHeadlines.mjs --full` → 
 `git diff src/tests/fixtures/headlines.json README.md` (every moved total explained in PROGRESS) → slow suites → the
 per-phase strings that moved.
 
+**Round 6 is FA only** (user, 2026-10-28; ROADMAP "Round 6"): explain and hand-check only the FA totals (fa, faSolo,
+faNotOwned). ToA / CoX / ToB must still plan with sane gear; list their moved totals in PROGRESS without explaining
+them. Reviewers recompute FA only.
+
 ## Running things
 
 - Fast suite: `node .yarn/releases/yarn-4.9.2.cjs test` (~1600 tests, slow ones skipped). One file: `... test Phase37b`.
