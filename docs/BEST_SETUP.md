@@ -1607,6 +1607,39 @@ team has ~4)". Ocellus P2 keeps its drain (the user). `kitCarriers`: Eye of Ayak
 reserved first) and on equal coverage the kit with more carriers wins (spare party slots filled). Search, Solo: the
 short line reads "2 must land" (the best case) so it doesn't read as the 95% count. `greedyCarriers` deleted.
 
+### One drain plan: the combination and order that land most often (phase 38g-2, FA)
+
+**Why.** The 38g line showed `drainOrder` (each weapon's average drop alone at the undrained Defence) next to a count
+from `neededSpecs`, which scores a combination in upstream order: the order on screen was not the order its chance
+belonged to. The user (2026-10-28): one recommendation, "just what to do to land it most often"; no spec-count table.
+
+**Plan** (teamSpecs.ts `bestDrainPlan`; drainLine.ts `drainFacts`): over the available Defence drain weapons (Solo: the
+ones you bring, ≤ `MAX_FLOOR_SPECS` = 8 specs; Team: every weapon, ≤ one carrier per party member, 2 specs per carrier
+for a 50% spec), every combination in every order of weapon blocks ("Elder maul ×3 → Tonalztics"): the fewest specs
+reaching the floor with P ≥ the threshold, among those the highest P(floor), then the lowest expected Defence, then fewer
+weapon changes, then the drain order. Floor out of reach: d* = the lowest Defence any such plan reaches at the threshold
+(the best mix; the 38g fix used the first weapon alone, drainLine.ts:135), then the fewest specs reaching d* at the
+threshold, chosen the same way. Line: "Drain: Tonalztics → Elder maul ×2 (floor 96%); 1 brings Tonalztics, 1 brings
+Elder maul" or "Drain: Elder maul ×7 → BGS (Def 60 95%; floor not reached in 8 specs)"; Eye of Ayak part unchanged (38h).
+
+**Each spec rolls at the Defence the earlier ones leave** (teamSpecs.ts `outcomesAt`): specs.ts keeps, per weapon whose
+spec accuracy is upstream's plain roll, the max attack roll and the defence roll per effective level (`DrainModel.accuracy`;
+roll = (Def + 9) × perLevel; kept only when it reproduces upstream's accuracy and, for Tonalztics, its 0 / 1 / 2-hit
+outcome exactly). Elder maul / DWH / BGS scale their landing outcomes by accuracy(Def) ÷ accuracy(undrained); Tonalztics
+rebuilds its two hits as upstream does (the second rolls against the Defence an accurate first hit leaves; P(an accurate
+hit deals damage) from the undrained outcome). Guaranteed hits (stunned Bork) keep their outcomes. Checked against
+upstream's spec calc at drained Defences (BGS-style reduction) for every FA boss to 1e-12 (Phase38g2.test.ts). This is
+what makes the order matter: Archive Guardian (Grounded) Tonalztics → maul ×2 lands 96%, maul ×2 → Tonalztics less.
+
+**Search** (exact, pruned): a breadth-first walk over block sequences, one spec per layer; the Defence distribution per
+node as an array (BGS damage ranges as runs, a difference array per step); nodes with the same counts and last weapon
+(the same continuations) drop a node whose Defence is stochastically higher than another's (a lower Defence lands the next
+spec at least as often and leaves a Defence no higher, so no continuation of it does better). ≤ ~100 ms per FA boss.
+
+**Not changed**: the time model, the spec budget (`eventWantedCounts`), the ranked Defence and the kit carriers still use
+the undrained rolls and upstream order (38h revalues drains in HP), so every headline is unchanged; the bars may pay more
+specs than the line's plan (Ocellus P2: the plan is 6 specs; the count at the undrained rolls was 8).
+
 ## Routes tab (phase 16: raid time model)
 
 **Phase 23: the tab is gone.** Its route table is now part of the Plan tab's results (the *planned* kit timed on every

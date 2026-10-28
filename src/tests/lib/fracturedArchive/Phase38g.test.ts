@@ -148,18 +148,18 @@ describe('specs to the floor at 95%, not if every spec lands (hand-computed, Eld
     expect(f.specs).not.toBeNull();
     expect(f.specs!).toBeLessThanOrEqual(12);
     expect(f.text).not.toMatch(/floor not reached/);
-    // the 8-spec Solo count does not reach it
-    expect(drainFacts(m, { drain: 'solo', partySize: 1 }).specs).toBeNull();
+    // phase 38g-2 (each spec at the Defence the earlier ones leave): Solo gets there in exactly 8 Tonalztics specs
+    expect(drainFacts(m, { drain: 'solo', partySize: 1 }).specs).toBe(8);
   });
 
-  test('fix round B2: Solo counts over the weapons you bring (FA Solo Ezekiel with Tonalztics: ~5 specs; every weapon: ~3)', () => {
+  test('fix round B2: Solo counts over the weapons you bring (FA Solo Ezekiel with Tonalztics: 4 specs (38g-2); every weapon: 3)', () => {
     const fa = raidConfig('fractured-archive');
     const a: BestSetupAssumptions = {
       ...fa.defaultAssumptions, partySize: 1, mySpecs: { ...fa.defaultAssumptions.mySpecs, tonalztics: true },
     };
     const ez = buildTargetMonster(findTarget('ezekiel'), undefined, 'solo', a).drain;
-    expect(ez.line!.facts!.text).toMatch(/, ~5 specs to the floor$/);
-    expect(ez.line!.facts!.text).toMatch(/^Drain: Elder maul \(lands /); // the order still lists every weapon
+    // phase 38g-2: one plan over the weapons you bring (was "~5 specs" with every hit chance at the undrained Defence)
+    expect(ez.line!.facts!.text).toMatch(/^Drain: Tonalztics ×4 \(floor \d+%\)$/);
     expect(drainFacts(modelOf('fractured-archive', 'ezekiel', undefined, a), { drain: 'solo', partySize: 1 }).specs).toBe(3);
   });
 });

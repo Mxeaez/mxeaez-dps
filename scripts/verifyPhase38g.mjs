@@ -1,6 +1,6 @@
 /**
- * Phase 38g UI check (not part of the Jest run): the drain facts line ("Drain: Tonalztics (lands 95%) → Elder maul (87%) →
- * …, ~2 specs to the floor; 1 bring Tonalztics for 95%", drainLine.ts `drainFacts`) is the same on Plan, Search and
+ * Phase 38g UI check (not part of the Jest run): the drain facts line (phase 38g-2 wording: "Drain: Tonalztics ×2 (floor
+ * 98%); 1 brings Tonalztics", drainLine.ts `drainFacts`) is the same on Plan, Search and
  * Summary, in Team and in Solo; a drain the bars can't pay for at 95% is marked ("needs 4 specs, you have ~2").
  *
  * Usage (dev server running): node scripts/verifyPhase38g.mjs [baseUrl]
@@ -62,7 +62,7 @@ const main = async () => {
   rows.forEach((r) => r.facts.forEach((f) => console.log(`     ${r.id}: ${f.shown}`)));
   check(rows.length > 0 && rows.every((r) => r.facts.length > 0 && r.facts.every((f) => /^Drain: /.test(f.text))), 'Plan: every briefing row has a drain facts line');
   const xarth = rows.find((r) => r.id === 'xarth')?.facts[0];
-  check(!!xarth && /^Drain: Tonalztics \(lands \d+%\)( → [A-Za-z ]+ \(\d+%\))*, ~\d+ specs? to the floor; \d+ bring /.test(xarth.text), `Plan Xarth: "${xarth?.text}"`);
+  check(!!xarth && /^Drain: Tonalztics ×\d+ \(floor \d+%\); \d+ brings? Tonalztics$/.test(xarth.text), `Plan Xarth: "${xarth?.text}"`);
   await shot(page, 'plan');
 
   // --- Search (Team, Xarth)
@@ -103,7 +103,7 @@ const main = async () => {
   await waitSearch(page);
   const solo = await facts(page.locator('[data-testid="spec-plan"]'));
   console.log(`     Search Solo Bork: ${solo[0]?.shown}`);
-  check(solo.length === 1 && /^Drain: Elder maul \(lands \d+%\)/.test(solo[0].text) && !/ bring /.test(solo[0].text), 'Search Solo: the facts line without carriers');
+  check(solo.length === 1 && /^Drain: Elder maul ×\d+ \(floor \d+%\)$/.test(solo[0].text) && !/ bring /.test(solo[0].text), 'Search Solo: the facts line without carriers');
   check(/^needs 4 specs, you have ~\d$/.test(solo[0]?.short ?? '') || solo[0]?.short === '', `Search Solo: the "needs …, you have ~N" mark when the bar can't pay ("${solo[0]?.short}")`);
   await shot(page, 'search-solo');
 

@@ -3,6 +3,40 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 38g-2 - one drain plan: the combination and order that land most often (FA, 2026-10-28)
+
+Numbers phase, display only (ROADMAP 38g-2; docs/BEST_SETUP.md *One drain plan (phase 38g-2, FA)*). No headline moved.
+
+- **Bug**: the 38g line showed `drainOrder` (each weapon alone at the undrained Defence) with a count `neededSpecs` scored
+  in upstream order. Now ONE plan (teamSpecs.ts `bestDrainPlan`): every combination in every weapon-block order, the
+  fewest specs reaching the floor at 95%, then the highest P(floor); the shown order is the one whose chance is shown.
+  "to Def d*" uses the best mix over all plans (was the first weapon alone, drainLine.ts:135).
+- **Order matters** because each spec now rolls at the Defence the earlier ones leave (`outcomesAt`; specs.ts
+  `DrainModel.accuracy` = attack roll + defence roll per level, kept only where it reproduces upstream exactly; Tonalztics'
+  two hits rebuilt as upstream does). Matches upstream's spec calc at drained Defences to 1e-12 on every FA boss.
+- **FA lines** (Team, default party): AG Grounded "Tonalztics → Elder maul ×2 (floor 96%); 1 brings Tonalztics, 1 brings
+  Elder maul" (maul ×2 → Tonalztics lands less); AG Flying "Tonalztics ×4 (floor 99%)"; Bork (every armour phase) "Elder
+  maul ×4 (floor 97%); 2 bring Elder maul"; Smorks "Tonalztics ×8 (floor 96%); 4 bring Tonalztics" (was ~9 / floor not
+  reached Solo); Ezekiel "Elder maul ×3 (floor 97%)"; Xarth "Tonalztics ×2 (floor 98%)"; Ocellus P1 "Tonalztics ×2 (floor
+  99%)"; P2 "Elder maul ×4 → Tonalztics ×2 (floor 97%)" (was ~8 specs); P3 Q1-3 "Elder maul ×3 → Tonalztics (floor 98%)",
+  last quadrant (Deflect Melee) "Tonalztics ×5 (floor 97%)".
+- **Not changed** (38h): the time model, `eventWantedCounts`, the ranked Defence and kit carriers keep the undrained rolls,
+  so the bars may pay more than the line's plan. `pinHeadlines --full`: headlines.json / README unchanged (FA 22:07.3, FA
+  Solo 23:39.1, FA not owned 25:11.1); phase37/fa, faSolo, faNotOwned and r27fa (by hand) changed only their `comparison`
+  hash: the drain facts text inside the route comparison (checked: the comparison JSON with `facts` stripped hashes the same
+  at HEAD and here). ToA / CoX / ToB fixtures stay frozen (their facts text moved too; round 7 re-pins them).
+- Tests: Phase38g2.test.ts (outcomes vs upstream per FA boss; per boss AG, Bork, Smorks, Ezekiel, Xarth, Ocellus P1-P3
+  with P(floor) hand-built from upstream hit chances at each drained Defence or an independent enumeration; AG and Ocellus
+  P3 where the order changes the chance; d* best mix on a hand toy (M M T → 23 vs maul ×3 → 28) and the Smorks with maul +
+  BGS). Phase38g / Phase35b wording updated. verifyPhase38g.mjs regexes updated; new verifyPhase38g2.mjs (screenshot
+  docs/screenshots/phase38g2-search.png).
+- Run: fast suite 1376 passed / 196 skipped (123 s; this machine was ~4× slower today: Phase28 alone 20 s here and at HEAD);
+  FA slow (`CrossRaid Phase2 Phase3`) 25 suites green, 12 min 10 s; verifyAll 38g 38g2 OK (38g2's grammar fixed once for
+  the Eye of Ayak suffix and "none of your drain weapons can hit"); tsc, lint clean.
+- Open (38h): the Search / Plan drain brief above the line still shows the drain state's own specs (AG Grounded: "Tonalztics
+  4 hits → Def 156") while the line recommends "Tonalztics → Elder maul ×2"; making the bars pay the line's plan moves
+  headlines and belongs with the HP valuation.
+
 ## Phase 38f-2 - FA only: the other raids hidden, their tests / pins / verify steps gated (2026-10-28)
 
 Tooling + UI, no src/lib calculation change (ROADMAP 38f-2; round 6 is Fractured Archive only).

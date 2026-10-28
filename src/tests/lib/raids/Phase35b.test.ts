@@ -146,7 +146,7 @@ describe('FA (presets kit, 2 Elder maul + 2 Tonalztics carriers)', () => {
     // phase 38g: the drain facts under the spec lines, one per NPC (the same line as Search / Summary)
     const facts = Array.from(borkRow.querySelectorAll('[data-testid="drain-facts"]'));
     expect(facts.map((f) => f.getAttribute('data-text'))).toEqual(defRow.facts.map((f) => f.facts.text));
-    expect(facts[0].textContent!.startsWith('Bork: Drain: Elder maul (lands ')).toBe(true);
+    expect(facts[0].textContent!.startsWith('Bork: Drain: Elder maul ×')).toBe(true); // phase 38g-2: the plan, in send order
   });
 });
 

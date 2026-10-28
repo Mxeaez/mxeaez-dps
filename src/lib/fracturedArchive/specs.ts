@@ -6,6 +6,7 @@ import { INITIAL_MONSTER_INPUTS } from '@/lib/Monsters';
 import { scaleMonster } from '@/lib/MonsterScaling';
 import { WEAPON_SPEC_COSTS } from '@/lib/Equipment';
 import PlayerVsNPCCalc from '@/lib/PlayerVsNPCCalc';
+import BaseCalc from '@/lib/BaseCalc';
 import { getDefenceFloor } from '@/lib/scaling/DefenceReduction';
 import { getCombatStylesForCategory } from '@/utils';
 import { canWeaponHit, HitStyle, minimalPlayer } from '@/lib/fracturedArchive/hittable';
@@ -193,6 +194,9 @@ export interface SpecProfile {
   style: string;
   /** Upstream's spec accuracy (`getHitChance()` of the spec calc). */
   accuracy: number;
+  /** Phase 38g-2: the spec calc's max attack roll and the NPC's defence roll (`getMaxAttackRoll` / `getNPCDefenceRoll`). */
+  attackRoll: number;
+  defenceRoll: number;
   /** P(the drain lands) per attempt: accurate roll (maul, accursed), damage > 0 (DWH, BGS, Ayak), ≥1 damaging hit (Tonalztics). */
   hitChance: number;
   maxHit: number;
@@ -329,6 +333,8 @@ const profileFromCalc = (weapon: SpecWeapon, player: Player, monster: Monster): 
     label: def.label,
     energy: def.energy,
     accuracy: spec.getHitChance(),
+    attackRoll: spec.getMaxAttackRoll(),
+    defenceRoll: spec.getNPCDefenceRoll(),
     hitChance,
     maxHit: spec.getDistribution().getMax(),
     expectedDamage,
@@ -416,7 +422,73 @@ export interface DrainModel {
   /** Expected damage per attempt (misses included). */
   expectedDamage: Record<PlannerWeapon, number>;
   outcomes: Record<PlannerWeapon, SpecOutcome[]>;
+  /**
+   * Phase 38g-2: per Defence drain weapon whose accuracy follows the plain roll (upstream `getNormalAccuracyRoll(atk,
+   * (Def + 9) × perLevel)`), so its outcomes can be rebuilt at a drained Defence (teamSpecs.ts `outcomesAt`); weapons
+   * left out (guaranteed hits, special rolls, can't hit) keep `outcomes` at every Defence. Undefined on hand-built models.
+   */
+  accuracy?: Partial<Record<PlannerWeapon, DrainAccuracy>>;
 }
+
+/** Phase 38g-2: what rebuilds a spec's outcomes at another Defence ({@link DrainModel.accuracy}). */
+export interface DrainAccuracy {
+  /** Upstream's spec accuracy at the undrained Defence. */
+  acc: number;
+  /** Max attack roll of the spec. */
+  atk: number;
+  /** NPC defence roll per effective Defence level (the roll = (Def + 9) × perLevel). */
+  perLevel: number;
+  /** Tonalztics: P(an accurate hit deals damage), from its 2-hit outcome at the undrained Defence. */
+  damaging?: number;
+}
+
+/** Phase 38g-2: upstream's accuracy roll of `a` at Defence `def` (BaseCalc.getNormalAccuracyRoll). */
+export const accuracyAt = (a: Pick<DrainAccuracy, 'atk' | 'perLevel'>, def: number): number => BaseCalc
+  .getNormalAccuracyRoll(a.atk, (def + 9) * a.perLevel);
+
+/**
+ * Phase 38g-2: a charged Tonalztics spec's hits at Defence `def`, as upstream builds them: the second hit rolls against
+ * the Defence an accurate first hit leaves (`defAfterHit`), else against `def`; a hit drains if it deals damage
+ * (P = `damaging` given accurate).
+ */
+export const tonalzticOutcomes = (a: DrainAccuracy, def: number, defAfterHit: number): SpecOutcome[] => {
+  const r = a.damaging ?? 1;
+  const a1 = accuracyAt(a, def);
+  const a2 = accuracyAt(a, defAfterHit);
+  const p2 = a1 * r * a2 * r;
+  const p1 = a1 * r * (1 - a2 * r) + a1 * (1 - r) * a2 * r + (1 - a1) * a1 * r;
+  return [{ p: 1 - p1 - p2, hits: 0, damage: 0 }, { p: p1, hits: 1, damage: 0 }, { p: p2, hits: 2, damage: 0 }];
+};
+
+const DRAIN_ACCURACY_WEAPONS: PlannerWeapon[] = ['elderMaul', 'dwh', 'tonalztics', 'bgs'];
+
+/** Phase 38g-2: {@link DrainModel.accuracy} of the profiles, only where the rebuilt outcomes match upstream's exactly. */
+const drainAccuracy = (
+  profiles: Record<PlannerWeapon, SpecProfile>,
+  def: number,
+  floor: number,
+  magicLevel: number,
+): Partial<Record<PlannerWeapon, DrainAccuracy>> => {
+  const out: Partial<Record<PlannerWeapon, DrainAccuracy>> = {};
+  DRAIN_ACCURACY_WEAPONS.forEach((w) => {
+    const p = profiles[w];
+    const perLevel = p.defenceRoll / (def + 9);
+    if (!p.canHit || p.accuracy <= 0 || p.accuracy >= 1 || !Number.isInteger(perLevel)) return;
+    const a: DrainAccuracy = { acc: p.accuracy, atk: p.attackRoll, perLevel };
+    if (Math.abs(accuracyAt(a, def) - p.accuracy) > 1e-12) return;
+    if (w === 'tonalztics') {
+      const after = Math.max(floor, def - Math.trunc(magicLevel / 8));
+      const p2 = p.outcomes.find((o) => o.hits === 2)?.p ?? 0;
+      const damaging = Math.sqrt(p2 / (p.accuracy * accuracyAt(a, after)));
+      if (!(damaging > 0 && damaging <= 1 + 1e-12)) return;
+      const rebuilt = tonalzticOutcomes({ ...a, damaging }, def, after);
+      if (![0, 1, 2].every((h) => Math.abs((p.outcomes.find((o) => o.hits === h)?.p ?? 0) - rebuilt[h].p) < 1e-9)) return;
+      a.damaging = damaging;
+    }
+    out[w] = a;
+  });
+  return out;
+};
 
 const undrainedMonster = (m: Monster): Monster => ({
   ...m,
@@ -442,5 +514,6 @@ export const drainModel = (monster: Monster, assumptions: BestSetupAssumptions =
     hitChance: pick((p) => p.hitChance),
     expectedDamage: pick((p) => p.expectedDamage),
     outcomes: pick((p) => p.outcomes),
+    accuracy: drainAccuracy(profiles, scaled.skills.def, getDefenceFloor(scaled), scaled.skills.magic),
   };
 };

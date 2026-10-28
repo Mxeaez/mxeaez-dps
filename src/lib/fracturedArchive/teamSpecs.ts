@@ -1,7 +1,8 @@
 import { INITIAL_MONSTER_INPUTS } from '@/lib/Monsters';
 import { DefenceReductions } from '@/lib/fracturedArchive/drains';
 import {
-  DrainModel, energyBudget, PlanLabel, planLabel, planLabelText, PlannerWeapon, SpecOutcome, specAttempts,
+  accuracyAt, DrainModel, energyBudget, PlanLabel, planLabel, planLabelText, PlannerWeapon, SpecOutcome, specAttempts,
+  tonalzticOutcomes,
 } from '@/lib/fracturedArchive/specs';
 
 /**
@@ -15,7 +16,8 @@ import {
  * reproduce it exactly in the calculator. Eye of Ayak is a separate state (Magic defence bonus, {@link ayakOutcome}).
  *
  * Hit chances are taken against the undrained boss (specs.ts), so follow-up specs are modelled a bit less accurate
- * than they are (conservative).
+ * than they are (conservative). Phase 38g-2: the drain line's plan ({@link bestDrainPlan}) rolls each spec at the
+ * Defence the earlier ones leave ({@link outcomesAt}); the time model and the spec budget still use the undrained rolls.
  *
  * Which Defence the DPS ranking uses ({@link rankedDefence}): the floor if P(floor) ≥ threshold (default 95%), else
  * the reachable Defence nearest to the expected Defence. Same for Ayak: Magic defence 0 if
@@ -686,6 +688,279 @@ export const helpfulSpecs = (
 /** Phase 38g fix: each weapon of `weapons` (in this order) `per` times, at most `max` attempts in all. */
 export const drainSequence = (weapons: DefenceDrainWeapon[], per: (w: DefenceDrainWeapon) => number, max = Infinity): DefenceDrainWeapon[] => weapons
   .flatMap((w) => Array(Math.max(0, Math.floor(per(w)))).fill(w) as DefenceDrainWeapon[]).slice(0, max);
+
+// --- phase 38g-2: the drain plan (combination + order) that lands most often --------------------------------------
+
+/**
+ * Phase 38g-2: one spec's outcomes at the current Defence `def`: rebuilt from the weapon's accuracy roll
+ * (`DrainModel.accuracy`, specs.ts) where it has one: Elder maul / DWH / BGS scale their landing outcomes by
+ * accuracy(def) ÷ accuracy(undrained); Tonalztics rolls its two hits (the second against the Defence an accurate first
+ * hit leaves). Otherwise (guaranteed hits, hand-built models) the undrained outcomes.
+ */
+export const outcomesAt = (
+  model: Pick<DrainModel, 'def' | 'floor' | 'magicLevel' | 'outcomes' | 'accuracy'>,
+  weapon: DefenceDrainWeapon,
+  def: number,
+): SpecOutcome[] => {
+  const a = model.accuracy?.[weapon];
+  if (!a || def === model.def) return model.outcomes[weapon];
+  if (weapon === 'tonalztics') {
+    return tonalzticOutcomes(a, def, Math.max(model.floor, def - Math.trunc(model.magicLevel / 8)));
+  }
+  const k = accuracyAt(a, def) / a.acc;
+  const landing = model.outcomes[weapon].filter((o) => o.hits > 0).map((o) => ({ ...o, p: o.p * k }));
+  const miss = 1 - landing.reduce((t, o) => t + o.p, 0);
+  return [{ p: miss, hits: 0, damage: 0 }, ...landing];
+};
+
+/** Phase 38g-2: one block of a drain plan: `count` specs of `weapon` in a row. */
+export interface DrainStep {
+  weapon: DefenceDrainWeapon;
+  count: number;
+}
+
+export interface DrainPlan {
+  /** The specs in the order to send them, weapon by weapon (e.g. Elder maul ×1 → Tonalztics ×2). */
+  steps: DrainStep[];
+  counts: Partial<Record<DefenceDrainWeapon, number>>;
+  specs: number;
+  /** True: `target` is the floor; false: the floor is out of reach at the threshold and `target` = d*. */
+  floor: boolean;
+  /** The Defence aimed at: the floor, or d* = the lowest Defence any plan of at most `maxSpecs` reaches at the threshold. */
+  target: number;
+  /** P(Defence ≤ target) after the plan, each spec at the Defence the previous ones leave ({@link outcomesAt}). */
+  p: number;
+  expectedDef: number;
+}
+
+export interface DrainPlanOptions {
+  /** The Defence drain weapons available (those that can't hit are skipped). */
+  weapons: DefenceDrainWeapon[];
+  /** The most specs in all. */
+  maxSpecs: number;
+  threshold?: number;
+  /** Team: the most carriers, each making `specAttempts(100, energy)` specs of one weapon (2 for a 50% spec). */
+  maxCarriers?: number;
+}
+
+const planMemo = new Map<string, DrainPlan | null>();
+
+/**
+ * Phase 38g-2 (the user, 2026-10-28: "just what to do to land it most often"): the combination of the available drain
+ * specs and the order to send them that reaches the floor with P ≥ threshold in the fewest specs, and among those the
+ * highest P(floor) (then the lowest expected Defence, then fewer weapon changes, then the drain order). Each spec rolls
+ * at the Defence the earlier ones leave (`outcomesAt`), so the order matters: a low-accuracy spec lands more often after
+ * an Elder maul. Orders are weapon blocks ("Elder maul → Tonalztics ×2"), every order of every combination. When no plan
+ * of at most `maxSpecs` reaches the floor at the threshold (the user: "cap at what helps"), d* = the lowest Defence any
+ * of them reaches at the threshold, and the plan is the fewest specs reaching d* at the threshold, chosen the same way.
+ * null when no weapon can hit; `specs` 0 when the boss is already at the floor or nothing lowers the Defence at the
+ * threshold.
+ */
+export const bestDrainPlan = (
+  model: Pick<DrainModel, 'def' | 'floor' | 'magicLevel' | 'outcomes' | 'accuracy' | 'canHit' | 'hitChance' | 'energy'>,
+  opts: DrainPlanOptions,
+): DrainPlan | null => {
+  const key = JSON.stringify([model, opts]);
+  if (planMemo.has(key)) return planMemo.get(key)!;
+  const threshold = opts.threshold ?? DEFAULT_FLOOR_THRESHOLD;
+  const weapons = drainOrder(model, opts.weapons).map((x) => x.weapon).filter((w) => model.hitChance[w] > 0);
+  const empty = (target: number): DrainPlan => ({
+    steps: [], counts: {}, specs: 0, floor: model.def <= model.floor, target, p: 1, expectedDef: model.def,
+  });
+  let out: DrainPlan | null;
+  if (!weapons.length) out = null;
+  else if (model.def <= model.floor) out = empty(model.floor);
+  else {
+    const per = (w: DefenceDrainWeapon) => Math.max(1, specAttempts(100, model.energy[w]));
+    // a node = one block sequence; states[d] = P(Defence d)
+    type Node = { steps: DrainStep[], counts: number[], last: number, states: Float64Array };
+    const size = model.def + 1;
+    // one spec of weapon wi from Defence d, as runs of Defences lo..hi each reached with P p (BGS: one run per equal-P damage range)
+    type Run = { lo: number, hi: number, p: number };
+    const cache = new Map<number, Run[]>();
+    const at = (wi: number, d: number): Run[] => {
+      const k = wi * 100000 + d;
+      let runs = cache.get(k);
+      if (!runs) {
+        const byDef = new Map<number, number>();
+        outcomesAt(model, weapons[wi], d).forEach((o) => {
+          if (o.p > 0) {
+            const nd = applyOutcome(model, weapons[wi], d, o);
+            byDef.set(nd, (byDef.get(nd) ?? 0) + o.p);
+          }
+        });
+        runs = [];
+        [...byDef.entries()].sort((x, y) => x[0] - y[0]).forEach(([nd, q]) => {
+          const r = runs![runs!.length - 1];
+          if (r && r.hi === nd - 1 && r.p === q) r.hi = nd;
+          else runs!.push({ lo: nd, hi: nd, p: q });
+        });
+        cache.set(k, runs);
+      }
+      return runs;
+    };
+    const carriersOk = (c: number[]) => opts.maxCarriers === undefined
+      || c.reduce((t, n, wi) => t + Math.ceil(n / per(weapons[wi])), 0) <= opts.maxCarriers;
+    const rank = (s: DrainStep[]) => s.flatMap((x) => Array(x.count).fill(weapons.indexOf(x.weapon)) as number[]);
+    const earlier = (a: number[], b: number[]) => {
+      for (let j = 0; j < Math.min(a.length, b.length); j++) if (a[j] !== b[j]) return a[j] < b[j];
+      return false;
+    };
+    const cdf = (s: Float64Array) => {
+      const c = new Float64Array(size);
+      let t = 0;
+      for (let d = 0; d < size; d++) {
+        t += s[d];
+        c[d] = t;
+      }
+      return c;
+    };
+    // the next layer: every node + one spec (extend the last block, or a block of a weapon not used yet); within nodes
+    // with the same counts and last weapon (the same continuations) a node whose Defence is stochastically higher than
+    // another's is dropped: every continuation of it reaches each Defence no more often (a lower Defence lands the
+    // next spec at least as often and leaves a Defence no higher)
+    const expand = (layer: Node[]): Node[] => {
+      const groups = new Map<string, Node[]>();
+      layer.forEach((node) => {
+        const options = [...(node.last >= 0 ? [node.last] : []), ...weapons.map((_, wi) => wi).filter((wi) => !node.counts[wi])];
+        options.forEach((wi) => {
+          const counts = node.counts.map((n, j) => (j === wi ? n + 1 : n));
+          if (!carriersOk(counts)) return;
+          const last = node.steps[node.steps.length - 1];
+          const w = weapons[wi];
+          const steps = wi === node.last
+            ? [...node.steps.slice(0, -1), { weapon: w, count: last.count + 1 }]
+            : [...node.steps, { weapon: w, count: 1 }];
+          // difference array: each run adds P to every Defence lo..hi
+          const diff = new Float64Array(size + 1);
+          for (let d = model.floor; d < size; d++) {
+            const p = node.states[d];
+            if (p > 0) {
+              at(wi, d).forEach((r) => {
+                diff[r.lo] += p * r.p;
+                diff[r.hi + 1] -= p * r.p;
+              });
+            }
+          }
+          const states = new Float64Array(size);
+          let run = 0;
+          for (let d = 0; d < size; d++) {
+            run += diff[d];
+            states[d] = run > 1e-15 ? run : 0; // drops the round-off the differences leave
+          }
+          const group = `${counts.join(',')}|${wi}`;
+          const g = groups.get(group);
+          const child = {
+            steps, counts, last: wi, states,
+          };
+          if (g) g.push(child);
+          else groups.set(group, [child]);
+        });
+      });
+      const kept: Node[] = [];
+      groups.forEach((g) => {
+        if (g.length === 1) {
+          kept.push(g[0]);
+          return;
+        }
+        const cdfs = g.map((x) => cdf(x.states));
+        // a dominates b: P(Def ≤ x) at least b's for every x (equal: the earlier in the drain order is kept)
+        const dominates = (a: number, b: number) => {
+          let strict = false;
+          for (let d = 0; d < size; d++) {
+            if (cdfs[a][d] < cdfs[b][d] - 1e-12) return false;
+            if (cdfs[a][d] > cdfs[b][d] + 1e-12) strict = true;
+          }
+          return strict || earlier(rank(g[a].steps), rank(g[b].steps));
+        };
+        g.forEach((x, i) => {
+          if (!g.some((_, j) => j !== i && dominates(j, i))) kept.push(x);
+        });
+      });
+      return kept;
+    };
+    const best = (nodes: Node[], target: number) => {
+      let b: { node: Node, p: number, ed: number } | undefined;
+      nodes.forEach((node) => {
+        let p = 0;
+        let ed = 0;
+        for (let d = model.floor; d < size; d++) {
+          const q = node.states[d];
+          if (d <= target) p += q;
+          ed += q * d;
+        }
+        const wins = !b || p > b.p + 1e-12 || (Math.abs(p - b.p) <= 1e-12 && (ed < b.ed - 1e-9 || (Math.abs(ed - b.ed) <= 1e-9
+          && (node.steps.length < b.node.steps.length
+            || (node.steps.length === b.node.steps.length && earlier(rank(node.steps), rank(b.node.steps)))))));
+        if (wins) b = { node, p, ed };
+      });
+      return b;
+    };
+    const quantile = (s: Float64Array) => {
+      let cum = 0;
+      for (let d = 0; d < size; d++) {
+        cum += s[d];
+        if (cum >= threshold - 1e-12) return d;
+      }
+      return model.def;
+    };
+    const planOf = (b: { node: Node, p: number, ed: number }, floor: boolean, target: number): DrainPlan => {
+      const counts: Partial<Record<DefenceDrainWeapon, number>> = {};
+      b.node.steps.forEach((s) => { counts[s.weapon] = s.count; });
+      return {
+        steps: b.node.steps, counts, specs: countsTotal(counts), floor, target, p: b.p, expectedDef: b.ed,
+      };
+    };
+    const root = (): Node[] => {
+      const states = new Float64Array(size);
+      states[model.def] = 1;
+      return [{
+        steps: [], counts: weapons.map(() => 0), last: -1, states,
+      }];
+    };
+    out = null;
+    // pass 1: the fewest specs reaching the floor at the threshold (and d* on the way)
+    let dStar = model.def;
+    let layer = root();
+    for (let n = 1; n <= opts.maxSpecs && !out && layer.length; n++) {
+      layer = expand(layer);
+      const b = best(layer, model.floor);
+      if (b && b.p >= threshold - 1e-12) out = planOf(b, true, model.floor);
+      for (const node of layer) dStar = Math.min(dStar, quantile(node.states));
+    }
+    if (!out && dStar >= model.def) out = empty(model.def);
+    // pass 2 (floor out of reach): the fewest specs reaching d* at the threshold
+    layer = out ? [] : root();
+    for (let n = 1; n <= opts.maxSpecs && !out && layer.length; n++) {
+      layer = expand(layer);
+      const b = best(layer, dStar);
+      if (b && b.p >= threshold - 1e-12) out = planOf(b, false, dStar);
+    }
+  }
+  if (planMemo.size >= 20000) planMemo.clear();
+  planMemo.set(key, out);
+  return out;
+};
+
+/** Phase 38g-2: the plan's P(Defence ≤ `target`) for these steps in this order (each spec at the Defence left; {@link outcomesAt}). */
+export const planChance = (
+  model: Pick<DrainModel, 'def' | 'floor' | 'magicLevel' | 'outcomes' | 'accuracy'>,
+  steps: DrainStep[],
+  target = model.floor,
+): number => {
+  let states = new Map<number, number>([[model.def, 1]]);
+  steps.forEach(({ weapon, count }) => {
+    for (let i = 0; i < count; i++) {
+      const next = new Map<number, number>();
+      states.forEach((p, d) => outcomesAt(model, weapon, d).forEach((o) => {
+        const nd = applyOutcome(model, weapon, d, o);
+        next.set(nd, (next.get(nd) ?? 0) + p * o.p);
+      }));
+      states = next;
+    }
+  });
+  return [...states.entries()].filter(([d]) => d <= target).reduce((t, [, p]) => t + p, 0);
+};
 
 /**
  * Phase 29 review 2: one weapon of a Team drain line. Phase 32 wording (drainLine.ts `neededText`): "needs 4 landed
