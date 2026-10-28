@@ -1,5 +1,9 @@
 # Best setup view (phase 8; Search tab phase 9; default tab + icons phase 12; search-based Summary phase 13; spec & drain model phase 14; Routes tab phase 16; Plan tab phase 17; raid tabs + ToA phase 18; CoX phase 19; ToB phase 20; per-raid Plan defaults + dedupe phase 21; UI cleanup phase 23; "Items I don't own" phase 26; potions from the kit + ring policy phase 27; Plan tab polish phase 30; quiver ammo + heart as magic's potion phase 31; zero-value switch items + drain-line units phase 32; specs follow the plan + one drain line per encounter phase 33; readability phase 34; damage specs, surge potion and one spec budget per encounter phase 36; remembered settings and the headline fixture phase 37b)
 
+> **Totals in this file are history** (phase 38f): the number a phase measured, as of that phase. The current exact totals,
+> kits, carriers and per-encounter seconds are `src/tests/fixtures/headlines.json` (written by `scripts/pinHeadlines.mjs`;
+> the README table is generated from it). Tests pin the gear exactly and times only within 1% per raid / 2% per encounter.
+
 `/best-setup` (dev: http://localhost:3001/osrs-dps/best-setup; "Best setup" button in the top bar, "Calculator" leads
 back). Tabs, in order: **Search** (the default, phase 9/12, see the end of this file) searches a pool of end-game items
 per slot for setups no preset has and runs automatically; **Plan** (phase 17, see *Plan tab* below) finds the worn set
@@ -927,7 +931,7 @@ User review (2026-10-24): "very easy to get the information you are looking for,
 provide useful information we should hide it." The default view of every tab now shows only what a raider acts on —
 what to wear, what to spec, how many, how long — as icons and bold numbers; every explanation, intermediate number and
 alternative is in a tooltip or a section closed by default. **No number changed** and no pinned string changed except
-the drain-line wording below (Phase34.test.ts pins the FA Team plan — 21:44.4, 6 free — and every string that moved;
+the drain-line wording below (Phase34.test.ts pins the FA Team plan's free slots and every string that moved;
 `verifyPhase34.mjs` compares the page). Screenshots: `docs/screenshots/phase34-before-*.png` /
 `phase34-after-*.png` (Search, Plan, Summary at 1400 px; the Plan at 390 px), `phase34-after-plan-details.png` (every
 section open).
@@ -1123,7 +1127,7 @@ per-NPC lines the planner already computed.
 **Checks**: `src/tests/lib/raids/Phase35b.test.ts` (phaseNpc groupings; FA Bork + Smorks → two events named Bork /
 Smorks with Def 180 / Def 5, each the NPC's own phase line; the Wear per NPC; AG one event, two parts; Dagon'hai one
 event; Ocellus one NPC; Sotetseg three reset events "× 3"; Kephri / Wardens / Olm / Vanguards; toy with two NPCs, an
-add and a reset; render: "Bork:" / "Smorks:" spec and Wear lines; slow: FA 21:44.4 and the Bork + Smorks line).
+add and a reset; render: "Bork:" / "Smorks:" spec and Wear lines; slow: the FA headline and the Bork + Smorks line).
 Phase34.test / verifyPhase33 / 34 re-pinned to the per-NPC Bork + Smorks line. Screenshots
 `docs/screenshots/phase35b-bork-smorks.png` (Obligator not owned: both spec lines and both Wear lines),
 `phase35b-bork-smorks-phone.png`, `phase35b-cox.png`, `phase35b-toa.png`.
@@ -1338,12 +1342,12 @@ has its own); the Search tab's Specs box computes its rows in the page, once per
 
 | Plan (defaults, Team, camp one ring) | Node, phase 36 | Node, phase 37 | Browser, phase 36 | Browser, phase 37 |
 |---|---|---|---|---|
-| FA 21:07.7 | 29.3 s | 21.6 s | ~38 s | 19.1 s |
-| ToA 14:07.8 | 64.6 s | 35.6 s | ~51 s | 16.5 s |
-| ToB 7:23.4 | 64.3 s | 25.1 s | ~72 s | 21.2 s |
-| CoX 7:08.7 | 122.5 s | 62.5 s | ~112 s | 38.3 s |
-| FA Solo, party 1 (21:59.0) | 81.9 s | 41.5 s | | |
-| FA without Obligator / Ascension (24:11.9) | 140.0 s | 61.2 s | | |
+| FA | 29.3 s | 21.6 s | ~38 s | 19.1 s |
+| ToA | 64.6 s | 35.6 s | ~51 s | 16.5 s |
+| ToB | 64.3 s | 25.1 s | ~72 s | 21.2 s |
+| CoX | 122.5 s | 62.5 s | ~112 s | 38.3 s |
+| FA Solo, party 1 | 81.9 s | 41.5 s | | |
+| FA without Obligator / Ascension | 140.0 s | 61.2 s | | |
 
 (Dev machine: 20 hardware threads; Node = one thread, no helpers; browser = verifyPhase21, 8 helpers. The phase 36
 browser times are PROGRESS's. On a 4-core machine the browser gets 3 helpers and less of the parallel gain.)

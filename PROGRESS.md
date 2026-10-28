@@ -3,6 +3,43 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 38f — pin gear, not seconds; the fast suite fast again (2026-10-27)
+
+Tooling only: no src/lib change; `node scripts/pinHeadlines.mjs --full --check` unchanged (240 s, no change).
+
+- **Fast suite** (`yarn test`, 20 cores, coverage off): **683 s -> 42 s** (1619 -> 1596 tests run, 45 skipped). The long pole was
+  Phase35 "team briefing per-boss minimum..." (635 s alone, 681 s in the suite); now the longest file is Phase37 (40 s).
+- **Moved to the slow gate** (`RUN_SLOW_TESTS=1`; helper `src/tests/utils/slow.ts`: `slowTest`, `slowDescribe`, `rowsFor`,
+  `withinPct`): Phase35 the ToA reduced plan (camp one ring, every route; a fast copy plans one route with ring switches
+  and manual specs / carriers, 3 s, same rule: no add in the spec plan or briefing); Phase27 caches, ToA potions, camp-one /
+  camp-Lightbearer / pinned-Lightbearer / switch-reproduces for ToA, CoX, ToB (FA stays fast); Phase28 the fragments /
+  ownership / ring-policy cache misses (Zeal stays); Phase29 the three Team / Solo "planner decides" plans (36 / 13 / 9 s);
+  Phase30 CoX pickaxe plan and carrier steps; Phase31 CoX heart case; Phase33 Solo chips = Bring; Phase37 the four
+  parallel-helper plans; Phase37c the two CLI smokes and the brute-force smoke; CrossRaid the ToA and CoX reduced plans.
+- **Fast coverage kept**: every rule has a unit case or one fast plan: adds (Phase35 first describes + the fast one-route plan),
+  rings (FA camp-one / camp-Lightbearer / switch), carriers (Phase29 toy greedy, `teamRoles`, `assignMe`), Ayak thresholds
+  (`ayakSpecsToThreshold`, `searchSpecSubsets` toys), chips = Bring (`withPlanSpecs` cases + Team plan), cache keys
+  (Zeal fast, Planner.test cached rows). **Left without a fast plan**: the cache-key misses for elemental fragments, ownership
+  and the ring policy (Phase28, slow only); the ToA / CoX / ToB per-raid ring plans (FA covers the rule); carrier steps
+  re-timed on the returned kit (Phase30, slow only; Phase29 checks the steps against the briefing fast); CoX's Dragon pickaxe
+  plan (CoX.test.ts keeps a reduced CoX plan with a pickaxe).
+- **Pins**: gear exact (kit, loadout per boss, items, spec weapons, carriers, route), times within 1% per raid and 2% per
+  encounter. `src/tests/utils/headlines.ts` `headlineGear` / `headlineTimeProblems`; the slow headline tests
+  (`crossRaidHeadlines.ts`, Phase31) compare gear exactly and times to the fixture within tolerance, and no longer compare the
+  plan to `phase37/*.json` (that exact gate is `pinHeadlines --full --check`; the fast reduced plans in Phase37 keep their
+  bit-identical JSON). Loosened: CrossRaid per-encounter preset pins (0.5 s -> 2%), Phase27 switch totals (0.05 s -> 1%), Phase29
+  / 32 / 34 / 35 / 35b slow totals (exact -> 1%), Phase34 briefing rows (seconds -> 2% of the fixture's encounters; kit
+  marginals, alternatives and carrier steps without seconds), Phase37c CLI regex, verify scripts (`headlineClose` /
+  `durationClose` in scripts/headlines.mjs, 1%; history clauses with old totals removed from messages), BEST_SETUP (a note
+  that its totals are history; the timing table without totals).
+- **Stale slow tests fixed** (they had not run since 38c): Phase29 / 32 / 34 / 35b followed the 38a-38e model (Solo 1388.56 s,
+  Solo manual 1415.95 s, the user's plan 25:58.7, Team carriers 1 Elder maul + 4 Tonalztics, Bork + Smorks "Elder maul 2 specs
+  + Tonalztics 1 hit -> Def 184", Ocellus three events, Bring + Crimson kisten).
+- **Stale verify scripts fixed** (failing at HEAD since 38c-38e): 23 (ToA has six routes), 29 / 31 / 32 / 33 / 34 now read carriers, Bring, free slots and the magic-loadout flag from `headlines.json` (`headlineOf` in scripts/headlines.mjs) instead of literals; 33 / 34 briefing strings updated to the 38e output.
+- **Also**: `docs/screenshots/*-review*.png` in .gitignore (files kept); the two modified phase7 screenshots restored.
+- Verified: fast suite 42 s green; slow suites (CrossRaid, Phase2x / 3x) green once; `pinHeadlines --full --check` no change;
+  verifyAll 21 23 26 29 30 31 32 33 34 35 35b 37; tsc, lint clean.
+
 ## Phase 38e fix — carrier swaps dropped (2026-10-27)
 
 - **Review (2026-10-27): pass.** retime gap 0 on all six; kit brute force gap 0 (FA small pool; FA without Obligator / Ascension with its own probe, plus a joint kit x item-set search whose best, +1 slot for 0.92 s, fails the 1 s/slot rule). Two low findings: the beam's dedupe key ignores free slots (search incompleteness, no instance found; left, 38g / 38h replace the model); the two slow tests accepted an overfull plan, now assert overfull false and cells <= slots (Phase38e 9/9 with RUN_SLOW_TESTS).

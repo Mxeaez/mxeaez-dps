@@ -179,3 +179,25 @@ export const withReadmeTable = (readme: string, table: string): string => {
   if (a < 0 || b < a) throw new Error('README has no headline block');
   return readme.slice(0, a) + table + readme.slice(b + README_END.length);
 };
+
+/**
+ * Phase 38f: pin gear exactly, times loosely. `headlineGear` is a headline without its times (route, ring, kit, carriers,
+ * Bring, items, your share, surge doses, free slots: asserted exactly); `headlineTimeProblems` lists what is off by more
+ * than 1% in total or 2% in an encounter (the exact seconds are the fixture's, re-pinned by `scripts/pinHeadlines.mjs`).
+ */
+export const headlineGear = (h: Headline): Omit<Headline, 'total' | 'seconds' | 'encounters'> & { encounterIds: string[] } => {
+  const {
+    total, seconds, encounters, ...gear
+  } = h;
+  return { ...gear, encounterIds: Object.keys(encounters) };
+};
+
+export const headlineTimeProblems = (actual: Headline, expected: Headline): string[] => {
+  const out: string[] = [];
+  if (Math.abs(actual.seconds - expected.seconds) > expected.seconds * 0.01) out.push(`total ${actual.total} vs ${expected.total} (> 1%)`);
+  Object.entries(expected.encounters).forEach(([id, s]) => {
+    const got = actual.encounters[id];
+    if (got === undefined || Math.abs(got - s) > s * 0.02) out.push(`${id} ${got} vs ${s} (> 2%)`);
+  });
+  return out;
+};

@@ -6,7 +6,7 @@ import {
   BestSetupAssumptions, DEFAULT_ASSUMPTIONS, PRESETS,
 } from '@/lib/fracturedArchive/presets';
 import {
-  createKitEvaluator, encounterTime, EncounterTime, formatDuration, presetKitLoadout, raidTimeAssumptionsFrom,
+  createKitEvaluator, encounterTime, EncounterTime, presetKitLoadout, raidTimeAssumptionsFrom,
 } from '@/lib/fracturedArchive/raidTime';
 import { briefingRows, phaseNpc, wearGroups } from '@/lib/fracturedArchive/briefing';
 import { resolvePresetEquipment } from '@/lib/fracturedArchive/bestSetup';
@@ -283,9 +283,9 @@ describe('toy: two NPCs and a reset', () => {
       carrierMode: 'auto',
     } as PlanInputs);
     const planned = r.comparison!.routes[r.planned];
-    expect(formatDuration(planned.seconds)).toBe(headline('fa').total); // phase 37b: the fixture (phase 36 review: 21:07.7)
+    expect(Math.abs(planned.seconds - headline('fa').seconds)).toBeLessThanOrEqual(headline('fa').seconds * 0.01); // phase 37b: the fixture (phase 36 review: 21:07.7)
     const row = briefingRows(planned.encounters, 'team').find((x) => x.id === 'bork-smorks')!;
     // phase 36: one spec budget for both NPCs; review: the planner's 2 Elder maul + 3 Tonalztics carriers (you damage-spec)
-    expect(row.specsText).toBe('Bork: Elder maul 2 specs → Def 180 · Smorks: Elder maul 1 spec + Tonalztics 9 hits → Def 13');
+    expect(row.specsText).toBe('Bork: Elder maul 2 specs + Tonalztics 1 hit → Def 184 · Smorks: Tonalztics 9 hits → Def 13');
   });
 });

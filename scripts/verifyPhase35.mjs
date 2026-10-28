@@ -11,7 +11,7 @@
  * Screenshots docs/screenshots/phase35-*.png.
  */
 import { chromium } from '@playwright/test';
-import { headlineTotal } from './headlines.mjs';
+import { headlineClose } from './headlines.mjs';
 import { openSections } from './phase34Sections.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
@@ -78,7 +78,7 @@ const main = async () => {
   await page.locator('[data-testid="plan-view"]').waitFor({ timeout: 30000 });
   await waitPlan(page);
   const total = await text(page.locator('[data-testid="plan-total"]'));
-  check(total === headlineTotal('toa'), `ToA plan total ${total} (phase 35: 14:12.1; phase 34: 14:04.1)`);
+  check(headlineClose(total, 'toa'), `ToA plan total ${total}`);
   const rows = await page.locator('[data-testid="plan-briefing-row"]').evaluateAll((els) => els.map((e) => ({
     id: e.dataset.encounter,
     specs: e.dataset.specs,

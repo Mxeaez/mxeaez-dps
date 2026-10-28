@@ -1,7 +1,7 @@
 import { describe, expect, test } from '@jest/globals';
 import { generateEmptyPlayer } from '@/state';
 import {
-  compareRoutes, createKitEvaluator, formatDuration, KitLoadout, raidTimeAssumptionsFrom, specBudgetFrom,
+  compareRoutes, createKitEvaluator, KitLoadout, raidTimeAssumptionsFrom, specBudgetFrom,
 } from '@/lib/fracturedArchive/raidTime';
 import { budgetGroups } from '@/lib/fracturedArchive/encounterBudget';
 import {
@@ -9,12 +9,10 @@ import {
 } from '@/lib/fracturedArchive/planner';
 import { applyLoadoutToPlayer } from '@/lib/fracturedArchive/loadout';
 import { RaidConfig, raidConfig } from '@/lib/raids';
-import {
-  cpuSeconds, memoWithin, normalised, phase37Fixture,
-} from '@/tests/utils/phase37';
+import { cpuSeconds, memoWithin } from '@/tests/utils/phase37';
 import { planFor } from '@/tests/utils/crossRaid';
 import {
-  FA_NOT_OWNED, headline, HeadlineName, headlineOf,
+  FA_NOT_OWNED, headline, headlineGear, HeadlineName, headlineOf, headlineTimeProblems,
 } from '@/tests/utils/headlines';
 
 // Phase 37: CrossRaid's slow headline tests, moved here unchanged so two test files (CrossRaidHeadlines.test.ts: FA,
@@ -143,14 +141,14 @@ export const headlineTests = (ids: string[], notOwned: boolean): void => (proces
     test.each(cases)('%s: %s', (id, text, seconds) => {
       const raid = raidConfig(id as RaidConfig['id']);
       const { result: res, seconds: cpu } = cpuSeconds(() => planFor(raid, false));
-      expect(normalised(res)).toEqual(phase37Fixture(PHASE37_FIXTURE[id][0]));
+      // phase 38f: gear exact, times within 1% / 2% (the exact record is headlines.json + `pinHeadlines --full --check`)
       expect(memoWithin(res, PHASE37_FIXTURE[id][0])).toBe(true);
       expect(cpu).toBeLessThan(PHASE37_FIXTURE[id][1]);
       const total = res.comparison!.routes[res.planned].seconds;
-      expect(Math.abs(total - seconds)).toBeLessThanOrEqual(1e-6);
-      expect(formatDuration(total)).toBe(text);
+      expect(Math.abs(total - seconds)).toBeLessThanOrEqual(seconds * 0.01);
       // phase 37b: the whole headline (kit, ring, carriers, items, your share, encounters) = the fixture
-      expect(headlineOf(HEADLINE_NAME[id], res)).toEqual(headline(HEADLINE_NAME[id]));
+      expect(headlineGear(headlineOf(HEADLINE_NAME[id], res))).toEqual(headlineGear(headline(HEADLINE_NAME[id])));
+      expect(headlineTimeProblems(headlineOf(HEADLINE_NAME[id], res), headline(HEADLINE_NAME[id]))).toEqual([]);
       // phase 28: independent re-computation, the camped ring on every loadout, within 28 slots
       expect(Math.abs(recomputed(raid, res) - total)).toBeLessThan(1e-6);
       expect(res.kit.every((c) => c.equipment.ring?.name === res.ring.ring)).toBe(true);
@@ -174,13 +172,12 @@ export const headlineTests = (ids: string[], notOwned: boolean): void => (proces
       const raid = raidConfig('fractured-archive');
       const { result: res, seconds: cpu } = cpuSeconds(() => planFor(raid, false, FA_NOT_OWNED));
       // phase 37: bit-identical to phase 36, within a CPU budget (see PHASE37_FIXTURE)
-      expect(normalised(res)).toEqual(phase37Fixture('faNotOwned'));
       expect(memoWithin(res, 'faNotOwned')).toBe(true);
       expect(cpu).toBeLessThan(400);
       const total = res.comparison!.routes[res.planned].seconds;
-      expect(formatDuration(total)).toBe(ONLY_OWNED_HEADLINE[0]);
-      expect(Math.abs(total - ONLY_OWNED_HEADLINE[1])).toBeLessThanOrEqual(1e-6);
-      expect(headlineOf('faNotOwned', res)).toEqual(headline('faNotOwned'));
+      expect(Math.abs(total - ONLY_OWNED_HEADLINE[1])).toBeLessThanOrEqual(ONLY_OWNED_HEADLINE[1] * 0.01);
+      expect(headlineGear(headlineOf('faNotOwned', res))).toEqual(headlineGear(headline('faNotOwned')));
+      expect(headlineTimeProblems(headlineOf('faNotOwned', res), headline('faNotOwned'))).toEqual([]);
       expect(Math.abs(recomputed(raid, res) - total)).toBeLessThan(1e-6);
       expect(res.kit.some((c) => Object.values(c.equipment).some((it) => it && FA_NOT_OWNED.includes(it.name)))).toBe(false);
       expect(total).toBeGreaterThan(HEADLINES[0][2]);

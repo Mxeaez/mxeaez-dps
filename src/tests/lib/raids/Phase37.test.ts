@@ -2,6 +2,7 @@ import { describe, expect, test } from '@jest/globals';
 import React from 'react';
 import { TextDecoder, TextEncoder } from 'util';
 import { existsSync } from 'fs';
+import { slowTest } from '@/tests/utils/slow';
 import { join } from 'path';
 import { generateEmptyPlayer } from '@/state';
 import { TraceMemo, TraceRecorder } from '@/lib/fracturedArchive/traceMemo';
@@ -417,7 +418,8 @@ const parallelCases: [string, 'team' | 'solo', 'auto' | 'manual', boolean, numbe
   ['Solo, planner decides (subset of the first screen), 6 helpers', 'solo', 'auto', true, 6],
 ];
 describe('camp-one rings in parallel helpers (the page workers): the same plan', () => {
-  test.each(parallelCases.filter((c) => !c[3] || process.env.RUN_SLOW_TESTS))('FA reduced, %s', async (_, drain, mode, __, slots) => {
+  // phase 38f: all four are slow now (each plans the reduced FA twice with six ring runs; 32 s the cheapest)
+  slowTest.each(parallelCases)('FA reduced, %s', async (_, drain, mode, __, slots) => {
     const [inputs0, tuning] = reducedCase('fractured-archive');
     const inputs: PlanInputs = {
       ...inputs0, ringPolicy: 'camp-one', drain, specMode: mode, carrierMode: mode,

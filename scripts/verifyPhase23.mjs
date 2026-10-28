@@ -14,7 +14,7 @@
  * Screenshots docs/screenshots/phase23-*.png.
  */
 import { chromium } from '@playwright/test';
-import { headlineTotal } from './headlines.mjs';
+import { headlineClose } from './headlines.mjs';
 import { openSections } from './phase34Sections.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
@@ -152,16 +152,16 @@ const main = async () => {
   const planLines = await page.locator('[data-testid="plan-phase-drains"] [data-testid="drain-line-item"]').count();
   check(planLines > 0, `Plan per-phase drain lines: ${planLines} icons`);
   const faTotal = (await page.locator('[data-testid="plan-total"]').innerText()).trim();
-  check(faTotal === headlineTotal('fa'), `FA plan total ${faTotal} (phase 30, empty pinned defaults: 21:44.4; phase 29: 21:53.0; phase 27: 22:47.9, camp one ring)`);
+  check(headlineClose(faTotal, 'fa'), `FA plan total ${faTotal}`);
   await shot(page, 'plan-fa');
 
   await page.locator('[data-testid="raid-tab-toa"]').click();
   await page.waitForTimeout(500);
   await runPlan(page);
   const toaRoutes = await page.locator('[data-testid="plan-route-row"]').count();
-  check(toaRoutes === 1, `ToA Plan: ${toaRoutes} route row (single route)`);
+  check(toaRoutes === 6, `ToA Plan: ${toaRoutes} route rows (phase 38c: one per pair of paths before the supplies)`);
   const toaTotal = (await page.locator('[data-testid="plan-total"]').innerText()).trim();
-  check(toaTotal === headlineTotal('toa'), `ToA plan total ${toaTotal} (phase 35, no specs on adds: 14:12.1; phase 31, quiver ammo: 14:04.1; phase 30, empty pinned defaults: 14:06.0; phase 29 review 2, Ayak carriers capped at the mages: 14:10.6; review 1: 13:19.6; phase 27: 14:22.3)`);
+  check(headlineClose(toaTotal, 'toa'), `ToA plan total ${toaTotal}`);
   await shot(page, 'plan-toa');
 
   // --- calculator Max-drain buttons

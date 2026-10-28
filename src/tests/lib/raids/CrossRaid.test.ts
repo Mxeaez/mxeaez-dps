@@ -12,6 +12,7 @@ import {
   RAIDS, raidConfig, raidOf, teamDpsMultiplier, withScalingInput,
 } from '@/lib/raids';
 import { groupPresets, kitPresets, planFor } from '@/tests/utils/crossRaid';
+import { rowsFor, withinPct } from '@/tests/utils/slow';
 
 // Phase 22: cross-raid checks. Each raid has its own assumptions (the page keeps one object per raid tab); nothing a
 // raid sets may leak into another through the shared defaults (potions, Zeal, fragments, party size, team-DPS
@@ -164,7 +165,8 @@ describe.each(RAIDS.map((r) => [r.name, r] as const))('%s: every target', (_, ra
 });
 
 describe('every raid\'s plan runs (reduced pool)', () => {
-  test.each(RAIDS.map((r) => [r.id, r] as const))('%s', (_, raid) => {
+  // phase 38f: ToA and CoX (13 s each) run in the slow suite; their plans are the headline plans there
+  test.each(rowsFor(RAIDS, ['fractured-archive', 'tob']).map((r) => [r.id, r] as const))('%s', (_, raid) => {
     const res = planFor(raid, true);
     expect(res.cancelled).toBe(false);
     expect(res.kit.length).toBeGreaterThan(0);
@@ -248,6 +250,7 @@ describe('per-encounter times for a fixed preset kit (fast pins)', () => {
     // eslint-disable-next-line no-console
     if (process.env.PRINT_PINS) console.log(id, fastest.route.id, JSON.stringify(got));
     expect(Object.keys(got).sort()).toEqual(Object.keys(pinned).sort());
-    Object.entries(pinned).forEach(([enc, s]) => expect(Math.abs(got[enc] - s)).toBeLessThanOrEqual(0.5));
+    // phase 38f: within 2% per encounter (the exact times are headlines.json's job)
+    Object.entries(pinned).forEach(([enc, s]) => expect(withinPct(got[enc], s, 2)).toBe(true));
   }, 120000);
 });

@@ -10,6 +10,7 @@ import {
   CHAMBERS_OF_XERIC_RAID, FRACTURED_ARCHIVE_RAID, RaidConfig, RAIDS,
 } from '@/lib/raids';
 import { SATURATED_HEART } from '@/lib/raids/planDefaults';
+import { slowTest } from '@/tests/utils/slow';
 
 // Phase 30: Plan tab polish (no maths change) — wiki images for the comfort supplies, the ring policy with the inputs,
 // empty "Items I always bring" defaults (FA / ToB keep the heart until phase 31), the greedy carrier steps re-timed on
@@ -73,7 +74,8 @@ describe('empty pinned defaults', () => {
     partners: 1,
     seeds: 2,
   });
-  test('CoX: the Dragon pickaxe is not pinned, yet every plan carries it (the Guardians need it) and clears the raid', () => {
+  // phase 38f: slow (21 s); CoX.test.ts keeps a reduced CoX plan with a pickaxe for the Guardians
+  slowTest('CoX: the Dragon pickaxe is not pinned, yet every plan carries it (the Guardians need it) and clears the raid', () => {
     const raid = CHAMBERS_OF_XERIC_RAID;
     expect(raid.presets.some((p) => p.name === 'Dragon pickaxe (Torva)')).toBe(true);
     const inputs: PlanInputs = {
@@ -99,7 +101,8 @@ describe('empty pinned defaults', () => {
 describe('team carrier steps re-timed on the returned kit', () => {
   const FA = FRACTURED_ARCHIVE_RAID;
   const preset = (name: string): PresetDef => FA.presets.find((x) => x.name === name)!;
-  test('each step = the route time of the returned kit with the carriers so far (the last = the kit\'s time)', () => {
+  // phase 38f: slow (22 s); Phase29 'planner picks the carriers' checks the steps against the briefing fast
+  slowTest('each step = the route time of the returned kit with the carriers so far (the last = the kit\'s time)', () => {
     const r = plan({
       basePlayer: generateEmptyPlayer(),
       assumptions: FA.defaultAssumptions,
@@ -124,7 +127,7 @@ describe('team carrier steps re-timed on the returned kit', () => {
     const steps = r.specs.team!.steps!;
     expect(steps.length).toBeGreaterThan(0);
     // the last step's time is the returned kit's time with all the carriers (Team: matrix = exact)
-    expect(Math.abs(steps[steps.length - 1].seconds - r.comparison!.routes[r.planned].seconds)).toBeLessThan(0.05);
+    expect(Math.abs(steps[steps.length - 1].seconds - r.comparison!.routes[r.planned].seconds)).toBeLessThan(0.05); // same kit, same model: exact, not a time pin
     // consecutive: each step's saving is the previous time minus its own
     steps.slice(1).forEach((st, i) => expect(Math.abs(steps[i].seconds - st.seconds - st.saved)).toBeLessThan(1e-9));
   }, 300000);

@@ -12,7 +12,7 @@
  * Screenshots docs/screenshots/phase35b-*.png.
  */
 import { chromium } from '@playwright/test';
-import { headlineTotal } from './headlines.mjs';
+import { headlineClose } from './headlines.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
 // phase 36: one spec budget for Bork and the Smorks (and the planner's 2 Elder maul + 4 Tonalztics carriers)
@@ -75,7 +75,7 @@ const main = async () => {
   // --- FA Plan (Team defaults)
   await openRaidPlan(page, 'fractured-archive');
   const total = await text(page.locator('[data-testid="plan-total"]'));
-  check(total === headlineTotal('fa'), `FA Team total ${total} (phase 35: 21:44.4)`);
+  check(headlineClose(total, 'fa'), `FA Team total ${total}`);
   let rows = await briefing(page);
   log(rows);
   const bork = rows.find((r) => r.id === 'bork-smorks');

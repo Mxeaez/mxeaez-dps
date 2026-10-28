@@ -13,14 +13,14 @@
  * Screenshots docs/screenshots/phase33-*.png.
  */
 import { chromium } from '@playwright/test';
-import { headlineTotal } from './headlines.mjs';
+import { headlineClose } from './headlines.mjs';
 import { openSections } from './phase34Sections.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
 // phase 35b: one line per NPC (phase 33: Bork's line only, "Start of fight: … → Def 180 · 99.6%")
 // phase 36: one spec budget for Bork and the Smorks; the planner's 2 Elder maul + 4 Tonalztics carriers
 // phase 36 review: 2 Elder maul + 3 Tonalztics carriers (you damage-spec)
-const BORK_LINE = 'Bork: 2 Elder maul carriers (3 specs) → Def 180 · 86% · Smorks: 1 Elder maul carrier (1 spec) + 3 Tonalztics carriers (6 specs) → Def 13';
+const BORK_LINE = 'Bork: 1 Elder maul carrier (2 specs) + 1 Tonalztics carrier (1 spec) → Def 184 · Smorks: 4 Tonalztics carriers (7 specs) → Def 13'; // phase 38c-e
 const WEAPONS = ['elderMaul', 'dwh', 'bgs', 'tonalztics'];
 
 let failures = 0;
@@ -92,7 +92,7 @@ const main = async () => {
   await page.locator('[data-testid="plan-view"]').waitFor({ timeout: 30000 });
   await waitPlan(page);
   const total = await text(page.locator('[data-testid="plan-total"]'));
-  check(total === headlineTotal('fa'), `FA Team total ${total} (phase 32: 21:44.4)`);
+  check(headlineClose(total, 'fa'), `FA Team total ${total}`);
   const bork = await encLine(page, 'bork-smorks');
   check(bork.data === BORK_LINE && bork.shown.replace(' Smorks: ', ' · Smorks: ') === BORK_LINE, `Bork + Smorks: "${bork.shown}"`);
   check(await page.locator('[data-testid="plan-phase-toggle"]').getAttribute('aria-expanded') === 'false', 'per-phase details closed by default');
@@ -138,7 +138,7 @@ const main = async () => {
   await waitPlan(page);
   const soloTotal = await text(page.locator('[data-testid="plan-total"]'));
   const soloBring = await page.locator('[data-testid="plan-specs"]').getAttribute('data-bring');
-  check(soloTotal === headlineTotal('faSolo') && soloBring === 'tonalztics', `Solo party 1: ${soloTotal}, Bring ${soloBring} (phase 32: 22:01.9, Tonalztics)`);
+  check(headlineClose(soloTotal, 'faSolo') && soloBring === 'tonalztics', `Solo party 1: ${soloTotal}, Bring ${soloBring}`);
   const c2 = await chips(page);
   check(JSON.stringify(chipsOn(c2)) === '["tonalztics"]', `chips after the Solo plan: [${chipsOn(c2)}]`);
   const soloIds = await page.locator('[data-testid="plan-encounter-row"]').evaluateAll((els) => els.map((e) => e.dataset.encounter));
@@ -181,7 +181,7 @@ const main = async () => {
   await page.locator('[data-testid="plan-view"]').waitFor({ timeout: 30000 });
   await waitPlan(page);
   const tobTotal = await text(page.locator('[data-testid="plan-total"]'));
-  check(tobTotal === headlineTotal('tob'), `ToB plan total ${tobTotal} (phase 32: 7:29.5)`);
+  check(headlineClose(tobTotal, 'tob'), `ToB plan total ${tobTotal}`);
   const soteRow = page.locator('[data-testid="plan-encounter-row"][data-encounter="tob-sotetseg"] [data-testid="plan-encounter-drains"]');
   const soteEvents = Number(await soteRow.getAttribute('data-events'));
   const soteParts = (await soteRow.locator('[data-testid="plan-encounter-drain-part"]').allInnerTexts()).map((l) => l.replace(/\s+/g, ' ').trim());

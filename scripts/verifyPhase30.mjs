@@ -17,7 +17,7 @@
  */
 import { existsSync } from 'node:fs';
 import { chromium } from '@playwright/test';
-import { headlineTotal } from './headlines.mjs';
+import { headlineClose } from './headlines.mjs';
 import { openSections } from './phase34Sections.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
@@ -105,7 +105,7 @@ const main = async () => {
   check((await pinnedNames(page)).length === 0, `FA pinned: ${(await pinnedNames(page)).join(', ') || '(none)'}`);
   await waitPlan(page);
   const faTotal = await text(page.locator('[data-testid="plan-total"]'));
-  check(faTotal === headlineTotal('fa'), `FA plan total ${faTotal} (phase 29: 21:53.0)`);
+  check(headlineClose(faTotal, 'fa'), `FA plan total ${faTotal}`);
   const summary = await text(page.locator('[data-testid="plan-ring-summary-text"]'));
   check(/^one ring on every loadout: .+ \(the fastest of \d+\)$/.test(summary), `ring summary next to the dropdown: "${summary}"`);
   const faSteps = page.locator('[data-testid="plan-team-steps"]');
@@ -129,7 +129,7 @@ const main = async () => {
   check((await pinnedNames(page)).length === 0, `tob pinned: ${(await pinnedNames(page)).join(', ')}`);
   await waitPlan(page);
   const tobTotal = await text(page.locator('[data-testid="plan-total"]'));
-  check(tobTotal === headlineTotal('tob'), `ToB plan total ${tobTotal} (phase 32; phase 30: 7:30.0)`);
+  check(headlineClose(tobTotal, 'tob'), `ToB plan total ${tobTotal}`);
   const steps = await text(page.locator('[data-testid="plan-team-steps"]'));
   // phase 36: one spec budget per encounter (carriers 2 Elder maul + 2 Tonalztics, added in another order)
   check(/^Added in this order: Elder maul −24\.\d s, Tonalztics −13\.\d s, Tonalztics −4\.\d s \(next one < 1 s\)/.test(steps), `ToB "${steps}" (phase 36 review: 3 carriers, you damage-spec; phase 36: + Elder maul −2.x; phase 32 kit, re-timed on it: −31.8 / −10.4 / −3.5)`);

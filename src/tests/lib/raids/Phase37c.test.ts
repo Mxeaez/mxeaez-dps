@@ -6,6 +6,7 @@ import {
   retimeOk,
 } from '@/tests/utils/probes';
 import { headline } from '@/tests/utils/headlines';
+import { slowTest } from '@/tests/utils/slow';
 
 // Phase 37c: smoke tests of the three review probes (scripts/probes/*.mjs over src/tests/utils/probes.ts) on small cases.
 
@@ -29,10 +30,13 @@ describe('retime: the headline kits re-timed outside the planner = headlines.jso
     expect(retimeOk({ ...r, encounterMismatches: ['x'] })).toBe(false);
   }, 60000);
 
-  test('CLI: one plan, a table, exit 0; an unknown plan exits 2', () => {
+  // phase 38f: the CLI smoke tests and the brute-force smoke are slow (a node process each; 9 s / 19 s); retimeHeadline,
+  // drainOutcome and bruteForceKits themselves are called by the fast tests
+  slowTest('CLI: one plan, a table, exit 0; an unknown plan exits 2', () => {
     const ok = cli('retime.mjs', ['toa', '--quiet']);
     expect(ok.status).toBe(0);
-    expect(ok.stdout).toMatch(/toa\s+14:20\.0\s+860\.0306\s+860\.0306\s+0\.00e\+0\s+yes\s+[\d.]+ s\s+OK/);
+    expect(ok.stdout).toMatch(/toa\s+\d+:\d\d\.\d\s+[\d.]+\s+[\d.]+\s+0\.00e\+0\s+yes\s+[\d.]+ s\s+OK/);
+    expect(ok.stdout).toContain(headline('toa').total);
     expect(cli('retime.mjs', ['nope']).status).toBe(2);
   }, 120000);
 });
@@ -70,7 +74,7 @@ describe('drain outcome: one encounter of a headline, for hand-checking', () => 
     expect([me.group, me.ticks, me.spent, me.restored, me.balance, me.end]).toEqual(['me', 6, 175, 15, 25, [25]]);
   }, 60000);
 
-  test('CLI: three tables, exit 0; an encounter on no headline route exits 2', () => {
+  slowTest('CLI: three tables, exit 0; an encounter on no headline route exits 2', () => {
     const ok = cli('drainOutcome.mjs', ['moia']);
     expect(ok.status).toBe(0);
     expect(ok.stdout).toMatch(/^fa \/ Moia: /);
@@ -82,7 +86,7 @@ describe('drain outcome: one encounter of a headline, for hand-checking', () => 
 describe('brute-force kits: the planner\'s kit = the best of every kit (tiny pool)', () => {
   // the smoke case: one ring run (camp Lightbearer), kits of the first 3 candidates + the planner's; the full check is
   // the CLI (`node scripts/probes/bruteForceKits.mjs fa`: Phase36's 336 kits, gap 0)
-  test('FA Team, tiny pool, the headline route', () => {
+  slowTest('FA Team, tiny pool, the headline route', () => {
     const b = bruteForceKits('fractured-archive', { pool: 'tiny', ringPolicy: 'camp-lightbearer', candidates: 3 });
     expect(b.route).toBe(headline('fa').route);
     expect(b.ring).toBe('Lightbearer');

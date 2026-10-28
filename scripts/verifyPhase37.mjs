@@ -10,7 +10,7 @@
  *   tooltip does. Screenshot docs/screenshots/phase37-plan-cox.png.
  */
 import { chromium } from '@playwright/test';
-import { headlineTotal } from './headlines.mjs';
+import { headlineClose, headlineTotal } from './headlines.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
 
@@ -77,7 +77,7 @@ const main = async () => {
   const secs = (Date.now() - tPlan) / 1000;
   check(!!parallelSeen, `progress: "${parallelSeen}"`);
   const total = await text(page.locator('[data-testid="plan-total"]'));
-  check(total === headlineTotal('cox'), `CoX total ${total} (the headline fixture: ${headlineTotal('cox')})`);
+  check(headlineClose(total, 'cox'), `CoX total ${total} (the headline fixture: ${headlineTotal('cox')})`);
   // phase 38e: 60 → 120 s (the item beam: CoX 51 → 74 s alone in the browser)
   check(secs <= 120, `CoX plan in ≤ 120 s (${secs.toFixed(1)} s)`);
   const olm = page.locator('[data-testid="plan-briefing-row"][data-encounter="cox-olm"]');

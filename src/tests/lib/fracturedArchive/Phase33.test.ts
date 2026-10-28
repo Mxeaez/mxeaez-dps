@@ -18,6 +18,7 @@ import {
 } from '@/lib/fracturedArchive/specChoice';
 import { SPEC_WEAPONS } from '@/lib/fracturedArchive/specs';
 import { FRACTURED_ARCHIVE_RAID, RAIDS, raidConfig } from '@/lib/raids';
+import { slowDescribe, slowTest } from '@/tests/utils/slow';
 
 // Phase 33: "Specs I bring" defaults to none and follows the plan in "Planner decides" mode (withPlanSpecs); the Plan
 // tab's encounter table shows one start-of-fight drain line per encounter (encounterDrainSummary). Docs:
@@ -104,7 +105,8 @@ const MELEE_RANGED = reduced([preset('Twisted bow (Masori)'), preset("Inquisitor
 const chipsOf = (r: PlanResult) => subsetOfMySpecs(withPlanSpecs(FA.defaultAssumptions, r.specs.bring, false).mySpecs);
 
 describe('planner decides: the chips equal the plan\'s "Bring" (reduced pools)', () => {
-  test('Solo: the chosen subset', () => {
+  // phase 38f: the Solo plan is slow (25 s); withPlanSpecs' own cases above cover the chips = Bring rule fast
+  slowTest('Solo: the chosen subset', () => {
     const r = plan(inputs({ drain: 'solo', assumptions: { ...FA.defaultAssumptions, partySize: 2 } }), MELEE_RANGED);
     expect(r.specs.mode).toBe('auto');
     expect(chipsOf(r)).toEqual(r.specs.bring);
@@ -271,7 +273,7 @@ describe('encounter line = the first phase\'s line (FA, presets kit)', () => {
 
 // --- slow: the full FA plans ---------------------------------------------------------------------------------------
 
-(process.env.RUN_SLOW_TESTS ? describe : describe.skip)('planner decides, full FA plans (slow)', () => {
+slowDescribe('planner decides, full FA plans (slow)', () => {
   const full = (patch: Partial<PlanInputs>) => plan(inputs({ ringPolicy: 'camp-one', ...patch }));
   test('Solo party 1: Bring Tonalztics → the chips are Tonalztics only; the Search Solo drain uses it', () => {
     const r = full({ drain: 'solo', assumptions: { ...FA.defaultAssumptions, partySize: 1 } });

@@ -14,12 +14,12 @@
  * Screenshots docs/screenshots/phase31-*.png.
  */
 import { chromium } from '@playwright/test';
-import { headlineTotal } from './headlines.mjs';
+import { durationClose, headlineOf, headlineTotal } from './headlines.mjs';
 import { openSections } from './phase34Sections.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
 const FA_TOTAL = process.env.FA_TOTAL || headlineTotal('fa');
-const FA_OWNED_TOTAL = process.env.FA_OWNED_TOTAL || headlineTotal('faNotOwned'); // phase 32 (phase 31: 24:45.3)
+const FA_OWNED_TOTAL = process.env.FA_OWNED_TOTAL || headlineTotal('faNotOwned');
 const SOLO_TOTAL = process.env.SOLO_TOTAL || headlineTotal('faSolo');
 
 let failures = 0;
@@ -97,7 +97,7 @@ const main = async () => {
   check(/the Saturated heart if magic/.test(note), `potions note: "${note}"`);
   await waitPlan(page);
   const faTotal = await text(page.locator('[data-testid="plan-total"]'));
-  check(faTotal === FA_TOTAL, `FA plan total ${faTotal} (expected ${FA_TOTAL}; phase 30: 21:44.4)`);
+  check(durationClose(faTotal, FA_TOTAL), `FA plan total ${faTotal} (expected ${FA_TOTAL} within 1%)`);
   const fa = await checkKit(page, 'FA');
   check(fa.quiver, 'FA: the kit has a quiver-held ammo type');
   check((await pinnedNames(page)).length === 0, 'FA pinned list still empty after the plan');
@@ -111,9 +111,12 @@ const main = async () => {
   await page.locator('[data-testid="plan-view"]').waitFor({ timeout: 30000 });
   await waitPlan(page);
   const ownedTotal = await text(page.locator('[data-testid="plan-total"]'));
-  check(ownedTotal === FA_OWNED_TOTAL, `FA without Obligator / Ascension crossbows ${ownedTotal} (expected ${FA_OWNED_TOTAL})`);
+  check(durationClose(ownedTotal, FA_OWNED_TOTAL), `FA without Obligator / Ascension crossbows ${ownedTotal} (expected ${FA_OWNED_TOTAL})`);
   const owned = await checkKit(page, 'FA owned');
-  check(owned.magic, 'FA owned: a magic loadout (the heart case)');
+  // phase 38f: the kit comes from the fixture (since 38e the plan without Obligator / Ascension has no magic loadout; the heart
+  // rule itself is the Phase31 / Heart unit tests)
+  const wantMagic = headlineOf('faNotOwned').kit.some((k) => /Tumeken|staff|wand|Sanguinesti/i.test(k));
+  check(owned.magic === wantMagic, `FA owned: a magic loadout = ${wantMagic} (the headline's kit)`);
   await shot(page, 'fa-heart');
   await page.evaluate(() => { localStorage.removeItem('mxeaez-dps:not-owned'); localStorage.removeItem('mxeaez-dps:settings:v1'); });
   await page.reload({ waitUntil: 'load', timeout: 120000 });
@@ -128,7 +131,7 @@ const main = async () => {
   const soloTotal = await text(page.locator('[data-testid="plan-total"]'));
   const soloBring = await text(page.locator('[data-testid="plan-bring"]'));
   // phase 36: + damage spec weapons and a Surge potion
-  check(soloBring === 'Bring: Tonalztics, Zaryte crossbow, Burning claws, Surge potion' && soloTotal === SOLO_TOTAL, `Solo: "${soloBring}", ${soloTotal} (expected Bring: Tonalztics, Zaryte crossbow, Burning claws, Surge potion, ${SOLO_TOTAL}; phase 30: Elder maul + Tonalztics 22:01.3)`);
+  check(soloBring === headlineOf('faSolo').bring && durationClose(soloTotal, SOLO_TOTAL), `Solo: "${soloBring}", ${soloTotal} (expected Bring: Tonalztics, Zaryte crossbow, Burning claws, Surge potion, ${SOLO_TOTAL}; phase 30: Elder maul + Tonalztics 22:01.3)`);
   const maul = page.locator('[data-testid="plan-spec-weapons"] li[data-weapon="elderMaul"]');
   const maulText = (await maul.count()) ? await text(maul.first()) : '';
   check(/^adding Elder maul to this plan: −0\.\d s \(1 slot, < 1 s per slot\)$/.test(maulText), `Solo: "${maulText}"`);

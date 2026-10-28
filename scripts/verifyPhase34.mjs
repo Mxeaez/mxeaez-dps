@@ -16,19 +16,19 @@
  * Screenshots docs/screenshots/phase34-check-*.png (the before / after set: scripts/phase34Shots.mjs).
  */
 import { chromium } from '@playwright/test';
-import { headlineTotal } from './headlines.mjs';
+import { headlineClose, headlineOf } from './headlines.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
 const BRIEFING = [
   'Flying shield: Tonalztics 4 hits → Def 156 · Grounded: Tonalztics 4 hits → Def 156',
-  'Bork: Elder maul 2 specs → Def 180 · Smorks: Elder maul 1 spec + Tonalztics 9 hits → Def 13', // phase 35b; phase 36: one spec budget; review: 3 carriers
+  'Bork: Elder maul 2 specs + Tonalztics 1 hit → Def 184 · Smorks: Tonalztics 9 hits → Def 13', // phase 35b; phase 36: one spec budget; phase 38c-e: the carriers 1 Elder maul + 4 Tonalztics
   'Tonalztics 2 hits → Def 117',
   'Tonalztics 2 hits → Def 102',
-  'P1 at a corner: Tonalztics 2 hits → Def 129 · P3 last quadrant, Deflect Melee: Tonalztics 3 hits → Def 150',
+  'start: Tonalztics 2 hits → Def 129 · after P1: Elder maul 2 specs + Tonalztics 4 hits → Def 1 · after P2: Tonalztics 3 hits → Def 150',
 ];
 // phase 35b: one line per NPC (phase 33: Bork's line only, "Start of fight: … → Def 180 · 99.6%")
 // phase 36 review: 2 Elder maul + 3 Tonalztics carriers (you damage-spec)
-const BORK_LINE = 'Bork: 2 Elder maul carriers (3 specs) → Def 180 · 86% · Smorks: 1 Elder maul carrier (1 spec) + 3 Tonalztics carriers (6 specs) → Def 13'; // phase 36
+const BORK_LINE = 'Bork: 1 Elder maul carrier (2 specs) + 1 Tonalztics carrier (1 spec) → Def 184 · Smorks: 4 Tonalztics carriers (7 specs) → Def 13'; // phase 38c-e
 
 let failures = 0;
 const check = (ok, msg) => {
@@ -116,7 +116,7 @@ const main = async () => {
   await page.locator('[data-testid="plan-tab"]').click();
   await waitPlan(page);
   const total = await text(page.locator('[data-testid="plan-total"]'));
-  check(total === headlineTotal('fa'), `FA Team total ${total} (phase 33: 21:44.4)`);
+  check(headlineClose(total, 'fa'), `FA Team total ${total}`);
   const rows = await page.locator('[data-testid="plan-briefing-row"]').evaluateAll((els) => els.map((e) => ({
     id: e.dataset.encounter,
     specs: e.dataset.specs,
@@ -132,8 +132,9 @@ const main = async () => {
   check(rows.every((r) => r.bossImg && r.loadouts.length > 0 && r.loadouts.every((n) => n >= 5) && r.specIcons.length > 0 && r.specIcons.every(Boolean)), 'every briefing row: boss image, loadout icons, a weapon icon per spec');
   check(rows.every((r) => r.counts.every((c) => c.bold)), 'the spec numbers are bold');
   check(rows.find((r) => r.id === 'bork-smorks')?.title === BORK_LINE, 'the briefing tooltip is phase 33\'s encounter line');
-  check(JSON.stringify(rows.map((r) => r.seconds)) === JSON.stringify(['175.8 s', '189.8 s', '65.3 s', '181.6 s', '655.2 s']), 'briefing seconds (phase 36 review)');
-  check(/^Bring: Zaryte crossbow, Burning claws, Surge potion/.test(await text(page.locator('[data-testid="plan-bring"]'))) && await visible(page, '[data-testid="plan-share"]'), 'Bring and your share visible (phase 36: damage specs + Surge potion)');
+  // phase 38f: the seconds within 2% of the headline fixture's encounters (the exact record)
+  check(rows.every((r) => { const want = headlineOf('fa').encounters[r.id]; return want !== undefined && Math.abs(parseFloat(r.seconds) - want) <= want * 0.02; }), `briefing seconds within 2% of the headline (${rows.map((r) => r.seconds).join(', ')})`);
+  check((await text(page.locator('[data-testid="plan-bring"]'))).startsWith(headlineOf('fa').bring) && await visible(page, '[data-testid="plan-share"]'), 'Bring and your share visible (phase 36: damage specs + Surge potion)');
   for (const [id, inner] of [['plan-why-details', 'kit-loadout'], ['plan-spec-details', 'plan-team-briefing'], ['plan-phase-details', 'plan-encounters']]) {
     const closed = !(await page.locator(`details[data-testid="${id}"]`).evaluate((d) => d.open));
     const hidden = !(await visible(page, `[data-testid="${inner}"]`));
@@ -174,7 +175,7 @@ const main = async () => {
   check(await visible(page, '[data-testid="spec-plan"] [data-testid="drain-line"]') && await visible(page, '[data-testid="drain-pfloor"]') && await visible(page, '[data-testid="team-table"]'), '"details" opens the sentence form, the chance of the floor and the per-boss table');
   const sentence = await text(page.locator('[data-testid="spec-plan"] [data-testid="drain-line-count"]').first());
   // phase 36: the plan's carriers are 2 Elder maul + 4 Tonalztics
-  check(sentence === 'needs 4 landed hits · 4 specs (2 carriers) = 8 attacks, 4 must land · 98% · team: 6 specs (3 carriers) · >99.9%', `sentence form: "${sentence}"`);
+  check(sentence === 'needs 4 landed hits · 4 specs (2 carriers) = 8 attacks, 4 must land · 98% · team: 8 specs (4 carriers) · >99.9%', `sentence form: "${sentence}"`);
   const searchText = await visibleText(page, '[data-testid="search-view"]');
   check(!/search started from|vs best preset|evaluations|Exp\. TTK \(top row only\)|Best preset/.test(searchText), 'Search: no "search started from", "vs best preset", evaluation counts, TTK note or best preset in the default view');
   check(!(await visible(page, '[data-testid="search-ranked-at"]')), 'ranked-at under "Search details"');

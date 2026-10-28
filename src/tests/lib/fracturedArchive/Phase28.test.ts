@@ -7,6 +7,7 @@ import {
 } from '@/lib/fracturedArchive/planner';
 import { drainFightSecondsOf } from '@/lib/fracturedArchive/raidTime';
 import { FRACTURED_ARCHIVE_RAID, RaidConfig } from '@/lib/raids';
+import { slowTest } from '@/tests/utils/slow';
 
 // Phase 28 (final review, round 3): the alias / item caches return what upstream's uncached code returns, the
 // planner's worker-lifetime caches miss when a DPS input changes, and the Plan's Solo fight length uses the same
@@ -96,7 +97,7 @@ const warmAndCold = (i: PlanInputs) => {
 };
 
 describe('planner caches: a changed DPS input misses (phase 28)', () => {
-  test('Zeal, potions, ownership and the ring policy each re-search / re-evaluate; warm = cold', () => {
+  test('Zeal (the assumptions in the cache keys) re-searches / re-evaluates; warm = cold', () => {
     clearPlanCaches();
     const base = plan(inputs(), reduced(raid));
     expect(base.stats.searches).toBeGreaterThan(0);
@@ -109,7 +110,13 @@ describe('planner caches: a changed DPS input misses (phase 28)', () => {
     expect(z.warm.stats.evaluations).toBeGreaterThan(0);
     expect(total(z.warm)).toBe(total(z.cold));
     expect(total(z.warm)).not.toBe(total(base));
+  }, 600000);
 
+  // phase 38f: the other cache keys (fragments, ownership, ring policy) run in the slow suite (each is warm + cold plans)
+  slowTest('Fragments, ownership and the ring policy each re-search / re-evaluate; warm = cold', () => {
+    clearPlanCaches();
+    const base = plan(inputs(), reduced(raid));
+    expect(base.stats.searches).toBeGreaterThan(0);
     // elemental fragments off
     clearPlanCaches();
     plan(inputs(), reduced(raid));

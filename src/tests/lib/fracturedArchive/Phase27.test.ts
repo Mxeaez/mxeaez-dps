@@ -30,6 +30,9 @@ import {
   FRACTURED_ARCHIVE_RAID, RaidConfig, RAIDS, raidConfig, TOMBS_OF_AMASCUT_RAID,
 } from '@/lib/raids';
 import { withPhase32Specs } from '@/tests/utils/phase32Specs';
+import {
+  rowsFor, slowDescribe, slowTest, withinPct,
+} from '@/tests/utils/slow';
 
 // Phase 27: Plan tab — potions derived from the kit (one Super combat / Ranging potion per style present, part of the
 // kit's slot cost), comfort supplies entered by the user, and the ring policy (camp one ring / camp Lightbearer / allow
@@ -152,7 +155,11 @@ describe('potions from the kit', () => {
     supplyPots.forEach((p) => expect(r.inventory.filter((c) => c.kind === 'supply' && c.supply === p.type).length).toBe(1));
     expect(r.inventory.filter((c) => c.kind === 'supply').length).toBe(10 + supplyPots.length);
     expect(r.inventory.filter((c) => c.kind === 'potion').length).toBe(pots.length - supplyPots.length);
-    // ToA: the raid's potion (Other) only
+  }, 300000);
+
+  // phase 38f: the ToA plan moved to the slow suite (the rule, no kit potions where none are brought, is the kitPotions
+  // unit case above)
+  slowTest('ToA: the raid potion (Other) only', () => {
     const toa = planned(TOMBS_OF_AMASCUT_RAID, 'switch');
     expect(toa.potions).toEqual([]);
     expect(toa.inventory.some((c) => c.supply === 'ranging' || c.supply === 'superCombat')).toBe(false);
@@ -174,7 +181,8 @@ describe('potions from the kit', () => {
   }, 300000);
 });
 
-describe('caches (review fix)', () => {
+// phase 38f: slow (Phase28 'planner caches' and Planner.test 'cached search rows' cover the cache keys fast)
+slowDescribe('caches (review fix)', () => {
   test('a second plan with other supplies reuses the searches and the DPS rows', () => {
     clearPlanCaches();
     const raid = FRACTURED_ARCHIVE_RAID;
@@ -225,7 +233,7 @@ describe('ring policy', () => {
     expect(energyBudget({ seconds: 120, lightbearer: true }) - 100).toBe(2 * (energyBudget({ seconds: 120, lightbearer: false }) - 100));
   });
 
-  test.each(RAIDS.map((r) => [r.id, r] as const))('%s: camp one ring picks the fastest single ring and wears it in every loadout', (_, raid) => {
+  test.each(rowsFor(RAIDS, ['fractured-archive']).map((r) => [r.id, r] as const))('%s: camp one ring picks the fastest single ring and wears it in every loadout', (_, raid) => {
     const r = planned(raid, 'camp-one');
     expect(r.ring.policy).toBe('camp-one');
     expect(r.ring.ring).not.toBeNull();
@@ -244,7 +252,7 @@ describe('ring policy', () => {
     expect(total(r)).toBeLessThanOrEqual(total(planned(raid, 'camp-lightbearer')) + 1e-6);
   }, 600000);
 
-  test.each(RAIDS.map((r) => [r.id, r] as const))('%s: camp Lightbearer wears Lightbearer everywhere (a pinned Lightbearer is worn, not carried)', (_, raid) => {
+  test.each(rowsFor(RAIDS, ['fractured-archive']).map((r) => [r.id, r] as const))('%s: camp Lightbearer wears Lightbearer everywhere (a pinned Lightbearer is worn, not carried)', (_, raid) => {
     const r = planned(raid, 'camp-lightbearer');
     expect(r.ring).toEqual({ policy: 'camp-lightbearer', ring: 'Lightbearer', screened: [] });
     expect(rings(r).every((x) => x === 'Lightbearer')).toBe(true);
@@ -252,8 +260,8 @@ describe('ring policy', () => {
     expect(r.unusedCarried.map((x) => x.name)).not.toContain('Lightbearer');
   }, 300000);
 
-  test('camp one ring with a ring other than Lightbearer: a pinned Lightbearer stays carried and is reported unused', () => {
-    const r = planned(raidConfig('toa'), 'camp-one');
+  test.each(rowsFor([{ id: 'fractured-archive' }, { id: 'toa' }], ['fractured-archive']).map((x) => x.id as RaidConfig['id']))('%s: camp one ring with a ring other than Lightbearer: a pinned Lightbearer stays carried and is reported unused', (id) => {
+    const r = planned(raidConfig(id), 'camp-one');
     expect(r.ring.ring).not.toBe('Lightbearer');
     expect(r.inventory.filter((c) => c.kind === 'pinned' && c.label === 'Lightbearer').length).toBe(1);
     expect(r.unusedCarried.map((x) => x.name)).toContain('Lightbearer');
@@ -276,15 +284,15 @@ describe('ring policy', () => {
    * the supplies is a route, this kit's cheapest Zebak + Akkha): FA 1493.8 → 1544.4 (Ocellus 767.3 → 818.0), ToA 925.0
    * → 905.5; CoX / ToB unchanged. Phase 38c fix (P2's 120 s on the spec budget's wall clock): FA 1544.4 → 1534.7.
    */
-  test.each([
-    ['fractured-archive', 1534.7],
-    ['toa', 905.5],
-    ['cox', 452.7],
-    ['tob', 457.3],
-  ] as [RaidConfig['id'], number][])('%s: allow switches reproduces the previous planner (%s s)', (id, seconds) => {
+  test.each(rowsFor([
+    { id: 'fractured-archive', seconds: 1534.7 },
+    { id: 'toa', seconds: 905.5 },
+    { id: 'cox', seconds: 452.7 },
+    { id: 'tob', seconds: 457.3 },
+  ], ['fractured-archive']).map((x) => [x.id as RaidConfig['id'], x.seconds] as const))('%s: allow switches reproduces the previous planner (%s s, within 1%%)', (id, seconds) => {
     const r = planned(raidConfig(id), 'switch');
     expect(r.ring).toEqual({ policy: 'switch', ring: null, screened: [] });
-    expect(Math.abs(total(r) - seconds)).toBeLessThan(0.05);
+    expect(withinPct(total(r), seconds, 1)).toBe(true);
     // 'switch' is the planner's default when no policy is given (the Plan tab passes camp one ring)
     expect(total(planned(raidConfig(id)))).toBe(total(r));
   }, 600000);
@@ -295,7 +303,7 @@ describe('ring policy', () => {
  * picks the same ring and total as the guarded default (screen, then full plans within RING_GUARD_FACTOR × g).
  * Slow (a full default plan per ring): `RUN_SLOW_TESTS=1`.
  */
-(process.env.RUN_SLOW_TESTS ? describe : describe.skip)('ring guard (slow)', () => {
+slowDescribe('ring guard (slow)', () => {
   test('FA defaults: the guarded camp-one ring is the true best of all six rings planned in full', () => {
     const raid = FRACTURED_ARCHIVE_RAID;
     const inputs = {

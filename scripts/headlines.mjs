@@ -12,3 +12,33 @@ export const headlineTotal = (name) => {
   if (!h) throw new Error(`no headline "${name}" in src/tests/fixtures/headlines.json`);
   return h.total;
 };
+
+/** "21:07.7" -> seconds (null when it is not a duration). */
+export const parseDuration = (text) => {
+  const m = /^(\d+):(\d{2}\.\d)$/.exec(String(text).trim());
+  return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+};
+
+/**
+ * Phase 38f: a page's total is the headline's within `pct` percent (default 1; pin gear exactly, times loosely). The
+ * exact seconds live in the fixture only (`pinHeadlines.mjs`).
+ */
+export const headlineClose = (text, name, pct = 1) => {
+  const got = parseDuration(text);
+  const want = HEADLINES[name]?.seconds;
+  return got !== null && want !== undefined && Math.abs(got - want) <= (want * pct) / 100 + 0.05;
+};
+
+/** `text` and `expected` ("25:15.5") are the same duration within `pct` percent (default 1). */
+export const durationClose = (text, expected, pct = 1) => {
+  const got = parseDuration(text);
+  const want = parseDuration(expected);
+  return got !== null && want !== null && Math.abs(got - want) <= (want * pct) / 100 + 0.05;
+};
+
+/** The whole fixture entry of a plan (kit, carriers, "Bring: ...", items, ...): gear checks read it, not literals. */
+export const headlineOf = (name) => {
+  const h = HEADLINES[name];
+  if (!h) throw new Error(`no headline "${name}" in src/tests/fixtures/headlines.json`);
+  return h;
+};
