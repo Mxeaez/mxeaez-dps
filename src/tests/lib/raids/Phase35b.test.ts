@@ -1,4 +1,5 @@
 import { describe, expect, test } from '@jest/globals';
+import { otherRaidsDescribe } from '@/tests/utils/otherRaids';
 import React from 'react';
 import { TextDecoder, TextEncoder } from 'util';
 import { generateEmptyPlayer } from '@/state';
@@ -149,7 +150,7 @@ describe('FA (presets kit, 2 Elder maul + 2 Tonalztics carriers)', () => {
   });
 });
 
-describe('ToA / CoX / ToB multi-NPC encounters (default assumptions, presets kit)', () => {
+otherRaidsDescribe('ToA / CoX / ToB multi-NPC encounters (default assumptions, presets kit)', () => {
   test('ToB Sotetseg: three reset events of one NPC (phase 36: different specs each); Bloat keeps its stomp event', () => {
     const [sote, bloat] = encountersOf('tob', ['tob-sotetseg', 'tob-bloat']);
     const s = summaryOf(sote);

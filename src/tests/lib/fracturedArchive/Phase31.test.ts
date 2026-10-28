@@ -1,4 +1,5 @@
 import { describe, expect, test } from '@jest/globals';
+import { otherRaidsTest } from '@/tests/utils/otherRaids';
 import { generateEmptyPlayer } from '@/state';
 import Potion from '@/enums/Potion';
 import { availableEquipment } from '@/lib/Equipment';
@@ -340,7 +341,7 @@ describe('heart: magic\'s kit potion (FA / ToB)', () => {
     expect(now.dps).toBeGreaterThan(dps({ ...a, withoutPotion: ['magic'] }).dps);
   });
 
-  test('ToB: same rule (magic kit → the heart in the potions)', () => {
+  otherRaidsTest('ToB: same rule (magic kit → the heart in the potions)', () => {
     const tob = THEATRE_OF_BLOOD_RAID;
     const magic = tob.presets.find((p) => p.group === 'magic')!;
     const r = planned('tob-magic', tob, reduced(tob, [magic], ["Tumeken's shadow"]));
@@ -350,7 +351,7 @@ describe('heart: magic\'s kit potion (FA / ToB)', () => {
   }, 300000);
 
   // phase 38f: CoX (10 s) runs in the slow suite; ToA shows the same rule
-  test.each([
+  otherRaidsTest.each([
     ['toa', TOMBS_OF_AMASCUT_RAID, 'toa-zebak'],
     ['cox', CHAMBERS_OF_XERIC_RAID, 'cox-tekton'],
   ].filter(([id]) => SLOW || id === 'toa') as [string, RaidConfig, string][])('(h) %s: no heart slot, magic still boosted by the raid potion (DPS as before)', (id, raid, targetKey) => {

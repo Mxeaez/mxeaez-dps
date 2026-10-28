@@ -1,4 +1,5 @@
 import { describe, expect, test } from '@jest/globals';
+import { faRows } from '@/tests/utils/otherRaids';
 import { generateEmptyPlayer } from '@/state';
 import {
   applyPresetToPlayer, buildTargetMonster, drainStateFor, evaluateLoadout, findTarget, presetSpells, presetStyles,
@@ -55,7 +56,7 @@ const FA = FRACTURED_ARCHIVE_RAID;
 // --- 1a. the data -----------------------------------------------------------------------------------------------------
 
 describe('no ammo-slot filler in the presets and the search pool', () => {
-  test.each(RAIDS.map((r) => [r.id, r] as const))('%s: no preset and no search-pool group has Rada\'s blessing', (_id, raid) => {
+  test.each(faRows(RAIDS).map((r) => [r.id, r] as const))('%s: no preset and no search-pool group has Rada\'s blessing', (_id, raid) => {
     raid.presets.forEach((p) => expect(p.equipment.ammo ? refName(p.equipment.ammo) : '').not.toBe(BLESSING));
     Object.values(raid.searchPool).forEach((g) => {
       expect((g.slots.ammo ?? []).map((c) => refName(c.ref))).not.toContain(BLESSING);
@@ -63,7 +64,7 @@ describe('no ammo-slot filler in the presets and the search pool', () => {
   });
 
   test('melee / magic presets wear no ammo; ranged presets keep their fired ammo', () => {
-    RAIDS.flatMap((r) => r.presets).forEach((p) => {
+    faRows(RAIDS).flatMap((r) => r.presets).forEach((p) => {
       if (p.group !== 'ranged') expect(p.equipment.ammo).toBeUndefined();
     });
     expect(FA.presets.find((p) => p.name === 'Twisted bow (Masori)')!.equipment.ammo).toBeDefined();
@@ -75,7 +76,7 @@ describe('no ammo-slot filler in the presets and the search pool', () => {
 /** Every ammo-slot item the presets / search pools fire, plus the blessing. */
 const POOL_AMMO: ItemRef[] = (() => {
   const refs: ItemRef[] = [BLESSING];
-  RAIDS.forEach((r) => {
+  faRows(RAIDS).forEach((r) => {
     r.presets.forEach((p) => p.equipment.ammo && refs.push(p.equipment.ammo));
     Object.values(r.searchPool).forEach((g) => g.weapons.forEach((w) => (w.ammo ?? []).forEach((a) => refs.push(a))));
   });
@@ -104,7 +105,7 @@ describe('a melee / magic loadout\'s DPS is the same with no ammo, the blessing 
     });
   });
 
-  test.each(RAIDS.map((r) => [r.id, r] as const))('%s', (_id, raid: RaidConfig) => {
+  test.each(faRows(RAIDS).map((r) => [r.id, r] as const))('%s', (_id, raid: RaidConfig) => {
     const a = raid.defaultAssumptions;
     const presets = raid.presets.filter((p) => p.group !== 'ranged');
     let checked = 0;

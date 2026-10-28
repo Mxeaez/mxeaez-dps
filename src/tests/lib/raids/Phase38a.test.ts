@@ -1,4 +1,5 @@
 import { describe, expect, test } from '@jest/globals';
+import { faRows, OTHER_RAIDS, otherRaidsDescribe } from '@/tests/utils/otherRaids';
 import Potion from '@/enums/Potion';
 import { generateEmptyPlayer } from '@/state';
 import {
@@ -27,13 +28,15 @@ const enc = (id: string, seconds: number) => ({ id, seconds } as unknown as Enco
 
 describe('the raid clock', () => {
   test('defaults: FA 25 min (the user\'s raid stats), ToA 30, CoX 20, ToB 20 (ToB: surge cooldown paused between rooms)', () => {
-    expect(RAIDS.map((r) => [r.id, r.typicalRaidMinutes])).toEqual([['fractured-archive', 25], ['toa', 30], ['cox', 20], ['tob', 20]]);
+    expect(faRows(RAIDS).map((r) => [r.id, r.typicalRaidMinutes])).toEqual([['fractured-archive', 25], ['toa', 30], ['cox', 20], ['tob', 20]].filter(([id]) => OTHER_RAIDS || id === 'fractured-archive'));
     // phase 38c: the default clock is the fight wall + the non-fight time (Phase38c.test.ts); an explicit raid length
     // (`raidMinutes`) is this phase's clock
     expect(raidTimeAssumptionsFrom({ ...A('fractured-archive'), raidMinutes: 25 }, 'team').raidSeconds).toBe(1500);
     expect(raidTimeAssumptionsFrom({ ...A('fractured-archive'), raidMinutes: 0 }, 'team').raidSeconds).toBe(0);
-    expect(raidTimeAssumptionsFrom(A('tob'), 'team').surgePausesBetweenEncounters).toBe(true);
-    expect(raidTimeAssumptionsFrom(A('toa'), 'team').surgePausesBetweenEncounters).toBeUndefined();
+    if (OTHER_RAIDS) {
+      expect(raidTimeAssumptionsFrom(A('tob'), 'team').surgePausesBetweenEncounters).toBe(true);
+      expect(raidTimeAssumptionsFrom(A('toa'), 'team').surgePausesBetweenEncounters).toBeUndefined();
+    }
   });
 
   test('non-fight time spread before the encounters in proportion to their fight time (by hand)', () => {
@@ -109,14 +112,14 @@ describe('the raid clock', () => {
   test('Plan input: saved and validated (0-120 min), default per raid (phase 38c: "Non-fight time")', () => {
     const fa = raidConfig('fractured-archive');
     expect(defaultPlanInputs(fa).nonFightMinutes).toBe(21.5);
-    expect(defaultPlanInputs(raidConfig('toa')).nonFightMinutes).toBe(15.5);
+    if (OTHER_RAIDS) expect(defaultPlanInputs(raidConfig('toa')).nonFightMinutes).toBe(15.5);
     expect(validatePlanInputs(fa, { nonFightMinutes: 40 }, fa.defaultAssumptions).nonFightMinutes).toBe(40);
     expect(validatePlanInputs(fa, { nonFightMinutes: 121 }, fa.defaultAssumptions).nonFightMinutes).toBe(21.5);
     expect(validatePlanInputs(fa, { nonFightMinutes: 'x' }, fa.defaultAssumptions).nonFightMinutes).toBe(21.5);
   });
 });
 
-describe('ToA supplies by room: the raid potion from the 3rd room on', () => {
+otherRaidsDescribe('ToA supplies by room: the raid potion from the 3rd room on', () => {
   const a = A('toa');
   const raid = raidConfig('toa');
   const ta = raidTimeAssumptionsFrom(a, 'none', raid.defaultTimeSettings, TOA_TIME_MODEL);

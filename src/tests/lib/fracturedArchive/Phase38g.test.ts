@@ -1,4 +1,5 @@
 import { describe, expect, test } from '@jest/globals';
+import { OTHER_RAIDS, otherRaidsTest } from '@/tests/utils/otherRaids';
 import React from 'react';
 import { TextDecoder, TextEncoder } from 'util';
 import { generateEmptyPlayer } from '@/state';
@@ -71,7 +72,7 @@ describe('specs to the floor at 95%, not if every spec lands (hand-computed, Eld
     expect(nd.pFloor).toBeCloseTo(atLeast(2, 4, h), 10);
   });
 
-  test('ToA Kephri (low accuracy): Def 80 → floor 60 with 1 landed spec (best case 1), but 63% per spec needs 4 for 95%', () => {
+  otherRaidsTest('ToA Kephri (low accuracy): Def 80 → floor 60 with 1 landed spec (best case 1), but 63% per spec needs 4 for 95%', () => {
     const m = modelOf('toa', 'toa-kephri');
     expect([m.def, m.floor]).toEqual([80, 60]);
     expect(maulLanded(80, 60)).toBe(1);
@@ -91,7 +92,7 @@ describe('specs to the floor at 95%, not if every spec lands (hand-computed, Eld
     expect(order.map((x) => x.expectedDrop)).toEqual([...order.map((x) => x.expectedDrop)].sort((a, b) => b - a));
   });
 
-  test('ToB Sotetseg: Def 200 → 130 → 85 (2 landed); at 75% per spec the maul alone needs 5 for 95% (4 give 94.9%)', () => {
+  otherRaidsTest('ToB Sotetseg: Def 200 → 130 → 85 (2 landed); at 75% per spec the maul alone needs 5 for 95% (4 give 94.9%)', () => {
     const m = modelOf('tob', 'tob-sotetseg');
     expect([m.def, m.floor]).toEqual([200, 100]);
     expect(maulLanded(200, 100)).toBe(2);
@@ -107,7 +108,7 @@ describe('specs to the floor at 95%, not if every spec lands (hand-computed, Eld
     expect(Object.values(all).reduce((t, n) => t + (n ?? 0), 0)).toBeLessThanOrEqual(5);
   });
 
-  test('CoX Tekton: floor 0 is never reached (8 landed mauls leave Def 8: 215 → 140 → 91 → 60 → 39 → 26 → 17 → 12 → 8)', () => {
+  otherRaidsTest('CoX Tekton: floor 0 is never reached (8 landed mauls leave Def 8: 215 → 140 → 91 → 60 → 39 → 26 → 17 → 12 → 8)', () => {
     const m = modelOf('cox', 'cox-tekton');
     expect([m.def, m.floor]).toEqual([215, 0]);
     let d = 215;
@@ -170,6 +171,9 @@ describe('carriers by headcount (no seconds)', () => {
     expect(h * h).toBeLessThan(0.95); // 1 carrier: 2 specs, both must land
     expect(atLeast(2, 4, h)).toBeGreaterThanOrEqual(0.95);
     expect(eventWantedCounts({ drain: 'team', carriers: { elderMaul: 3 } }, [m])).toEqual({ elderMaul: 4 });
+  });
+
+  otherRaidsTest('per event, ToA / CoX: the fewest carriers at 95%, the cap at what helps', () => {
     // Kephri: 1 carrier 1 − (1 − h)² ≈ 86%, 2 carriers ≈ 98%
     const k = modelOf('toa', 'toa-kephri');
     expect(1 - (1 - k.hitChance.elderMaul) ** 2).toBeLessThan(0.95);
@@ -239,7 +243,7 @@ describe('one drain line on Search, Plan and Summary (same source: drainLine.ts 
 
   test.each([
     ['fractured-archive', 'xarth'], ['toa', 'toa-kephri'], ['cox', 'cox-tekton'], ['tob', 'tob-sotetseg'],
-  ] as [RaidId, string][])('%s %s (Team, default party): the three tabs render the same line', (raid, id) => {
+  ].filter(([raid]) => OTHER_RAIDS || raid === 'fractured-archive') as [RaidId, string][])('%s %s (Team, default party): the three tabs render the same line', (raid, id) => {
     const a = A(raid);
     const e = encounterOf(raid, id, a, 'team');
     const first = e.phases.find((p) => !findTarget(p.targetKey).noDrains)!;
@@ -264,7 +268,7 @@ describe('one drain line on Search, Plan and Summary (same source: drainLine.ts 
     expect(text(search[0])).toMatch(/^Drain: /);
   }, 120000);
 
-  test('Solo, Team and any party size: the same order and specs; only the carriers change', () => {
+  otherRaidsTest('Solo, Team and any party size: the same order and specs; only the carriers change', () => {
     const m = modelOf('toa', 'toa-kephri');
     const pct = (p: number) => `${Math.round(p * 100)}%`;
     const head = `Drain: ${drainOrder(m).map((x, i) => `${{

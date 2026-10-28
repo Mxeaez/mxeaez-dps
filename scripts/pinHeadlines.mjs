@@ -7,8 +7,10 @@
  * - the README's headline table (between the `headlines:start` / `headlines:end` markers);
  * - with --full, also the phase 37 full-plan fixtures (src/tests/lib/raids/phase37/<name>.json, the bit-identical guard).
  *
- * Usage: node scripts/pinHeadlines.mjs [names...] [--full] [--check] [--jobs N] | --readme
- *   names   fa toa cox tob faSolo faNotOwned (default: all; the others keep their entries)
+ * Usage: node scripts/pinHeadlines.mjs [names...] [--full] [--check] [--other-raids] [--jobs N] | --readme
+ *   names   fa toa cox tob faSolo faNotOwned (default, phase 38f-2: fa faSolo faNotOwned; the others keep their
+ *           entries and their phase37/*.json fixtures, frozen until round 7)
+ *   --other-raids (or RUN_OTHER_RAIDS=1) also plan toa cox tob by default
  *   --check write nothing; exit 1 when a fixture (or the README table) would change
  *   --jobs  plans at once (default 3; each plan is single-threaded, ~20-60 s alone, CoX the longest)
  *   --readme only rewrite the README table from the fixture (no planning)
@@ -101,7 +103,8 @@ const main = async () => {
   const asked = args.filter((a, i) => !a.startsWith('--') && args[i - 1] !== '--jobs');
   const unknown = asked.filter((n) => !all.includes(n));
   if (unknown.length) throw new Error(`unknown plan(s): ${unknown.join(', ')} (known: ${all.join(', ')})`);
-  const names = asked.length ? asked : all;
+  const withOthers = args.includes('--other-raids') || !!process.env.RUN_OTHER_RAIDS;
+  const names = asked.length ? asked : all.filter((n) => withOthers || !['toa', 'cox', 'tob'].includes(n));
   const outDir = mkdtempSync(path.join(os.tmpdir(), 'pin-headlines-'));
   const t0 = Date.now();
   console.log(`Planning ${names.join(', ')} (${jobs} at once)…`);

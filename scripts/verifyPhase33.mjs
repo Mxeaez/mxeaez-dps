@@ -14,6 +14,7 @@
  */
 import { chromium } from '@playwright/test';
 import { headlineClose } from './headlines.mjs';
+import { OTHER_RAIDS } from './otherRaids.mjs';
 import { openSections } from './phase34Sections.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
@@ -174,6 +175,7 @@ const main = async () => {
   await page.locator('[data-testid="plan-spec-mode"]').selectOption('auto');
   check(await page.locator('[data-testid="my-specs-mode"]').inputValue() === 'auto', 'and back: "Planner decides" in both');
 
+  if (OTHER_RAIDS) { // phase 38f-2: the ToA / CoX / ToB steps run with RUN_OTHER_RAIDS=1 only
   // --- ToB: Sotetseg's Defence is restored after each maze (three drain events); Bloat's stomp (a second, no-drain event)
   await page.locator('[data-testid="raid-tab-tob"]').click();
   await page.waitForTimeout(500);
@@ -196,6 +198,7 @@ const main = async () => {
   }
   await page.locator('[data-testid="plan-encounters"]').scrollIntoViewIfNeeded();
   await shot(page, 'tob-sotetseg');
+  }
 
   await browser.close();
   console.log(`${failures ? `${failures} FAILED` : 'all OK'} (${((Date.now() - t0) / 1000).toFixed(0)} s)`);

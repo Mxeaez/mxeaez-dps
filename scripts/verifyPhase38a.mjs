@@ -10,6 +10,7 @@
  * Screenshot docs/screenshots/phase38a-raid-length.png (FA Plan inputs, Advanced open).
  */
 import { chromium } from '@playwright/test';
+import { OTHER_RAIDS } from './otherRaids.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
 const KEY = 'mxeaez-dps:settings:v1';
@@ -38,7 +39,7 @@ const main = async () => {
     await input.waitFor({ timeout: 30000 });
   };
 
-  for (const [raid, minutes] of [['fractured-archive', '21.5'], ['toa', '15.5'], ['cox', '12.9'], ['tob', '12.6']]) {
+  for (const [raid, minutes] of [['fractured-archive', '21.5'], ['toa', '15.5'], ['cox', '12.9'], ['tob', '12.6']].filter(([r]) => OTHER_RAIDS || r === 'fractured-archive')) {
     await openPlan(raid);
     check(await input.inputValue() === minutes, `${raid}: non-fight time ${await input.inputValue()} min (expected ${minutes})`);
     const title = await page.locator('label[for="plan-non-fight-minutes"]').getAttribute('title');

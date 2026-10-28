@@ -17,7 +17,7 @@ import {
 } from '@/lib/fracturedArchive/presets';
 import { scaleMonster } from '@/lib/MonsterScaling';
 import {
-  RaidConfig, RaidId, RAIDS, raidConfig, teamDpsMultiplier, teamTimeLabel, TimeSettings, visibleTargets, withScalingInput,
+  DEFAULT_RAID, RaidConfig, RaidId, raidConfig, teamDpsMultiplier, teamTimeLabel, TimeSettings, VISIBLE_RAIDS, visibleTargets, withScalingInput,
 } from '@/lib/raids';
 import {
   ayakExpectedDrain, drainModel, PlannerWeapon, SPEC_WEAPONS, specProfile,
@@ -761,7 +761,8 @@ const BestSetup: React.FC = () => {
   const [settings, setSettings] = useState<SavedSettings>(defaultSettings);
   const [loaded, setLoaded] = useState(false);
   const [generation, setGeneration] = useState(0);
-  const raidId = settings.raid;
+  // phase 38f-2: a saved tab of a hidden raid (toa / cox / tob) shows the Fractured Archive; the saved value is left as is
+  const raidId = VISIBLE_RAIDS.some((r) => r.id === settings.raid) ? settings.raid : DEFAULT_RAID;
   const setRaidId = (id: RaidId) => setSettings((s) => ({ ...s, raid: id }));
   // phase 26: global, kept in localStorage (read after mount: the page is a static export)
   const [notOwned, setNotOwnedState] = useState<string[]>([]);
@@ -799,7 +800,7 @@ const BestSetup: React.FC = () => {
   const raid = raidConfig(raidId);
   const raidTabs = (
     <div className="flex gap-1" data-testid="raid-tabs">
-      {RAIDS.map((r) => (
+      {VISIBLE_RAIDS.map((r) => (
         <button
           key={r.id}
           type="button"

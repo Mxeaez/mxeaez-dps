@@ -15,6 +15,7 @@
  */
 import { chromium } from '@playwright/test';
 import { headlineClose } from './headlines.mjs';
+import { OTHER_RAIDS } from './otherRaids.mjs';
 import { openSections } from './phase34Sections.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
@@ -155,6 +156,7 @@ const main = async () => {
   check(headlineClose(faTotal, 'fa'), `FA plan total ${faTotal}`);
   await shot(page, 'plan-fa');
 
+  if (OTHER_RAIDS) { // phase 38f-2: the ToA / CoX / ToB steps run with RUN_OTHER_RAIDS=1 only
   await page.locator('[data-testid="raid-tab-toa"]').click();
   await page.waitForTimeout(500);
   await runPlan(page);
@@ -163,6 +165,7 @@ const main = async () => {
   const toaTotal = (await page.locator('[data-testid="plan-total"]').innerText()).trim();
   check(headlineClose(toaTotal, 'toa'), `ToA plan total ${toaTotal}`);
   await shot(page, 'plan-toa');
+  }
 
   // --- calculator Max-drain buttons
   await page.goto(BASE, { waitUntil: 'load', timeout: 120000 });

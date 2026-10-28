@@ -16,6 +16,7 @@
  */
 import { chromium } from '@playwright/test';
 import { headlineClose } from './headlines.mjs';
+import { OTHER_RAIDS } from './otherRaids.mjs';
 import { openSections } from './phase34Sections.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
@@ -111,13 +112,14 @@ const run = async () => {
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1500, height: 1100 } });
   await page.goto(`${BASE}best-setup`, { waitUntil: 'load', timeout: 120000 });
-  await page.locator('[data-testid="raid-tab-tob"]').waitFor({ timeout: 120000 });
+  await page.locator('[data-testid="raid-tab-fractured-archive"]').waitFor({ timeout: 120000 });
 
   // FA
   const fa = await runPlan(page, 'fractured-archive');
   check(headlineClose(fa.total, 'fa'), `FA plan total ${fa.total}`);
   await shot(page, 'plan-fa');
 
+  if (OTHER_RAIDS) { // phase 38f-2: the ToA / CoX / ToB steps run with RUN_OTHER_RAIDS=1 only
   // ToA, CoX
   const toa = await runPlan(page, 'toa');
   check(toa.kit.some((k) => k.group === 'magic'), 'ToA: a magic loadout (Wardens P2)');
@@ -169,6 +171,7 @@ const run = async () => {
   await page.waitForTimeout(500);
   const back = await page.locator('[data-testid="boss-select"]').inputValue();
   check(!back.startsWith('tob-prinkipas'), `ToB back to Normal: the selected Prinkipas falls back to ${back}`);
+  }
 
   await browser.close();
   console.log(failures ? `${failures} FAILED` : 'all OK');

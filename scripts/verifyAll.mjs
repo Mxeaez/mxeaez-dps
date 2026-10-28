@@ -1,12 +1,14 @@
 /**
  * Phase 37b: runs verify scripts in parallel against the running dev server (not part of the Jest run).
  *
- * Usage: node scripts/verifyAll.mjs [scripts...] [--jobs N] [--base URL] [--keep-screenshots]
+ * Usage: node scripts/verifyAll.mjs [scripts...] [--jobs N] [--base URL] [--keep-screenshots] [--other-raids]
  *   scripts            names or paths: verifyPhase37b, scripts/verifyPhase21.mjs, 37b (= verifyPhase37b); default: every
  *                      scripts/verifyPhase*.mjs (scripts/stale/ excluded; --all includes them)
  *   --jobs N           scripts at once (default 3; each launches its own browser — fresh localStorage — and plans in the
  *                      page's helper workers, so time limits inside a script are tighter with more jobs)
  *   --base URL         passed to each script as its base URL (default: each script's own, http://localhost:3001/osrs-dps/)
+ *   --other-raids      (phase 38f-2; = RUN_OTHER_RAIDS=1) also run the ToA / CoX / ToB steps and the scripts marked
+ *                      `// other-raids-only`; the dev server needs NEXT_PUBLIC_SHOW_OTHER_RAIDS=1 for the tabs. Round 6 is FA only.
  *   --keep-screenshots keep the tracked docs/screenshots/*.png the scripts overwrote (default: restored with
  *                      `git checkout`; files already modified before the run are put back as they were)
  * Prints one line per script (OK / FAIL, seconds, failed checks) and the wall time vs the scripts' summed time; each
@@ -15,7 +17,7 @@
  */
 import { spawn, execFileSync } from 'node:child_process';
 import {
-  copyFileSync, mkdirSync, readdirSync, writeFileSync,
+  copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync,
 } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -27,6 +29,8 @@ const opt = (name) => {
   const i = args.indexOf(name);
   return i >= 0 ? args[i + 1] : undefined;
 };
+if (args.includes('--other-raids')) process.env.RUN_OTHER_RAIDS = '1';
+const OTHER_RAIDS = !!process.env.RUN_OTHER_RAIDS;
 const jobs = Math.max(1, Number(opt('--jobs')) || 3);
 const base = opt('--base');
 const keep = args.includes('--keep-screenshots');
@@ -38,12 +42,17 @@ const resolveScript = (a) => {
   const file = /^\d/.test(name) ? `verifyPhase${name}.mjs` : `${name}.mjs`;
   return path.join(root, 'scripts', file);
 };
-const scripts = asked.length
+const allScripts = asked.length
   ? asked.map(resolveScript)
   : [...readdirSync(path.join(root, 'scripts')).filter((f) => /^verifyPhase.*\.mjs$/.test(f)).map((f) => path.join(root, 'scripts', f)),
     ...(process.argv.includes('--all') && existsSync(path.join(root, 'scripts', 'stale'))
       ? readdirSync(path.join(root, 'scripts', 'stale')).filter((f) => /^verifyPhase.*\.mjs$/.test(f)).map((f) => path.join(root, 'scripts', 'stale', f)) : [])]
     .sort((a, b) => natural(path.basename(a), path.basename(b)));
+
+// phase 38f-2: scripts about the other raids only are skipped unless RUN_OTHER_RAIDS=1 (their steps in mixed scripts gate themselves)
+const otherOnly = (f) => /^\/\/ other-raids-only/m.test(readFileSync(f, 'utf8'));
+const scripts = allScripts.filter((f) => OTHER_RAIDS || !otherOnly(f));
+const skipped = allScripts.filter((f) => !scripts.includes(f));
 
 const git = (...a) => execFileSync('git', a, { cwd: root, encoding: 'utf8' });
 const modifiedShots = () => git('diff', '--name-only', '--', 'docs/screenshots').split('\n').filter(Boolean);
@@ -59,6 +68,7 @@ const main = async () => {
     return [f, to];
   });
   console.log(`${scripts.length} script(s), ${jobs} at once; logs in ${logDir}`);
+  if (skipped.length) console.log(`Skipped (other raids, set RUN_OTHER_RAIDS=1 / --other-raids): ${skipped.map((f) => path.basename(f, '.mjs')).join(', ')}`);
   const t0 = Date.now();
   const results = [];
   const queue = [...scripts];

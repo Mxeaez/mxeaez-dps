@@ -10,6 +10,7 @@ import {
 import { applyLoadoutToPlayer } from '@/lib/fracturedArchive/loadout';
 import { RaidConfig, raidConfig } from '@/lib/raids';
 import { cpuSeconds, memoWithin } from '@/tests/utils/phase37';
+import { faRows } from '@/tests/utils/otherRaids';
 import { planFor } from '@/tests/utils/crossRaid';
 import {
   FA_NOT_OWNED, headline, headlineGear, HeadlineName, headlineOf, headlineTimeProblems,
@@ -136,7 +137,8 @@ export const PHASE37_FIXTURE: Record<string, [string, number]> = {
 
 /** Registers the slow headline tests of these raids (and, with `notOwned`, the FA plan without Obligator / Ascension). */
 export const headlineTests = (ids: string[], notOwned: boolean): void => (process.env.RUN_SLOW_TESTS ? describe : describe.skip)('headline plan totals (slow)', () => {
-  const cases = HEADLINES.filter((h) => ids.includes(h[0]));
+  // phase 38f-2: ToA / CoX / ToB plans only with RUN_OTHER_RAIDS=1
+  const cases = faRows(HEADLINES.map((h) => ({ id: h[0], h }))).filter((r) => ids.includes(r.id)).map((r) => r.h);
   if (cases.length) {
     test.each(cases)('%s: %s', (id, text, seconds) => {
       const raid = raidConfig(id as RaidConfig['id']);

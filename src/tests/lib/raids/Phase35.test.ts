@@ -1,4 +1,7 @@
 import { describe, expect, test } from '@jest/globals';
+import {
+  OTHER_RAIDS, otherRaidsDescribe, otherRaidsSlowDescribe, otherRaidsTest,
+} from '@/tests/utils/otherRaids';
 import React from 'react';
 import { TextDecoder, TextEncoder } from 'util';
 import { generateEmptyPlayer } from '@/state';
@@ -23,7 +26,7 @@ import { headline } from '@/tests/utils/headlines';
 // state ranks them at full Defence, the planners plan no drains on them and the team carriers save nothing on them.
 // Docs: docs/BEST_SETUP.md *Targets that never get specs (phase 35)*, docs/DATA_SOURCES.md *Phase 35*.
 
-const ADDS: [string, RaidConfig['id']][] = [
+const ADDS_ALL: [string, RaidConfig['id']][] = [
   ['toa-spitting-scarab', 'toa'],
   ['toa-soldier-scarab', 'toa'],
   ['toa-arcane-scarab', 'toa'],
@@ -43,7 +46,7 @@ const ADDS: [string, RaidConfig['id']][] = [
 ];
 
 /** Judgement calls (bosses, boss phases, room bosses): they keep their drains. */
-const KEEP: [string, RaidConfig['id']][] = [
+const KEEP_ALL: [string, RaidConfig['id']][] = [
   ['toa-kephri-shielded', 'toa'],
   ['toa-akkha', 'toa'],
   ['toa-obelisk', 'toa'],
@@ -62,6 +65,10 @@ const KEEP: [string, RaidConfig['id']][] = [
   ['smorks', 'fractured-archive'],
 ];
 
+// phase 38f-2: the other raids' rows only with RUN_OTHER_RAIDS=1
+const ADDS = ADDS_ALL.filter(([, raid]) => OTHER_RAIDS || raid === 'fractured-archive');
+const KEEP = KEEP_ALL.filter(([, raid]) => OTHER_RAIDS || raid === 'fractured-archive');
+
 const A = (id: RaidConfig['id']): BestSetupAssumptions => raidConfig(id).defaultAssumptions;
 const SOLO = (id: RaidConfig['id']): BestSetupAssumptions => ({
   ...A(id),
@@ -69,7 +76,7 @@ const SOLO = (id: RaidConfig['id']): BestSetupAssumptions => ({
     ...A(id).mySpecs, elderMaul: true, tonalztics: true, bgs: true, ayak: 2,
   },
 });
-const ADD_KEYS = new Set(ADDS.map(([k]) => k));
+const ADD_KEYS = new Set(ADDS_ALL.map(([k]) => k));
 
 describe('adds: noDrains with the adds reason', () => {
   test.each(ADDS)('%s', (key) => {
@@ -78,7 +85,7 @@ describe('adds: noDrains with the adds reason', () => {
     expect(NO_DRAINS_ADDS).toBe('adds: not worth a drain spec');
   });
 
-  test('the existing reasons are kept (Vanguards, Bloat after a stomp, Verzik)', () => {
+  otherRaidsTest('the existing reasons are kept (Vanguards, Bloat after a stomp, Verzik)', () => {
     expect(findTarget('cox-vanguard-melee').noDrains).toBe('Vanguards restore drained stats in their shell');
     expect(findTarget('tob-bloat-restored').noDrains).toMatch(/regenerate to full when it stomps/);
     expect(findTarget('tob-verzik-p2').noDrains).toMatch(/absorbs the defence reduction/);
@@ -123,7 +130,7 @@ const dom = (el: React.ReactElement) => {
   return div;
 };
 
-describe('Search drain box (SpecPlanPanel)', () => {
+otherRaidsDescribe('Search drain box (SpecPlanPanel)', () => {
   const NO_SPECS = 'no spec weapons: run a plan or pick Specs I bring';
   const panel = (targetKey: string, drain: 'solo' | 'team', noSpecsNote?: string) => dom(React.createElement(SpecPlanPanel, {
     targetKey, phase: undefined, drain, assumptions: A('toa'), noSpecsNote,
@@ -161,7 +168,7 @@ const encounters = (id: RaidConfig['id'], ids: string[], drain: 'none' | 'team' 
 const TOA_IDS = ['toa-kephri', 'toa-akkha'];
 const COX_IDS = ['cox-vasa', 'cox-vespula', 'cox-mystics', 'cox-shamans', 'cox-muttadiles'];
 
-describe('time model: no drains planned on the adds, so the carriers save no time on them', () => {
+otherRaidsDescribe('time model: no drains planned on the adds, so the carriers save no time on them', () => {
   test.each([['toa', TOA_IDS], ['cox', COX_IDS]] as [RaidConfig['id'], string[]][])('%s', (id, ids) => {
     const none = encounters(id, ids, 'none');
     (['team', 'solo'] as const).forEach((d) => {
@@ -194,7 +201,7 @@ describe('time model: no drains planned on the adds, so the carriers save no tim
 
 // phase 38f: the fast copy plans one route with ring switches (seconds); the slow copy is the original (camp one ring,
 // every route: 635 s on this machine, RUN_SLOW_TESTS=1).
-describe.each([['ring switches, one route', false], ['camp one ring, every route (slow)', true]] as [string, boolean][])('ToA plan (reduced pool), %s: the spec plan and briefing list no add targets', (_, slow) => {
+otherRaidsDescribe.each([['ring switches, one route', false], ['camp one ring, every route (slow)', true]] as [string, boolean][])('ToA plan (reduced pool), %s: the spec plan and briefing list no add targets', (_, slow) => {
   const raid = raidConfig('toa');
   const planTest = slow && !process.env.RUN_SLOW_TESTS ? test.skip : test;
   let res: PlanResult;
@@ -262,7 +269,7 @@ describe.each([['ring switches, one route', false], ['camp one ring, every route
  * (carriers 1 Elder maul + 1 Eye of Ayak, the Tonalztics carrier dropped), CoX 6:35.9 → 7:01.3 (2 Elder maul, 1
  * Tonalztics, 1 BGS, 1 Eye of Ayak). Slow: `RUN_SLOW_TESTS=1`.
  */
-(process.env.RUN_SLOW_TESTS ? describe : describe.skip)('headlines (slow)', () => {
+otherRaidsSlowDescribe('headlines (slow)', () => {
   test.each([
     // phase 36 (one spec budget per encounter, damage specs, surge): ToA 14:12.1 → 14:05.5, CoX 7:01.3 → 7:03.6
     // phase 36 review (carriers ≤ party − 1 with your damage specs; hp left; drained clock): ToA → 14:07.8, CoX → 7:08.7

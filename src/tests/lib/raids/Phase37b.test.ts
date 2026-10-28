@@ -1,6 +1,7 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { describe, expect, test } from '@jest/globals';
+import { OTHER_RAIDS } from '@/tests/utils/otherRaids';
 import Potion from '@/enums/Potion';
 import { raidConfig } from '@/lib/raids';
 import {
@@ -265,7 +266,7 @@ describe('phase 37 review nits', () => {
 });
 
 describe('the headline fixture (src/tests/fixtures/headlines.json)', () => {
-  test.each(HEADLINE_CASES.map((c) => c.name))('%s = the phase 37 full-plan fixture\'s summary', (name) => {
+  test.each(HEADLINE_CASES.map((c) => c.name).filter((n) => OTHER_RAIDS || !['toa', 'cox', 'tob'].includes(n)))('%s = the phase 37 full-plan fixture\'s summary', (name) => {
     expect(headlineOf(name, phase37Fixture(name))).toEqual(headline(name));
   });
 

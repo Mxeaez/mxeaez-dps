@@ -11,6 +11,7 @@
  * - Plan, ToB (Team defaults): Sotetseg's three events have different specs (no "× 3"). Screenshot phase36-plan-tob.png.
  */
 import { chromium } from '@playwright/test';
+import { OTHER_RAIDS } from './otherRaids.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
 const EXPECT = { fa: process.env.FA_TOTAL || '', tob: process.env.TOB_TOTAL || '' };
@@ -95,6 +96,7 @@ const main = async () => {
   await page.mouse.move(0, 0);
   await page.locator('[data-testid="plan-result"]').screenshot({ path: 'docs/screenshots/phase36-plan-fa.png' });
 
+  if (OTHER_RAIDS) { // phase 38f-2: the ToA / CoX / ToB steps run with RUN_OTHER_RAIDS=1 only
   // --- Plan: ToB (Sotetseg)
   await page.locator('[data-testid="raid-tab-tob"]').click();
   await page.waitForTimeout(500);
@@ -108,6 +110,7 @@ const main = async () => {
   check(!/× 3/.test(sote ?? '') && /after maze 1/.test(sote ?? ''), 'Sotetseg: one budget, the events listed separately (no "× 3")');
   await page.mouse.move(0, 0);
   await page.locator('[data-testid="plan-briefing"]').screenshot({ path: 'docs/screenshots/phase36-plan-tob.png' });
+  }
 
   // --- Search, Solo with Tonalztics ticked (Set manually): the "with a surge dose" line; then back to Planner decides
   await page.locator('[data-testid="raid-tab-fractured-archive"]').click();

@@ -1,4 +1,5 @@
 import { describe, expect, test } from '@jest/globals';
+import { OTHER_RAIDS, otherRaidsTest } from '@/tests/utils/otherRaids';
 import {
   calculatePlayerVsNpc,
   findEquipment,
@@ -136,7 +137,7 @@ describe('Elemental amulet', () => {
 
 describe('pools and presets (phase 25)', () => {
   test('every raid pool has rupture + anguish (ranged neck), Occult + Elemental amulet (magic neck)', () => {
-    for (const base of RAID_BASES) {
+    for (const base of RAID_BASES.filter((b) => OTHER_RAIDS || b.id === 'fractured-archive')) {
       const neck = (g: 'ranged' | 'magic') => (base.searchPool[g].slots.neck || []).map((c) => refName(c.ref));
       expect(neck('ranged')).toEqual(expect.arrayContaining(['Necklace of rupture', 'Necklace of anguish']));
       expect(neck('magic')).toEqual(expect.arrayContaining(['Occult necklace', 'Elemental amulet']));
@@ -145,7 +146,7 @@ describe('pools and presets (phase 25)', () => {
     expect(elemental.keep).toEqual(expect.arrayContaining(['Kodai wand', 'Harmonised Nightmare staff']));
   });
 
-  test('CoX: the Elemental amulet is also kept for the Dragon hunter wand', () => {
+  otherRaidsTest('CoX: the Elemental amulet is also kept for the Dragon hunter wand', () => {
     const cox = RAID_BASES.find((r) => r.id === 'cox')!;
     const elemental = cox.searchPool.magic.slots.neck!.find((c) => refName(c.ref) === 'Elemental amulet')!;
     expect(elemental.keep).toEqual(expect.arrayContaining(['Kodai wand', 'Dragon hunter wand']));

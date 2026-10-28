@@ -16,6 +16,7 @@
  */
 import { chromium } from '@playwright/test';
 import { durationClose, headlineClose, headlineOf } from './headlines.mjs';
+import { OTHER_RAIDS } from './otherRaids.mjs';
 import { openSections } from './phase34Sections.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
@@ -163,6 +164,7 @@ const main = async () => {
   check(!(await kitLoadouts(page)).some((l) => l.items.includes(BLESSING)), 'FA defaults: no blessing in the kit');
   await shot(page, 'fa-defaults');
 
+  if (OTHER_RAIDS) { // phase 38f-2: the ToA / CoX / ToB steps run with RUN_OTHER_RAIDS=1 only
   // --- ToA defaults: the worn Keris partisan (Torva) keeps a switch's bolts in its ammo slot
   await page.locator('[data-testid="raid-tab-toa"]').click();
   await page.waitForTimeout(500);
@@ -173,6 +175,7 @@ const main = async () => {
   check(headlineClose(toaTotal, 'toa'), `ToA plan total ${toaTotal}`);
   check(await checkKept(page, 'ToA'), 'ToA: the worn melee set keeps the kit\'s ammo');
   await shot(page, 'kept-ammo');
+  }
 
   await browser.close();
   console.log(`${failures ? `${failures} FAILED` : 'all OK'} (${((Date.now() - t0) / 1000).toFixed(0)} s)`);

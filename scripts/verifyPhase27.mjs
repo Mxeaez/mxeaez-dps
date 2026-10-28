@@ -15,6 +15,7 @@
  */
 import { chromium } from '@playwright/test';
 import { openSections } from './phase34Sections.mjs';
+import { OTHER_RAIDS } from './otherRaids.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
 
@@ -131,6 +132,7 @@ const main = async () => {
   checkPotions(lb, 'camp Lightbearer');
   await shot(page, 'fa-camp-lightbearer');
 
+  if (OTHER_RAIDS) { // phase 38f-2: the ToA / CoX / ToB steps run with RUN_OTHER_RAIDS=1 only
   // --- ToA: the raid potion only
   await page.locator('[data-testid="raid-tab-toa"]').click();
   await page.waitForTimeout(500);
@@ -144,6 +146,7 @@ const main = async () => {
   check(count(toa.cells, 'Super combat') + count(toa.cells, 'Ranging potion') === 0 && toa.potions.endsWith('none'), 'ToA: no combat potions');
   check(toa.kit.every((k) => k.ring === toa.ring), `ToA: every loadout wears ${toa.ring}`);
   await shot(page, 'toa-camp-one');
+  }
 
   await browser.close();
   console.log(failures ? `\n${failures} check(s) FAILED` : '\nAll checks OK');

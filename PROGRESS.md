@@ -3,6 +3,26 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 38f-2 - FA only: the other raids hidden, their tests / pins / verify steps gated (2026-10-28)
+
+Tooling + UI, no src/lib calculation change (ROADMAP 38f-2; round 6 is Fractured Archive only).
+
+- **UI**: `SHOW_OTHER_RAIDS` / `VISIBLE_RAIDS` in `src/lib/raids/index.ts` (default off; `NEXT_PUBLIC_SHOW_OTHER_RAIDS=1`
+  shows the tabs). BestSetup.tsx lists only `VISIBLE_RAIDS`; a saved tab of toa / cox / tob shows the FA (the saved value and the
+  other raids' saved inputs are left as they are). `scripts/verifyPhase38f2.mjs` (screenshot `docs/screenshots/phase38f2-fa-only.png`): OK.
+- **Tests**: `src/tests/utils/otherRaids.ts` (`otherRaidsTest` / `otherRaidsDescribe` / `otherRaidsSlow*`, `faRows`, `OTHER_RAIDS`).
+  ToA / CoX / ToB files gated whole; mixed files split (FA part stays on) in CrossRaid, CrossRaidHeadlines(Cox) (via
+  `headlineTests`), Phase21, 27, 30-38g, 35b, 36, 37, 37b, 37c, 38a-c, RaidConfig, SpecAccuracy, Heart, ItemRefresh. Kept on: upstream
+  scaling tests, pure maths, settings persistence (Phase37b). The Phase37c CLI smoke now runs `retime.mjs fa`.
+- **Pins**: `pinHeadlines.mjs` defaults to fa / faSolo / faNotOwned (`--other-raids` / `RUN_OTHER_RAIDS=1` for all); toa / cox / tob
+  fixtures (headlines.json entries, phase37/*.json) frozen. `verifyAll.mjs`: scripts marked `// other-raids-only` (35, 37b)
+  skipped, the other-raid steps of 21, 23, 27, 30, 32, 33, 35b, 36, 37, 38a, 38b gated by `scripts/otherRaids.mjs`; flag `--other-raids`.
+  (37b, the settings round trip, ran on ToA: its FA-only form is round 7 / final review; Phase37b.test.ts still covers it.)
+- **Suite times** (before -> after): fast 39.2 s / 1609 tests -> 26.3 s / 1356; `RUN_OTHER_RAIDS=1` fast 35.7 s / 1610 (green once);
+  FA slow (`CrossRaid Phase2 Phase3`) ~12 min (BUILDER, not re-measured) -> 4 min 51 s, 24 suites green.
+- Gates: `pinHeadlines --full --check` "no change" (fa 22:07.3, faSolo 23:39.1, faNotOwned 25:11.1; 40 s); verifyAll 21 23 27 30 32 33
+  35b 36 37 38a 38b 38f2 OK; tsc, lint clean.
+
 ## Phase 38g fix round — review B1 / B2, the user's decisions (2026-10-28)
 
 Review of 7278baad: FAIL on two display bugs; the user decided three open points. One fix commit.

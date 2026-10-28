@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, test } from '@jest/globals';
+import { faRows, otherRaidsDescribe, otherRaidsTest } from '@/tests/utils/otherRaids';
 import { getMonsters } from '@/lib/Monsters';
 import { MONSTER_PHASES_BY_ID } from '@/lib/constants';
 import {
@@ -28,7 +29,7 @@ import { TOA_ROUTE_ID } from '@/lib/raids/toa/time';
 // Fractured Archive config is exactly the phase 8-17 data (no behaviour change).
 
 describe('RaidConfig: every raid', () => {
-  test('raid ids are unique; FA is the default tab', () => {
+  otherRaidsTest('raid ids are unique; FA is the default tab', () => {
     expect(RAIDS.map((r) => r.id)).toEqual(['fractured-archive', 'toa', 'cox', 'tob']);
     expect(raidConfig('tob').name).toBe('Theatre of Blood');
     expect(raidConfig(undefined)).toBe(FRACTURED_ARCHIVE_RAID);
@@ -36,14 +37,14 @@ describe('RaidConfig: every raid', () => {
     expect(raidConfig('cox').name).toBe('Chambers of Xeric');
   });
 
-  test('target keys are unique across raids and findTarget finds every one', () => {
+  otherRaidsTest('target keys are unique across raids and findTarget finds every one', () => {
     const keys = RAIDS.flatMap((r) => r.targets.map((t) => t.key));
     expect(new Set(keys).size).toBe(keys.length);
     expect(ALL_TARGETS.map((t) => t.key).sort()).toEqual([...keys].sort());
     keys.forEach((k) => expect(findTarget(k).key).toBe(k));
   });
 
-  RAIDS.forEach((raid) => {
+  faRows(RAIDS).forEach((raid) => {
     describe(raid.name, () => {
       test('every target resolves to exactly one monster with an image in cdn/', () => {
         raid.targets.forEach((t) => {
@@ -131,7 +132,7 @@ describe('RaidConfig: every raid', () => {
 });
 
 describe('Team-DPS multiplier (times assume N players at your DPS)', () => {
-  test('defaults: 1 for the Fractured Archive (identity hp table), the party size for ToA (hp scales with party)', () => {
+  otherRaidsTest('defaults: 1 for the Fractured Archive (identity hp table), the party size for ToA (hp scales with party)', () => {
     expect(teamDpsMultiplier(DEFAULT_ASSUMPTIONS)).toBe(1);
     expect(teamDpsMultiplier({ ...DEFAULT_ASSUMPTIONS, partySize: 4 })).toBe(1);
     expect(teamDpsMultiplier(TOMBS_OF_AMASCUT_RAID.defaultAssumptions)).toBe(6);
@@ -140,7 +141,7 @@ describe('Team-DPS multiplier (times assume N players at your DPS)', () => {
     expect(teamDpsMultiplier({ ...DEFAULT_ASSUMPTIONS, teamDpsMultiplier: 5 })).toBe(5);
   });
 
-  test('the time model gets it; labels', () => {
+  otherRaidsTest('the time model gets it; labels', () => {
     expect(raidTimeAssumptionsFrom(DEFAULT_ASSUMPTIONS, 'none').dpsMultiplier).toBe(1);
     expect(raidTimeAssumptionsFrom(TOMBS_OF_AMASCUT_RAID.defaultAssumptions, 'none').dpsMultiplier).toBe(6);
     expect(teamTimeLabel(1)).toBe('times: your DPS alone');
@@ -169,7 +170,7 @@ describe('RaidConfig: the Fractured Archive is the phase 8-17 data, unchanged', 
   });
 });
 
-describe('RaidConfig: Tombs of Amascut', () => {
+otherRaidsDescribe('RaidConfig: Tombs of Amascut', () => {
   test('six routes (phase 38c: the pair of paths before the supplies), shown as Encounters', () => {
     const a = raidTimeAssumptionsFrom(TOMBS_OF_AMASCUT_RAID.defaultAssumptions, 'none', TOMBS_OF_AMASCUT_RAID.defaultTimeSettings, TOMBS_OF_AMASCUT_RAID.time);
     const routes = routesFor(a);

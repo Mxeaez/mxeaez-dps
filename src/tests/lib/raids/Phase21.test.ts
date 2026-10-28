@@ -1,4 +1,5 @@
 import { describe, expect, test } from '@jest/globals';
+import { faRows, otherRaidsDescribe, otherRaidsTest } from '@/tests/utils/otherRaids';
 import { generateEmptyPlayer } from '@/state';
 import {
   DEFAULT_NON_ITEM_SLOTS,
@@ -40,7 +41,7 @@ const supplySlots = (s: SupplyCounts) => Object.values(s).reduce((t, n) => t + n
 const refName = (r: string | [string, string]) => (typeof r === 'string' ? r : r[0]);
 
 describe('per-raid plan defaults', () => {
-  test.each(RAIDS.map((r) => [r.id, r] as const))('%s: pinned items resolve, supplies valid, fixed slots leave room', (_, raid) => {
+  test.each(faRows(RAIDS).map((r) => [r.id, r] as const))('%s: pinned items resolve, supplies valid, fixed slots leave room', (_, raid) => {
     const d = raid.planDefaults;
     expect(raidBase(raid.id === 'fractured-archive' ? undefined : raid.id).planDefaults).toBe(d);
     expect(raid.defaultSupplies).toBe(d.supplies);
@@ -65,7 +66,7 @@ describe('per-raid plan defaults', () => {
     expect(DEFAULT_NON_ITEM_SLOTS).toBe(1);
   });
 
-  test('ToA / CoX / ToB defaults (Strategies pages)', () => {
+  otherRaidsTest('ToA / CoX / ToB defaults (Strategies pages)', () => {
     // phase 30: empty pinned lists (the planner decides; the list is for the user's own additions)
     expect(TOMBS_OF_AMASCUT_RAID.planDefaults.pinned).toEqual([]);
     expect(TOMBS_OF_AMASCUT_RAID.defaultSupplies).toMatchObject({ brew: 0, restore: 6, other: 2 });
@@ -83,7 +84,7 @@ describe('per-raid plan defaults', () => {
     });
   });
 
-  test('raid-supplied items: the Dawnbringer in ToB only', () => {
+  otherRaidsTest('raid-supplied items: the Dawnbringer in ToB only', () => {
     expect(THEATRE_OF_BLOOD_RAID.planDefaults.raidSupplied).toEqual(['Dawnbringer']);
     [FRACTURED_ARCHIVE_RAID, TOMBS_OF_AMASCUT_RAID, CHAMBERS_OF_XERIC_RAID].forEach((r) => expect(r.planDefaults.raidSupplied).toEqual([]));
     expect(raidSuppliedItemIds({ raid: 'tob' })).toEqual([planItemByName('Dawnbringer').id]);
@@ -207,7 +208,7 @@ describe('dedupe rule (SWITCH_MIN_SAVING_SECONDS / SWITCH_MIN_SECONDS_PER_SLOT)'
   });
 });
 
-describe('ToB: Prinkipas only in Hard Mode', () => {
+otherRaidsDescribe('ToB: Prinkipas only in Hard Mode', () => {
   const keys = (a: BestSetupAssumptions) => visibleTargets(THEATRE_OF_BLOOD_RAID, a).map((t) => t.key);
   const prinkipas = ['tob-prinkipas-melee', 'tob-prinkipas-ranged', 'tob-prinkipas-magic'];
 
@@ -233,7 +234,7 @@ describe('ToB: Prinkipas only in Hard Mode', () => {
   });
 });
 
-describe('ToB: Dawnbringer spec count follows the team-DPS multiplier', () => {
+otherRaidsDescribe('ToB: Dawnbringer spec count follows the team-DPS multiplier', () => {
   const settings = THEATRE_OF_BLOOD_RAID.defaultTimeSettings;
   const timeA = (mult?: number) => raidTimeAssumptionsFrom(
     mult === undefined ? TOB_DEFAULT_ASSUMPTIONS : { ...TOB_DEFAULT_ASSUMPTIONS, teamDpsMultiplier: mult },
@@ -266,7 +267,7 @@ describe('ToB: Dawnbringer spec count follows the team-DPS multiplier', () => {
   });
 });
 
-describe('ToB plan (reduced pool): a Dawnbringer loadout, the staff at 0 slots', () => {
+otherRaidsDescribe('ToB plan (reduced pool): a Dawnbringer loadout, the staff at 0 slots', () => {
   test('the kit carries a Dawnbringer loadout; the grid has no Dawnbringer cell', () => {
     const raid = THEATRE_OF_BLOOD_RAID;
     const res = plan({

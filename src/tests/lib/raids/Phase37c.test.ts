@@ -1,6 +1,7 @@
 import { spawnSync } from 'child_process';
 import { join } from 'path';
 import { describe, expect, test } from '@jest/globals';
+import { OTHER_RAIDS } from '@/tests/utils/otherRaids';
 import {
   bruteForceKits, bruteForceOk, drainOutcome, headlineNames, headlineWithEncounter, RETIME_TOLERANCE, retimeHeadline,
   retimeOk,
@@ -16,7 +17,7 @@ const cli = (script: string, args: string[]) => spawnSync(process.execPath, [joi
 });
 
 describe('retime: the headline kits re-timed outside the planner = headlines.json', () => {
-  test.each(headlineNames())('%s', (name) => {
+  test.each(headlineNames().filter((n) => OTHER_RAIDS || !['toa', 'cox', 'tob'].includes(n)))('%s', (name) => {
     const r = retimeHeadline(name);
     expect(r.pinned).toBe(headline(name).seconds);
     expect(Math.abs(r.gap)).toBeLessThanOrEqual(RETIME_TOLERANCE);
@@ -33,10 +34,10 @@ describe('retime: the headline kits re-timed outside the planner = headlines.jso
   // phase 38f: the CLI smoke tests and the brute-force smoke are slow (a node process each; 9 s / 19 s); retimeHeadline,
   // drainOutcome and bruteForceKits themselves are called by the fast tests
   slowTest('CLI: one plan, a table, exit 0; an unknown plan exits 2', () => {
-    const ok = cli('retime.mjs', ['toa', '--quiet']);
+    const ok = cli('retime.mjs', ['fa', '--quiet']);
     expect(ok.status).toBe(0);
-    expect(ok.stdout).toMatch(/toa\s+\d+:\d\d\.\d\s+[\d.]+\s+[\d.]+\s+0\.00e\+0\s+yes\s+[\d.]+ s\s+OK/);
-    expect(ok.stdout).toContain(headline('toa').total);
+    expect(ok.stdout).toMatch(/fa\s+\d+:\d\d\.\d\s+[\d.]+\s+[\d.]+\s+0\.00e\+0\s+yes\s+[\d.]+ s\s+OK/);
+    expect(ok.stdout).toContain(headline('fa').total);
     expect(cli('retime.mjs', ['nope']).status).toBe(2);
   }, 120000);
 });

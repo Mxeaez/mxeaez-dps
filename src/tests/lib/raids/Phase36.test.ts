@@ -1,4 +1,5 @@
 import { describe, expect, test } from '@jest/globals';
+import { OTHER_RAIDS, otherRaidsTest } from '@/tests/utils/otherRaids';
 import { generateEmptyPlayer } from '@/state';
 import PlayerVsNPCCalc from '@/lib/PlayerVsNPCCalc';
 import { buildTargetMonster, findTarget } from '@/lib/fracturedArchive/bestSetup';
@@ -72,7 +73,7 @@ const clawsByHand = (p: number, M: number): number => {
 
 describe('E[spec damage]: hand-computed vs upstream (getSpecCalc().getExpectedDamage())', () => {
   const cases: [string, string, RaidId][] = [['Xarth', 'xarth', 'fractured-archive'], ['Zebak', 'toa-zebak', 'toa']];
-  test.each(cases)('%s: Voidwaker = mean of 50-150%% of the normal max, accuracy 100%%', (_n, key, raid) => {
+  test.each(cases.filter(([, , r]) => OTHER_RAIDS || r === 'fractured-archive'))('%s: Voidwaker = mean of 50-150%% of the normal max, accuracy 100%%', (_n, key, raid) => {
     const a = A(raid);
     const m = buildTargetMonster(findTarget(key), undefined, 'none', a).monster;
     const style = styleOf(EquipmentCategory.SLASH_SWORD, 'Slash', 'Aggressive');
@@ -86,7 +87,7 @@ describe('E[spec damage]: hand-computed vs upstream (getSpecCalc().getExpectedDa
     const prof = damageSpecProfile(m, 'voidwaker', a);
     expect(prof.variants.find((v) => v.label === 'Slash (Aggressive), Torva')!.expected).toBeCloseTo(spec.expected, 9);
   });
-  test.each(cases)('%s: Dragon claws = the cascade at the spec accuracy and the normal max', (_n, key, raid) => {
+  test.each(cases.filter(([, , r]) => OTHER_RAIDS || r === 'fractured-archive'))('%s: Dragon claws = the cascade at the spec accuracy and the normal max', (_n, key, raid) => {
     const a = A(raid);
     const m = buildTargetMonster(findTarget(key), undefined, 'none', a).monster;
     const style = styleOf(EquipmentCategory.CLAW, 'Slash', 'Aggressive');
@@ -358,7 +359,7 @@ const kitOf = (id: RaidId, a: BestSetupAssumptions) => {
 const enc = (id: RaidId, e: string, a: BestSetupAssumptions, drain: 'team' | 'solo' = 'team') => encounterTime(e, kitOf(id, a), raidTimeAssumptionsFrom(a, drain, raidConfig(id).defaultTimeSettings, raidConfig(id).time));
 
 describe('drain events and Defence resets', () => {
-  test('wiki resets are drain events: Sotetseg mazes, Bloat\'s stomp, Kephri\'s final phase, the Warden\'s enrage, Olm phases', () => {
+  otherRaidsTest('wiki resets are drain events: Sotetseg mazes, Bloat\'s stomp, Kephri\'s final phase, the Warden\'s enrage, Olm phases', () => {
     const keys = (rows: { key: string, targetKey: string, drainReset?: string }[]) => drainEventsOf(rows).events.map((e) => e.reset ?? '-');
     expect(keys([
       { key: 'a', targetKey: 'tob-sotetseg' }, { key: 'b', targetKey: 'tob-sotetseg', drainReset: 'maze 1' }, { key: 'c', targetKey: 'tob-sotetseg', drainReset: 'maze 2' },
@@ -384,7 +385,7 @@ describe('the spec budget in the time model', () => {
     // the old model gave every event the full 4 + 4 specs
     expect(total('elderMaul') + total('bgs')).toBeLessThan(3 * 8);
   });
-  test('adds get no drain specs on the ToA scarabs / Akkha\'s Shadows (phase 38b: damage specs are allowed on them)', () => {
+  otherRaidsTest('adds get no drain specs on the ToA scarabs / Akkha\'s Shadows (phase 38b: damage specs are allowed on them)', () => {
     const a = { ...A('toa'), damageSpecs: ['voidwaker' as const, 'dragonClaws' as const] };
     ['toa-kephri', 'toa-akkha'].forEach((id) => {
       const e = enc('toa', id, a);
@@ -399,7 +400,7 @@ describe('the spec budget in the time model', () => {
     });
   });
   test('never slower than spending nothing; damage specs only make it faster', () => {
-    (['fractured-archive', 'toa', 'tob'] as RaidId[]).forEach((id) => {
+    (['fractured-archive', 'toa', 'tob'] as RaidId[]).filter((id) => OTHER_RAIDS || id === 'fractured-archive').forEach((id) => {
       const e0 = raidConfig(id).time.routeSlots.map((s) => s.options[0])[1];
       const plain = enc(id, e0, A(id));
       expect(plain.seconds).toBeLessThanOrEqual(plain.specPlan!.noSpecSeconds + 1e-9);
@@ -407,7 +408,7 @@ describe('the spec budget in the time model', () => {
       expect(dmg.seconds).toBeLessThanOrEqual(plain.seconds + 1e-9);
     });
   });
-  test('energy is not carried between encounters by default (CARRY_SPEC_ENERGY); the flag carries the leftover', () => {
+  otherRaidsTest('energy is not carried between encounters by default (CARRY_SPEC_ENERGY); the flag carries the leftover', () => {
     expect(CARRY_SPEC_ENERGY).toBe(false);
     const a = A('tob');
     const ta = raidTimeAssumptionsFrom(a, 'team', raidConfig('tob').defaultTimeSettings, raidConfig('tob').time);
@@ -432,7 +433,7 @@ describe('brute force on real encounters: the DP = an exhaustive search (phase 3
     });
     return { r, ...got! };
   };
-  test('ToB Sotetseg (Team, 2 Elder maul + 2 BGS, three events): every option combination', () => {
+  otherRaidsTest('ToB Sotetseg (Team, 2 Elder maul + 2 BGS, three events): every option combination', () => {
     const { r, pruned, full } = problemOf('tob', 'tob-sotetseg', A('tob'), 'team');
     expect(full.events).toHaveLength(3);
     const dp = allocateBudget(pruned).seconds;

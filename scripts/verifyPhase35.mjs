@@ -1,3 +1,4 @@
+// other-raids-only: skipped by verifyAll unless RUN_OTHER_RAIDS=1 (phase 38f-2: round 6 is Fractured Archive only)
 /**
  * Phase 35 UI check (not part of the Jest run): adds and short-lived targets get no specs.
  *

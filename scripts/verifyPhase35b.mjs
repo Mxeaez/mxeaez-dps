@@ -13,6 +13,7 @@
  */
 import { chromium } from '@playwright/test';
 import { headlineClose } from './headlines.mjs';
+import { OTHER_RAIDS } from './otherRaids.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
 // phase 36: one spec budget for Bork and the Smorks (and the planner's 2 Elder maul + 4 Tonalztics carriers)
@@ -120,6 +121,7 @@ const main = async () => {
   await page.reload({ waitUntil: 'load', timeout: 120000 });
   await page.locator('[data-testid="raid-tab-fractured-archive"]').waitFor({ timeout: 120000 });
 
+  if (OTHER_RAIDS) { // phase 38f-2: the ToA / CoX / ToB steps run with RUN_OTHER_RAIDS=1 only
   // --- CoX: Olm's claws and head
   await openRaidPlan(page, 'cox');
   rows = await briefing(page);
@@ -142,6 +144,7 @@ const main = async () => {
   check(kephri && !/Scarab/.test(kephri.specs) && !/Scarab/.test(kephri.title), `Kephri: no scarab line ("${kephri?.specs}")`);
   await page.mouse.move(0, 0);
   await page.locator('[data-testid="plan-briefing"]').screenshot({ path: 'docs/screenshots/phase35b-toa.png' });
+  }
 
   await browser.close();
   console.log(`${failures ? `${failures} FAILED` : 'all OK'} (${Math.round((Date.now() - t0) / 1000)} s)`);

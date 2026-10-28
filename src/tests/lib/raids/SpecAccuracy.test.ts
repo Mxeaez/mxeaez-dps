@@ -1,4 +1,5 @@
 import { describe, expect, test } from '@jest/globals';
+import { otherRaidsDescribe, otherRaidsTest } from '@/tests/utils/otherRaids';
 import PlayerVsNPCCalc from '@/lib/PlayerVsNPCCalc';
 import { scaleMonster } from '@/lib/MonsterScaling';
 import { getCombatStylesForCategory } from '@/utils';
@@ -40,7 +41,7 @@ const calcs = (key: string, a: BestSetupAssumptions, weapon: SpecWeapon) => {
   };
 };
 
-describe("ToA: Kephri, Elder maul (Piety, Smelling salts, Inquisitor's), party 6, path 0", () => {
+otherRaidsDescribe("ToA: Kephri, Elder maul (Piety, Smelling salts, Inquisitor's), party 6, path 0", () => {
   // Attack: 99 + Smelling salts (11 + 16%) = 125; Piety x1.2 -> 150; +8 +3 (Accurate) = 161; x (crush +223 + 64) =
   // 46207; Inquisitor's set +2.5% crush -> 47362 (normal attack); spec +25% -> 59202.
   // Defence: (80 + 9) x (crush +100 + 64) = 14596; raid level L multiplies it by (250 + L) / 250 -> 43788 at 500.
@@ -90,7 +91,7 @@ describe("ToA: Kephri, Elder maul (Piety, Smelling salts, Inquisitor's), party 6
   });
 });
 
-describe('CoX: Tekton, DWH, party 6', () => {
+otherRaidsDescribe('CoX: Tekton, DWH, party 6', () => {
   // Defence (party 6) 215, CM 290; roll = (def + 9) x (crush +105 + 64). The DWH spec has no accuracy modifier.
   const coxAt = (challengeMode: boolean): BestSetupAssumptions => ({ ...COX_DEFAULT_ASSUMPTIONS, partySize: 6, cox: { challengeMode } });
 
@@ -116,7 +117,7 @@ describe('CoX: Tekton, DWH, party 6', () => {
   });
 });
 
-describe('ToB: Verzik P2, Elder maul', () => {
+otherRaidsDescribe('ToB: Verzik P2, Elder maul', () => {
   const tobAt = (mode: 'normal' | 'hard' | 'entry'): BestSetupAssumptions => ({ ...TOB_DEFAULT_ASSUMPTIONS, tob: { mode } });
 
   test('Hard Mode is a separate monster with the same Defence (wiki), so the same hit chance; Entry Mode is lower', () => {
@@ -139,7 +140,7 @@ describe('ToB: Verzik P2, Elder maul', () => {
   });
 });
 
-describe('consistency with the main calculator', () => {
+otherRaidsDescribe('consistency with the main calculator', () => {
   test('Elder maul spec accuracy = a normal attack with the attack roll x 1.25 against the same defence roll', () => {
     const { normal, spec, profile } = calcs('toa-kephri', toaAt(300), 'elderMaul');
     const atk = Math.trunc(normal.getMaxAttackRoll() * 5 / 4);
@@ -150,7 +151,7 @@ describe('consistency with the main calculator', () => {
 });
 
 describe('drain line note (phase 24)', () => {
-  test('a planned weapon landing < 40% of its specs is called out', () => {
+  otherRaidsTest('a planned weapon landing < 40% of its specs is called out', () => {
     const d = buildTargetMonster(findTarget('toa-baba'), undefined, 'solo', toaAt(500)).drain;
     const maul = d.line!.items.find((i) => i.weapon === 'elderMaul')!;
     expect(maul.hitChance!).toBeLessThan(0.4);

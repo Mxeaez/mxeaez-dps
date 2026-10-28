@@ -1,4 +1,5 @@
 import { describe, expect, test } from '@jest/globals';
+import { OTHER_RAIDS, otherRaidsDescribe, otherRaidsTest } from '@/tests/utils/otherRaids';
 import React from 'react';
 import { TextDecoder, TextEncoder } from 'util';
 import { existsSync } from 'fs';
@@ -190,7 +191,7 @@ describe('memoised kits = the same kits without the memos', () => {
     return got;
   };
 
-  test.each(['fractured-archive', 'tob', 'toa'] as RaidId[])('%s: every key component (carriers, items, surge, drain state, hp left, members, spec plan)', (id) => {
+  test.each((['fractured-archive', 'tob', 'toa'] as RaidId[]).filter((id) => OTHER_RAIDS || id === 'fractured-archive'))('%s: every key component (carriers, items, surge, drain state, hp left, members, spec plan)', (id) => {
     const memo = memoFor();
     const m0 = [0, 2, 3];
     const base = check(memo, m0, timeA(id, { ...team(id, { ...NO_CARRIERS, elderMaul: 1, tonalztics: 1 }) }));
@@ -221,7 +222,7 @@ describe('memoised kits = the same kits without the memos', () => {
     expect(memo.stats.passHits).toBeGreaterThan(0);
   }, 120000);
 
-  test('a long random sequence (the optimiser\'s access pattern) on ToB', () => {
+  otherRaidsTest('a long random sequence (the optimiser\'s access pattern) on ToB', () => {
     const memo = memoFor();
     let seed = 7;
     const rnd = (n: number) => {
@@ -243,7 +244,7 @@ describe('memoised kits = the same kits without the memos', () => {
 
 // --- shared DPS memo of the exact re-times ------------------------------------------------------------------------------
 
-describe('exact re-times share one DPS memo', () => {
+otherRaidsDescribe('exact re-times share one DPS memo', () => {
   test('kits timed with a shared memo = timed alone; the second kit evaluates only its new loadouts', () => {
     const raid = raidConfig('tob');
     const a = raid.defaultAssumptions;
@@ -443,7 +444,7 @@ describe('camp-one rings in parallel helpers (the page workers): the same plan',
 });
 
 describe('reduced plans: bit-identical to phase 36', () => {
-  test.each(['fractured-archive', 'toa', 'cox', 'tob'] as RaidId[])('%s', (id) => {
+  test.each((['fractured-archive', 'toa', 'cox', 'tob'] as RaidId[]).filter((id) => OTHER_RAIDS || id === 'fractured-archive'))('%s', (id) => {
     const name = `r27${({
       'fractured-archive': 'fa', toa: 'toa', cox: 'cox', tob: 'tob',
     } as Record<RaidId, string>)[id]}`;

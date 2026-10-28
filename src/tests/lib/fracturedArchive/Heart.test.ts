@@ -1,4 +1,5 @@
 import { describe, expect, test } from '@jest/globals';
+import { OTHER_RAIDS, otherRaidsTest } from '@/tests/utils/otherRaids';
 import Potion from '@/enums/Potion';
 import {
   DEFAULT_NON_ITEM_SLOTS,
@@ -55,6 +56,7 @@ describe('heart as a pinned item', () => {
 
   test('default pinned lists: no heart anywhere (phase 31: FA / ToB bring it as the magic kit potion)', () => {
     expect(FRACTURED_ARCHIVE_RAID.planDefaults.pinned).not.toContain('Saturated heart');
+    if (!OTHER_RAIDS) return;
     expect(THEATRE_OF_BLOOD_RAID.planDefaults.pinned).not.toContain('Saturated heart');
     expect(TOMBS_OF_AMASCUT_RAID.planDefaults.pinned).not.toContain('Saturated heart');
     expect(CHAMBERS_OF_XERIC_RAID.planDefaults.pinned).not.toContain('Saturated heart');
@@ -65,7 +67,7 @@ describe('heart as a pinned item', () => {
   test.each([
     ['fractured-archive', DEFAULT_ASSUMPTIONS, 'xarth'],
     ['tob', THEATRE_OF_BLOOD_RAID.defaultAssumptions, 'tob-maiden'],
-  ] as [string, BestSetupAssumptions, string][])('%s: magic is always boosted (phase 31), with the pinned heart if any', (_, a, targetKey) => {
+  ].filter(([id]) => OTHER_RAIDS || id === 'fractured-archive') as [string, BestSetupAssumptions, string][])('%s: magic is always boosted (phase 31), with the pinned heart if any', (_, a, targetKey) => {
     const without = planAssumptions(a, DEFAULT_SUPPLIES, []);
     const sat = planAssumptions(a, DEFAULT_SUPPLIES, [SATURATED]);
     const imb = planAssumptions(a, DEFAULT_SUPPLIES, [IMBUED]);
@@ -88,7 +90,7 @@ describe('heart as a pinned item', () => {
     expect(on.dps).toBe(shadowDps(a, targetKey).dps);
   });
 
-  test.each([
+  otherRaidsTest.each([
     ['toa', TOMBS_OF_AMASCUT_RAID.defaultAssumptions, 'toa-zebak'],
     ['cox', CHAMBERS_OF_XERIC_RAID.defaultAssumptions, 'cox-tekton'],
   ] as [string, BestSetupAssumptions, string][])('%s: every style keeps the raid potion iff "Other" > 0; no heart needed', (_, a, targetKey) => {

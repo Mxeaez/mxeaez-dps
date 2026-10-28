@@ -36,7 +36,7 @@ of `PROGRESS.md`. `docs/BEST_SETUP.md` is the long reference (one section per ph
 
 | Pin | File | Re-pin |
 |---|---|---|
-| Headline plans, human-readable (total, kit, ring, carriers, items, your share, encounters) | `src/tests/fixtures/headlines.json` | `node scripts/pinHeadlines.mjs` (all six plans in Node, ~2 min with `--jobs 6`) |
+| Headline plans, human-readable (total, kit, ring, carriers, items, your share, encounters) | `src/tests/fixtures/headlines.json` | `node scripts/pinHeadlines.mjs` (phase 38f-2: fa, faSolo, faNotOwned; `--other-raids` for all six, ~2 min with `--jobs 6`) |
 | Headline plans, bit-identical (every field but run stats) | `src/tests/lib/raids/phase37/{fa,toa,cox,tob,faSolo,faNotOwned}.json` | `node scripts/pinHeadlines.mjs --full` |
 | Reduced plans (bit-identical) | `phase37/r27*.json` | by hand (Phase37.test.ts `reducedCase`) |
 | Memo counters | `src/tests/utils/phase37.ts` `PHASE37_MEMO` (±20%, runs bounded per kind) | from `stats.memo` of the plan |
@@ -55,12 +55,14 @@ verify scripts are off (from phase 38f-2: on only with `RUN_OTHER_RAIDS=1`); don
 
 ## Running things
 
-- Fast suite: `node .yarn/releases/yarn-4.9.2.cjs test` (~1600 tests, slow ones skipped). One file: `... test Phase37b`.
-- Slow suites (PowerShell): `$env:RUN_SLOW_TESTS=1; node .yarn/releases/yarn-4.9.2.cjs test CrossRaidHeadlines Phase27 Phase37 --coverage=false`
-  (all slow: `CrossRaid Phase2 Phase3`, ~12 min; the long pole is CoX).
+- Fast suite: `node .yarn/releases/yarn-4.9.2.cjs test` (~1350 tests, ~26 s; slow and other-raid tests skipped). One file: `... test Phase37b`.
+  `$env:RUN_OTHER_RAIDS=1` adds the ToA / CoX / ToB tests (~1610 tests, ~36 s; helper `src/tests/utils/otherRaids.ts`); it combines with `RUN_SLOW_TESTS`.
+- Slow suites (PowerShell, FA only; round 6): `$env:RUN_SLOW_TESTS=1; node .yarn/releases/yarn-4.9.2.cjs test CrossRaidHeadlines Phase27 Phase37 --coverage=false`
+  (all FA slow: `CrossRaid Phase2 Phase3`, ~5 min; with `RUN_OTHER_RAIDS=1` also ToA / CoX / ToB, ~12 min; the long pole is CoX).
 - Types: `npx tsc --noEmit`. Lint: `node .yarn/releases/yarn-4.9.2.cjs lint` (also lints `src/tests`; `next build` fails on it).
-- Verify scripts (dev server on :3001): `node scripts/verifyAll.mjs 37b 21` (the scripts a phase touched; numbers or
-  names), `node scripts/verifyAll.mjs` (every `verifyPhase*.mjs`, final reviews), `--jobs N` (default 3), `--keep-screenshots`.
+- Verify scripts (dev server on :3001): `node scripts/verifyAll.mjs 38g 29` (the scripts a phase touched; numbers or
+  names). Phase 38f-2: the ToA / CoX / ToB steps, and the scripts marked `// other-raids-only` (35, 37b), run only with
+  `--other-raids` (= `RUN_OTHER_RAIDS=1`) on a dev server started with `NEXT_PUBLIC_SHOW_OTHER_RAIDS=1` (the tabs are hidden otherwise), `node scripts/verifyAll.mjs` (every `verifyPhase*.mjs`, final reviews), `--jobs N` (default 3), `--keep-screenshots`.
   One line per script, logs in a temp folder, tracked screenshots restored. Scripts with time limits (21, 27, 37) are
   tighter in parallel; re-run a timing failure alone before believing it.
 - Review probes (`scripts/probes/`, phase 37c; logic in `src/tests/utils/probes.ts`, smoke tests in `Phase37c.test.ts`;

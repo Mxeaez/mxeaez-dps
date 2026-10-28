@@ -11,6 +11,7 @@
  */
 import { chromium } from '@playwright/test';
 import { headlineClose, headlineTotal } from './headlines.mjs';
+import { OTHER_RAIDS } from './otherRaids.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
 
@@ -56,6 +57,7 @@ const main = async () => {
   await page.mouse.move(0, 0);
   await page.locator('[data-testid="spec-damage-box"]').screenshot({ path: 'docs/screenshots/phase37-search-specs.png' });
 
+  if (OTHER_RAIDS) { // phase 38f-2: the ToA / CoX / ToB steps run with RUN_OTHER_RAIDS=1 only
   // --- Plan: CoX
   await page.locator('[data-testid="raid-tab-cox"]').click();
   await page.waitForTimeout(500);
@@ -91,6 +93,7 @@ const main = async () => {
   check(await olm.locator('[data-testid="plan-briefing-group"]', { hasText: 'no specs' }).count() >= 1, '"no specs" rendered in the briefing');
   await page.mouse.move(0, 0);
   await page.locator('[data-testid="plan-briefing"]').screenshot({ path: 'docs/screenshots/phase37-plan-cox.png' });
+  }
 
   await browser.close();
   console.log(`${failures ? `${failures} FAILED` : 'all OK'} (${Math.round((Date.now() - t0) / 1000)} s)`);

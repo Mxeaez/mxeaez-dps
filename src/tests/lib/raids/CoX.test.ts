@@ -1,4 +1,5 @@
-import { describe, expect, test } from '@jest/globals';
+import { expect, test } from '@jest/globals';
+import { otherRaidsDescribe } from '@/tests/utils/otherRaids';
 import { generateEmptyPlayer } from '@/state';
 import { scaleMonster } from '@/lib/MonsterScaling';
 import { getDefenceFloor } from '@/lib/scaling/DefenceReduction';
@@ -44,7 +45,7 @@ const presetDpsOn = (name: string, monster: Monster, a: BestSetupAssumptions = A
 };
 const presetDps = (name: string, key: string, a: BestSetupAssumptions = A) => presetDpsOn(name, buildTargetMonster(findTarget(key), undefined, 'none', a).monster, a);
 
-describe('CoX scaling (upstream) at party 6: normal vs Challenge Mode', () => {
+otherRaidsDescribe('CoX scaling (upstream) at party 6: normal vs Challenge Mode', () => {
   test('Tekton: hp 300 → 1200 / CM 1800; Defence 205 → 215 / CM 290 (hand derivation)', () => {
     // hp: trunc(300 × 126 / 126) = 300; + 300 × trunc(6 × 50 / 100) = + 900 → 1200; CM: + 50% → 1800
     // Defence: trunc(205 × 99 / 99) = 205; × (100 + iSqrt(5) + trunc(5 × 7 / 10)) / 100 = × 105% → trunc(215.25) = 215
@@ -117,7 +118,7 @@ describe('CoX scaling (upstream) at party 6: normal vs Challenge Mode', () => {
   });
 });
 
-describe('CoX damage rules', () => {
+otherRaidsDescribe('CoX damage rules', () => {
   test('Guardians: only pickaxes deal damage (upstream); the search lists everything else as can\'t hit', () => {
     expect(presetDps('Torva + Scythe (slash)', 'cox-guardian')).toBe(0);
     expect(presetDps('Twisted bow (Masori)', 'cox-guardian')).toBe(0);
@@ -171,7 +172,7 @@ describe('CoX damage rules', () => {
   });
 });
 
-describe('CoX encounter damage sequences (src/lib/raids/cox/time.ts)', () => {
+otherRaidsDescribe('CoX encounter damage sequences (src/lib/raids/cox/time.ts)', () => {
   const settings: TimeSettings = CHAMBERS_OF_XERIC_RAID.defaultTimeSettings;
   const timeA = (s: TimeSettings = settings, best: BestSetupAssumptions = A, drain: 'none' | 'team' = 'none') => raidTimeAssumptionsFrom(best, drain, s, CHAMBERS_OF_XERIC_RAID.time);
   const plan1 = (id: string, s = settings, best = A) => coxEncounterPlan(id, timeA(s, best)).map((p) => [p.targetKey, Math.round(p.damage * 10) / 10]);
@@ -261,7 +262,7 @@ describe('CoX encounter damage sequences (src/lib/raids/cox/time.ts)', () => {
   });
 });
 
-describe('CoX search and planner', () => {
+otherRaidsDescribe('CoX search and planner', () => {
   test('Search on Tekton (Team drains): melee crush/stab top row ≥ best preset; ranged is listed as can\'t hit', () => {
     const r = runGearSearch(generateEmptyPlayer(), { targetKey: 'cox-tekton', drain: 'team' }, A, { topN: 5 });
     expect(r.cancelled).toBe(false);

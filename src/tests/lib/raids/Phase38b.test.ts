@@ -1,4 +1,5 @@
 import { describe, expect, test } from '@jest/globals';
+import { OTHER_RAIDS, otherRaidsDescribe } from '@/tests/utils/otherRaids';
 import { generateEmptyPlayer } from '@/state';
 import {
   allocateBudget, AllocationProblem, BudgetRow, costFactorAt, damageSpecCost, deathChargeSchedule, DEATH_CHARGE_ENERGY,
@@ -108,7 +109,7 @@ describe('Death Charge', () => {
     expect(specBudgetFrom({ ...A('fractured-archive'), partySize: 1 }, 'solo')!.deathCharge).toEqual({ share: 1 });
     expect(specBudgetFrom({ ...A('fractured-archive'), spellbook: 'ancients' }, 'team')!.deathCharge).toBeUndefined();
     const fa = raidConfig('fractured-archive');
-    (['fractured-archive', 'toa', 'cox', 'tob'] as RaidId[]).forEach((id) => expect(defaultPlanInputs(raidConfig(id)).spellbook).toBe('arceuus'));
+    (['fractured-archive', 'toa', 'cox', 'tob'] as RaidId[]).filter((id) => OTHER_RAIDS || id === 'fractured-archive').forEach((id) => expect(defaultPlanInputs(raidConfig(id)).spellbook).toBe('arceuus'));
     expect(validatePlanInputs(fa, { spellbook: 'lunar' }, fa.defaultAssumptions).spellbook).toBe('lunar');
     expect(validatePlanInputs(fa, { spellbook: 'necromancy' }, fa.defaultAssumptions).spellbook).toBe('arceuus');
   });
@@ -125,7 +126,7 @@ describe('Death Charge', () => {
   });
 });
 
-describe('Liquid adrenaline (ToA)', () => {
+otherRaidsDescribe('Liquid adrenaline (ToA)', () => {
   test('doses: none before the supplies, 1 each in rooms 3-4 (the first drop\'s 2 doses), 2 on the Wardens', () => {
     // phase 38c: every path room has a before-supplies encounter (0 doses) and an after-supplies one (1 dose)
     expect(TOA_ADRENALINE_DOSES).toEqual({
@@ -223,7 +224,7 @@ describe('Liquid adrenaline: a row crossing the end of the window (fix round)', 
   });
 });
 
-describe('damage specs on adds (drains still off)', () => {
+otherRaidsDescribe('damage specs on adds (drains still off)', () => {
   const cox = raidConfig('cox');
   const a = { ...A('cox'), damageSpecs: ['burningClaws' as const] };
   const ta = raidTimeAssumptionsFrom(a, 'team', cox.defaultTimeSettings, cox.time);

@@ -1,4 +1,7 @@
 import { describe, expect, test } from '@jest/globals';
+import {
+  faRows, OTHER_RAIDS, otherRaidsDescribe, otherRaidsSlowDescribe,
+} from '@/tests/utils/otherRaids';
 import { generateEmptyPlayer } from '@/state';
 import { buildTargetMonster, findTarget, presetStyles } from '@/lib/fracturedArchive/bestSetup';
 import {
@@ -74,7 +77,7 @@ describe('Ocellus: three drain events, P3 specs on quadrants 1-3, the Blade at 1
   });
 });
 
-describe('ToA: the pair of paths before the supplies is a route choice', () => {
+otherRaidsDescribe('ToA: the pair of paths before the supplies is a route choice', () => {
   const raid = raidConfig('toa');
   const ta = raidTimeAssumptionsFrom(A('toa'), 'none', raid.defaultTimeSettings, TOA_TIME_MODEL);
 
@@ -119,7 +122,7 @@ describe('ToA: the pair of paths before the supplies is a route choice', () => {
 
 describe('the raid clock: fight wall + non-fight time', () => {
   test('defaults: typical length − the Team headline\'s fight wall (FA 25 min − 210.9 s = 21.5 min, ...)', () => {
-    expect(RAIDS.map((r) => [r.id, r.nonFightMinutes])).toEqual([['fractured-archive', 21.5], ['toa', 15.5], ['cox', 12.9], ['tob', 12.6]]);
+    expect(faRows(RAIDS).map((r) => [r.id, r.nonFightMinutes])).toEqual([['fractured-archive', 21.5], ['toa', 15.5], ['cox', 12.9], ['tob', 12.6]].filter(([id]) => OTHER_RAIDS || id === 'fractured-archive'));
     const t = raidTimeAssumptionsFrom(A('fractured-archive'), 'team');
     expect(t.nonFightSeconds).toBe(1290);
     expect(t.raidSeconds).toBeUndefined();
@@ -152,7 +155,7 @@ describe('the raid clock: fight wall + non-fight time', () => {
   test('Plan input "Non-fight time": saved and validated (0-120 min), default per raid', () => {
     const fa = raidConfig('fractured-archive');
     expect(defaultPlanInputs(fa).nonFightMinutes).toBe(21.5);
-    expect(defaultPlanInputs(raidConfig('toa')).nonFightMinutes).toBe(15.5);
+    if (OTHER_RAIDS) expect(defaultPlanInputs(raidConfig('toa')).nonFightMinutes).toBe(15.5);
     expect(validatePlanInputs(fa, { nonFightMinutes: 40 }, fa.defaultAssumptions).nonFightMinutes).toBe(40);
     expect(validatePlanInputs(fa, { nonFightMinutes: -1 }, fa.defaultAssumptions).nonFightMinutes).toBe(21.5);
     // phase 38a's saved raid length is no longer read
@@ -160,7 +163,7 @@ describe('the raid clock: fight wall + non-fight time', () => {
   });
 });
 
-describe('displays use the before-supplies assumptions for the rooms before the supplies', () => {
+otherRaidsDescribe('displays use the before-supplies assumptions for the rooms before the supplies', () => {
   const raid = raidConfig('toa');
   const a = A('toa');
   const early = findTarget('toa-zebak-before-supplies');
@@ -193,7 +196,7 @@ describe('displays use the before-supplies assumptions for the rooms before the 
 // Scythe #3 3.08 s faster than the planner's Shadow + Scythe #3; the Twisted bow takes 7 more slots and the planner's
 // dedupe rule (optimiseKit `prune`) asks 1 s per slot, so that kit is not a plan. The probe now keeps only kits that pass
 // the rule (`bestAny` = the fastest of all, for reference). Slow (a full camp-one reduced plan, ~4 min).
-(process.env.RUN_SLOW_TESTS ? describe : describe.skip)('brute force, ToA tiny pool, Kephri + Ba-Ba (slow)', () => {
+otherRaidsSlowDescribe('brute force, ToA tiny pool, Kephri + Ba-Ba (slow)', () => {
   test('gap 0 under the dedupe rule; the faster kit it rejects breaks the rule', () => {
     const b = bruteForceKits('toa', { pool: 'tiny' });
     expect(b.route).toBe(headline('toa').route);

@@ -1,4 +1,5 @@
 import { describe, expect, test } from '@jest/globals';
+import { faRows, OTHER_RAIDS, otherRaidsTest } from '@/tests/utils/otherRaids';
 import { generateEmptyPlayer } from '@/state';
 import { buildTargetMonster, findTarget } from '@/lib/fracturedArchive/bestSetup';
 import {
@@ -30,7 +31,7 @@ const NONE = {
 };
 
 describe('"Specs I bring" defaults to none', () => {
-  test.each(RAIDS.map((r) => [r.id, r] as const))('%s: every weapon off, Ayak 0 (Lightbearer off, Defence drains first)', (_, raid) => {
+  test.each(faRows(RAIDS).map((r) => [r.id, r] as const))('%s: every weapon off, Ayak 0 (Lightbearer off, Defence drains first)', (_, raid) => {
     expect(raid.defaultAssumptions.mySpecs).toEqual(NONE);
     expect(subsetOfMySpecs(raid.defaultAssumptions.mySpecs)).toEqual([]);
   });
@@ -299,7 +300,7 @@ slowDescribe('planner decides, full FA plans (slow)', () => {
 
 describe('drain events (Defence restored mid-fight)', () => {
   const TOY_KIT: RaidKit = { best: () => ({ loadout: 'toy', style: 'toy', dps: 10 }) };
-  const flagged = RAIDS.flatMap((raid) => {
+  const flagged = faRows(RAIDS).flatMap((raid) => {
     const a = raidTimeAssumptionsFrom(raid.defaultAssumptions, 'none', raid.defaultTimeSettings, raid.time);
     const ids = Array.from(new Set(routesFor(a).flatMap((r) => r.encounters)));
     return ids.flatMap((id) => encounterTime(id, TOY_KIT, a).phases.map((p) => ({
@@ -308,7 +309,7 @@ describe('drain events (Defence restored mid-fight)', () => {
   });
 
   test('the flag is set on exactly the phases whose label says the Defence is restored (every raid, defaults)', () => {
-    expect(flagged.length).toBeGreaterThan(50);
+    expect(flagged.length).toBeGreaterThan(OTHER_RAIDS ? 50 : 10);
     // phase 36: the wiki's other resets (Kephri's final phase, the Warden's enrage, Olm's phases) are flagged too; their
     // labels predate the flag
     expect(flagged.filter((p) => p.reset && p.raid === 'tob').map((p) => p.key)).toEqual(flagged.filter((p) => /Defence restored/.test(p.label)).map((p) => p.key));
@@ -326,7 +327,7 @@ describe('drain events (Defence restored mid-fight)', () => {
       'tob/bloat-rest: the stomp',
       'tob/sotetseg-2: maze 1',
       'tob/sotetseg-3: maze 2',
-    ]);
+    ].filter((s) => OTHER_RAIDS || s.startsWith('fractured-archive/')));
   });
 
   const TOB = raidConfig('tob');
@@ -342,7 +343,7 @@ describe('drain events (Defence restored mid-fight)', () => {
     };
   };
 
-  test('Sotetseg: three drain events (the start, after maze 1, after maze 2), each with its own third\'s line', () => {
+  otherRaidsTest('Sotetseg: three drain events (the start, after maze 1, after maze 2), each with its own third\'s line', () => {
     const { e, s } = tobEncounter('tob-sotetseg');
     expect(s.events.map((ev) => ev.reset)).toEqual([undefined, 'maze 1', 'maze 2']);
     s.events.forEach((ev, i) => {
@@ -377,7 +378,7 @@ describe('drain events (Defence restored mid-fight)', () => {
     expect(s.events[0].reset).toBeUndefined();
   });
 
-  test('Bloat: the later downs are a new event with no specs (the restored Bloat takes no drains in the model)', () => {
+  otherRaidsTest('Bloat: the later downs are a new event with no specs (the restored Bloat takes no drains in the model)', () => {
     const { s } = tobEncounter('tob-bloat');
     expect(s.events.map((ev) => ev.reset)).toEqual([undefined, 'the stomp']);
     expect(s.events[1].text).toBe('After the stomp (Defence restored), again: no specs');

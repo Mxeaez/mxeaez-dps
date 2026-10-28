@@ -59,6 +59,14 @@ export {
 
 export const RAIDS: RaidConfig[] = [FRACTURED_ARCHIVE_RAID, TOMBS_OF_AMASCUT_RAID, CHAMBERS_OF_XERIC_RAID, THEATRE_OF_BLOOD_RAID];
 
+/**
+ * Phase 38f-2 (round 6 is FA only): the other raids' tabs are hidden unless this is on. The raids' code, data and saved
+ * settings stay as they were; `NEXT_PUBLIC_SHOW_OTHER_RAIDS=1` shows the tabs again (round 7).
+ */
+export const SHOW_OTHER_RAIDS = process.env.NEXT_PUBLIC_SHOW_OTHER_RAIDS === '1';
+/** The raids with a tab on the page. */
+export const VISIBLE_RAIDS: RaidConfig[] = SHOW_OTHER_RAIDS ? RAIDS : RAIDS.filter((r) => r.id === DEFAULT_RAID);
+
 export const raidConfig = (id: RaidId | undefined): RaidConfig => RAIDS.find((r) => r.id === (id ?? DEFAULT_RAID)) ?? FRACTURED_ARCHIVE_RAID;
 
 /** The raid of an assumptions object (undefined = the Fractured Archive). */

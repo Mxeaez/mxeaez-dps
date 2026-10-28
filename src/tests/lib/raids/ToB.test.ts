@@ -1,4 +1,5 @@
-import { describe, expect, test } from '@jest/globals';
+import { expect, test } from '@jest/globals';
+import { otherRaidsDescribe } from '@/tests/utils/otherRaids';
 import { generateEmptyPlayer } from '@/state';
 import { scaleMonster } from '@/lib/MonsterScaling';
 import { getDefenceFloor } from '@/lib/scaling/DefenceReduction';
@@ -50,7 +51,7 @@ const presetEval = (name: string, monster: Monster, a: BestSetupAssumptions = A)
 };
 const presetDps = (name: string, key: string, a: BestSetupAssumptions = A) => presetEval(name, target(key, a), a).dps;
 
-describe('ToB scaling (upstream TheatreOfBlood.ts vs the wiki) and the mode input', () => {
+otherRaidsDescribe('ToB scaling (upstream TheatreOfBlood.ts vs the wiki) and the mode input', () => {
   test('party 4 vs 5 (normal): 87.5% vs 100% of the infobox hp, truncated', () => {
     // Maiden 3500 → trunc(3500 × 7 / 8) = 3062 at 4; Bloat 2000 → 1750; Vasilias 2500 → 2187; Sotetseg 4000 → 3500;
     // Xarpus 5000 → 4375; Verzik 2000 / 3500 / 3500 → 1750 / 3062 / 3062
@@ -127,7 +128,7 @@ describe('ToB scaling (upstream TheatreOfBlood.ts vs the wiki) and the mode inpu
   });
 });
 
-describe('ToB damage rules', () => {
+otherRaidsDescribe('ToB damage rules', () => {
   test('Nylocas Vasilias: only the form\'s style hits (melee can\'t hit the magic form, etc.); default = melee form', () => {
     expect(MONSTER_PHASES_BY_ID[8354]).toEqual(NYLOCAS_VASILIAS_PHASES);
     const melee = target('tob-nylo-boss-melee');
@@ -207,7 +208,7 @@ describe('ToB damage rules', () => {
   });
 });
 
-describe('ToB encounter sequences (src/lib/raids/tob/time.ts)', () => {
+otherRaidsDescribe('ToB encounter sequences (src/lib/raids/tob/time.ts)', () => {
   const settings: TimeSettings = THEATRE_OF_BLOOD_RAID.defaultTimeSettings;
   const timeA = (s: TimeSettings = settings, best: BestSetupAssumptions = A, drain: 'none' | 'team' = 'none') => raidTimeAssumptionsFrom(best, drain, s, THEATRE_OF_BLOOD_RAID.time);
   const plan1 = (id: string, s = settings, best = A) => tobEncounterPlan(id, timeA(s, best)).map((p) => [p.targetKey, Math.round(p.damage * 10) / 10]);
@@ -286,7 +287,7 @@ describe('ToB encounter sequences (src/lib/raids/tob/time.ts)', () => {
   });
 });
 
-describe('ToB search and planner', () => {
+otherRaidsDescribe('ToB search and planner', () => {
   test('Search on the Vasilias magic form: magic on top, melee and ranged listed as can\'t hit', () => {
     const r = runGearSearch(generateEmptyPlayer(), { targetKey: 'tob-nylo-boss-magic', drain: 'none' }, A, { topN: 3 });
     expect(r.cancelled).toBe(false);

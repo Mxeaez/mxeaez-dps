@@ -12,6 +12,7 @@ import {
   RAIDS, raidConfig, raidOf, teamDpsMultiplier, withScalingInput,
 } from '@/lib/raids';
 import { groupPresets, kitPresets, planFor } from '@/tests/utils/crossRaid';
+import { faRows, otherRaidsDescribe } from '@/tests/utils/otherRaids';
 import { rowsFor, withinPct } from '@/tests/utils/slow';
 
 // Phase 22: cross-raid checks. Each raid has its own assumptions (the page keeps one object per raid tab); nothing a
@@ -33,7 +34,8 @@ const tabs = () => {
   };
 };
 
-describe('switching raids: defaults per raid, no leaks', () => {
+// phase 38f-2: the cross-raid checks compare the other raids; they run with RUN_OTHER_RAIDS=1
+otherRaidsDescribe('switching raids: defaults per raid, no leaks', () => {
   test('each raid\'s defaults: its own raid id, potions, Zeal / fragments only in the Fractured Archive', () => {
     const fa = raidConfig('fractured-archive').defaultAssumptions;
     expect(fa.raid).toBeUndefined();
@@ -134,7 +136,7 @@ describe('switching raids: defaults per raid, no leaks', () => {
   });
 });
 
-describe.each(RAIDS.map((r) => [r.name, r] as const))('%s: every target', (_, raid) => {
+describe.each(faRows(RAIDS).map((r) => [r.name, r] as const))('%s: every target', (_, raid) => {
   test('builds a monster in every phase, evaluates a preset per style without throwing, has a drain model', () => {
     const a = raid.defaultAssumptions;
     const presets = groupPresets(raid);
@@ -166,7 +168,7 @@ describe.each(RAIDS.map((r) => [r.name, r] as const))('%s: every target', (_, ra
 
 describe('every raid\'s plan runs (reduced pool)', () => {
   // phase 38f: ToA and CoX (13 s each) run in the slow suite; their plans are the headline plans there
-  test.each(rowsFor(RAIDS, ['fractured-archive', 'tob']).map((r) => [r.id, r] as const))('%s', (_, raid) => {
+  test.each(rowsFor(faRows(RAIDS), ['fractured-archive', 'tob']).map((r) => [r.id, r] as const))('%s', (_, raid) => {
     const res = planFor(raid, true);
     expect(res.cancelled).toBe(false);
     expect(res.kit.length).toBeGreaterThan(0);
@@ -230,14 +232,14 @@ const PINNED_ENCOUNTER_SECONDS: Record<string, Record<string, number>> = {
 
 describe('per-encounter times for a fixed preset kit (fast pins)', () => {
   test('time-model assumptions per raid', () => {
-    RAIDS.forEach((r) => {
+    faRows(RAIDS).forEach((r) => {
       const a = raidTimeAssumptionsFrom(r.defaultAssumptions, 'team', r.defaultTimeSettings, r.time);
       expect(a.dpsMultiplier).toBe(teamDpsMultiplier(r.defaultAssumptions));
       expect(a.model).toBe(r.time);
     });
   });
 
-  test.each(RAIDS.map((r) => [r.id, r] as const))('%s', (id, raid) => {
+  test.each(faRows(RAIDS).map((r) => [r.id, r] as const))('%s', (id, raid) => {
     const res = computeRouteComparison({
       basePlayer: generateEmptyPlayer(),
       assumptions: raid.defaultAssumptions,

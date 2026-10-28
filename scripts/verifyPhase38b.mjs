@@ -8,6 +8,7 @@
  * Screenshot docs/screenshots/phase38b-spellbook.png (FA Plan inputs, Advanced open).
  */
 import { chromium } from '@playwright/test';
+import { OTHER_RAIDS } from './otherRaids.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
 const KEY = 'mxeaez-dps:settings:v1';
@@ -36,7 +37,7 @@ const main = async () => {
     await select.waitFor({ timeout: 30000 });
   };
 
-  for (const raid of ['fractured-archive', 'toa', 'cox', 'tob']) {
+  for (const raid of ['fractured-archive', 'toa', 'cox', 'tob'].filter((r) => OTHER_RAIDS || r === 'fractured-archive')) {
     await openPlan(raid);
     check(await select.inputValue() === 'arceuus', `${raid}: spellbook ${await select.inputValue()} (expected arceuus)`);
     const title = await page.locator('label[for="plan-spellbook"]').getAttribute('title');

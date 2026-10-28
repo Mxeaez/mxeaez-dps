@@ -1,4 +1,5 @@
 import { describe, expect, test } from '@jest/globals';
+import { faRows, otherRaidsSlowTest } from '@/tests/utils/otherRaids';
 import { generateEmptyPlayer } from '@/state';
 import Potion from '@/enums/Potion';
 import {
@@ -31,7 +32,7 @@ import {
 } from '@/lib/raids';
 import { withPhase32Specs } from '@/tests/utils/phase32Specs';
 import {
-  rowsFor, slowDescribe, slowTest, withinPct,
+  rowsFor, slowDescribe, withinPct,
 } from '@/tests/utils/slow';
 
 // Phase 27: Plan tab — potions derived from the kit (one Super combat / Ranging potion per style present, part of the
@@ -101,7 +102,7 @@ describe('potions from the kit', () => {
     expect(comfortSupplies({ ...DEFAULT_SUPPLIES, ranging: 3, superCombat: 2 })).toEqual({ ...DEFAULT_SUPPLIES, ranging: 0, superCombat: 0 });
     expect(kitSupplies({ ...NO_SUPPLIES, brew: 6, ranging: 4 }, ['melee', 'magic'], true)).toEqual({ ...NO_SUPPLIES, brew: 6, superCombat: 1 });
     // every raid's defaults are comfort supplies only
-    RAIDS.forEach((r) => expect(r.defaultSupplies.ranging + r.defaultSupplies.superCombat).toBe(0));
+    faRows(RAIDS).forEach((r) => expect(r.defaultSupplies.ranging + r.defaultSupplies.superCombat).toBe(0));
   });
 
   test('the potion slots are part of a kit\'s slot cost: a 3-way kit pays 2, melee-only 1, magic-only 0', () => {
@@ -159,7 +160,7 @@ describe('potions from the kit', () => {
 
   // phase 38f: the ToA plan moved to the slow suite (the rule, no kit potions where none are brought, is the kitPotions
   // unit case above)
-  slowTest('ToA: the raid potion (Other) only', () => {
+  otherRaidsSlowTest('ToA: the raid potion (Other) only', () => {
     const toa = planned(TOMBS_OF_AMASCUT_RAID, 'switch');
     expect(toa.potions).toEqual([]);
     expect(toa.inventory.some((c) => c.supply === 'ranging' || c.supply === 'superCombat')).toBe(false);
@@ -233,7 +234,7 @@ describe('ring policy', () => {
     expect(energyBudget({ seconds: 120, lightbearer: true }) - 100).toBe(2 * (energyBudget({ seconds: 120, lightbearer: false }) - 100));
   });
 
-  test.each(rowsFor(RAIDS, ['fractured-archive']).map((r) => [r.id, r] as const))('%s: camp one ring picks the fastest single ring and wears it in every loadout', (_, raid) => {
+  test.each(rowsFor(faRows(RAIDS), ['fractured-archive']).map((r) => [r.id, r] as const))('%s: camp one ring picks the fastest single ring and wears it in every loadout', (_, raid) => {
     const r = planned(raid, 'camp-one');
     expect(r.ring.policy).toBe('camp-one');
     expect(r.ring.ring).not.toBeNull();
@@ -252,7 +253,7 @@ describe('ring policy', () => {
     expect(total(r)).toBeLessThanOrEqual(total(planned(raid, 'camp-lightbearer')) + 1e-6);
   }, 600000);
 
-  test.each(rowsFor(RAIDS, ['fractured-archive']).map((r) => [r.id, r] as const))('%s: camp Lightbearer wears Lightbearer everywhere (a pinned Lightbearer is worn, not carried)', (_, raid) => {
+  test.each(rowsFor(faRows(RAIDS), ['fractured-archive']).map((r) => [r.id, r] as const))('%s: camp Lightbearer wears Lightbearer everywhere (a pinned Lightbearer is worn, not carried)', (_, raid) => {
     const r = planned(raid, 'camp-lightbearer');
     expect(r.ring).toEqual({ policy: 'camp-lightbearer', ring: 'Lightbearer', screened: [] });
     expect(rings(r).every((x) => x === 'Lightbearer')).toBe(true);
@@ -260,7 +261,7 @@ describe('ring policy', () => {
     expect(r.unusedCarried.map((x) => x.name)).not.toContain('Lightbearer');
   }, 300000);
 
-  test.each(rowsFor([{ id: 'fractured-archive' }, { id: 'toa' }], ['fractured-archive']).map((x) => x.id as RaidConfig['id']))('%s: camp one ring with a ring other than Lightbearer: a pinned Lightbearer stays carried and is reported unused', (id) => {
+  test.each(rowsFor(faRows([{ id: 'fractured-archive' }, { id: 'toa' }]), ['fractured-archive']).map((x) => x.id as RaidConfig['id']))('%s: camp one ring with a ring other than Lightbearer: a pinned Lightbearer stays carried and is reported unused', (id) => {
     const r = planned(raidConfig(id), 'camp-one');
     expect(r.ring.ring).not.toBe('Lightbearer');
     expect(r.inventory.filter((c) => c.kind === 'pinned' && c.label === 'Lightbearer').length).toBe(1);
@@ -286,12 +287,12 @@ describe('ring policy', () => {
    * Phase 38g (one fixed drain set per event, the fewest carriers at 95%, no seconds-based option search): FA 1534.7 →
    * 1564.4, ToA 905.5 → 918.2, CoX 452.7 → 469.8, ToB 457.3 → 461.7.
    */
-  test.each(rowsFor([
+  test.each(rowsFor(faRows([
     { id: 'fractured-archive', seconds: 1564.4 },
     { id: 'toa', seconds: 918.2 },
     { id: 'cox', seconds: 469.8 },
     { id: 'tob', seconds: 461.7 },
-  ], ['fractured-archive']).map((x) => [x.id as RaidConfig['id'], x.seconds] as const))('%s: allow switches reproduces the previous planner (%s s, within 1%%)', (id, seconds) => {
+  ]), ['fractured-archive']).map((x) => [x.id as RaidConfig['id'], x.seconds] as const))('%s: allow switches reproduces the previous planner (%s s, within 1%%)', (id, seconds) => {
     const r = planned(raidConfig(id), 'switch');
     // eslint-disable-next-line no-console
     if (process.env.PRINT_PINS) console.log(id, total(r));

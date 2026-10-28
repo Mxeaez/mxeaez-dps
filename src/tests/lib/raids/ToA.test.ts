@@ -1,4 +1,5 @@
-import { describe, expect, test } from '@jest/globals';
+import { expect, test } from '@jest/globals';
+import { otherRaidsDescribe } from '@/tests/utils/otherRaids';
 import { generateEmptyPlayer } from '@/state';
 import { scaleMonster } from '@/lib/MonsterScaling';
 import { getDefenceFloor } from '@/lib/scaling/DefenceReduction';
@@ -46,7 +47,7 @@ const presetDps = (name: string, key: string, phase?: string, a: BestSetupAssump
   return Math.max(...presetStyles(p).map((s) => evaluateLoadout(applyPresetToPlayer(generateEmptyPlayer(), p, s, null, monster, a), monster, false).dps));
 };
 
-describe('ToA hp: upstream scaling at raid level 500, party 6, path 0', () => {
+otherRaidsDescribe('ToA hp: upstream scaling at raid level 500, party 6, path 0', () => {
   // scaled hp (upstream scaleMonster through buildTargetMonster)
   const EXPECTED: Record<string, number> = {
     'toa-kephri-shielded': 2070,
@@ -123,7 +124,7 @@ describe('ToA hp: upstream scaling at raid level 500, party 6, path 0', () => {
   });
 });
 
-describe('ToA Defence floors (upstream getDefenceFloor) and weaknesses (monsters.json)', () => {
+otherRaidsDescribe('ToA Defence floors (upstream getDefenceFloor) and weaknesses (monsters.json)', () => {
   test.each([
     ['toa-akkha', 70], ['toa-baba', 60], ['toa-kephri-shielded', 60], ['toa-kephri', 60], ['toa-zebak', 50],
     ['toa-obelisk', 60], ['toa-warden-p3', 120], ['toa-warden-p3-enraged', 120], ['toa-warden-p2', 0], ['toa-warden-core', 0],
@@ -146,7 +147,7 @@ describe('ToA Defence floors (upstream getDefenceFloor) and weaknesses (monsters
   });
 });
 
-describe('ToA prayers (src/lib/raids/toa/prayers.ts)', () => {
+otherRaidsDescribe('ToA prayers (src/lib/raids/toa/prayers.ts)', () => {
   test('Akkha: the default phase blocks nothing; Praying X blocks X; final stand blocks ranged and magic', () => {
     const fang = 'Osmumten\'s fang (Torva)';
     const shadow = 'Tumeken\'s shadow (Ancestral)';
@@ -192,7 +193,7 @@ describe('ToA prayers (src/lib/raids/toa/prayers.ts)', () => {
   });
 });
 
-describe('ToA encounter damage sequences (src/lib/raids/toa/time.ts)', () => {
+otherRaidsDescribe('ToA encounter damage sequences (src/lib/raids/toa/time.ts)', () => {
   const settings: TimeSettings = TOMBS_OF_AMASCUT_RAID.defaultTimeSettings;
   const timeA = (drain: 'none' | 'team' = 'none', s: TimeSettings = settings, best: BestSetupAssumptions = A) => raidTimeAssumptionsFrom(best, drain, s, TOMBS_OF_AMASCUT_RAID.time);
   const plan1 = (id: string, s = settings) => toaEncounterPlan(id, timeA('none', s)).map((p) => [p.targetKey, p.phase ?? '', Math.round(p.damage * 10) / 10]);
@@ -341,7 +342,7 @@ describe('ToA encounter damage sequences (src/lib/raids/toa/time.ts)', () => {
   });
 });
 
-describe('ToA search and planner', () => {
+otherRaidsDescribe('ToA search and planner', () => {
   test('Search on Zebak (Team drains) returns a sensible top row: ≥ the best preset, ranged or magic, with a TTK', () => {
     const r = runGearSearch(generateEmptyPlayer(), { targetKey: 'toa-zebak', drain: 'team' }, A, { topN: 5 });
     expect(r.cancelled).toBe(false);

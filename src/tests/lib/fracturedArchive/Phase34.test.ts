@@ -1,4 +1,5 @@
 import { describe, expect, test } from '@jest/globals';
+import { otherRaidsTest } from '@/tests/utils/otherRaids';
 import React from 'react';
 import { TextDecoder, TextEncoder } from 'util';
 import { generateEmptyPlayer } from '@/state';
@@ -148,7 +149,7 @@ describe('raid briefing rows (FA, presets kit): the phase 33 encounter lines are
     expect(briefingRows(enc, 'team').map((r) => r.seconds)).toEqual(enc.map((e) => e.seconds));
     expect(briefingRows(enc, 'none').every((r) => r.specs.length === 0 && r.specsText === 'no specs' && r.drainText === undefined)).toBe(true);
   });
-  test('ToB Sotetseg (phase 36: one spec budget, three different events, no "× 3"); Bloat\'s stomp (no specs) is left out', () => {
+  otherRaidsTest('ToB Sotetseg (phase 36: one spec budget, three different events, no "× 3"); Bloat\'s stomp (no specs) is left out', () => {
     const TOB = raidConfig('tob');
     const a = TOB.defaultAssumptions;
     const kit = createKitEvaluator(TOB.presets.map((p) => presetKitLoadout(generateEmptyPlayer(), p, a)), a);

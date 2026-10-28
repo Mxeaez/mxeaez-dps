@@ -1,4 +1,5 @@
 import { describe, expect, test } from '@jest/globals';
+import { faRows, otherRaidsSlowTest } from '@/tests/utils/otherRaids';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { generateEmptyPlayer } from '@/state';
@@ -54,7 +55,7 @@ describe('ring policy with the inputs', () => {
 
 describe('empty pinned defaults', () => {
   // phase 31: the FA / ToB heart left too (magic's kit potion)
-  test.each(RAIDS.map((r) => [r.id, r] as const))('%s: nothing pinned (phase 31: not even the heart)', (_, raid) => {
+  test.each(faRows(RAIDS).map((r) => [r.id, r] as const))('%s: nothing pinned (phase 31: not even the heart)', (_, raid) => {
     expect(raid.planDefaults.pinned).toEqual([]);
     expect(raid.planDefaults.pinned).not.toContain(SATURATED_HEART);
   });
@@ -75,7 +76,7 @@ describe('empty pinned defaults', () => {
     seeds: 2,
   });
   // phase 38f: slow (21 s); CoX.test.ts keeps a reduced CoX plan with a pickaxe for the Guardians
-  slowTest('CoX: the Dragon pickaxe is not pinned, yet every plan carries it (the Guardians need it) and clears the raid', () => {
+  otherRaidsSlowTest('CoX: the Dragon pickaxe is not pinned, yet every plan carries it (the Guardians need it) and clears the raid', () => {
     const raid = CHAMBERS_OF_XERIC_RAID;
     expect(raid.presets.some((p) => p.name === 'Dragon pickaxe (Torva)')).toBe(true);
     const inputs: PlanInputs = {

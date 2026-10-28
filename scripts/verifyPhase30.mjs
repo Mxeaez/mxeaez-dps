@@ -18,6 +18,7 @@
 import { existsSync } from 'node:fs';
 import { chromium } from '@playwright/test';
 import { headlineClose } from './headlines.mjs';
+import { OTHER_RAIDS } from './otherRaids.mjs';
 import { openSections } from './phase34Sections.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
@@ -116,6 +117,7 @@ const main = async () => {
   check(/^each loadout wears its own best ring/.test(await text(page.locator('[data-testid="plan-ring-summary-text"]'))), 'Allow ring switches: summary follows');
   await policy.selectOption('camp-one');
 
+  if (OTHER_RAIDS) { // phase 38f-2: the ToA / CoX / ToB steps run with RUN_OTHER_RAIDS=1 only
   // --- pinned defaults in the other raids
   for (const [raid, want] of [['toa', []], ['cox', []]]) {
     await openPlan(page, raid);
@@ -134,6 +136,7 @@ const main = async () => {
   // time: no "Added in this order" line any more
   check(await page.locator('[data-testid="plan-team-steps"]').count() === 0, 'ToB: no carrier steps line (carriers by headcount)');
   await shot(page, 'tob-steps');
+  }
 
   await browser.close();
   console.log(`${failures ? `${failures} FAILED` : 'all OK'} (${((Date.now() - t0) / 1000).toFixed(0)} s)`);
