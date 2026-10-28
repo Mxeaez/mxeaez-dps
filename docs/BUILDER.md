@@ -49,9 +49,9 @@ A numbers phase: change the code → `node scripts/pinHeadlines.mjs --full` → 
 `git diff src/tests/fixtures/headlines.json README.md` (every moved total explained in PROGRESS) → slow suites → the
 per-phase strings that moved.
 
-**Round 6 is FA only** (user, 2026-10-28; ROADMAP "Round 6"): explain and hand-check only the FA totals (fa, faSolo,
-faNotOwned). ToA / CoX / ToB must still plan with sane gear; list their moved totals in PROGRESS without explaining
-them. Reviewers recompute FA only.
+**Round 6 is FA only** (user, 2026-10-28; ROADMAP "Round 6"): only the FA plans (fa, faSolo, faNotOwned) are pinned,
+explained and hand-checked; reviewers recompute FA only. The ToA / CoX / ToB tabs are hidden and their tests, pins and
+verify scripts are off (from phase 38f-2: on only with `RUN_OTHER_RAIDS=1`); don't run, fix or re-pin them until round 7.
 
 ## Running things
 
