@@ -477,13 +477,13 @@
    "slot": "ring"
   }
  ],
- "comparison": "9c87af4f26079587b525c583946265503c1236c5eaf1115a98d2552d44d1f5c7",
+ "comparison": "f338ad27f3a7f2add86e201d6b8b724f30859dfc348c3d7bc1de1f0a2e34cac3",
  "planned": 1,
  "rejected": [
   {
    "label": "Twisted bow (Masori)",
    "kind": "addition",
-   "deltaSeconds": 22.574099863128822,
+   "deltaSeconds": 22.54489453914607,
    "deltaSlots": 1,
    "reason": "needs 1 more slot, 0 free",
    "weapons": [
@@ -503,7 +503,7 @@
   {
    "label": "Twisted bow + Seeking dragon arrow",
    "kind": "addition",
-   "deltaSeconds": 2.3345306826936394,
+   "deltaSeconds": 2.334530682693412,
    "deltaSlots": 5,
    "reason": "needs 5 more slots, 0 free",
    "weapons": [
@@ -525,11 +525,11 @@
    ]
   },
   {
-   "label": "melee + magic: Tumeken's shadow (Ancestral) / Scythe of Vitur / Scythe of Vitur + Oathplate chest",
+   "label": "melee + magic: Tumeken's shadow (Ancestral) / Scythe of Vitur / Scythe of Vitur #4",
    "kind": "alternative",
-   "deltaSeconds": -74.08666647626796,
+   "deltaSeconds": -73.9435104530819,
    "deltaSlots": 0,
-   "reason": "74.1 s slower",
+   "reason": "73.9 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Scythe of Vitur",
@@ -539,9 +539,9 @@
   {
    "label": "ranged + magic: Tumeken's shadow (Ancestral) / Twisted bow (Masori)",
    "kind": "alternative",
-   "deltaSeconds": -129.59053968279704,
+   "deltaSeconds": -129.26555708468322,
    "deltaSlots": -1,
-   "reason": "129.6 s slower",
+   "reason": "129.3 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Twisted bow"
@@ -550,9 +550,9 @@
   {
    "label": "magic: Tumeken's shadow (Ancestral)",
    "kind": "alternative",
-   "deltaSeconds": -587.7794925414173,
+   "deltaSeconds": -589.684572749178,
    "deltaSlots": -10,
-   "reason": "587.8 s slower",
+   "reason": "589.7 s slower",
    "weapons": [
     "Tumeken's shadow"
    ]
@@ -609,18 +609,18 @@
      "weapon": "elderMaul",
      "carriers": 2,
      "drivers": [
-      "Ocellus (4.7 s)"
+      "Ocellus (3.2 s)"
      ],
-     "lastSaved": 4.6991978458092944
+     "lastSaved": 3.1751336796010037
     },
     {
      "weapon": "tonalztics",
      "carriers": 2,
      "drivers": [
-      "Ocellus (141 s)",
+      "Ocellus (71.9 s)",
       "Archive Guardian (3.5 s)"
      ],
-     "lastSaved": 144.95405784689228
+     "lastSaved": 75.34622953725989
     }
    ],
    "perTarget": [
@@ -631,7 +631,7 @@
      "carriers": {
       "tonalztics": 2
      },
-     "pFloor": 0.979808726256423,
+     "pFloor": 0.9895979633994395,
      "ayak": 0
     },
     {
@@ -639,9 +639,10 @@
      "label": "Archive Guardian (Grounded)",
      "group": "Archive Guardian (Grounded)",
      "carriers": {
-      "tonalztics": 2
+      "tonalztics": 1,
+      "elderMaul": 1
      },
-     "pFloor": 0.9915089995572237,
+     "pFloor": 0.9625692910815186,
      "ayak": 0
     },
     {
@@ -651,7 +652,7 @@
      "carriers": {
       "elderMaul": 2
      },
-     "pFloor": 0.9932242002040348,
+     "pFloor": 0.9697725266208251,
      "ayak": 0
     },
     {
@@ -661,7 +662,7 @@
      "carriers": {
       "tonalztics": 1
      },
-     "pFloor": 0.9866703406810372,
+     "pFloor": 0.9890553206758361,
      "ayak": 0
     },
     {
@@ -671,7 +672,7 @@
      "carriers": {
       "tonalztics": 1
      },
-     "pFloor": 0.9699979048778802,
+     "pFloor": 0.9758786564501939,
      "ayak": 0
     },
     {
@@ -681,7 +682,7 @@
      "carriers": {
       "tonalztics": 1
      },
-     "pFloor": 0.9861678902339941,
+     "pFloor": 0.9884454118389294,
      "ayak": 0
     },
     {
@@ -690,9 +691,9 @@
      "group": "Ocellus P2 (The Blade)",
      "carriers": {
       "elderMaul": 2,
-      "tonalztics": 2
+      "tonalztics": 1
      },
-     "pFloor": 0.9812819524464742,
+     "pFloor": 0.9658688177406703,
      "ayak": 0
     },
     {
@@ -700,9 +701,10 @@
      "label": "Ocellus P3 (Quadrants 1-3)",
      "group": "Ocellus P3",
      "carriers": {
-      "elderMaul": 2
+      "elderMaul": 2,
+      "tonalztics": 1
      },
-     "pFloor": 0.9654197664143894,
+     "pFloor": 0.9803750248664987,
      "ayak": 0
     },
     {
@@ -712,7 +714,7 @@
      "carriers": {
       "tonalztics": 3
      },
-     "pFloor": 0.9765539745768551,
+     "pFloor": 0.9704872936055128,
      "ayak": 0
     },
     {
@@ -722,7 +724,7 @@
      "carriers": {
       "elderMaul": 2
      },
-     "pFloor": 0.9654197664143894,
+     "pFloor": 0.9783670464274926,
      "ayak": 0
     }
    ],
@@ -813,11 +815,11 @@
  "droppedPinned": [],
  "ownershipNotices": [],
  "searchRows": "03bd7ba7d4b446d2588fe9e14c7874c61a8535ad061004b3c3b29ead530d3c6e",
- "objectiveSeconds": 1564.4358518978688,
+ "objectiveSeconds": 1562.5307716901082,
  "fightSeconds": null,
  "plannedRoute": {
   "id": "archive-guardian>ezekiel>moia>xarth>ocellus",
-  "seconds": 1564.4358518978688,
+  "seconds": 1562.5307716901082,
   "surgeDoses": null,
   "encounters": [
    {
@@ -843,7 +845,7 @@
       "npc": "Ezekiel",
       "firstRowKey": "ezekiel",
       "counts": {
-       "elderMaul": 4
+       "elderMaul": 3
       }
      }
     ],
@@ -882,7 +884,7 @@
    },
    {
     "id": "ocellus",
-    "seconds": 837.9720813206987,
+    "seconds": 836.0670011129382,
     "events": [
      {
       "npc": "Ocellus",

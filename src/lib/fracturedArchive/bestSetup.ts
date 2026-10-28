@@ -14,7 +14,8 @@ import {
 } from '@/lib/fracturedArchive/specs';
 import {
   ayakOutcome, ayakSpecsToThreshold, carriersFromCounts, countsToReductions, DEFENCE_DRAIN_ORDER, defenceOutcome,
-  describeAttempts, describeDefence, formatProbability, inUpstreamOrder, soloNeeds, soloSpecPlan, specsNeeded, teamSpecPlan,
+  describeAttempts, describeDefence, formatProbability, inUpstreamOrder, kitDrainPlan, soloNeeds, soloSpecPlan, specsNeeded,
+  teamSpecPlan,
 } from '@/lib/fracturedArchive/teamSpecs';
 import {
   DrainLine, drainFacts, drainLineFromAttempts, drainLineNote,
@@ -244,6 +245,22 @@ export const specCountsDrainKey = (
 };
 
 /**
+ * Phase 38h-1: the Team drain state's first round: the Defence specs of the drain line's plan within the carriers that
+ * count (the first `partySize`; teamSpecs.ts `kitDrainPlan`), every Eye of Ayak carrier's specs as before.
+ */
+const teamFirstRound = (
+  model: DrainModel,
+  carriers: Partial<Record<PlannerWeapon, number>>,
+  partySize: number,
+  threshold: number,
+): SpecCounts => {
+  const counted: Partial<Record<PlannerWeapon, number>> = {};
+  carriersFromCounts(carriers).slice(0, Math.max(0, partySize)).forEach((c) => { counted[c.weapon] = (counted[c.weapon] ?? 0) + 1; });
+  const plan = model.def > model.floor ? kitDrainPlan(model, { drain: 'team', carriers: counted }, threshold) : null;
+  return { ...(plan?.counts ?? {}), ayak: (counted.ayak ?? 0) * specAttempts(100, model.energy.ayak) };
+};
+
+/**
  * Phase 14: Solo = `soloSpecPlan` (the user's carried weapons within their own energy budget), Team =
  * `teamSpecPlan` (the carriers' first round). Both rank at the floor if P(floor) ≥ `floorThreshold`, else at the
  * nearest reachable Defence to the expected value; see teamSpecs.ts. The calculator's Max-drain buttons (drains.ts)
@@ -323,11 +340,13 @@ export const drainStateFor = (m: Monster, id: DrainStateId, assumptions: BestSet
       // phase 32: "needs 4 landed hits · 4 specs = 8 attacks, 4 must land · 98%" (phase 34 wording)
       needed = soloNeeds(model, p);
     } else {
+      // phase 38h-1: the first round is the drain line's plan within the carriers (the spec budget's event counts)
       const p = teamSpecPlan(model, {
         partySize: assumptions.partySize,
         carriers: carriersFromCounts(assumptions.team.carriers, assumptions.team.lightbearer),
         fightSeconds,
         threshold,
+        firstRound: teamFirstRound(model, assumptions.team.carriers, assumptions.partySize, threshold),
       });
       reductions = p.reductions;
       pFloor = p.firstRound.defence.pFloor;

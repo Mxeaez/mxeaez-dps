@@ -18,9 +18,10 @@ import {
 } from '@/lib/fracturedArchive/bestSetup';
 import { drainModel, PLANNER_WEAPONS, PlannerWeapon } from '@/lib/fracturedArchive/specs';
 import {
-  ayakOutcome, defenceOutcome, inUpstreamOrder,
+  ayakOutcome, DEFENCE_DRAIN_ORDER, defenceOutcome, inUpstreamOrder,
 } from '@/lib/fracturedArchive/teamSpecs';
 import { DAMAGE_SPEC_WEAPONS, DamageSpecWeapon } from '@/lib/fracturedArchive/damageSpecs';
+import { drainFacts } from '@/lib/fracturedArchive/drainLine';
 import { BestSetupAssumptions } from '@/lib/fracturedArchive/presets';
 import { raidConfig } from '@/lib/raids';
 import { RaidId } from '@/lib/raids/types';
@@ -159,6 +160,10 @@ export interface DrainPhaseRow {
   energy: Partial<Record<PlannerWeapon, number>>;
   /** Under the event's counts (attempts the target can take). */
   attempts: string;
+  /** Phase 38h-1: the order those attempts are sent in (teamSpecs `defenceOutcome`'s steps), e.g. "tonalztics → elderMaul ×2". */
+  order: string;
+  /** Phase 38h-1: this phase's own drain line plan (drainLine.ts `drainFacts`), e.g. "Tonalztics → Elder maul ×2 (floor 96%)". */
+  line: string;
   pFloor: number | null;
   expectedDef: number | null;
   rankedDef: number | null;
@@ -244,6 +249,8 @@ export const drainOutcome = (name: HeadlineName, encounter: string, retimed?: Re
       hitChance: {},
       energy: {},
       attempts: '',
+      order: '',
+      line: '',
       pFloor: null,
       expectedDef: null,
       rankedDef: null,
@@ -267,6 +274,13 @@ export const drainOutcome = (name: HeadlineName, encounter: string, retimed?: Re
       hitChance: Object.fromEntries(used.map((w) => [w, model.canHit[w] ? model.hitChance[w] : 0])),
       energy: Object.fromEntries(used.map((w) => [w, model.energy[w]])),
       attempts: used.map((w) => `${counts[w]} ${w}${model.canHit[w] ? '' : ' (can\'t hit)'}`).join(', '),
+      order: (o.steps ?? []).map((x) => `${x.weapon}${x.count > 1 ? ` ×${x.count}` : ''}`).join(' → '),
+      line: drainFacts(model, {
+        drain,
+        partySize: a.partySize,
+        threshold: a.floorThreshold,
+        ...(drain === 'solo' ? { weapons: DEFENCE_DRAIN_ORDER.filter((w) => a.mySpecs[w]) } : {}),
+      }).text.replace(/^Drain: /, '').replace(/; Eye of Ayak .*$/, ''),
       pFloor: o.pFloor,
       expectedDef: o.expectedDef,
       rankedDef: o.rankedDef,

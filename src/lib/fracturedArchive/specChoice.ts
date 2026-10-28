@@ -3,7 +3,8 @@ import {
   DrainModel, PlannerWeapon, specAttempts,
 } from '@/lib/fracturedArchive/specs';
 import {
-  ayakOutcome, DEFAULT_FLOOR_THRESHOLD, DefenceDrainWeapon, formatProbability, passingTeams, recommendCarriers,
+  ayakOutcome, DEFAULT_FLOOR_THRESHOLD, DefenceDrainWeapon, formatProbability, passingTeams, planCarriers, recommendCarriers,
+  teamLinePlan,
 } from '@/lib/fracturedArchive/teamSpecs';
 
 /**
@@ -458,20 +459,23 @@ export const teamRoles = (
   const partySize = Math.max(1, Math.floor(opts.partySize));
   const perTarget: RoleTargetNeed[] = targets.map((t0) => {
     const t = { ...t0, group: t0.group ?? t0.label };
-    const rec = recommendCarriers(t.model, { partySize, threshold });
     const ayak = opts.mages > 0 ? ayakCarriers(t.model, partySize, threshold) : 0;
     if (t.model.def <= t.model.floor) {
       return {
         key: t.key, label: t.label, group: t.group, carriers: null, pFloor: 1, ayak, note: 'already at the Defence floor',
       };
     }
-    if (!rec.best) {
+    // phase 38h-1: the drain line's plan (teamSpecs.ts `teamLinePlan`: the fewest specs to the floor at the threshold,
+    // in the order that lands most often), its carriers (was `recommendCarriers`: whole carriers, upstream's order)
+    const plan = teamLinePlan(t.model, partySize, threshold);
+    if (!plan || !plan.floor) {
+      const rec = recommendCarriers(t.model, { partySize, threshold });
       return {
         key: t.key, label: t.label, group: t.group, carriers: null, pFloor: 0, ayak, note: rec.text.replace(/^[^:]*: /, ''),
       };
     }
     return {
-      key: t.key, label: t.label, group: t.group, carriers: rec.best.carriers, pFloor: rec.best.pFloor, ayak,
+      key: t.key, label: t.label, group: t.group, carriers: planCarriers(t.model, plan), pFloor: plan.p, ayak,
     };
   });
   const need = (n: RoleTargetNeed, w: PlannerWeapon) => (w === 'ayak' ? n.ayak ?? 0 : n.carriers?.[w as DefenceDrainWeapon] ?? 0);
@@ -523,8 +527,13 @@ export const kitCarriers = (
   if (sum(max) <= party && (leavesYou(sum(max)) || realParty <= 1)) return { carriers: max, uncovered: [] };
   const weapons: PlannerWeapon[] = ['elderMaul', 'tonalztics', 'dwh', 'bgs', 'ayak'];
   const defence: DefenceDrainWeapon[] = ['elderMaul', 'tonalztics', 'dwh', 'bgs'];
+  // phase 38h-1: the drain line's team first (its carriers, its chance), then every other 95% team
   const needs = targets.filter((t) => t.model.def > t.model.floor)
-    .map((t) => ({ label: t.label, teams: passingTeams(t.model, { partySize: party, threshold }) }))
+    .map((t) => {
+      const line = roles.perTarget.find((n) => n.key === t.key);
+      const first = line?.carriers ? [{ carriers: line.carriers, pFloor: line.pFloor }] : [];
+      return { label: t.label, teams: [...first, ...passingTeams(t.model, { partySize: party, threshold })] };
+    })
     .filter((b) => b.teams.length);
   const ayakNeeds = roles.perTarget.filter((n) => (n.ayak ?? 0) > 0 && (n.ayak ?? 0) <= mages)
     .map((n) => ({ label: `${n.label} (Eye of Ayak)`, ayak: n.ayak as number }));

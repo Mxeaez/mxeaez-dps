@@ -1,7 +1,7 @@
 import type {
   DrainStateId, SpecCounts,
 } from '@/lib/fracturedArchive/bestSetup';
-import { findTarget } from '@/lib/fracturedArchive/bestSetup';
+import { attemptsFromCounts, findTarget } from '@/lib/fracturedArchive/bestSetup';
 import type {
   PhaseQuery, PhaseTime, RaidKit, RaidTimeAssumptions,
 } from '@/lib/fracturedArchive/raidTime';
@@ -9,8 +9,8 @@ import {
   DrainModel, PlannerWeapon, SPEC_WEAPONS, specAttempts,
 } from '@/lib/fracturedArchive/specs';
 import {
-  ayakOutcome, ayakSpecsToThreshold, DEFAULT_FLOOR_THRESHOLD, DEFENCE_DRAIN_ORDER, drainOrder, drainSequence, helpfulSpecs,
-  MAX_FLOOR_SPECS, neededSpecs, recommendCarriers,
+  ayakOutcome, ayakSpecsToThreshold, DEFAULT_FLOOR_THRESHOLD, DEFENCE_DRAIN_ORDER, DefenceDrainWeapon,
+  defenceOutcome, drainOrder, kitDrainPlan, MAX_FLOOR_SPECS,
 } from '@/lib/fracturedArchive/teamSpecs';
 import {
   bestDamageVariant, DAMAGE_SPEC_WEAPONS, DamageSpecProfile, DamageSpecWeapon, netSpecDamage, specSecondsSaved,
@@ -33,7 +33,8 @@ import {
  * - **Drain events** ({@link drainEventsOf}) = per NPC its first phase and every Defence reset (drainLine.ts
  *   `encounterDrainSummary`'s grouping). Adds and other `noDrains` targets get no drain specs (phase 38b: damage specs
  *   are allowed on adds; a target's `noDamageSpecs` forbids them).
- * - **Drain specs** of an event (phase 38g: one fixed set, {@link eventWantedCounts}; was a seconds-based option search)
+ * - **Drain specs** of an event (phase 38g: one fixed set, {@link eventWantedCounts}; was a seconds-based option search;
+ *   phase 38h-1: the drain line's plan within the kit / your weapons)
  *   = spec counts per drain weapon (Solo: the weapons you carry, Eye of Ayak up to the specs asked for; Team: the
  *   carriers' weapons), each weapon's specs made at the first phase of the event it can hit (`RaidKit.specHits`), cut to
  *   what the bars pay there. A phase's drains = the event's specs of the weapons that can hit it (bestSetup.ts
@@ -360,16 +361,18 @@ export const budgetGroups = (cfg: SpecBudgetConfig): PoolGroup[] => {
 
 /**
  * Phase 38g: the drain specs a drain event wants (no seconds involved), from the drain models of its phases (`models`:
- * one per phase that drains apply to; null = unknown). Per phase:
- * - **Team**: the fewest of the kit's carriers reaching P(floor from the first round) ≥ threshold (teamSpecs.ts
- *   `recommendCarriers` within `cfg.carriers`), each carrier making its first-round specs (2 for a 50% spec); when no team
- *   within them does (phase 38g fix, the user: "cap at what helps"), the fewest of the kit's specs in drain order reaching
- *   d* = the lowest Defence all of them reach at 95% (teamSpecs.ts `helpfulSpecs`), in whole carriers. Eye of Ayak: the fewest of its carriers reaching P(magic def 0)
- *   ≥ threshold, else all of them.
- * - **Solo**: the fewest of your specs reaching the floor at the threshold (teamSpecs.ts `neededSpecs` with your
- *   weapons, at most MAX_FLOOR_SPECS); unreachable: the fewest (in drain order) reaching d* (`helpfulSpecs`). Eye of Ayak: the fewest
- *   (≤ the specs asked for) reaching magic def 0 at the threshold, else all asked for.
- * Per weapon the most any phase of the event wants. A phase already at the floor (magic def ≤ 0) wants none.
+ * one per phase that drains apply to, in the event's order; null = unknown). Phase 38h-1: per phase the drain line's plan
+ * (teamSpecs.ts `bestDrainPlan`: the fewest specs reaching the floor at the threshold, then the highest P(floor), each
+ * spec rolled at the Defence the earlier ones leave, in the plan's order) within what the event has:
+ * - **Team**: the kit's carriers (`cfg.carriers`): each weapon at most its carriers × their specs (2 for a 50% spec), at
+ *   most that many carriers in all; exactly the plan's specs (a carrier may make fewer than 2). Floor out of reach at
+ *   the threshold (the user: "cap at what helps"): the plan's fewest specs reaching d* = the lowest Defence the kit
+ *   reaches at the threshold. Eye of Ayak: the fewest of its carriers reaching P(magic def 0) ≥ threshold, else all of them.
+ * - **Solo**: your weapons, at most MAX_FLOOR_SPECS (the drain line's Solo plan). Eye of Ayak: the fewest (≤ the specs
+ *   asked for) reaching magic def 0 at the threshold, else all asked for.
+ * A phase already at the floor (magic def ≤ 0) wants none. A later phase of the event that the specs wanted so far (the
+ * weapons that can hit it) already take to the floor at the threshold (`defenceOutcome`) adds none (AG: the shield's
+ * Tonalztics ×4 also floor the Grounded phase); otherwise per weapon the most of the two.
  */
 const WANTED_MEMO = new WeakMap<DrainModel, Map<string, SpecCounts>>();
 
@@ -394,7 +397,13 @@ export const eventWantedCounts = (
       one = phaseWantedCounts(cfg, m, threshold);
       memo.set(key, one);
     }
-    (Object.keys(one) as PlannerWeapon[]).forEach((w) => more(w, one![w] ?? 0));
+    // phase 38h-1: the specs so far already floor this phase (Defence; Eye of Ayak counted on its own)
+    const defSoFar = attemptsFromCounts(m, out).filter((w): w is DefenceDrainWeapon => w !== 'ayak');
+    const floored = m.def <= m.floor || (defSoFar.length > 0 && defenceOutcome(m, defSoFar, threshold).pFloor >= threshold);
+    (Object.keys(one) as PlannerWeapon[]).forEach((w) => {
+      if (w !== 'ayak' && floored) return;
+      more(w, one![w] ?? 0);
+    });
   });
   return out;
 };
@@ -410,26 +419,13 @@ const phaseWantedCounts = (
   const more = (w: PlannerWeapon, n: number) => { if (n > (out[w] ?? 0)) out[w] = n; };
   const kit = cfg.drain === 'team' ? (cfg.carriers ?? {}) : {};
   const perCarrier = (w: PlannerWeapon) => specAttempts(SPEC_MAX_ENERGY, SPEC_WEAPONS[w].energy);
-  const yours = cfg.drain === 'solo'
-    ? DEFENCE_DRAIN_ORDER.filter((w) => (cfg.solo?.[w] ?? 0) > 0)
-    : [];
+  if (m.def > m.floor) {
+    const plan = kitDrainPlan(m, cfg.drain === 'team'
+      ? { drain: 'team', carriers: kit }
+      : { drain: 'solo', weapons: DEFENCE_DRAIN_ORDER.filter((w) => (cfg.solo?.[w] ?? 0) > 0) }, threshold);
+    if (plan) DEFENCE_DRAIN_ORDER.forEach((w) => more(w, plan.counts[w] ?? 0));
+  }
   if (cfg.drain === 'team') {
-    if (m.def > m.floor) {
-      const total = Object.values(kit).reduce((t: number, n) => t + (n ?? 0), 0);
-      const rec = recommendCarriers(m, {
-        partySize: Math.max(1, total), threshold, available: kit, bestOnly: true,
-      });
-      if (rec.best) {
-        const carriers = rec.best.carriers;
-        DEFENCE_DRAIN_ORDER.forEach((w) => more(w, (carriers[w] ?? 0) * perCarrier(w)));
-      } else {
-        // phase 38g fix (the user, 2026-10-28): no team within the kit reaches the floor at 95%: the fewest of the kit's
-        // specs (in drain order) reaching d* = the lowest Defence all of them reach at 95%, in whole carriers
-        const seq = drainSequence(drainOrder(m).map((x) => x.weapon), (w) => Math.floor(kit[w] ?? 0) * perCarrier(w));
-        const h = helpfulSpecs(m, seq, threshold);
-        DEFENCE_DRAIN_ORDER.forEach((w) => more(w, Math.ceil((h.counts[w] ?? 0) / perCarrier(w)) * perCarrier(w)));
-      }
-    }
     const ayakKit = Math.floor(kit.ayak ?? 0);
     if (ayakKit > 0 && m.canHit.ayak && m.magicDef > 0) {
       let n = ayakKit;
@@ -442,13 +438,6 @@ const phaseWantedCounts = (
       more('ayak', n * perCarrier('ayak'));
     }
   } else {
-    const weapons = yours.filter((w) => m.canHit[w]);
-    if (weapons.length && m.def > m.floor) {
-      const nd = neededSpecs(m, Object.fromEntries(weapons.map((w) => [w, MAX_FLOOR_SPECS])), threshold);
-      // phase 38g fix: unreachable at 95%: the fewest specs (in drain order) reaching d* (helpfulSpecs)
-      const got = nd.defence ?? helpfulSpecs(m, drainSequence(drainOrder(m, weapons).map((x) => x.weapon), () => MAX_FLOOR_SPECS, MAX_FLOOR_SPECS), threshold).counts;
-      DEFENCE_DRAIN_ORDER.forEach((w) => more(w, got[w] ?? 0));
-    }
     const asked = Math.floor(cfg.solo?.ayak ?? 0);
     if (asked > 0 && m.canHit.ayak && m.magicDef > 0) more('ayak', ayakSpecsToThreshold(m, asked, threshold));
   }

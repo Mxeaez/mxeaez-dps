@@ -9,8 +9,10 @@
  * The plan is re-timed as scripts/probes/retime.mjs does (src/tests/utils/probes.ts `drainOutcome`), then prints:
  * - events: each drain event's NPC, first row and spec counts (the encounter spec budget's choice);
  * - phases: per phase its drain event, wall clock start / end, Defence and floor, Magic defence bonus, hit chance and
- *   energy per spec of each weapon used, P(floor), expected and ranked Defence (teamSpecs `defenceOutcome`), the Ayak
- *   drain, your damage specs;
+ *   energy per spec of each weapon used, the order they are sent in and P(floor), expected and ranked Defence in that
+ *   order (teamSpecs `defenceOutcome`; phase 38h-1: each spec at the Defence the earlier ones leave), the Ayak drain,
+ *   your damage specs;
+ * - the drain line per phase (phase 38h-1: drainLine.ts `drainFacts`, that phase's own plan);
  * - pools: each spec bar group (a carrier weapon, or "me"), its regen period, start / end energy, regen ticks over the
  *   encounter's wall clock (the reported phases' clock), Death Charge energy (phase 38b), energy spent (Liquid
  *   adrenaline: half on a phase inside its window) and start + regen (+ surge) + Death Charge − spent.
@@ -46,13 +48,15 @@ console.log(table(['#', 'npc', 'reset', 'first row', 'counts'], d.events.map((e,
 ])));
 console.log('\nphases');
 const weapons = (o) => Object.entries(o).map(([w, x]) => `${w} ${x}`).join(', ');
-console.log(table(['phase', 'event', 'start', 'end', 'seconds', 'def', 'floor', 'magic def', 'attempts', 'hit chance', 'energy', 'P(floor)', 'E[def]', 'ranked def', 'ayak drain', 'your damage specs'], d.phases.map((r) => [
+console.log(table(['phase', 'event', 'start', 'end', 'seconds', 'def', 'floor', 'magic def', 'attempts', 'order', 'hit chance', 'energy', 'P(floor)', 'E[def]', 'ranked def', 'ayak drain', 'your damage specs'], d.phases.map((r) => [
   r.key, r.event < 0 ? '-' : r.event, fmt(r.start, 2), fmt(r.end, 2), fmt(r.seconds, 3), r.def, r.floor, r.magicDef,
-  r.attempts || '-', weapons(Object.fromEntries(Object.entries(r.hitChance).map(([w, x]) => [w, pct(x)]))) || '-',
+  r.attempts || '-', r.order || '-', weapons(Object.fromEntries(Object.entries(r.hitChance).map(([w, x]) => [w, pct(x)]))) || '-',
   weapons(r.energy) || '-', pct(r.pFloor), fmt(r.expectedDef, 2), r.rankedDef,
   r.ayakDrain === null ? '-' : `${r.ayakDrain} (magic def ${r.magicDefAfter})`,
   r.damage.map((x) => `${x.count}× ${x.weapon} (${x.energy}%)`).join(', ') || '-',
 ])));
+console.log('\nthe drain line per phase (drainLine.ts drainFacts; phase 38h-1: an event pays its first phase\'s plan, a later phase\'s only when the specs so far don\'t floor it)');
+d.phases.filter((r) => r.line).forEach((r) => console.log(`  ${r.key}: ${r.line}`));
 console.log('\npools (spec bars)');
 console.log(table(['group', 'bars', 'regen every', 'start %', 'end %', 'regen ticks', 'death charge %', 'spent %', 'start + regen + DC - spent', 'check'], d.pools.map((g) => [
   g.group, g.count, `${g.regenSeconds} s`, g.start.join(' / '), g.end.join(' / '), g.ticks, g.restored, g.spent, g.balance,

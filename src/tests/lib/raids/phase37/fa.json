@@ -275,7 +275,7 @@
   },
   {
    "slots": 1,
-   "seconds": 49.59005133355731
+   "seconds": 45.910551201667886
   },
   {
    "slots": 8,
@@ -536,7 +536,7 @@
   }
  ],
  "pinnedItems": [],
- "comparison": "1dea642f583ae22c1c21ad27b0f65181b31358ff0e51a95d16a90e30e13d2375",
+ "comparison": "d66704c1fbe1f7c432fc434adbd78d0718030328eedeafee67db99067093373f",
  "planned": 5,
  "rejected": [],
  "alternatives": [
@@ -557,9 +557,9 @@
   {
    "label": "melee + magic: Tumeken's shadow (Ancestral) / Inquisitor's + Obligator / Harmonised Nightmare staff / Harmonised Nightmare staff #4",
    "kind": "alternative",
-   "deltaSeconds": -79.81391767393893,
+   "deltaSeconds": -94.2908194637057,
    "deltaSlots": 3,
-   "reason": "79.8 s slower",
+   "reason": "94.3 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Obligator",
@@ -570,9 +570,9 @@
   {
    "label": "ranged + magic: Tumeken's shadow (Ancestral) / Twisted bow (Masori) / Ascension crossbows + diamond (e) (Masori) / Ascension crossbows + onyx (e) (Masori)",
    "kind": "alternative",
-   "deltaSeconds": -341.9203435191946,
+   "deltaSeconds": -318.28400210673135,
    "deltaSlots": 1,
-   "reason": "341.9 s slower",
+   "reason": "318.3 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Twisted bow",
@@ -583,9 +583,9 @@
   {
    "label": "magic: Tumeken's shadow (Ancestral) / Harmonised Nightmare staff / Harmonised Nightmare staff #4",
    "kind": "alternative",
-   "deltaSeconds": -884.0933029107848,
+   "deltaSeconds": -910.6064104871903,
    "deltaSlots": -5,
-   "reason": "884.1 s slower",
+   "reason": "910.6 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Harmonised Nightmare staff",
@@ -651,25 +651,25 @@
   "items": [
    {
     "item": "Zaryte crossbow",
-    "saved": 6.474538309355239,
+    "saved": 35.54764159841761,
     "slots": 1,
     "how": "a free slot"
    },
    {
     "item": "Burning claws",
-    "saved": 2.253570173296339,
+    "saved": 2.0895884263616153,
     "slots": 1,
     "how": "a free slot"
    },
    {
     "item": "Surge potion(4)",
-    "saved": 2.463387443218835,
+    "saved": 2.4633874432186076,
     "slots": 1,
     "how": "a free slot"
    },
    {
     "item": "Crimson kisten",
-    "saved": 2.297195091391359,
+    "saved": 2.297195091391586,
     "slots": 1,
     "how": "a free slot"
    }
@@ -683,18 +683,18 @@
      "weapon": "tonalztics",
      "carriers": 3,
      "drivers": [
-      "Bork + Smorks (7.2 s)",
-      "Ocellus (1.2 s)"
+      "Ocellus (24.5 s)",
+      "Bork + Smorks (10.1 s)"
      ],
-     "lastSaved": 8.439698762775834
+     "lastSaved": 34.631089624420156
     },
     {
      "weapon": "elderMaul",
      "carriers": 2,
      "drivers": [
-      "Ocellus (0.1 s)"
+      "Ocellus (24.6 s)"
      ],
-     "lastSaved": 16.081488695434246
+     "lastSaved": 43.4641334745761
     }
    ],
    "perTarget": [
@@ -705,7 +705,7 @@
      "carriers": {
       "tonalztics": 2
      },
-     "pFloor": 0.979808726256423,
+     "pFloor": 0.9895979633994395,
      "ayak": 0
     },
     {
@@ -713,9 +713,10 @@
      "label": "Archive Guardian (Grounded)",
      "group": "Archive Guardian (Grounded)",
      "carriers": {
-      "tonalztics": 2
+      "tonalztics": 1,
+      "elderMaul": 1
      },
-     "pFloor": 0.9915089995572237,
+     "pFloor": 0.9625692910815186,
      "ayak": 0
     },
     {
@@ -725,7 +726,7 @@
      "carriers": {
       "elderMaul": 2
      },
-     "pFloor": 0.9586373794588946,
+     "pFloor": 0.9741742124241974,
      "ayak": 0
     },
     {
@@ -735,7 +736,7 @@
      "carriers": {
       "elderMaul": 2
      },
-     "pFloor": 0.9586373794588946,
+     "pFloor": 0.9741742124241974,
      "ayak": 0
     },
     {
@@ -745,7 +746,7 @@
      "carriers": {
       "elderMaul": 2
      },
-     "pFloor": 0.9586373794588946,
+     "pFloor": 0.9741742124241974,
      "ayak": 0
     },
     {
@@ -755,7 +756,7 @@
      "carriers": {
       "elderMaul": 2
      },
-     "pFloor": 0.9586373794588946,
+     "pFloor": 0.9741742124241974,
      "ayak": 0
     },
     {
@@ -763,9 +764,9 @@
      "label": "The Smorks",
      "group": "The Smorks",
      "carriers": {
-      "tonalztics": 5
+      "tonalztics": 4
      },
-     "pFloor": 0.9870789320302673,
+     "pFloor": 0.9621838239138669,
      "ayak": 0
     },
     {
@@ -775,7 +776,7 @@
      "carriers": {
       "tonalztics": 1
      },
-     "pFloor": 0.9866703406810372,
+     "pFloor": 0.9890553206758361,
      "ayak": 0
     },
     {
@@ -785,7 +786,7 @@
      "carriers": {
       "tonalztics": 1
      },
-     "pFloor": 0.9699979048778802,
+     "pFloor": 0.9758786564501939,
      "ayak": 0
     },
     {
@@ -795,7 +796,7 @@
      "carriers": {
       "tonalztics": 1
      },
-     "pFloor": 0.9861678902339941,
+     "pFloor": 0.9884454118389294,
      "ayak": 0
     },
     {
@@ -804,9 +805,9 @@
      "group": "Ocellus P2 (The Blade)",
      "carriers": {
       "elderMaul": 2,
-      "tonalztics": 2
+      "tonalztics": 1
      },
-     "pFloor": 0.9812819524464742,
+     "pFloor": 0.9658688177406703,
      "ayak": 0
     },
     {
@@ -814,9 +815,10 @@
      "label": "Ocellus P3 (Quadrants 1-3)",
      "group": "Ocellus P3",
      "carriers": {
-      "elderMaul": 2
+      "elderMaul": 2,
+      "tonalztics": 1
      },
-     "pFloor": 0.9654197664143894,
+     "pFloor": 0.9803750248664987,
      "ayak": 0
     },
     {
@@ -826,7 +828,7 @@
      "carriers": {
       "tonalztics": 3
      },
-     "pFloor": 0.9765539745768551,
+     "pFloor": 0.9704872936055128,
      "ayak": 0
     },
     {
@@ -836,7 +838,7 @@
      "carriers": {
       "elderMaul": 2
      },
-     "pFloor": 0.9654197664143894,
+     "pFloor": 0.9783670464274926,
      "ayak": 0
     }
    ],
@@ -857,7 +859,7 @@
    "manual": false
   },
   "notes": [
-   "Your spec bar goes to Zaryte crossbow / Burning claws / Crimson kisten / surge doses: 5 carriers (party − 1), 22:07.3 vs 22:20.8 if you carry a drain weapon instead."
+   "Your spec bar goes to Zaryte crossbow / Burning claws / Crimson kisten / surge doses: 5 carriers (party − 1), 21:39.9 vs 22:22.3 if you carry a drain weapon instead."
   ]
  },
  "ring": {
@@ -866,37 +868,37 @@
   "screened": [
    {
     "ring": "Ultor ring",
-    "seconds": 1327.30195170516,
+    "seconds": 1299.9193069260182,
     "full": true
    },
    {
     "ring": "Bellator ring",
-    "seconds": 1380.4065030036177,
+    "seconds": 1351.0323421770045,
     "full": true
    },
    {
     "ring": "Ring of shadows",
-    "seconds": 1409.6786431261821,
+    "seconds": 1411.5873795853227,
     "full": false,
-    "atLeast": 2.8398410737293034
+    "atLeast": 0
    },
    {
     "ring": "Venator ring",
-    "seconds": 1416.8757566719792,
+    "seconds": 1421.625240386938,
     "full": false,
-    "atLeast": 10.036954619526341
+    "atLeast": 0
    },
    {
     "ring": "Lightbearer",
-    "seconds": 1440.369372723644,
+    "seconds": 1442.3247795300592,
     "full": false,
-    "atLeast": 33.53057067119107
+    "atLeast": 0
    },
    {
     "ring": "Magus ring",
-    "seconds": 1440.369372723644,
+    "seconds": 1442.3247795300592,
     "full": false,
-    "atLeast": 33.53057067119107
+    "atLeast": 0
    }
   ]
  },
@@ -924,11 +926,11 @@
  "droppedPinned": [],
  "ownershipNotices": [],
  "searchRows": "bd1079b46477c0c3fa17cafdc80279053a08e43d4dd6bce899659ef6beda09da",
- "objectiveSeconds": 1327.30195170516,
+ "objectiveSeconds": 1299.9193069260182,
  "fightSeconds": null,
  "plannedRoute": {
   "id": "archive-guardian>bork-smorks>moia>xarth>ocellus",
-  "seconds": 1327.30195170516,
+  "seconds": 1299.9193069260182,
   "surgeDoses": [
    "archive-guardian",
    "xarth",
@@ -959,7 +961,7 @@
    },
    {
     "id": "bork-smorks",
-    "seconds": 192.6214418878,
+    "seconds": 189.7864084326551,
     "events": [
      {
       "npc": "Bork",
@@ -1027,7 +1029,7 @@
    },
    {
     "id": "ocellus",
-    "seconds": 715.2737918512486,
+    "seconds": 690.7261805272517,
     "events": [
      {
       "npc": "Ocellus",
@@ -1042,7 +1044,7 @@
       "firstRowKey": "ocellus-p2",
       "counts": {
        "elderMaul": 4,
-       "tonalztics": 4
+       "tonalztics": 2
       }
      },
      {
@@ -1050,7 +1052,7 @@
       "reset": "P2",
       "firstRowKey": "ocellus-p3",
       "counts": {
-       "tonalztics": 2
+       "tonalztics": 4
       }
      }
     ],

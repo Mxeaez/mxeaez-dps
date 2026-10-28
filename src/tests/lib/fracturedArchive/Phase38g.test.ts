@@ -15,7 +15,7 @@ import { runGearSearch } from '@/lib/fracturedArchive/search';
 import { kitCarriers, NO_CARRIERS, RoleTarget } from '@/lib/fracturedArchive/specChoice';
 import { drainModel, DrainModel } from '@/lib/fracturedArchive/specs';
 import {
-  applyOutcome, drainOrder, helpfulSpecs, MAX_FLOOR_SPECS, neededSpecs, passingTeams, recommendCarriers,
+  applyOutcome, drainOrder, helpfulSpecs, MAX_FLOOR_SPECS, neededSpecs, passingTeams, planChance, recommendCarriers,
 } from '@/lib/fracturedArchive/teamSpecs';
 import { assumptionsForTarget } from '@/lib/raids/toa/supplies';
 import { raidConfig } from '@/lib/raids';
@@ -69,7 +69,10 @@ describe('specs to the floor at 95%, not if every spec lands (hand-computed, Eld
     expect(fewest(2, h)).toBe(4);
     const nd = neededSpecs(m, { elderMaul: MAX_FLOOR_SPECS });
     expect(nd.defence).toEqual({ elderMaul: 4 });
-    expect(nd.pFloor).toBeCloseTo(atLeast(2, 4, h), 10);
+    // phase 38h-1: the specs after the first landed one roll at Def 195 (more accurate), so 4 specs land the floor more
+    // often than 4 at the undrained hit chance (Phase38g2.test.ts builds the 97.4% from upstream's hit chances)
+    expect(nd.pFloor).toBeGreaterThan(atLeast(2, 4, h) + 0.01);
+    expect(nd.pFloor).toBeCloseTo(planChance(m, [{ weapon: 'elderMaul', count: 4 }]), 12);
   });
 
   otherRaidsTest('ToA Kephri (low accuracy): Def 80 → floor 60 with 1 landed spec (best case 1), but 63% per spec needs 4 for 95%', () => {

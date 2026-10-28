@@ -336,18 +336,19 @@ describe('Team drain line: "needed ×N · team brings ×M"', () => {
     expect(pFloor(4)).toBeGreaterThanOrEqual(0.95);
     expect(pFloor(n)).toBeGreaterThanOrEqual(0.95);
     expect(n === 0 || pFloor(n - 1) < 0.95).toBe(true);
-    // review 2: "needed ×3 (86%) · …" — phase 30: 3 specs rank at the floor too, but only at 86% (< 95%): ×4 (98%)
+    // review 2: "needed ×3 (86%) · …" — phase 30: 3 specs rank at the floor too, but only at 86% (< 95%): ×4 (98%).
+    // Phase 38h-1: each spec rolls at the Defence the earlier ones leave: 3 specs 90%, 4 specs 99%
     expect(n).toBe(4);
     const p = (k: number) => formatProbability(pFloor(k));
-    expect(p(3)).toBe('86%');
+    expect(p(3)).toBe('90%');
     expect(ranked(3)).toBe(ranked(4));
-    expect(p(4)).toBe('98%');
+    expect(p(4)).toBe('99%');
     // phase 32 wording (units on every number; Phase32.test.ts)
-    expect(neededText(tona)).toBe('needs 4 landed hits · 4 specs (2 carriers) = 8 attacks, 4 must land · 98%'); // phase 34 wording
-    expect(neededText({ ...tona, needed: 0 })).toBe('not needed · team: 4 specs (2 carriers) · 98%');
+    expect(neededText(tona)).toBe('needs 4 landed hits · 4 specs (2 carriers) = 8 attacks, 4 must land · 99%'); // phase 34 wording
+    expect(neededText({ ...tona, needed: 0 })).toBe('not needed · team: 4 specs (2 carriers) · 99%');
     expect(tona.title.startsWith(`${neededText(tona)} (`)).toBe(true);
     // phase 38g: neededSpecs counts to the floor at 95%, not the best case ("4 Tonalztics of Ralos" hits = 2 specs if every
-    // attack lands → Def 156): the fewest Tonalztics specs with P(floor) ≥ 95% (86% with 3, 98% with 4)
+    // attack lands → Def 156): the fewest Tonalztics specs with P(floor) ≥ 95% (86% with 3, 98% with 4; phase 38h-1: 90% / 99%)
     expect(neededSpecs(model, { tonalztics: 4 }).defence).toEqual({ tonalztics: 4 });
     expect(neededSpecs(model, { tonalztics: 3 }).defence).toBeNull();
     // specsNeeded directly: a weapon whose specs change nothing on this boss needs 0
@@ -364,15 +365,16 @@ describe('Team drain line: "needed ×N · team brings ×M"', () => {
     expect(together.rankedDef).toBe(model.floor);
     expect(nd).toMatchObject({ elderMaul: { n: 0 } });
     expect(nd.tonalztics!.n).toBeGreaterThan(0);
-    // phase 30: at the threshold, not "×1 (66%)"
-    expect(nd.tonalztics).toMatchObject({ n: 2, result: '97%', brings: '>99.9%' });
+    // phase 30: at the threshold, not "×1 (66%)"; phase 38h-1: the second spec at the Defence the first leaves (98%)
+    expect(nd.tonalztics).toMatchObject({ n: 2, result: '98%', brings: '>99.9%' });
   });
 
   test('phase 30: Bork — Tonalztics is needed after maul ×3 (the pair reaches the floor at the threshold)', () => {
     const model = drainModel(undrained('bork'), A);
     const nd = specsNeeded(model, [...Array(4).fill('elderMaul'), ...Array(4).fill('tonalztics')]);
-    expect(nd.elderMaul).toMatchObject({ n: 3, result: '98%', brings: '99.6%' });
-    expect(nd.tonalztics).toMatchObject({ n: 3, result: '97%', brings: '99.6%' });
+    // phase 38h-1: each spec at the Defence the earlier ones leave (was 98% / 97%, brings 99.6%)
+    expect(nd.elderMaul).toMatchObject({ n: 3, result: '99%', brings: '99.7%' });
+    expect(nd.tonalztics).toMatchObject({ n: 2, result: '97%', brings: '99.7%' }); // phase 38h-1: maul ×3 + Tonalztics ×2 reach 95%
   });
 
   test('phase 30: "needed" never shows a sub-threshold probability when everything brought is above it', () => {

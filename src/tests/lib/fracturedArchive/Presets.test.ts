@@ -10,7 +10,9 @@ import { EquipmentCategory } from '@/enums/EquipmentCategory';
 import { Prayer } from '@/enums/Prayer';
 import Potion from '@/enums/Potion';
 import { drainModel } from '@/lib/fracturedArchive/specs';
-import { carriersFromCounts, soloSpecPlan, teamSpecPlan } from '@/lib/fracturedArchive/teamSpecs';
+import {
+  carriersFromCounts, kitDrainPlan, soloSpecPlan, teamSpecPlan,
+} from '@/lib/fracturedArchive/teamSpecs';
 import {
   applyPresetToPlayer,
   BEST_SETUP_TARGETS,
@@ -179,10 +181,13 @@ describe('targets and drain states', () => {
       fightSeconds: autoFightSeconds(none.monster, A),
       priority: 'defence',
     });
+    // phase 38h-1: the carriers' first round is the drain line's plan within them (+ the Ayak carrier's 2 specs)
+    const plan = model.def > model.floor ? kitDrainPlan(model, { drain: 'team', carriers: { elderMaul: 2, tonalztics: 2 } }) : null;
     const teamPlan = teamSpecPlan(model, {
       partySize: 6,
       carriers: carriersFromCounts({ elderMaul: 2, tonalztics: 2, ayak: 1 }),
       fightSeconds: autoFightSeconds(none.monster, A),
+      firstRound: { ...(plan?.counts ?? {}), ayak: 2 },
     });
     expect(solo.drain.fightSeconds).toBe(autoFightSeconds(none.monster, A));
     expect(solo.drain.fightComputed).toBe(true);

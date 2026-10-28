@@ -136,8 +136,10 @@ export const PHASE37_MEMO: Record<string, MemoCounters> = {
   faSolo: {
     encounterRuns: 84288, passRuns: 39263, encounterHits: 3156808, passHits: 46445,
   },
+  // phase 38h-1 (2 Elder maul + 3 Tonalztics carriers cover every boss, so you are no longer a carrier: free slots, the
+  // item beam re-optimises kits with damage specs / surge): faNotOwned was 9153 / 9086 / 583727 / 227
   faNotOwned: {
-    encounterRuns: 9153, passRuns: 9086, encounterHits: 583727, passHits: 227,
+    encounterRuns: 74977, passRuns: 9838, encounterHits: 1854095, passHits: 66172,
   },
 };
 export const memoCountersWithin = (m: MemoCounters | undefined, want: MemoCounters | undefined): boolean => {

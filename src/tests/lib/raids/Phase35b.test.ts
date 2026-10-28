@@ -79,7 +79,7 @@ describe('FA (presets kit, 2 Elder maul + 2 Tonalztics carriers)', () => {
     // phase 38g: Bork wants its fewest carriers at 95% (2 Elder maul, 96%); the maul bars are spent there, the Smorks get
     // the Tonalztics (no team reaches their floor 0)
     expect(s.events.map((e) => e.parts[0].line.defAfter)).toEqual([180, 82]);
-    expect(s.text).toBe('Bork: 2 Elder maul carriers (4 specs) → Def 180 · 96% · Smorks: 2 Tonalztics carriers (4 specs) → Def 82');
+    expect(s.text).toBe('Bork: 2 Elder maul carriers (4 specs) → Def 180 · 97% · Smorks: 2 Tonalztics carriers (4 specs) → Def 82');
     const row = rows[0];
     expect(row.specs.map((g) => g.label)).toEqual(['Bork', 'Smorks']);
     expect(row.specs.map((g) => g.result)).toEqual(['→ Def 180', '→ Def 82']);
@@ -296,6 +296,7 @@ describe('toy: two NPCs and a reset', () => {
     expect(Math.abs(planned.seconds - headline('fa').seconds)).toBeLessThanOrEqual(headline('fa').seconds * 0.01); // phase 37b: the fixture (phase 36 review: 21:07.7)
     const row = briefingRows(planned.encounters, 'team').find((x) => x.id === 'bork-smorks')!;
     // phase 38g: Bork its 2 Elder maul carriers at 95%; the Smorks (no team reaches floor 0) what the bars still pay
-    expect(row.specsText).toBe('Bork: Elder maul 2 specs → Def 180 · Smorks: Tonalztics 8 hits → Def 36');
+    // phase 38h-1: the Smorks' 6 specs at the Defence the earlier ones leave (ranked Def 36 → 13)
+    expect(row.specsText).toBe('Bork: Elder maul 2 specs → Def 180 · Smorks: Tonalztics 9 hits → Def 13');
   });
 });

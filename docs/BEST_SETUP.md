@@ -1640,6 +1640,51 @@ spec at least as often and leaves a Defence no higher, so no continuation of it 
 the undrained rolls and upstream order (38h revalues drains in HP), so every headline is unchanged; the bars may pay more
 specs than the line's plan (Ocellus P2: the plan is 6 specs; the count at the undrained rolls was 8).
 
+### The bars pay the line's plan (phase 38h-1, FA)
+
+**Why.** After 38g-2 the drain line recommended one plan (rolled at the drained Defence, in its order) while the drain
+state, the spec budget, the ranked Defence and the kit carriers still counted every spec at the undrained Defence in
+upstream's order: the Search brief for AG Grounded made "Tonalztics 4 hits → Def 156" while its line said "Tonalztics →
+Elder maul ×2". Now one model everywhere.
+
+**What changed** (teamSpecs.ts, encounterBudget.ts, specChoice.ts, bestSetup.ts):
+- `defenceOutcome(model, attempts)`: the specs are sent as weapon blocks in the order (of these attempts) with the highest
+  P(floor), then the lowest expected Defence, then the drain order (the line's tie-breaks), each spec at the Defence the
+  earlier ones leave (`orderedDistribution` / `outcomesAt`, memoised per model). Every user follows: the drain states'
+  ranked Defence (`specCountsDrainKey`, `drainStateFor`), `passingTeams`, `recommendCarriers`, `specsNeeded`, `bestAttempts`.
+  `rankedCounts` reproduce the ranked Defence in upstream's order (`reproducingCounts`: a flat drain before a % drain removes
+  less, so a state reached Tonalztics-first can sit above its landed drains' upstream Defence; then the maul / DWH specs
+  stay and the flat part becomes as many Tonalztics hits as fit + BGS damage). At the floor nothing changes.
+- `kitDrainPlan` = `bestDrainPlan` within what the drain has: Team, the kit's carriers (each weapon ≤ carriers × 2 specs,
+  ≤ that many carriers; new `available` option); Solo, your weapons (≤ 8 specs, the line's Solo plan). `neededSpecs` is
+  `bestDrainPlan` within `available` (was its own upstream-order convolution).
+- **Spec budget** (`eventWantedCounts`): per phase the plan's specs exactly (a Tonalztics carrier may make 1 spec; was every
+  chosen carrier's 2), d* plan when the floor is out of the kit's reach (was `helpfulSpecs` in drain order). Per event,
+  phases in order: a later phase that the specs so far (the weapons that can hit it) already floor at the threshold adds
+  none (AG: the flying shield's Tonalztics ×4 floor Grounded at 99.6%, so no maul is paid), else per weapon the most.
+- **Team drain state** (Search / Summary, `teamSpecPlan` with `firstRound`): the first round is the plan within the
+  carriers that count (was every carrier's 2 specs); Eye of Ayak carriers unchanged. **Solo** (`soloSpecPlan`): the line's
+  Solo plan when the energy pays it, else the best combination of what it pays (now ordered); "floor needs > 8 specs".
+- **Kit carriers** (`teamRoles` → `kitCarriers`): per boss / phase the line's Team carriers (`teamLinePlan`), and that
+  team first in the boss's passing teams (then `passingTeams`, now at the ordered chance).
+
+**Result** (default party, line = brief, Phase38h1.test.ts, hand-built from upstream's spec calc at each drained Defence):
+AG Flying Tonalztics ×4 99.0%; AG Grounded Tonalztics → Elder maul ×2 96.3%; Bork (armour 8-14) Elder maul ×4 97.4%;
+the Smorks Tonalztics ×8 96.2%; Ezekiel Elder maul ×3 97.0%; Xarth Tonalztics ×2 97.6%; Ocellus P1 Tonalztics ×2 98.8%,
+P2 Elder maul ×4 → Tonalztics ×2 96.6%, P3 Q1-3 Elder maul ×3 → Tonalztics 98.0%, last quadrant (Deflect Melee)
+Tonalztics ×5 97.0%. The kit can be short of the line (default 2 maul + 2 Tonalztics carriers on the Smorks: all 8 specs,
+P(floor) 90%, Def 5; the line's "4 bring Tonalztics" is then marked short).
+
+**Interleaved orders** (T M T, scratch probe, every FA phase with drains, Team party 6 and Solo, every sequence of the
+plan's length and one fewer, interleaved included, at the drained rolls): no interleaved order gains anything (best
+any-order P(floor) = the block plan's, 0.000 points on all 23 phases × 2) and none reaches 95% with one spec fewer (closest:
+Ocellus P3 Q1-3 3 specs 91.9%, Bork 3 specs 90.1%). **Block orders suffice**; `bestDrainPlan`'s `expand` is unchanged.
+
+**Open.** The "needs N landed hits once 1 Elder maul spec lands" wording (`landedNeed`) still explains in upstream's
+order (maul first) while the plan sends Tonalztics first (AG Grounded); counts and chance agree. When the bars can't pay
+the event's plan (Ocellus P3 after P2: the maul bars are below 50%), the specs paid are the plan's minus what doesn't
+fit, not a re-plan of what fits.
+
 ## Routes tab (phase 16: raid time model)
 
 **Phase 23: the tab is gone.** Its route table is now part of the Plan tab's results (the *planned* kit timed on every

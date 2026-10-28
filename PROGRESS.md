@@ -3,6 +3,41 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 38h-1 - the bars pay the drain line's plan (FA, 2026-10-28)
+
+Numbers phase (ROADMAP 38h-1; docs/BEST_SETUP.md *The bars pay the line's plan (phase 38h-1, FA)*).
+
+- **One model everywhere**: `defenceOutcome` sends the attempts as weapon blocks in the order that lands the floor most
+  often, each spec at the Defence the earlier ones leave (was upstream's order at the undrained hit chance); ranked counts
+  reproduce the Defence in upstream's order (`reproducingCounts`). The drains made are the line's plan (`kitDrainPlan` =
+  `bestDrainPlan` within the kit's carriers / your weapons; `bestDrainPlan` gets an `available` cap): spec budget
+  (`eventWantedCounts`: the plan's exact specs; a later phase of an event that the specs so far already floor adds none),
+  Team drain state's first round (`teamSpecPlan` `firstRound`), Solo plan, `neededSpecs`, kit carriers (`teamRoles` /
+  `kitCarriers`: the line's carriers per boss, first in its passing teams). Search brief = line on every FA boss, e.g. AG
+  Grounded "first round 2× Elder maul + 1× Tonalztics (P floor 96%)" = "Tonalztics → Elder maul ×2 (floor 96%)".
+- **Interleaved orders**: scratch probe over every FA phase (23, Team party 6 and Solo), every sequence of the plan's
+  length and one fewer: gain 0.000 points everywhere, none reaches 95% with a spec fewer. Block orders suffice (no change).
+- **Headlines** (`pinHeadlines --full`): **fa 22:07.3 → 21:39.9** (−27.4 s): Ocellus 715.27 → 690.73 (P2 pays the line's
+  Elder maul ×4 → Tonalztics ×2 instead of maul ×4 + Tonalztics ×4, so the Tonalztics bars pay 4 specs on P3 instead of 2:
+  P3 P(floor) 31.9% → 90.9%, ranked Def 176 → 150); Bork + Smorks 192.62 → 189.79 (same specs; the Smorks' Tonalztics ×6
+  at the drained rolls: P(floor) 28.5% → 51.4%, ranked Def 36 → 13). **faSolo 23:39.1 unchanged** (its phase37 fixture
+  moved only the comparison hash and one DPS-matrix cell: Ocellus P2 Solo drain state 15.08 → 15.45 DPS, a fixed-length
+  phase, so no seconds). **faNotOwned 25:11.1 → 24:40.2** (−30.9 s): at the drained rolls 2 Elder maul + 3 Tonalztics
+  carriers cover every boss (the Smorks: 97.7%, was below 95%, which needed a 4th Tonalztics carrier = you), so you are no
+  longer a carrier: you bring Crimson kisten, Zaryte crossbow, Burning claws and a surge potion; the kit drops Tumeken's
+  shadow (4 free slots) and the fastest route takes Ezekiel instead of Bork + Smorks (AG 196.47 → 186.44, Moia 71.13 →
+  65.32, Xarth 214.79 → 206.83, Ocellus 800.13 → 783.89). r27fa re-pinned by hand (1564.4 → 1562.5 s; memo 1168 / 1159 /
+  17232 / 57, within PHASE37_MEMO). ToA / CoX / ToB frozen (round 6).
+- **Tests**: Phase38h1.test.ts (per FA boss AG Flying / Grounded, Bork, Smorks, Ezekiel, Xarth, Ocellus P1-P3, Team and Solo:
+  the line's plan, the brief's counts, P(floor) and the budget's event counts, P built by an independent enumeration of
+  upstream's spec calc at each drained Defence; AG Grounded and Bork in closed form; AG event; the reproducing counts toy).
+  Updated for the new numbers (each with a comment): Phase23, 29, 32, 33, 34, 35b, 38g, Presets. `drainOutcome` probe:
+  new `order` column and the drain line per phase (AG: the event pays the shield's Tonalztics ×4, which floors Grounded at
+  99.6%; Grounded's own line Tonalztics → Elder maul ×2 is shown below it).
+- Run: fast suite 1391 passed / 196 skipped; FA slow (`CrossRaid Phase2 Phase3`) once: 3 string / memo pins out of date (Phase34, Phase35b: Smorks Def 36 → 13, Ocellus P3 Def 176 → 150; faNotOwned memo counters, re-measured: 74977 / 9838 / 1854095 / 66172, more kits once you have free slots), fixed and those three files re-run green; retime probe gap 0 (fa, faSolo, faNotOwned); `verifyAll 38g 38g2` OK; `drainOutcome` on archive-guardian / ocellus / bork-smorks: spec plan = the plan's, no overspend; tsc, lint clean.
+- Open: `landedNeed`'s "once 1 Elder maul spec lands" still explains in upstream's order (AG Grounded); when the bars can't
+  pay an event's plan the shortfall is cut, not re-planned (Ocellus P3: no maul bar left after P2).
+
 ## Phase 38i - reality check of the FA data against Gearscape (2026-10-28)
 
 Compare only; no src/lib change (ROADMAP 38i). Details and the full cell table: docs/DATA_SOURCES.md *Phase 38i*.

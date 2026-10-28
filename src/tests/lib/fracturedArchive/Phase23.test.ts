@@ -133,8 +133,9 @@ describe('one "carriers use Lightbearer" toggle', () => {
     const m = undrained('xarth');
     const a = { ...A, team };
     const d = drainStateFor(m, 'team', a);
+    // phase 38h-1: the first round is the drain line's plan within the carriers (Xarth: Tonalztics ×2) + the Ayak carrier's 2
     const p = teamSpecPlan(drainModel(m, a), {
-      partySize: a.partySize, carriers, fightSeconds: d.fightSeconds!, threshold: a.floorThreshold,
+      partySize: a.partySize, carriers, fightSeconds: d.fightSeconds!, threshold: a.floorThreshold, firstRound: { tonalztics: 2, ayak: 2 },
     });
     expect(d.plan).toBe(`Team (${a.partySize}): ${p.text}`);
     // the first round (the ranking) is the same with or without Lightbearer
@@ -143,14 +144,15 @@ describe('one "carriers use Lightbearer" toggle', () => {
 });
 
 describe('drain line data', () => {
-  test('Team default (2 maul, 2 Tonalztics, 1 Ayak carriers): ×4 maul, ×4 Tonalztics specs (8 hits), ×2 Ayak', () => {
+  // phase 38h-1: the carriers spec the drain line's plan (Xarth: Tonalztics ×2, 98%), not every carrier's 2 specs (was ×4
+  // maul, ×4 Tonalztics)
+  test('Team default (2 maul, 2 Tonalztics, 1 Ayak carriers): ×2 Tonalztics specs (4 hits), ×2 Ayak', () => {
     const m = undrained('xarth');
     const d = drainStateFor(m, 'team', A);
     const model = drainModel(m, A);
     const items = d.line!.items;
     expect(items.map((i) => [i.weapon, i.count, i.unit, i.specs])).toEqual([
-      ['elderMaul', 4, 'spec', 4],
-      ['tonalztics', 4, 'spec', 4],
+      ['tonalztics', 2, 'spec', 2],
       ['ayak', 2, 'spec', 2],
     ]);
     items.forEach((i) => expect(i.hitChance).toBe(model.hitChance[i.weapon as keyof typeof model.hitChance]));
@@ -159,8 +161,8 @@ describe('drain line data', () => {
     // (review 2: "needed ×N (P%) · team brings ×4 (8 hits, P%)")
     // (phase 32: "needs N landed hits · N specs (C carriers), 2N swings · P% · team: 4 specs (2 carriers) · P%")
     // (phase 34: "… · N specs (C carriers) = 2N attacks, L must land · P% …"; "4 Tonalztics specs (8 attacks)")
-    expect(items[1].title).toMatch(/^(needs \d+ landed hits? · \d+ specs? \(\d+ carriers?\) = \d+ attacks, \d+ must land · [^·(;]+( · team: 4 specs \(2 carriers\) · [^(;]+)?|not needed · team: 4 specs \(2 carriers\) · [^(;]+)( \(.*\))?; 4 Tonalztics specs \(8 attacks\); \d+% of specs land at least one damaging hit$/);
-    expect(items[1].hits).toBe(8);
+    expect(items[0].title).toMatch(/^needs 2 landed hits · 2 specs \(1 carrier\) = 4 attacks, 2 must land · 98%( \(.*\))?; 2 Tonalztics specs \(4 attacks\); \d+% of specs land at least one damaging hit$/);
+    expect(items[0].hits).toBe(4);
     expect(items.every((i) => i.image)).toBe(true);
     expect(d.line!.defAfter).toBe(d.defAfter);
     expect(d.line!.magicDefAfter).toBe(d.magicDefAfter);
