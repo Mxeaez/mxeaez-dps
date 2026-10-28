@@ -6,6 +6,7 @@ import {
   buildTargetMonster,
   DrainState,
   DrainStateId,
+  drainModelOf,
   evaluateLoadout,
   findTarget,
   fightSecondsFrom,
@@ -35,7 +36,9 @@ import {
   OCELLUS_P3_PHASES,
 } from '@/lib/fracturedArchive/constants';
 import { dagonhaiEncounterDamage } from '@/lib/fracturedArchive/dagonhai';
-import { DEFAULT_FIGHT_SECONDS, drainModel, PlannerWeapon } from '@/lib/fracturedArchive/specs';
+import {
+  DEFAULT_FIGHT_SECONDS, DrainModel, drainModel, PlannerWeapon,
+} from '@/lib/fracturedArchive/specs';
 import { DrainLine } from '@/lib/fracturedArchive/drainLine';
 import type { SpecCounts } from '@/lib/fracturedArchive/bestSetup';
 import {
@@ -223,6 +226,8 @@ export interface RaidKit {
   specHits?: (q: PhaseQuery) => Record<string, boolean>;
   /** Phase 36: a key of the drains the query's spec counts leave (equal keys = equal DPS); see `specCountsDrainKey`. */
   drainKey?: (q: PhaseQuery) => string;
+  /** Phase 38g: the phase's drain model (undrained; null: drains never apply there), for the drain specs of an event. */
+  drainModel?: (q: PhaseQuery) => DrainModel | null;
   /**
    * Phase 37 (speed): an exact memo of {@link encounterTime} with this kit. `run` times the encounter with the kit it is
    * given (the memo hands it a recording view of itself); the memo must return exactly what `run` would.
@@ -502,6 +507,7 @@ export const specBudgetFrom = (best: BestSetupAssumptions, drain: DrainStateId):
     // phase 38b: Death Charge on the Arceuus spellbook (each player as likely to land a kill), Liquid adrenaline (ToA)
     ...(spellbookOf(best) === 'arceuus' ? { deathCharge: { share: 1 / Math.max(1, Math.floor(best.partySize)) } } : {}),
     ...(suppliesAdrenaline(best) ? { adrenaline: true } : {}),
+    threshold: best.floorThreshold,
   };
   if (drain === 'solo') {
     const many = 99;
@@ -1075,6 +1081,7 @@ export const createKitEvaluator = (loadouts: KitLoadout[], assumptions: BestSetu
     specDamage: (q, w) => damageSpecProfile(atHpLeft(monsterFor(q).monster, q.hpLeft), w, targetA(q)),
     specHits: (q) => specHitsOf(monsterFor({ ...q, drain: 'none', specs: undefined }).monster, assumptions),
     drainKey: (q) => specCountsDrainKey(findTarget(q.targetKey), q.phase, q.drain, assumptions, q.specs?.counts ?? {}),
+    drainModel: (q) => drainModelOf(findTarget(q.targetKey), q.phase, assumptions),
     evaluations: () => count,
     best: (q) => {
       const pk = phaseKey(q.targetKey, q.phase);

@@ -193,20 +193,23 @@ const PINNED_ENCOUNTER_SECONDS: Record<string, Record<string, number>> = {
   // Phase 38c: Ocellus 776.5 → 832 (P2, the Blade, in the plan at 120 s; the Defence resets at P2 and P3: three drain
   // events); fix round 832 → 823.8 (P2 lasts 120 s on the spec budget's wall clock: more regen before P3).
   'fractured-archive': {
-    'archive-guardian': 191.8, 'bork-smorks': 220.8, moia: 68.9, dagonhai: 233.8, ocellus: 823.8,
+    'archive-guardian': 191.8, 'bork-smorks': 230.2, moia: 68.9, dagonhai: 233.8, ocellus: 844.7,
   },
   // Phase 35 (no specs on adds): ToA Kephri 153.8 → 155.5, Akkha 160.9 → 161.6; CoX Vasa 20.1 → 22.9, Vespula 23.3 →
   // 24.1, Mystics 44.8 → 52.4, Shamans 32.1 → 37.5, Muttadiles 23.9 → 24.
   // Phase 36 (one spec budget per encounter; Kephri's final phase, the Warden's enrage and Olm's phases are Defence
   // resets): ToA Kephri 155.5 → 157 (the final phase re-drained from the energy left); CoX Olm 204.4 → 211.5 (with the
-  // option cap, MAX_EVENT_OPTIONS); ToB Bloat
+  // option cap, MAX_EVENT_OPTIONS, removed in phase 38g); ToB Bloat
   // 39.2 (unchanged), Sotetseg 77 → 79.2 (the three thirds share the carriers' energy); FA unchanged.
   // Phase 38a (ToA supplies by room: rooms 1-2 with the normal potions): Kephri 157 → 185.1, Zebak 120.8 → 137.8.
   // Phase 38b (Liquid adrenaline: the carriers' drain specs cost half): Ba-Ba 103.1 → 97.3 (Wardens 349.9 → 349.8).
   // Phase 38c (the pair of paths before the supplies is a route: this kit's cheapest is Zebak + Akkha; Kephri after the
   // supplies 185.1 → 148.6, Akkha before them 161.6 → 180.4).
+  // Phase 38g (one fixed drain set per event: the fewest carriers at 95%, cut to what the bars pay; no seconds-based
+  // option search): FA Bork + Smorks 220.8 → 230.2, Ocellus 823.8 → 844.7; ToA Kephri 148.6 → 155.5, Ba-Ba 97.3 → 103.1,
+  // Wardens 349.8 → 349.9; CoX Olm 211.5 → 230.3; ToB Sotetseg 79.2 → 82.6.
   toa: {
-    'toa-zebak-before-supplies': 137.8, 'toa-akkha-before-supplies': 180.4, 'toa-kephri': 148.6, 'toa-baba': 97.3, 'toa-wardens': 349.8,
+    'toa-zebak-before-supplies': 137.8, 'toa-akkha-before-supplies': 180.4, 'toa-kephri': 155.5, 'toa-baba': 103.1, 'toa-wardens': 349.9,
   },
   cox: {
     'cox-tekton': 18.6,
@@ -218,10 +221,10 @@ const PINNED_ENCOUNTER_SECONDS: Record<string, Record<string, number>> = {
     'cox-muttadiles': 24,
     'cox-guardians': 36.4,
     'cox-ice-demon': 17.2,
-    'cox-olm': 211.5,
+    'cox-olm': 230.3,
   },
   tob: {
-    'tob-maiden': 55.5, 'tob-bloat': 39.2, 'tob-nylocas': 44.5, 'tob-sotetseg': 79.2, 'tob-xarpus': 64.2, 'tob-verzik': 271.5,
+    'tob-maiden': 55.5, 'tob-bloat': 39.2, 'tob-nylocas': 44.5, 'tob-sotetseg': 82.6, 'tob-xarpus': 64.2, 'tob-verzik': 271.5,
   },
 };
 

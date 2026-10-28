@@ -4,8 +4,8 @@
   "fa": {
    "raid": "fractured-archive",
    "label": "Fractured Archive (Team defaults)",
-   "total": "21:40.7",
-   "seconds": 1300.7364357884335,
+   "total": "22:07.3",
+   "seconds": 1327.30195170516,
    "route": "archive-guardian>bork-smorks>moia>xarth>ocellus",
    "ring": "Ultor ring",
    "kit": [
@@ -15,10 +15,10 @@
    ],
    "freeSlots": 3,
    "carriers": {
-    "elderMaul": 1,
+    "elderMaul": 2,
     "dwh": 0,
     "bgs": 0,
-    "tonalztics": 4,
+    "tonalztics": 3,
     "ayak": 0
    },
    "bring": "Bring: Zaryte crossbow, Burning claws, Crimson kisten, Surge potion",
@@ -36,17 +36,17 @@
    ],
    "encounters": {
     "archive-guardian": 173.49,
-    "bork-smorks": 190.53,
+    "bork-smorks": 192.62,
     "moia": 65.32,
     "xarth": 180.61,
-    "ocellus": 690.8
+    "ocellus": 715.27
    }
   },
   "toa": {
    "raid": "toa",
    "label": "Tombs of Amascut (Team defaults, invocation 500)",
-   "total": "14:20.0",
-   "seconds": 860.0306460556181,
+   "total": "14:22.6",
+   "seconds": 862.6287533265815,
    "route": "toa-kephri-before-supplies>toa-baba-before-supplies>toa-zebak>toa-akkha>toa-wardens",
    "ring": "Ultor ring",
    "kit": [
@@ -59,10 +59,10 @@
    ],
    "freeSlots": 0,
    "carriers": {
-    "elderMaul": 1,
+    "elderMaul": 2,
     "dwh": 0,
     "bgs": 0,
-    "tonalztics": 0,
+    "tonalztics": 1,
     "ayak": 1
    },
    "bring": "Bring: Zaryte crossbow",
@@ -72,63 +72,60 @@
    "yourShare": null,
    "surgeAt": [],
    "encounters": {
-    "toa-kephri-before-supplies": 156.32,
+    "toa-kephri-before-supplies": 158.85,
     "toa-baba-before-supplies": 102.83,
     "toa-zebak": 119.04,
     "toa-akkha": 141.74,
-    "toa-wardens": 340.1
+    "toa-wardens": 340.17
    }
   },
   "cox": {
    "raid": "cox",
    "label": "Chambers of Xeric (Team defaults)",
-   "total": "7:06.9",
-   "seconds": 426.8656158919338,
+   "total": "7:27.3",
+   "seconds": 447.305508903635,
    "route": "cox-tekton>cox-vasa>cox-vanguards>cox-vespula>cox-mystics>cox-shamans>cox-muttadiles>cox-guardians>cox-ice-demon>cox-olm",
    "ring": "Ultor ring",
    "kit": [
     "Inquisitor's + Obligator",
-    "Ascension crossbows + diamond (e) (Masori)",
     "Dragon pickaxe",
-    "Twisted bow (Masori)",
-    "Inquisitor's + Scythe (slash)",
+    "Ascension crossbows + diamond (e) (Masori)",
     "Ascension crossbows + Diamond ascension bolts (e) #2",
+    "Scorching bow + Seeking dragon arrow #2",
     "Tumeken's shadow (Ancestral)",
-    "Scorching bow + Seeking dragon arrow #2"
+    "Twisted bow (Masori)",
+    "Scythe of Vitur #2 + Inquisitor's great helm"
    ],
    "freeSlots": 0,
    "carriers": {
-    "elderMaul": 3,
+    "elderMaul": 2,
     "dwh": 0,
     "bgs": 0,
-    "tonalztics": 2,
-    "ayak": 0
+    "tonalztics": 3,
+    "ayak": 1
    },
-   "bring": "Bring: Zaryte crossbow, Burning claws",
-   "items": [
-    "Zaryte crossbow",
-    "Burning claws"
-   ],
-   "yourShare": null,
+   "bring": "Bring: no spec weapons",
+   "items": [],
+   "yourShare": "tonalztics",
    "surgeAt": [],
    "encounters": {
-    "cox-tekton": 14.14,
-    "cox-vasa": 20.85,
-    "cox-vanguards": 31.47,
-    "cox-vespula": 21.96,
-    "cox-mystics": 43.03,
-    "cox-shamans": 28.88,
-    "cox-muttadiles": 22.02,
+    "cox-tekton": 15.35,
+    "cox-vasa": 21.27,
+    "cox-vanguards": 32.25,
+    "cox-vespula": 22.91,
+    "cox-mystics": 43.9,
+    "cox-shamans": 29.73,
+    "cox-muttadiles": 22.81,
     "cox-guardians": 35.43,
-    "cox-ice-demon": 6.71,
-    "cox-olm": 202.38
+    "cox-ice-demon": 7.41,
+    "cox-olm": 216.24
    }
   },
   "tob": {
    "raid": "tob",
    "label": "Theatre of Blood (Team defaults)",
-   "total": "7:23.4",
-   "seconds": 443.42442596609663,
+   "total": "7:37.3",
+   "seconds": 457.33526673532583,
    "route": "tob-maiden>tob-bloat>tob-nylocas>tob-sotetseg>tob-xarpus>tob-verzik",
    "ring": "Ultor ring",
    "kit": [
@@ -140,32 +137,32 @@
    ],
    "freeSlots": 0,
    "carriers": {
-    "elderMaul": 1,
+    "elderMaul": 0,
     "dwh": 0,
     "bgs": 0,
-    "tonalztics": 2,
-    "ayak": 0
+    "tonalztics": 3,
+    "ayak": 1
    },
-   "bring": "Bring: Dragon claws",
+   "bring": "Bring: Tonalztics",
    "items": [
-    "Dragon claws"
+    "Tonalztics of Ralos"
    ],
-   "yourShare": null,
+   "yourShare": "tonalztics",
    "surgeAt": [],
    "encounters": {
-    "tob-maiden": 50.67,
-    "tob-bloat": 27.03,
-    "tob-nylocas": 39.81,
-    "tob-sotetseg": 74.48,
-    "tob-xarpus": 55.71,
-    "tob-verzik": 195.72
+    "tob-maiden": 51.77,
+    "tob-bloat": 28.12,
+    "tob-nylocas": 41.29,
+    "tob-sotetseg": 79.63,
+    "tob-xarpus": 58.42,
+    "tob-verzik": 198.1
    }
   },
   "faSolo": {
    "raid": "fractured-archive",
    "label": "Fractured Archive Solo (party 1)",
-   "total": "22:53.4",
-   "seconds": 1373.3981058413428,
+   "total": "23:39.1",
+   "seconds": 1419.1078866426606,
    "route": "archive-guardian>ezekiel>moia>xarth>ocellus",
    "ring": "Ultor ring",
    "kit": [
@@ -173,35 +170,33 @@
     "Twisted bow (Masori)",
     "Inquisitor's + Obligator"
    ],
-   "freeSlots": 2,
+   "freeSlots": 4,
    "carriers": null,
-   "bring": "Bring: Tonalztics, Crimson kisten, Zaryte crossbow, Burning claws, Surge potion",
+   "bring": "Bring: Tonalztics, Zaryte crossbow, Surge potion",
    "items": [
     "Tonalztics of Ralos",
-    "Crimson kisten",
     "Zaryte crossbow",
-    "Burning claws",
     "Surge potion(4)"
    ],
    "yourShare": null,
    "surgeAt": [
     "Archive Guardian",
-    "Moia",
-    "Ocellus"
+    "Ezekiel",
+    "Xarth"
    ],
    "encounters": {
     "archive-guardian": 180.67,
-    "ezekiel": 211.61,
-    "moia": 65.32,
-    "xarth": 181.62,
-    "ocellus": 734.19
+    "ezekiel": 210.43,
+    "moia": 71.13,
+    "xarth": 182.78,
+    "ocellus": 774.09
    }
   },
   "faNotOwned": {
    "raid": "fractured-archive",
    "label": "Fractured Archive without Obligator / Ascension crossbows",
-   "total": "24:40.3",
-   "seconds": 1480.3261321792847,
+   "total": "25:17.4",
+   "seconds": 1517.3514768638802,
    "route": "archive-guardian>ezekiel>moia>xarth>ocellus",
    "ring": "Ultor ring",
    "kit": [
@@ -210,17 +205,17 @@
    ],
    "freeSlots": 4,
    "carriers": {
-    "elderMaul": 1,
+    "elderMaul": 2,
     "dwh": 0,
     "bgs": 0,
-    "tonalztics": 4,
-    "ayak": 0
+    "tonalztics": 2,
+    "ayak": 1
    },
-   "bring": "Bring: Crimson kisten, Zaryte crossbow, Burning claws, Surge potion",
+   "bring": "Bring: Zaryte crossbow, Burning claws, Crimson kisten, Surge potion",
    "items": [
-    "Crimson kisten",
     "Zaryte crossbow",
     "Burning claws",
+    "Crimson kisten",
     "Surge potion(4)"
    ],
    "yourShare": null,
@@ -234,7 +229,7 @@
     "ezekiel": 237.73,
     "moia": 65.32,
     "xarth": 206.83,
-    "ocellus": 784.01
+    "ocellus": 821.03
    }
   }
  }

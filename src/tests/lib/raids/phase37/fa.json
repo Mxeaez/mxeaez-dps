@@ -275,7 +275,7 @@
   },
   {
    "slots": 1,
-   "seconds": 45.91842529499809
+   "seconds": 49.59005133355731
   },
   {
    "slots": 8,
@@ -536,7 +536,7 @@
   }
  ],
  "pinnedItems": [],
- "comparison": "047b1e24c1b770fb223e9510d8524368c24bf289473ea3e836adb0c16a9d0d0c",
+ "comparison": "b2a9eca8ccda8056e68d3628aa82f06dfc3fcb834ef6d4611eb72994c18579ee",
  "planned": 5,
  "rejected": [],
  "alternatives": [
@@ -557,9 +557,9 @@
   {
    "label": "melee + magic: Tumeken's shadow (Ancestral) / Inquisitor's + Obligator / Harmonised Nightmare staff / Harmonised Nightmare staff #4",
    "kind": "alternative",
-   "deltaSeconds": -94.30147518514877,
+   "deltaSeconds": -79.81391767393893,
    "deltaSlots": 3,
-   "reason": "94.3 s slower",
+   "reason": "79.8 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Obligator",
@@ -570,9 +570,9 @@
   {
    "label": "ranged + magic: Tumeken's shadow (Ancestral) / Twisted bow (Masori) / Ascension crossbows + diamond (e) (Masori) / Ascension crossbows + onyx (e) (Masori)",
    "kind": "alternative",
-   "deltaSeconds": -317.70321042187106,
+   "deltaSeconds": -341.9203435191946,
    "deltaSlots": 1,
-   "reason": "317.7 s slower",
+   "reason": "341.9 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Twisted bow",
@@ -583,9 +583,9 @@
   {
    "label": "magic: Tumeken's shadow (Ancestral) / Harmonised Nightmare staff / Harmonised Nightmare staff #4",
    "kind": "alternative",
-   "deltaSeconds": -909.8038508347545,
+   "deltaSeconds": -884.0933029107848,
    "deltaSlots": -5,
-   "reason": "909.8 s slower",
+   "reason": "884.1 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Harmonised Nightmare staff",
@@ -651,25 +651,25 @@
   "items": [
    {
     "item": "Zaryte crossbow",
-    "saved": 33.204035973016516,
+    "saved": 6.474538309355239,
     "slots": 1,
     "how": "a free slot"
    },
    {
     "item": "Burning claws",
-    "saved": 2.0895884263616153,
+    "saved": 2.253570173296339,
     "slots": 1,
     "how": "a free slot"
    },
    {
     "item": "Surge potion(4)",
-    "saved": 2.4633874432186076,
+    "saved": 2.463387443218835,
     "slots": 1,
     "how": "a free slot"
    },
    {
     "item": "Crimson kisten",
-    "saved": 2.297195091391586,
+    "saved": 2.297195091391359,
     "slots": 1,
     "how": "a free slot"
    }
@@ -681,20 +681,20 @@
    "rows": [
     {
      "weapon": "tonalztics",
-     "carriers": 4,
+     "carriers": 3,
      "drivers": [
-      "Ocellus (3.8 s)",
-      "Bork + Smorks (2.1 s)"
+      "Bork + Smorks (7.2 s)",
+      "Ocellus (1.2 s)"
      ],
-     "lastSaved": 5.881590307101305
+     "lastSaved": 8.439698762775834
     },
     {
      "weapon": "elderMaul",
-     "carriers": 1,
+     "carriers": 2,
      "drivers": [
-      "Ocellus (6.5 s)"
+      "Ocellus (0.1 s)"
      ],
-     "lastSaved": 24.577511867489648
+     "lastSaved": 16.081488695434246
     }
    ],
    "perTarget": [
@@ -840,51 +840,24 @@
      "ayak": 0
     }
    ],
-   "text": "6-man: 4 Tonalztics, 1 Elder maul",
+   "text": "6-man: 3 Tonalztics, 2 Elder maul",
    "carriers": {
-    "elderMaul": 1,
+    "elderMaul": 2,
     "dwh": 0,
     "bgs": 0,
-    "tonalztics": 4,
+    "tonalztics": 3,
     "ayak": 0
    },
-   "mode": "auto",
-   "steps": [
-    {
-     "weapon": "tonalztics",
-     "saved": 202.4421231997071,
-     "seconds": 1366.959843543596
-    },
-    {
-     "weapon": "tonalztics",
-     "saved": 29.574069158584734,
-     "seconds": 1337.3857743850112
-    },
-    {
-     "weapon": "elderMaul",
-     "saved": 21.809794793480705,
-     "seconds": 1315.5759795915305
-    },
-    {
-     "weapon": "tonalztics",
-     "saved": 8.957953495995753,
-     "seconds": 1306.6180260955348
-    },
-    {
-     "weapon": "tonalztics",
-     "saved": 5.881590307101305,
-     "seconds": 1300.7364357884335
-    }
-   ]
+   "mode": "auto"
   },
   "share": {
    "weapon": null,
    "carry": false,
-   "reason": "your spec energy goes to your Zaryte crossbow specs / Burning claws specs / Crimson kisten specs / surge doses — let a teammate carry Tonalztics (most needed: 4 carriers)",
+   "reason": "your spec energy goes to your Zaryte crossbow specs / Burning claws specs / Crimson kisten specs / surge doses — let a teammate carry Tonalztics (most needed: 3 carriers)",
    "manual": false
   },
   "notes": [
-   "Your spec bar goes to Zaryte crossbow / Burning claws / Crimson kisten / surge doses: 5 carriers (party − 1), 21:40.7 vs 22:20.8 if you carry a drain weapon instead."
+   "Your spec bar goes to Zaryte crossbow / Burning claws / Crimson kisten / surge doses: 5 carriers (party − 1), 22:07.3 vs 22:20.8 if you carry a drain weapon instead."
   ]
  },
  "ring": {
@@ -893,37 +866,37 @@
   "screened": [
    {
     "ring": "Ultor ring",
-    "seconds": 1300.7364357884335,
+    "seconds": 1327.30195170516,
     "full": true
    },
    {
     "ring": "Bellator ring",
-    "seconds": 1351.964552304304,
+    "seconds": 1380.4065030036177,
     "full": true
    },
    {
     "ring": "Ring of shadows",
     "seconds": 1409.6786431261821,
     "full": false,
-    "atLeast": 0
+    "atLeast": 2.8398410737293034
    },
    {
     "ring": "Venator ring",
     "seconds": 1416.8757566719792,
     "full": false,
-    "atLeast": 0
+    "atLeast": 10.036954619526341
    },
    {
     "ring": "Lightbearer",
     "seconds": 1440.369372723644,
     "full": false,
-    "atLeast": 0
+    "atLeast": 33.53057067119107
    },
    {
     "ring": "Magus ring",
     "seconds": 1440.369372723644,
     "full": false,
-    "atLeast": 0
+    "atLeast": 33.53057067119107
    }
   ]
  },
@@ -951,11 +924,11 @@
  "droppedPinned": [],
  "ownershipNotices": [],
  "searchRows": "bd1079b46477c0c3fa17cafdc80279053a08e43d4dd6bce899659ef6beda09da",
- "objectiveSeconds": 1300.7364357884335,
+ "objectiveSeconds": 1327.30195170516,
  "fightSeconds": null,
  "plannedRoute": {
   "id": "archive-guardian>bork-smorks>moia>xarth>ocellus",
-  "seconds": 1300.7364357884335,
+  "seconds": 1327.30195170516,
   "surgeDoses": [
    "archive-guardian",
    "xarth",
@@ -970,8 +943,7 @@
       "npc": "Archive Guardian",
       "firstRowKey": "ag-shield",
       "counts": {
-       "elderMaul": 2,
-       "tonalztics": 8
+       "tonalztics": 4
       }
      }
     ],
@@ -987,21 +959,20 @@
    },
    {
     "id": "bork-smorks",
-    "seconds": 190.52901984612555,
+    "seconds": 192.6214418878,
     "events": [
      {
       "npc": "Bork",
       "firstRowKey": "bork-8",
       "counts": {
-       "elderMaul": 2,
-       "tonalztics": 1
+       "elderMaul": 4
       }
      },
      {
       "npc": "Smorks",
       "firstRowKey": "smorks",
       "counts": {
-       "tonalztics": 7
+       "tonalztics": 6
       }
      }
     ],
@@ -1023,7 +994,7 @@
       "npc": "Moia",
       "firstRowKey": "moia",
       "counts": {
-       "tonalztics": 8
+       "tonalztics": 2
       }
      }
     ],
@@ -1042,8 +1013,7 @@
       "npc": "Xarth",
       "firstRowKey": "xarth",
       "counts": {
-       "elderMaul": 2,
-       "tonalztics": 8
+       "tonalztics": 2
       }
      }
     ],
@@ -1057,13 +1027,13 @@
    },
    {
     "id": "ocellus",
-    "seconds": 690.8006979761966,
+    "seconds": 715.2737918512486,
     "events": [
      {
       "npc": "Ocellus",
       "firstRowKey": "ocellus-p1",
       "counts": {
-       "tonalztics": 4
+       "tonalztics": 2
       }
      },
      {
@@ -1071,7 +1041,7 @@
       "reset": "P1",
       "firstRowKey": "ocellus-p2",
       "counts": {
-       "elderMaul": 2,
+       "elderMaul": 4,
        "tonalztics": 4
       }
      },
@@ -1080,7 +1050,7 @@
       "reset": "P2",
       "firstRowKey": "ocellus-p3",
       "counts": {
-       "tonalztics": 4
+       "tonalztics": 2
       }
      }
     ],

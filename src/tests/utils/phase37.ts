@@ -93,49 +93,51 @@ export const cpuSeconds = <T>(f: () => T): { result: T, seconds: number } => {
  */
 export type MemoCounters = { encounterRuns: number, passRuns: number, encounterHits: number, passHits: number };
 export const PHASE37_MEMO: Record<string, MemoCounters> = {
+  // phase 38g (one fixed drain set per event: one model pass per solve instead of one per event option, so far fewer
+  // pass hits; carriers by headcount, no carrier greedy): every entry re-measured
   // phase 38c (Ocellus: P2 in the plan, three drain events; ToA: six routes, 9 encounters): r27fa was 1048 / 1126 /
   // 14200 / 175, r27toa 1009 / 1217 / 10261 / 317
   r27fa: {
-    encounterRuns: 1130, passRuns: 1229, encounterHits: 18718, passHits: 211,
+    encounterRuns: 1221, passRuns: 1212, encounterHits: 18419, passHits: 57,
   },
   r27toa: {
-    encounterRuns: 1720, passRuns: 1932, encounterHits: 21914, passHits: 589,
+    encounterRuns: 1531, passRuns: 1523, encounterHits: 16802, passHits: 81,
   },
   r27tob: {
-    encounterRuns: 1678, passRuns: 1809, encounterHits: 58898, passHits: 222,
+    encounterRuns: 1692, passRuns: 1688, encounterHits: 56760, passHits: 40,
   },
   r27cox: {
-    encounterRuns: 1546, passRuns: 3268, encounterHits: 39314, passHits: 3475,
+    encounterRuns: 1574, passRuns: 1548, encounterHits: 40436, passHits: 126,
   },
   // phase 38c (Ocellus: P2 in the plan, three drain events; fix round: P2's wall time): was 10648 / 10445 / 444976 /
   // 9904; phase 38e (the item beam: a kit re-optimised per candidate when no slot is free, the beam's states, swaps):
   // fa was 11075 / 10789 / 444757 / 12739, toa 69292 / 18123 / 1307456 / 56648, tob 25001 / 23772 / 1335979 / 5729,
   // cox 73944 / 35416 / 1961276 / 62818, faNotOwned 26777 / 19128 / 776583 / 19830
   fa: {
-    encounterRuns: 11507, passRuns: 10789, encounterHits: 444757, passHits: 19359,
+    encounterRuns: 10616, passRuns: 9091, encounterHits: 448944, passHits: 2377,
   },
   // phase 38a (rooms 1-2 before the supplies: other drain states and candidates): was 32784 / 10825 / 544791 / 24576;
   // phase 38b (Liquid adrenaline: more spec options per event, damage specs on the adds' rows): was 39715 / 11721 /
   // 728535 / 30660; phase 38c (six routes: every path room before and after the supplies, 9 encounters): was 48604 /
   // 16842 / 915256 / 35030
   toa: {
-    encounterRuns: 153849, passRuns: 21674, encounterHits: 2843862, passHits: 138797,
+    encounterRuns: 159690, passRuns: 15836, encounterHits: 2402511, passHits: 144407,
   },
   tob: {
-    encounterRuns: 82173, passRuns: 24732, encounterHits: 3799983, passHits: 62574,
+    encounterRuns: 12945, passRuns: 12897, encounterHits: 1330161, passHits: 175,
   },
   // phase 38b (damage specs on the adds' rows; the plan brings 2 damage spec weapons and keeps 8 loadouts): was 43236 /
   // 39222 / 1122494 / 27158
   cox: {
-    encounterRuns: 164099, passRuns: 43579, encounterHits: 4139701, passHits: 149355,
+    encounterRuns: 20186, passRuns: 20099, encounterHits: 1475044, passHits: 318,
   },
   // phase 38c (Ocellus: P2 in the plan, three drain events): faSolo was 91778 / 38942 / 3464758 / 56722, faNotOwned
   // 58528 / 10474 / 1579384 / 59896
   faSolo: {
-    encounterRuns: 84526, passRuns: 42428, encounterHits: 3073298, passHits: 46684,
+    encounterRuns: 84175, passRuns: 41045, encounterHits: 3156921, passHits: 44550,
   },
   faNotOwned: {
-    encounterRuns: 74332, passRuns: 20132, encounterHits: 1863420, passHits: 72932,
+    encounterRuns: 56416, passRuns: 15410, encounterHits: 1547080, passHits: 42394,
   },
 };
 export const memoCountersWithin = (m: MemoCounters | undefined, want: MemoCounters | undefined): boolean => {

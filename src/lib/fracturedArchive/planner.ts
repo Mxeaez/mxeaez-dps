@@ -8,6 +8,7 @@ import {
   applyLoadoutToPlayer,
   buildTargetMonster,
   DrainStateId,
+  drainModelOf,
   evaluateLoadout,
   findTarget,
   presetSpells,
@@ -70,10 +71,10 @@ import {
   CarrierCounts,
   carriersText,
   CarrierStep,
-  greedyCarriers,
   itemBeam,
   ItemBeamChild,
   itemStepNet,
+  kitCarriers,
   mostNeededWeapon,
   mySpecsForSubset,
   NO_CARRIERS,
@@ -1802,7 +1803,8 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     const specDamageMemo = new Map<string, ReturnType<typeof damageSpecProfile>>();
     const specHitsMemo = new Map<string, Record<string, boolean>>();
     const drainKeyMemo = new Map<string, string>();
-    const budgetKitParts: Pick<RaidKit, 'specDamage' | 'specHits' | 'drainKey'> = {
+    const budgetKitParts: Pick<RaidKit, 'specDamage' | 'specHits' | 'drainKey' | 'drainModel'> = {
+      drainModel: (q) => drainModelOf(findTarget(q.targetKey), q.phase, ringA),
       drainKey: (q) => {
         // phase 37: memoised by the counts (specCountsDrainKey builds a JSON key per call)
         const k = `${phaseKey(q.targetKey, q.phase)}|${q.drain}|${specCountsKey(q.specs?.counts)}`;
@@ -2219,16 +2221,46 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     });
     let carrierSteps: CarrierStep[] | undefined;
     // review 2: Eye of Ayak carriers capped at the mages in the party (only mages gain from its drain; the time model
-    // treats teammates as copies of you, so an uncapped count overstates it, UNVERIFIED D22). Phase 36 review: `total`
-    // = the party, or the party − 1 when you damage-spec / drink surge doses (you are not a carrier then).
-    const carrierWeaponsFor = (m: number[]): PlannerWeapon[] => ['elderMaul', 'tonalztics', 'dwh', 'bgs', ...(magesOf(m) > 0 ? ['ayak' as PlannerWeapon] : [])];
-    const carrierGreedy = (m: number[], totalCarriers: number) => greedyCarriers({
-      weapons: carrierWeaponsFor(m),
-      total: totalCarriers,
-      perWeapon: totalCarriers,
-      caps: { ayak: magesOf(m) },
-      time: (c) => cmpSeconds(teamCmp(c, m)),
-    });
+    // treats teammates as copies of you, so an uncapped count overstates it, UNVERIFIED D22; kitCarriers caps it). Phase
+    // 36 review: `total` = the party, or the party − 1 when you damage-spec / drink surge doses (you are not a carrier).
+    // phase 38g: the carriers by headcount, no seconds (was a greedy on the route time): per boss / phase of the raid
+    // (every encounter of every route) the fewest carriers reaching P(floor from the first round) ≥ the threshold
+    // (teamRoles → recommendCarriers), per weapon the most any of them needs; Eye of Ayak only with mages, capped at them
+    let roleTargets: RoleTarget[] | undefined;
+    const allRoleTargets = (): RoleTarget[] => {
+      if (!roleTargets) {
+        const seen = new Set<string>();
+        const out: RoleTarget[] = [];
+        Array.from(byEncounter.values()).forEach((ts0) => ts0.forEach((t) => {
+          const k = phaseKey(t.targetKey, t.phase);
+          if (seen.has(k)) return;
+          seen.add(k);
+          const target = findTarget(t.targetKey);
+          const model = drainModelOf(target, t.phase, assumptions);
+          if (!model) return;
+          out.push({
+            key: k, label: `${target.label}${t.phase ? ` (${t.phase})` : ''}`, group: target.label, model,
+          });
+        }));
+        roleTargets = out;
+      }
+      return roleTargets;
+    };
+    const headcountMemo = new Map<string, CarrierCounts>();
+    const headcountOf = (m: number[], totalCarriers: number): CarrierCounts => {
+      const mages = magesOf(m);
+      const k = `${totalCarriers}|${mages}`;
+      let c = headcountMemo.get(k);
+      if (!c) {
+        c = kitCarriers(allRoleTargets(), { partySize: Math.max(1, totalCarriers), mages, threshold: assumptions.floorThreshold }).carriers;
+        headcountMemo.set(k, c);
+      }
+      return { ...c };
+    };
+    const carrierGreedy = (m: number[], totalCarriers: number): { carriers: CarrierCounts, steps: CarrierStep[] | undefined, seconds: number } => {
+      const carriers = headcountOf(m, totalCarriers);
+      return { carriers, steps: undefined, seconds: cmpSeconds(teamCmp(carriers, m)) };
+    };
     const carrierNotes: string[] = [];
     let soloWithSubset: ((sub: PlannerWeapon[]) => BestSetupAssumptions) | undefined;
     if (autoSolo) {
@@ -2329,10 +2361,9 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       runSpecItems = best.map((w) => planItemByName(SPEC_WEAPONS[w].item));
       soloWithSubset = withSubset;
     } else if (autoCarriers) {
-      // review fix: the carriers are planner output. Greedy (specChoice.ts greedyCarriers) on the route time of the kit
-      // optimised under the Advanced carriers; then the kit is re-optimised under the chosen carriers, and if it changed,
-      // the greedy runs once more on it (at most two rounds). The Team drain state uses exactly these carriers. Phase 36:
-      // each carrier set timed with the spec budget's DP on the kit (a carrier that saves nothing is never added).
+      // review fix: the carriers are planner output. Phase 38g: by headcount (`carrierGreedy` above: the per-boss 95%
+      // minimum, per weapon the most any boss needs; only Eye of Ayak depends on the kit, through its mages); the kit is
+      // re-optimised under them, and if it changed, the carriers are taken once more on it (at most two rounds).
       const party = Math.max(1, Math.floor(assumptions.partySize));
       const greedyOn = (m: number[]) => carrierGreedy(m, party);
       opt = optimiseFor(dps, carried, seeds, 'kits', legacyA);
@@ -2407,31 +2438,14 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       const withItems = (a: BestSetupAssumptions, dmg: DamageSpecWeapon[], surge: number): BestSetupAssumptions => ({
         ...a, damageSpecs: [...dmg], surgePotions: surge,
       });
-      // phase 36 review: Team (auto carriers) — with items your bar is yours, so the carriers must fit in party − 1: the
-      // carrier whose removal costs least on this kit makes way (specBudgetFrom would cut the last one in order)
+      // phase 36 review: Team (auto carriers) — with items your bar is yours, so the carriers must fit in party − 1.
+      // Phase 38g: by headcount for a party − 1 (was: the carrier whose removal cost least on this kit made way)
       const teamParty = Math.max(1, Math.floor(assumptions.partySize));
       const fitBars = (a: BestSetupAssumptions, m: number[]): BestSetupAssumptions => {
         if (drain !== 'team' || !autoCarriers || !((a.damageSpecs ?? []).length || (a.surgePotions ?? 0) > 0)) return a;
-        let c: CarrierCounts = { ...NO_CARRIERS, ...a.team.carriers };
-        let cur = a;
-        while (Object.values(c).reduce((t, v) => t + v, 0) > teamParty - 1) {
-          let bestA: BestSetupAssumptions | null = null;
-          let bestT = Infinity;
-          for (const w of Object.keys(c) as PlannerWeapon[]) {
-            if (c[w] > 0) {
-              const x: BestSetupAssumptions = { ...cur, team: { ...cur.team, carriers: { ...c, [w]: c[w] - 1 } } };
-              const t = cmpSeconds(dpCmp(m, x));
-              if (t < bestT - 1e-9) {
-                bestT = t;
-                bestA = x;
-              }
-            }
-          }
-          if (!bestA) break;
-          cur = bestA;
-          c = { ...NO_CARRIERS, ...cur.team.carriers };
-        }
-        return cur;
+        const c: CarrierCounts = { ...NO_CARRIERS, ...a.team.carriers };
+        if (Object.values(c).reduce((t, v) => t + v, 0) <= teamParty - 1) return a;
+        return { ...a, team: { ...a.team, carriers: headcountOf(m, teamParty - 1) } };
       };
       // phase 38e: the item steps as a small beam (specChoice.ts itemBeam: the best ITEM_BEAM_WIDTH by net saving for
       // ITEM_BEAM_DEPTH steps, then greedy; the fastest state wins), each step ranked by what it really gives: with a
@@ -2626,23 +2640,11 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         let specCarriers: CarrierCounts = { ...NO_CARRIERS, ...assumptions.team.carriers };
         let specSteps = carrierSteps;
         if (autoCarriers) {
-          // the faster of: the greedy from scratch with party − 1, and the carriers the item greedy fitted (fitBars: the
-          // greedy's carriers less the cheapest, its steps without the last ones of the removed weapons)
-          const g = carrierGreedy(m, party - 1);
-          if (g.seconds < curT - 1e-9) {
-            specT = g.seconds;
-            specCarriers = g.carriers;
-            specSteps = g.steps;
-          } else {
-            const left = { ...specCarriers };
-            const kept = (carrierSteps ?? []).filter((st) => {
-              if (left[st.weapon] > 0) {
-                left[st.weapon] -= 1;
-                return true;
-              }
-              return false;
-            });
-            specSteps = kept;
+          // phase 38g: the carriers by headcount for a party − 1 (fitBars already took them when the party's did not fit)
+          specSteps = undefined;
+          if (Object.values(specCarriers).reduce((t, v) => t + v, 0) > party - 1) {
+            specCarriers = headcountOf(m, party - 1);
+            specT = cmpSeconds(dpCmp(m, withItems(teamData(specCarriers).a, damageBring, surgePotions)));
           }
         } else {
           specT = cmpSeconds(dpCmp(m, assumptions));

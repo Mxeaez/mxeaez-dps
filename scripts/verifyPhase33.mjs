@@ -20,7 +20,7 @@ const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?
 // phase 35b: one line per NPC (phase 33: Bork's line only, "Start of fight: … → Def 180 · 99.6%")
 // phase 36: one spec budget for Bork and the Smorks; the planner's 2 Elder maul + 4 Tonalztics carriers
 // phase 36 review: 2 Elder maul + 3 Tonalztics carriers (you damage-spec)
-const BORK_LINE = 'Bork: 1 Elder maul carrier (2 specs) + 1 Tonalztics carrier (1 spec) → Def 184 · Smorks: 4 Tonalztics carriers (7 specs) → Def 13'; // phase 38c-e
+const BORK_LINE = 'Bork: 2 Elder maul carriers (4 specs) → Def 180 · 96% · Smorks: 3 Tonalztics carriers (6 specs) → Def 36'; // phase 38c-e
 const WEAPONS = ['elderMaul', 'dwh', 'bgs', 'tonalztics'];
 
 let failures = 0;

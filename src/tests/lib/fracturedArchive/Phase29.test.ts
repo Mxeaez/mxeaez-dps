@@ -370,8 +370,10 @@ describe('Team drain line: "needed ×N · team brings ×M"', () => {
     expect(neededText(tona)).toBe('needs 4 landed hits · 4 specs (2 carriers) = 8 attacks, 4 must land · 98%'); // phase 34 wording
     expect(neededText({ ...tona, needed: 0 })).toBe('not needed · team: 4 specs (2 carriers) · 98%');
     expect(tona.title.startsWith(`${neededText(tona)} (`)).toBe(true);
-    // the Max-drain plan's deterministic count ("4 Tonalztics of Ralos" hits = 2 specs → Def 156)
-    expect(neededSpecs(model, { tonalztics: 4 }).defence).toEqual({ tonalztics: 2 });
+    // phase 38g: neededSpecs counts to the floor at 95%, not the best case ("4 Tonalztics of Ralos" hits = 2 specs if every
+    // attack lands → Def 156): the fewest Tonalztics specs with P(floor) ≥ 95% (86% with 3, 98% with 4)
+    expect(neededSpecs(model, { tonalztics: 4 }).defence).toEqual({ tonalztics: 4 });
+    expect(neededSpecs(model, { tonalztics: 3 }).defence).toBeNull();
     // specsNeeded directly: a weapon whose specs change nothing on this boss needs 0
     expect(specsNeeded(model, ['tonalztics', 'tonalztics', 'tonalztics', 'tonalztics', 'elderMaul'])).toMatchObject({ elderMaul: { n: 0 }, tonalztics: { n } });
   });
@@ -534,10 +536,12 @@ describe('planner: spec modes', () => {
     // manual carriers (plan()'s default): the briefing = the Advanced counts (2 maul, 2 Tonalztics, 1 Ayak)
     expect(roles.mode).toBe('manual');
     expect(roles.carriers).toEqual({ ...A.team.carriers, ayak: 0 }); // review 2: Ayak capped at the mages (0)
-    // mages in party > 0 makes Eye of Ayak a candidate; it is only added if it saves ≥ 1 s (no magic kit: never)
+    // mages in party > 0 makes Eye of Ayak a candidate; phase 38g: by headcount (a boss whose magic defence the mages'
+    // drain needs gets its fewest Ayak carriers at 95%), capped at the mages
     const m = plan(inputs({ specMode: 'auto', carrierMode: 'auto', magesInParty: 2 }), MELEE_RANGED);
     expect(m.specs.team!.mages).toBe(2);
-    expect(m.specs.team!.rows.some((x) => x.weapon === 'ayak')).toBe(false);
+    expect(m.specs.team!.carriers!.ayak).toBeGreaterThanOrEqual(1);
+    expect(m.specs.team!.carriers!.ayak).toBeLessThanOrEqual(2);
   }, 300000);
 
   test('Team, planner picks the carriers: the drain state uses exactly the briefing\'s carriers', () => {
@@ -548,8 +552,11 @@ describe('planner: spec modes', () => {
     expect(team.rows.map((x) => [x.weapon, x.carriers]).sort()).toEqual(
       (Object.entries(team.carriers!) as [string, number][]).filter(([, v]) => v > 0).sort(),
     );
-    expect(team.steps!.every((x) => x.saved >= 1 - 1e-9)).toBe(true);
-    expect(team.steps!.length).toBe(Object.values(team.carriers!).reduce((a, v) => a + v, 0));
+    // phase 38g: carriers by headcount (no seconds, so no steps): every boss / phase's fewest team at 95% fits in them
+    expect(team.steps).toBeUndefined();
+    team.perTarget.forEach((x) => Object.entries(x.carriers ?? {}).forEach(([w, n]) => {
+      expect(team.carriers![w as keyof CarrierCounts]).toBeGreaterThanOrEqual(n ?? 0);
+    }));
     // every phase's Team line brings at most 2 specs per carrier of each weapon it shows (weapons that can hit; a bar
     // holds 100% at an event's start). Phase 38c: Ocellus has three drain events (the Defence resets at P2 and P3), so
     // the carriers' energy is split between them and a line can bring fewer
@@ -625,7 +632,8 @@ slowDescribe('FA defaults (slow)', () => {
     // phase 36 review (damage specs at the hp left; regen on the drained clock): the bound is the reviewer's phase 29
     // brute force re-timed by the model since: 1330.53 → 1334.22
     // phase 38f: the pin followed the model (38a-38e: 1388.56 s); gear exact, the time within 1%
-    expect(withinPct(total(r), 1388.56, 1)).toBe(true);
+    // phase 38g (your bar pays the drains first): 1388.56 → the faSolo headline
+    expect(withinPct(total(r), headline('faSolo').seconds, 1)).toBe(true);
     expect(r.ring.ring).toBe('Ultor ring');
     // the ring screens timed the chosen subset (no second round needed here, or it converged)
     expect(r.specs.solo!.screenedWith).toEqual(r.specs.bring);
@@ -647,27 +655,25 @@ slowDescribe('FA defaults (slow)', () => {
     expect(r.ring.ring).toBe('Ultor ring');
     // phase 32: no blessing in the melee / magic loadouts and a loadout without ammo keeps the kit's ammo: 1382.50 → 1329.96
     // phase 36 (one spec budget per encounter: no fight regen for the start-of-fight drains): 1329.96 → 1364.55
-    expect(withinPct(total(r), 1415.95, 1)).toBe(true); // phase 38f: was 1364.55 at phase 36
+    // phase 38g (your bar pays the 95% drains first): 1415.95 → 1463.90
+    expect(withinPct(total(r), 1463.9, 1)).toBe(true); // phase 38f: was 1364.55 at phase 36
   }, 900000);
 
-  test('Team, 6-man: the planner picks 2 Elder maul + 3 Tonalztics (phase 36 review; was 2 + 4, 2 + 2), never slower than the Advanced 2 / 2 / 1 by hand', () => {
+  test('Team, 6-man: the planner picks 2 Elder maul + 3 Tonalztics by headcount (phase 38g; 38c-38f: 1 + 4 by route time), within 3% of the Advanced 2 / 2 / 1', () => {
     const auto = full({ carrierMode: 'auto' });
-    // phase 36 (one spec budget per encounter: Bork and the Smorks share the carriers' energy): 2 Elder maul + 4 Tonalztics;
-    // review: you damage-spec, so you are not a carrier — 5 carriers for 6 bars
+    // phase 38g: per weapon the most any boss needs at 95% (Bork / Ezekiel: 2 Elder maul; Ocellus P3's last quadrant: 3
+    // Tonalztics); you damage-spec, so the carriers fit in party − 1 = 5 bars
     expect(auto.specs.team!.carriers).toEqual({
-      elderMaul: 1, dwh: 0, bgs: 0, tonalztics: 4, ayak: 0,
+      elderMaul: 2, dwh: 0, bgs: 0, tonalztics: 3, ayak: 0,
     });
-    const steps = auto.specs.team!.steps!.map((x) => x.weapon);
-    expect(steps.filter((w) => w === 'elderMaul')).toHaveLength(1);
-    expect(steps.filter((w) => w === 'tonalztics')).toHaveLength(4);
+    expect(auto.specs.team!.steps).toBeUndefined();
     const manual = full({ carrierMode: 'manual' });
     // review 2: the Ayak carrier is capped at the mages (the kit has no magic loadout → 0), with a note
     expect(manual.specs.team!.carriers).toEqual({ ...A.team.carriers, ayak: 0 });
     expect(manual.specs.notes.some((x) => x.startsWith('Eye of Ayak carriers capped at the mages'))).toBe(true);
     // phase 31: 21:53.0 → 21:44.4 with this (phase 29) pinned list: the quiver holds the Seeking dragon arrows, and the
     // freed slot buys the phase 30 kit (Ascension crossbows + diamond (e) worn, Inquisitor's + Obligator, Twisted bow)
-    // phase 36: the planner's carriers are never slower than the Advanced ones (2 / 2 / 1, the Ayak carrier capped)
-    expect(total(auto)).toBeLessThanOrEqual(total(manual) + 1e-6);
+    // phase 38g: the carriers are no longer picked by route time, so they may be slower than the Advanced ones
     // phase 36 review: the Advanced 2 / 2 / 1 with your damage specs: the first 5 carriers count (21:12.4 → 21:12.8)
     // phase 38f: the exact totals are headlines.json's (the FA headline is this plan with the new default pins)
     expect(withinPct(total(manual), total(auto), 3)).toBe(true);

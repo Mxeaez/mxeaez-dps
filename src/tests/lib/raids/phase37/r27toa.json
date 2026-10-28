@@ -267,7 +267,7 @@
  "kitMarginal": [
   {
    "slots": 7,
-   "seconds": 9.74375082812685
+   "seconds": 11.773045904328683
   },
   {
    "slots": 8,
@@ -576,7 +576,7 @@
    "slot": "weapon"
   }
  ],
- "comparison": "37def90fa3c2ceeb06d2158556c487669c4fa7604f6c6d9b1044b102447ed657",
+ "comparison": "76d4f6706040c0bba34756c299ba020db10925a5c40aaa7c8cb5e02824649722",
  "planned": 3,
  "rejected": [
   {
@@ -592,7 +592,7 @@
   {
    "label": "Scythe of Vitur #2",
    "kind": "addition",
-   "deltaSeconds": 2.6577402787968367,
+   "deltaSeconds": 2.657740278796723,
    "deltaSlots": 4,
    "reason": "needs 4 more slots, 0 free",
    "weapons": [
@@ -602,7 +602,7 @@
   {
    "label": "Scythe of Vitur #5",
    "kind": "addition",
-   "deltaSeconds": 2.6577402787968367,
+   "deltaSeconds": 2.657740278796723,
    "deltaSlots": 4,
    "reason": "needs 4 more slots, 0 free",
    "weapons": [
@@ -614,9 +614,9 @@
   {
    "label": "melee + magic: Tumeken's shadow (Ancestral) / Scythe of Vitur #3",
    "kind": "alternative",
-   "deltaSeconds": -9.74375082812685,
+   "deltaSeconds": -11.773045904328683,
    "deltaSlots": -7,
-   "reason": "9.7 s slower",
+   "reason": "11.8 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Scythe of Vitur"
@@ -707,11 +707,11 @@
      "weapon": "ayak",
      "carriers": 1,
      "drivers": [
-      "Kephri (17.3 s)",
       "Wardens (11.9 s)",
+      "Kephri (10.4 s)",
       "Akkha (before supplies) (1.1 s)"
      ],
-     "lastSaved": 42.34615601661267
+     "lastSaved": 29.610502325240077
     }
    ],
    "perTarget": [
@@ -917,11 +917,11 @@
  "droppedPinned": [],
  "ownershipNotices": [],
  "searchRows": "87aed34a47a0fdfd47e91b129d9f622117704dc46733bd27206f3c4b80374a5e",
- "objectiveSeconds": 905.4948886370371,
+ "objectiveSeconds": 918.2305423284097,
  "fightSeconds": null,
  "plannedRoute": {
   "id": "toa-zebak-before-supplies>toa-akkha-before-supplies>toa-kephri>toa-baba>toa-wardens",
-  "seconds": 905.4948886370371,
+  "seconds": 918.2305423284097,
   "surgeDoses": null,
   "encounters": [
    {
@@ -932,7 +932,6 @@
       "npc": "Zebak",
       "firstRowKey": "zebak",
       "counts": {
-       "elderMaul": 4,
        "tonalztics": 4,
        "ayak": 2
       }
@@ -949,9 +948,9 @@
       "npc": "Akkha",
       "firstRowKey": "akkha-Praying Melee",
       "counts": {
-       "elderMaul": 4,
-       "tonalztics": 4,
-       "ayak": 2
+       "tonalztics": 2,
+       "ayak": 2,
+       "elderMaul": 4
       }
      },
      {
@@ -965,15 +964,14 @@
    },
    {
     "id": "toa-kephri",
-    "seconds": 148.62149943255145,
+    "seconds": 155.51657454949415,
     "events": [
      {
       "npc": "Kephri",
       "firstRowKey": "kephri-shield",
       "counts": {
-       "elderMaul": 8,
-       "tonalztics": 8,
-       "ayak": 4
+       "elderMaul": 4,
+       "ayak": 2
       }
      },
      {
@@ -996,9 +994,8 @@
       "reset": "the final phase",
       "firstRowKey": "kephri-final",
       "counts": {
-       "elderMaul": 2,
-       "tonalztics": 2,
-       "ayak": 1
+       "elderMaul": 4,
+       "ayak": 2
       }
      }
     ],
@@ -1007,15 +1004,14 @@
    },
    {
     "id": "toa-baba",
-    "seconds": 97.28700774488063,
+    "seconds": 103.06407253492486,
     "events": [
      {
       "npc": "Ba-Ba",
       "firstRowKey": "baba",
       "counts": {
-       "elderMaul": 8,
-       "tonalztics": 8,
-       "ayak": 4
+       "tonalztics": 4,
+       "ayak": 2
       }
      }
     ],
@@ -1024,15 +1020,14 @@
    },
    {
     "id": "toa-wardens",
-    "seconds": 344.11437353998184,
+    "seconds": 344.1778873243674,
     "events": [
      {
       "npc": "Obelisk",
       "firstRowKey": "wardens-p1",
       "counts": {
-       "elderMaul": 8,
-       "tonalztics": 8,
-       "ayak": 4
+       "tonalztics": 4,
+       "ayak": 2
       }
      },
      {
@@ -1047,7 +1042,8 @@
       "npc": "Tumeken's Warden",
       "firstRowKey": "wardens-p3",
       "counts": {
-       "ayak": 1
+       "tonalztics": 2,
+       "ayak": 2
       }
      },
      {
@@ -1055,9 +1051,8 @@
       "reset": "the enrage",
       "firstRowKey": "wardens-p3-enraged",
       "counts": {
-       "elderMaul": 2,
-       "tonalztics": 2,
-       "ayak": 1
+       "elderMaul": 4,
+       "ayak": 2
       }
      }
     ],

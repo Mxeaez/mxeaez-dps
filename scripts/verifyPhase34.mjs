@@ -20,15 +20,15 @@ import { headlineClose, headlineOf } from './headlines.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
 const BRIEFING = [
-  'Flying shield: Tonalztics 4 hits → Def 156 · Grounded: Tonalztics 4 hits → Def 156',
-  'Bork: Elder maul 2 specs + Tonalztics 1 hit → Def 184 · Smorks: Tonalztics 9 hits → Def 13', // phase 35b; phase 36: one spec budget; phase 38c-e: the carriers 1 Elder maul + 4 Tonalztics
+  'Tonalztics 4 hits → Def 156',
+  'Bork: Elder maul 2 specs → Def 180 · Smorks: Tonalztics 8 hits → Def 36', // phase 35b; phase 36: one spec budget; phase 38g: one fixed drain set per event (2 Elder maul + 3 Tonalztics)
   'Tonalztics 2 hits → Def 117',
   'Tonalztics 2 hits → Def 102',
-  'start: Tonalztics 2 hits → Def 129 · after P1: Elder maul 2 specs + Tonalztics 4 hits → Def 1 · after P2: Tonalztics 3 hits → Def 150',
+  'start: Tonalztics 2 hits → Def 129 · after P1: Elder maul 4 specs + Tonalztics 2 hits → Def 0 · after P2: Tonalztics 2 hits → Def 176',
 ];
 // phase 35b: one line per NPC (phase 33: Bork's line only, "Start of fight: … → Def 180 · 99.6%")
 // phase 36 review: 2 Elder maul + 3 Tonalztics carriers (you damage-spec)
-const BORK_LINE = 'Bork: 1 Elder maul carrier (2 specs) + 1 Tonalztics carrier (1 spec) → Def 184 · Smorks: 4 Tonalztics carriers (7 specs) → Def 13'; // phase 38c-e
+const BORK_LINE = 'Bork: 2 Elder maul carriers (4 specs) → Def 180 · 96% · Smorks: 3 Tonalztics carriers (6 specs) → Def 36'; // phase 38c-e
 
 let failures = 0;
 const check = (ok, msg) => {
@@ -150,7 +150,8 @@ const main = async () => {
   check(await page.locator('[data-testid="plan-potions"] img').count() >= 2 && await page.locator('[data-testid="plan-ring-result"] img').count() >= 2, 'potions and ring lines have icons');
   check(await page.locator('[data-testid="plan-alternatives"] li img').count() >= 6, 'alternatives list has weapon icons');
   await page.locator('[data-testid="plan-spec-toggle"]').click();
-  check(await visible(page, '[data-testid="plan-team-briefing"]') && await visible(page, '[data-testid="plan-team-steps"]'), '"Spec plan" opens the team briefing table and "added in this order"');
+  // phase 38g: carriers by headcount, no "added in this order" steps
+  check(await visible(page, '[data-testid="plan-team-briefing"]'), '"Spec plan" opens the team briefing table');
   await page.locator('[data-testid="plan-phase-details-toggle"]').click();
   check(await visible(page, '[data-testid="plan-encounters"]') && await visible(page, '[data-testid="plan-routes"]'), '"Per-phase details" opens the encounter table and the routes');
   const bork = await page.locator('[data-testid="plan-encounter-row"][data-encounter="bork-smorks"] [data-testid="plan-encounter-drains"]').getAttribute('data-text');
@@ -170,12 +171,14 @@ const main = async () => {
   console.log(`     Search drain box: ${brief.map((b) => `${b.w} ${b.t}`).join(' + ')} ${res}`);
   check(brief.length === 1 && brief[0].w === 'tonalztics' && brief[0].t === '4 hits' && brief[0].img && res === '→ Def 156 · Magic def 130', 'Search header: [Tonalztics] 4 hits → Def 156 · Magic def 130');
   const boxText = await visibleText(page, '[data-testid="spec-plan"]');
-  check(!/needs |% land|Chance of the Defence floor|Per boss minimum|fight ≈/.test(boxText), `drain box default view: no sentence form ("${boxText.trim()}")`);
+  // phase 38g: the drain facts line (may say "needs 4 specs, you have ~2") is meant to show; the sentence form is not
+  check(!/needs (≈ )?\d+ landed|% land|Chance of the Defence floor|Per boss minimum|fight ≈/.test(boxText), `drain box default view: no sentence form ("${boxText.trim()}")`);
   await page.locator('[data-testid="spec-plan-details-toggle"]').click();
   check(await visible(page, '[data-testid="spec-plan"] [data-testid="drain-line"]') && await visible(page, '[data-testid="drain-pfloor"]') && await visible(page, '[data-testid="team-table"]'), '"details" opens the sentence form, the chance of the floor and the per-boss table');
   const sentence = await text(page.locator('[data-testid="spec-plan"] [data-testid="drain-line-count"]').first());
   // phase 36: the plan's carriers are 2 Elder maul + 4 Tonalztics
-  check(sentence === 'needs 4 landed hits · 4 specs (2 carriers) = 8 attacks, 4 must land · 98% · team: 8 specs (4 carriers) · >99.9%', `sentence form: "${sentence}"`);
+  // phase 38g: the headline's 3 Tonalztics carriers
+  check(sentence === 'needs 4 landed hits · 4 specs (2 carriers) = 8 attacks, 4 must land · 98% · team: 6 specs (3 carriers) · >99.9%', `sentence form: "${sentence}"`);
   const searchText = await visibleText(page, '[data-testid="search-view"]');
   check(!/search started from|vs best preset|evaluations|Exp\. TTK \(top row only\)|Best preset/.test(searchText), 'Search: no "search started from", "vs best preset", evaluation counts, TTK note or best preset in the default view');
   check(!(await visible(page, '[data-testid="search-ranked-at"]')), 'ranked-at under "Search details"');
@@ -196,7 +199,8 @@ const main = async () => {
   })));
   const sumText = await visibleText(page, '[data-testid="summary"]');
   check(cells.length > 40 && cells.every((c) => c.line === 0 && c.icons && c.load === 1) && cells.some((c) => c.brief > 0), `Summary: ${cells.length} cells, drains as icon + number, a load button each`);
-  check(!/best preset|fight ≈|needs |% land/.test(sumText), 'Summary: no "best preset", budget or drain sentences visible');
+  // phase 38g: the drain facts line may say "(needs 4 specs, you have ~2)"; the sentence form's "needs N landed" stays hidden
+  check(!/best preset|fight ≈|needs (≈ )?\d+ landed|% land/.test(sumText), 'Summary: no "best preset", budget or drain sentences visible');
   await shot(page, 'summary');
 
   // --- phone

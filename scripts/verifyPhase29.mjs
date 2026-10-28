@@ -124,8 +124,8 @@ const main = async () => {
   const wantCarriers = headlineOf('fa').carriers; // phase 38f: the fixture, not literals
   check((carriers.elderMaul ?? 0) === wantCarriers.elderMaul && (carriers.tonalztics ?? 0) === wantCarriers.tonalztics && rows.length === Object.values(wantCarriers).filter((n) => n > 0).length, `planner carriers: ${JSON.stringify(carriers)} (the headline's: ${JSON.stringify(wantCarriers)})`);
   check(/picked by the planner/.test(await text(page.locator('[data-testid="plan-team-roles"] .font-semibold').first())), 'briefing says "picked by the planner"');
-  const steps = page.locator('[data-testid="plan-team-steps"]');
-  check(await steps.count() === 1, `${await steps.count() ? await text(steps) : 'no steps line'}`);
+  // phase 38g: carriers by headcount, no "added in this order" steps line
+  check(await page.locator('[data-testid="plan-team-steps"]').count() === 0, 'no carrier steps line (carriers by headcount)');
 
   // Lightbearer follows the ring policy (camp one ring: the planned ring)
   const ring = await page.locator('[data-testid="plan-ring-result"]').getAttribute('data-ring');

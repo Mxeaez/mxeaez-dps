@@ -20,7 +20,7 @@ export interface KitMemoOptions<S> {
   /** The kit's answer for a pick. */
   choice: (pick: number, state: S, id: string) => KitChoice | null;
   /** The kit parts that don't depend on the members. */
-  parts: Pick<RaidKit, 'specDamage' | 'specHits' | 'drainKey'>;
+  parts: Pick<RaidKit, 'specDamage' | 'specHits' | 'drainKey' | 'drainModel'>;
   /** Memo bound (trace nodes per memo; cleared when reached). */
   maxNodes?: number;
 }

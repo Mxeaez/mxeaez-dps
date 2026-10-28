@@ -402,11 +402,11 @@
  "kitMarginal": [
   {
    "slots": 1,
-   "seconds": 125.73460278034918
+   "seconds": 154.7072249093119
   },
   {
    "slots": 1,
-   "seconds": 12.482479086736362
+   "seconds": 12.495686818317381
   },
   {
    "slots": 1,
@@ -418,7 +418,7 @@
   },
   {
    "slots": 8,
-   "seconds": 86.93976281350729
+   "seconds": 175.28148707189735
   }
  ],
  "slots": {
@@ -726,13 +726,13 @@
    "slot": "weapon"
   }
  ],
- "comparison": "765ad6ea7b143934c9f37d6fab73be1cf72dd3ed851b6bd19a69cc109fdec1f0",
+ "comparison": "5832913b18c2628400eecd9dfe045be77e6f2ece21948f8955ace982895d7064",
  "planned": 0,
  "rejected": [
   {
    "label": "Scythe of Vitur #2",
    "kind": "addition",
-   "deltaSeconds": 0.6766720295933055,
+   "deltaSeconds": 1.5311484156585493,
    "deltaSlots": 4,
    "reason": "needs 4 more slots, 1 free",
    "weapons": [
@@ -742,7 +742,7 @@
   {
    "label": "Scythe of Vitur #5",
    "kind": "addition",
-   "deltaSeconds": 0.5703854299096065,
+   "deltaSeconds": 1.4093473436707882,
    "deltaSlots": 3,
    "reason": "needs 3 more slots, 1 free",
    "weapons": [
@@ -752,7 +752,7 @@
   {
    "label": "Scythe of Vitur #2 + Torva full helm",
    "kind": "addition",
-   "deltaSeconds": 0.36633577114207583,
+   "deltaSeconds": 0.4876760002138667,
    "deltaSlots": 3,
    "reason": "needs 3 more slots, 1 free",
    "weapons": [
@@ -764,9 +764,9 @@
   {
    "label": "melee + magic: Tumeken's shadow (Ancestral) / Dragon pickaxe (Torva) / Scythe of Vitur / Tumeken's shadow",
    "kind": "alternative",
-   "deltaSeconds": -86.93976281350729,
+   "deltaSeconds": -175.28148707189735,
    "deltaSlots": -8,
-   "reason": "86.9 s slower",
+   "reason": "175.3 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Dragon pickaxe",
@@ -777,9 +777,9 @@
   {
    "label": "melee + ranged: Twisted bow + Seeking dragon arrow / Dragon pickaxe (Torva) / Scythe of Vitur / Scythe of Vitur #2 / Twisted bow + Seeking dragon arrow #2 / Twisted bow (Masori)",
    "kind": "alternative",
-   "deltaSeconds": -462.0038521366972,
+   "deltaSeconds": -365.8368390183367,
    "deltaSlots": 0,
-   "reason": "462.0 s slower",
+   "reason": "365.8 s slower",
    "weapons": [
     "Twisted bow",
     "Dragon pickaxe",
@@ -857,35 +857,34 @@
      "carriers": 2,
      "drivers": [
       "Tekton (4.2 s)",
-      "Great Olm (2.8 s)"
+      "Great Olm (0.5 s)"
      ],
-     "lastSaved": 7.038403355543608
+     "lastSaved": 4.749087475322767
     },
     {
      "weapon": "tonalztics",
      "carriers": 2,
      "drivers": [
-      "Great Olm (2.1 s)"
+      "Great Olm (0.2 s)"
      ],
-     "lastSaved": 2.0537842158222475
+     "lastSaved": 0.16721506193914593
     },
     {
      "weapon": "bgs",
      "carriers": 1,
      "drivers": [
-      "Tekton (2.3 s)",
-      "Great Olm (0.6 s)"
+      "Tekton (2.3 s)"
      ],
-     "lastSaved": 2.9503392823268086
+     "lastSaved": 2.3216476296105384
     },
     {
      "weapon": "ayak",
      "carriers": 1,
      "drivers": [
-      "Great Olm (0.9 s)",
+      "Great Olm (0.8 s)",
       "Vespula (0.3 s)"
      ],
-     "lastSaved": 1.1515302627944948
+     "lastSaved": 1.0763338971574399
     }
    ],
    "perTarget": [
@@ -1035,11 +1034,11 @@
  "droppedPinned": [],
  "ownershipNotices": [],
  "searchRows": "3918db8854a7d930dab8d749f48a10e1f826c8a58293b616e3d5fb8ba3ea8e4d",
- "objectiveSeconds": 452.72130553898955,
+ "objectiveSeconds": 469.76839366751756,
  "fightSeconds": null,
  "plannedRoute": {
   "id": "cox-tekton>cox-vasa>cox-vanguards>cox-vespula>cox-mystics>cox-shamans>cox-muttadiles>cox-guardians>cox-ice-demon>cox-olm",
-  "seconds": 452.72130553898955,
+  "seconds": 469.76839366751756,
   "surgeDoses": null,
   "encounters": [
    {
@@ -1071,8 +1070,7 @@
       "npc": "Vasa Nistirio",
       "firstRowKey": "vasa",
       "counts": {
-       "elderMaul": 4,
-       "bgs": 2,
+       "elderMaul": 2,
        "tonalztics": 4,
        "ayak": 2
       }
@@ -1164,8 +1162,7 @@
       "npc": "Large muttadile",
       "firstRowKey": "muttadile-large",
       "counts": {
-       "elderMaul": 4,
-       "bgs": 2,
+       "elderMaul": 2,
        "tonalztics": 4,
        "ayak": 2
       }
@@ -1195,8 +1192,6 @@
       "npc": "Ice demon",
       "firstRowKey": "ice-demon",
       "counts": {
-       "elderMaul": 4,
-       "bgs": 2,
        "tonalztics": 4,
        "ayak": 2
       }
@@ -1207,62 +1202,55 @@
    },
    {
     "id": "cox-olm",
-    "seconds": 195.35101232382314,
+    "seconds": 212.3981004523512,
     "events": [
      {
       "npc": "Right claw",
       "firstRowKey": "olm-p1-right",
-      "counts": {}
+      "counts": {
+       "elderMaul": 4,
+       "tonalztics": 4,
+       "bgs": 2,
+       "ayak": 2
+      }
      },
      {
       "npc": "Left claw",
       "firstRowKey": "olm-p1-left",
-      "counts": {
-       "elderMaul": 1,
-       "bgs": 2,
-       "tonalztics": 4
-      }
+      "counts": {}
      },
      {
       "npc": "Right claw",
       "reset": "phase 1",
       "firstRowKey": "olm-p2-right",
-      "counts": {
-       "ayak": 1
-      }
+      "counts": {}
      },
      {
       "npc": "Left claw",
       "reset": "phase 1",
       "firstRowKey": "olm-p2-left",
-      "counts": {
-       "elderMaul": 1
-      }
+      "counts": {}
      },
      {
       "npc": "Right claw",
       "reset": "phase 2",
       "firstRowKey": "olm-p3-right",
-      "counts": {
-       "ayak": 1
-      }
+      "counts": {}
      },
      {
       "npc": "Left claw",
       "reset": "phase 2",
       "firstRowKey": "olm-p3-left",
       "counts": {
-       "elderMaul": 2
+       "elderMaul": 2,
+       "tonalztics": 2,
+       "ayak": 1
       }
      },
      {
       "npc": "Head",
       "firstRowKey": "olm-head",
-      "counts": {
-       "elderMaul": 1,
-       "bgs": 1,
-       "tonalztics": 2
-      }
+      "counts": {}
      }
     ],
     "damage": {},

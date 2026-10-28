@@ -4,7 +4,8 @@ import {
   DrainModel, PlannerWeapon, SPEC_WEAPONS, SpecWeapon,
 } from '@/lib/fracturedArchive/specs';
 import {
-  applyOutcome, DefenceDrainWeapon, expectedAttemptsToFloor, inUpstreamOrder, TeamNeed,
+  applyOutcome, countsTotal, DEFAULT_FLOOR_THRESHOLD, DefenceDrainWeapon, DrainOrderItem, drainOrder, expectedAttemptsToFloor,
+  inUpstreamOrder, MAX_FLOOR_SPECS, neededSpecs, recommendCarriers, TeamNeed,
 } from '@/lib/fracturedArchive/teamSpecs';
 
 /**
@@ -66,9 +67,115 @@ export interface DrainLine {
   text: string;
   /** Phase 24: a plain remark shown under the line (low hit chance, or one landed spec already reaches the floor). */
   note?: string;
+  /** Phase 38g: the drain facts of the boss / phase (the same line on Search, Plan and Summary; {@link drainFacts}). */
+  facts?: DrainFacts;
 }
 
 const pctText = (p: number) => `${Math.round(p * 100)}%`;
+
+// --- phase 38g: the drain facts (one line, every tab) ---------------------------------------------------------------
+
+/**
+ * Phase 38g: the facts of one boss / phase's drain, no seconds involved: the Defence drain weapons that can hit, ordered
+ * by the Defence one spec removes on average (teamSpecs.ts `drainOrder`), each with its hit chance; the specs to reach
+ * the floor with P ≥ threshold (`neededSpecs` over every weapon that can hit: the fewest specs whose best combination
+ * gets there); Team: the fewest carriers reaching it from the first round (`recommendCarriers`, per party size). The same
+ * in Solo and Team and for every party size, except the carriers. `paid` = the Defence specs the bars pay (what the drain
+ * state / the time model uses); fewer than needed is marked ({@link DrainFacts.short}).
+ */
+export interface DrainFacts {
+  order: DrainOrderItem[];
+  /** Specs to the floor at the threshold; 0 = already at the floor; null = not within MAX_FLOOR_SPECS (or no weapon hits). */
+  specs: number | null;
+  /** The combination behind `specs` (per weapon). */
+  counts: Partial<Record<DefenceDrainWeapon, number>> | null;
+  pFloor: number;
+  threshold: number;
+  drain: 'solo' | 'team';
+  partySize: number;
+  /** Team (party > 1): the fewest carriers per weapon at the threshold; null = no team within the party. */
+  carriers?: { counts: Partial<Record<DefenceDrainWeapon, number>>, pFloor: number } | null;
+  /** Eye of Ayak (when brought and the magic defence bonus is > 0): its hit chance and specs to magic def 0 at the threshold. */
+  ayak?: { hitChance: number, specs: number | null };
+  /** Defence specs the bars pay (undefined: not known). */
+  paid?: number;
+  /** e.g. "Drain: Elder maul (lands 62%) → Tonalztics (88%), ~4 specs to the floor; 2 bring Elder maul, 2 bring Tonalztics for 95%". */
+  text: string;
+  /** e.g. "needs 4 specs, you have ~2": the bars pay fewer than the specs to the floor. */
+  short?: string;
+}
+
+const FACT_LABELS: Record<PlannerWeapon, string> = {
+  elderMaul: 'Elder maul', dwh: 'DWH', tonalztics: 'Tonalztics', bgs: 'BGS', ayak: 'Eye of Ayak',
+};
+
+type DrainFactsOptions = { drain: 'solo' | 'team', partySize: number, threshold?: number, paid?: number, ayak?: boolean };
+const factsMemo = new Map<string, DrainFacts>();
+const FACTS_MEMO_MAX = 20000;
+
+const drainFactsOf = (model: DrainModel, opts: Omit<DrainFactsOptions, 'paid'>): DrainFacts => {
+  const threshold = opts.threshold ?? DEFAULT_FLOOR_THRESHOLD;
+  const partySize = Math.max(1, Math.floor(opts.partySize));
+  const order = drainOrder(model);
+  const all = Object.fromEntries(order.map((x) => [x.weapon, MAX_FLOOR_SPECS]));
+  const ayakOn = !!opts.ayak && model.canHit.ayak && model.magicDef > 0;
+  const nd = neededSpecs(model, { ...all, ...(ayakOn ? { ayak: 2 * MAX_FLOOR_SPECS } : {}) }, threshold);
+  const atFloor = model.def <= model.floor;
+  let specs: number | null = null;
+  if (atFloor) specs = 0;
+  else if (nd.defence) specs = countsTotal(nd.defence);
+  const parts: string[] = [];
+  if (atFloor) parts.push(`already at the Defence floor (Def ${model.floor})`);
+  else if (!order.length) parts.push('no drain weapon can hit');
+  else {
+    const list = order.map((x, i) => `${FACT_LABELS[x.weapon]} (${i === 0 ? 'lands ' : ''}${pctText(x.hitChance)})`).join(' → ');
+    parts.push(`${list}, ${specs !== null ? `~${specs} spec${specs === 1 ? '' : 's'} to the floor` : `floor not reached in ${MAX_FLOOR_SPECS} specs`}`);
+  }
+  let carriers: DrainFacts['carriers'];
+  if (opts.drain === 'team' && partySize > 1 && !atFloor && order.length) {
+    const rec = recommendCarriers(model, { partySize, threshold, bestOnly: true });
+    carriers = rec.best ? { counts: rec.best.carriers, pFloor: rec.best.pFloor } : null;
+    const c = carriers?.counts;
+    parts[parts.length - 1] += c
+      ? `; ${order.filter((x) => c[x.weapon]).map((x) => `${c[x.weapon]} bring ${FACT_LABELS[x.weapon]}`).join(', ')} for ${pctText(threshold)}`
+      : `; no team of ≤ ${partySize} reaches ${pctText(threshold)}`;
+  }
+  let ayak: DrainFacts['ayak'];
+  if (ayakOn) {
+    ayak = { hitChance: model.hitChance.ayak, specs: nd.ayak };
+    parts.push(`Eye of Ayak (lands ${pctText(model.hitChance.ayak)}), ${nd.ayak !== null ? `~${nd.ayak} spec${nd.ayak === 1 ? '' : 's'} to magic def 0` : `magic def 0 not reached in ${2 * MAX_FLOOR_SPECS} specs`}`);
+  }
+  return {
+    order,
+    specs,
+    counts: nd.defence,
+    pFloor: nd.pFloor,
+    threshold,
+    drain: opts.drain,
+    partySize,
+    ...(carriers !== undefined ? { carriers } : {}),
+    ...(ayak ? { ayak } : {}),
+    text: `Drain: ${parts.join('; ')}`,
+  };
+};
+
+/** Memoised (the facts don't depend on `paid`, which only adds the "needs …, you have ~N" mark). */
+export const drainFacts = (model: DrainModel, opts: DrainFactsOptions): DrainFacts => {
+  const { paid, ...core } = opts;
+  const key = JSON.stringify([model, core]);
+  let facts = factsMemo.get(key);
+  if (!facts) {
+    facts = drainFactsOf(model, core);
+    if (factsMemo.size >= FACTS_MEMO_MAX) factsMemo.clear();
+    factsMemo.set(key, facts);
+  }
+  if (paid === undefined) return facts;
+  const { specs } = facts;
+  const short = specs !== null && paid < specs
+    ? `needs ${specs} spec${specs === 1 ? '' : 's'}, ${opts.drain === 'team' ? 'the team has' : 'you have'} ~${paid}`
+    : undefined;
+  return { ...facts, paid, ...(short ? { short } : {}) };
+};
 
 const imageOf = (w: SpecWeapon): string | undefined => {
   try {
@@ -326,6 +433,8 @@ export interface EncounterDrainEvent {
    */
   head: string;
   text: string;
+  /** Phase 38g: the drain facts of the event's first drainable phase (`DrainLine.facts`). */
+  facts?: DrainFacts;
 }
 
 export interface EncounterDrainSummary {
@@ -430,8 +539,9 @@ export const encounterDrainSummary = (
       const list = parts.map((x) => `${x.label}: ${x.text}`).join(' · ');
       text = g.reset || named ? `${head} ${list}` : list;
     }
+    const facts = g.phases.find((p) => p.drainLine?.facts && !p.noDrains)?.drainLine?.facts;
     return {
-      phaseKey: g.phases[0].key, ...(g.reset ? { reset: g.reset } : {}), ...(named ? { npc: g.npc } : {}), parts, head, text,
+      phaseKey: g.phases[0].key, ...(g.reset ? { reset: g.reset } : {}), ...(named ? { npc: g.npc } : {}), parts, head, text, ...(facts ? { facts } : {}),
     };
   });
   return { events, parts: events[0].parts, text: events.map((e) => e.text).join(' · ') };

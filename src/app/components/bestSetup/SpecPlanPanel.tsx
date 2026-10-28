@@ -7,7 +7,7 @@ import {
 import { BestSetupAssumptions } from '@/lib/fracturedArchive/presets';
 import { drainModel, planLabelText } from '@/lib/fracturedArchive/specs';
 import { formatProbability, recommendCarriers } from '@/lib/fracturedArchive/teamSpecs';
-import DrainLineView, { DrainBrief } from '@/app/components/bestSetup/DrainLineView';
+import DrainLineView, { DrainBrief, DrainFactsLine } from '@/app/components/bestSetup/DrainLineView';
 import { briefResultText } from '@/lib/fracturedArchive/drainLine';
 import { SURGE_DOSE_ENERGY } from '@/lib/fracturedArchive/specBudget';
 import { assumptionsForTarget } from '@/lib/raids/toa/supplies';
@@ -73,6 +73,8 @@ const SpecPlanPanel: React.FC<{
         {/* the full text stays available (tooltip of the line, and here for tests / copy) */}
         <span className="sr-only" data-testid="drain-plan">{state.plan}</span>
       </div>
+      {/* phase 38g: the drain facts, the same line as on Plan and Summary */}
+      {state.line?.facts && !noDrains && <div><DrainFactsLine facts={state.line.facts} /></div>}
       {surge?.line && !noSpecsNote && !noDrains && (
         <div className="flex flex-wrap items-center gap-2" data-testid="drain-surge" data-plan={surge.plan} title={`With a Surge potion dose (+${SURGE_DOSE_ENERGY}% spec energy): ${surge.plan}`}>
           <span className="text-gray-600 dark:text-gray-300">with a surge dose:</span>

@@ -283,14 +283,18 @@ describe('ring policy', () => {
    * FA / CoX / ToB unchanged. Phase 38c (Ocellus P2 in the plan at 120 s, three drain events; ToA's pair of paths before
    * the supplies is a route, this kit's cheapest Zebak + Akkha): FA 1493.8 → 1544.4 (Ocellus 767.3 → 818.0), ToA 925.0
    * → 905.5; CoX / ToB unchanged. Phase 38c fix (P2's 120 s on the spec budget's wall clock): FA 1544.4 → 1534.7.
+   * Phase 38g (one fixed drain set per event, the fewest carriers at 95%, no seconds-based option search): FA 1534.7 →
+   * 1564.4, ToA 905.5 → 918.2, CoX 452.7 → 469.8, ToB 457.3 → 461.7.
    */
   test.each(rowsFor([
-    { id: 'fractured-archive', seconds: 1534.7 },
-    { id: 'toa', seconds: 905.5 },
-    { id: 'cox', seconds: 452.7 },
-    { id: 'tob', seconds: 457.3 },
+    { id: 'fractured-archive', seconds: 1564.4 },
+    { id: 'toa', seconds: 918.2 },
+    { id: 'cox', seconds: 469.8 },
+    { id: 'tob', seconds: 461.7 },
   ], ['fractured-archive']).map((x) => [x.id as RaidConfig['id'], x.seconds] as const))('%s: allow switches reproduces the previous planner (%s s, within 1%%)', (id, seconds) => {
     const r = planned(raidConfig(id), 'switch');
+    // eslint-disable-next-line no-console
+    if (process.env.PRINT_PINS) console.log(id, total(r));
     expect(r.ring).toEqual({ policy: 'switch', ring: null, screened: [] });
     expect(withinPct(total(r), seconds, 1)).toBe(true);
     // 'switch' is the planner's default when no policy is given (the Plan tab passes camp one ring)

@@ -42,25 +42,26 @@ describe('retime: the headline kits re-timed outside the planner = headlines.jso
 });
 
 describe('drain outcome: one encounter of a headline, for hand-checking', () => {
-  test('FA Xarth (Team): 2 Elder maul + 8 Tonalztics, Def 170 → floor 102, the pools balance', () => {
+  test('FA Xarth (Team): 1 Tonalztics carrier (2 specs, 97%), Def 170 → floor 102, the pools balance', () => {
     expect(headlineWithEncounter('xarth')).toBe('fa');
     const d = drainOutcome('fa', 'xarth');
     expect(d.eventsMatch).toBe(true);
-    // phase 38c fix: the headline's carriers are 1 Elder maul + 4 Tonalztics (were 2 + 3)
-    expect(d.events).toEqual([{ npc: 'Xarth', firstRowKey: 'xarth', counts: { elderMaul: 2, tonalztics: 8 } }]);
+    // phase 38g: the fewest carriers at 95% within the kit's (2 Elder maul + 3 Tonalztics): 1 Tonalztics carrier, 2 specs
+    expect(d.events).toEqual([{ npc: 'Xarth', firstRowKey: 'xarth', counts: { tonalztics: 2 } }]);
     const [x] = d.phases;
     // Xarth at party 6 (the r32 review's independent drain probe): Def 170, floor 102, 50% energy per spec
-    expect([x.def, x.floor, x.energy]).toEqual([170, 102, { elderMaul: 50, tonalztics: 50 }]);
-    expect(x.pFloor!).toBeGreaterThan(0.9999);
+    expect([x.def, x.floor, x.energy]).toEqual([170, 102, { tonalztics: 50 }]);
+    expect(x.pFloor!).toBeGreaterThanOrEqual(0.95);
+    expect(x.pFloor!).toBeLessThan(0.98);
     expect(x.rankedDef).toBe(102);
     // wall clock = DPS seconds ÷ party 6; one +10% tick at 30 s
     expect(d.wall).toBeCloseTo(d.seconds / 6, 9);
     expect(d.wall).toBeGreaterThan(30);
     const pool = Object.fromEntries(d.pools.map((g) => [g.group, g]));
-    // phase 38c fix: 1 maul bar: 100 + 10 − 2 × 50 = 10; 4 Tonalztics bars: 400 + 40 − 400 = 40; yours (phase 38a: a
-    // surge dose here on the raid clock, Crimson kisten): 100 + 10 + 25 − (ZCB 75 + kisten 50) = 10;
-    // phase 38b: Xarth's death (Death Charge, party 6) adds 15 ÷ 6 = 2.5% per bar at the end: 12.5, 50, 12.5
-    expect([pool.elderMaul.balance, pool.tonalztics.balance, pool.me.balance]).toEqual([12.5, 50, 12.5]);
+    // phase 38g: 2 maul bars: 200 + 2 × 10 − 0 = 220; 3 Tonalztics bars: 300 + 3 × 10 − 2 × 50 = 230; yours (a surge dose
+    // here, Crimson kisten): 100 + 10 + 25 − (ZCB 75 + kisten 50) = 10; Xarth's death (Death Charge, party 6) adds
+    // 15 ÷ 6 = 2.5% per bar at the end: 225, 237.5, 12.5
+    expect([pool.elderMaul.balance, pool.tonalztics.balance, pool.me.balance]).toEqual([225, 237.5, 12.5]);
     expect(pool.me.end).toEqual([12.5]);
   }, 60000);
 

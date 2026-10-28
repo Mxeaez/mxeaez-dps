@@ -134,7 +134,8 @@ const main = async () => {
   check(soloBring === headlineOf('faSolo').bring && durationClose(soloTotal, SOLO_TOTAL), `Solo: "${soloBring}", ${soloTotal} (expected Bring: Tonalztics, Zaryte crossbow, Burning claws, Surge potion, ${SOLO_TOTAL}; phase 30: Elder maul + Tonalztics 22:01.3)`);
   const maul = page.locator('[data-testid="plan-spec-weapons"] li[data-weapon="elderMaul"]');
   const maulText = (await maul.count()) ? await text(maul.first()) : '';
-  check(/^adding Elder maul to this plan: −0\.\d s \(1 slot, < 1 s per slot\)$/.test(maulText), `Solo: "${maulText}"`);
+  // phase 38g: your bar pays the drains first; adding the maul may cost time now (+4.5 s): either way it is not brought
+  check(/^adding Elder maul to this plan: [−+±]\d+\.\d s \(1 slot/.test(maulText), `Solo: "${maulText}"`);
   await checkKit(page, 'Solo');
   await shot(page, 'solo');
 

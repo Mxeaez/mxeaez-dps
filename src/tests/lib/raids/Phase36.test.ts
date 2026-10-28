@@ -11,7 +11,7 @@ import {
   spendFromGroup, SPEC_MAX_ENERGY, SURGE_COOLDOWN_SECONDS, SURGE_DOSE_ENERGY, ticksBefore,
 } from '@/lib/fracturedArchive/specBudget';
 import {
-  budgetedEncounter, budgetGroups, capOptions, CLOCK_ROUNDS, damageLimited, drainEventsOf, MAX_EVENT_OPTIONS, rowHpLeft,
+  budgetedEncounter, budgetGroups, CLOCK_ROUNDS, damageLimited, drainEventsOf, rowHpLeft,
 } from '@/lib/fracturedArchive/encounterBudget';
 import {
   compareRoutes, createKitEvaluator, encounterPlan, encounterTime, EncounterTime, formatDuration, KitLoadout, presetKitLoadout,
@@ -419,7 +419,7 @@ describe('the spec budget in the time model', () => {
   });
 });
 
-describe('brute force on real encounters: the DP (pruned options) = an exhaustive search (every option)', () => {
+describe('brute force on real encounters: the DP = an exhaustive search (phase 38g: one fixed drain set per event, the DP places the damage specs and the dose)', () => {
   const problemOf = (id: RaidId, e: string, a: BestSetupAssumptions, drain: 'team' | 'solo', surge = false) => {
     const raid = raidConfig(id);
     const ta = raidTimeAssumptionsFrom(a, drain, raid.defaultTimeSettings, raid.time);
@@ -437,7 +437,7 @@ describe('brute force on real encounters: the DP (pruned options) = an exhaustiv
     expect(full.events).toHaveLength(3);
     const dp = allocateBudget(pruned).seconds;
     expect(dp).toBeCloseTo(bruteForce(full), 6);
-    // the plan the time model reports is the DP's (the top-up only adds specs that cost no time)
+    // the plan the time model reports is the DP's
     expect(r.seconds).toBeCloseTo(dp, 6);
   });
   test('FA Xarth (Solo, party 4, Elder maul + Tonalztics + Voidwaker + a surge dose): drains, damage specs and the dose', () => {
@@ -464,20 +464,6 @@ describe('formatDuration (phase 36 fix)', () => {
     expect(formatDuration(1499.94)).toBe('24:59.9');
     expect(formatDuration(59.97)).toBe('1:00.0');
     expect(formatDuration(245.3)).toBe('4:05.3');
-  });
-});
-
-describe('option cap per event (MAX_EVENT_OPTIONS)', () => {
-  test('keeps option 0, the fastest option per spec count, then the fastest; unchanged below the cap', () => {
-    expect(MAX_EVENT_OPTIONS).toBe(24);
-    const secs = [100, 90, 80, 85, 70, 60, 75];
-    const specs = [0, 1, 1, 2, 2, 3, 3];
-    const kept = [0, 1, 2, 3, 4, 5, 6];
-    expect(capOptions(kept, (i) => secs[i], (i) => specs[i])).toEqual(kept);
-    // cap 4: option 0, the best of 1 spec (2: 80 s), 2 specs (4: 70 s), 3 specs (5: 60 s)
-    expect(capOptions(kept, (i) => secs[i], (i) => specs[i], 4)).toEqual([0, 2, 4, 5]);
-    // cap 5: + the fastest left (6: 75 s)
-    expect(capOptions(kept, (i) => secs[i], (i) => specs[i], 5)).toEqual([0, 2, 4, 5, 6]);
   });
 });
 

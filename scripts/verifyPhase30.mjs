@@ -12,7 +12,7 @@
  *   team's specs do — AG Flying "needs 4 landed hits · 4 specs (2 carriers), 8 swings · 98%", Xarth Tonalztics "… 2
  *   specs (1 carrier), 4 swings · 97%", Bork Tonalztics "… 3 specs (2 carriers), 6 swings · 97%" after Elder maul ×3
  *   (phase 32 wording); the carriers table summary reads "Per boss minimum at 95% (for reference): …".
- * - FA plan: 21:44.4; ToB plan: the "Added in this order" steps timed on the returned kit (prints them).
+ * - FA plan: the headline total; ToB plan: phase 38g, no "Added in this order" steps (carriers by headcount).
  * Screenshots docs/screenshots/phase30-*.png.
  */
 import { existsSync } from 'node:fs';
@@ -130,9 +130,9 @@ const main = async () => {
   await waitPlan(page);
   const tobTotal = await text(page.locator('[data-testid="plan-total"]'));
   check(headlineClose(tobTotal, 'tob'), `ToB plan total ${tobTotal}`);
-  const steps = await text(page.locator('[data-testid="plan-team-steps"]'));
-  // phase 36: one spec budget per encounter (carriers 2 Elder maul + 2 Tonalztics, added in another order)
-  check(/^Added in this order: Elder maul −24\.\d s, Tonalztics −13\.\d s, Tonalztics −4\.\d s \(next one < 1 s\)/.test(steps), `ToB "${steps}" (phase 36 review: 3 carriers, you damage-spec; phase 36: + Elder maul −2.x; phase 32 kit, re-timed on it: −31.8 / −10.4 / −3.5)`);
+  // phase 38g: the carriers are taken by headcount (the most any boss needs at 95%), not added one by one on the route
+  // time: no "Added in this order" line any more
+  check(await page.locator('[data-testid="plan-team-steps"]').count() === 0, 'ToB: no carrier steps line (carriers by headcount)');
   await shot(page, 'tob-steps');
 
   await browser.close();

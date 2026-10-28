@@ -519,7 +519,7 @@
  "kitMarginal": [
   {
    "slots": 1,
-   "seconds": 2.839270575018304
+   "seconds": 2.4631786378934066
   },
   {
    "slots": 7,
@@ -531,15 +531,15 @@
   },
   {
    "slots": 1,
-   "seconds": 16.22036976120239
+   "seconds": 16.945481286054246
   },
   {
    "slots": 1,
-   "seconds": 18.718085106383
+   "seconds": 18.718085106382887
   },
   {
    "slots": 1,
-   "seconds": 4.529447396446699
+   "seconds": 4.529447396446585
   }
  ],
  "slots": {
@@ -817,7 +817,7 @@
   }
  ],
  "pinnedItems": [],
- "comparison": "5affed0bd1273402430820746e65bdec5dc3130ff30a89db879bd4d5ac58703e",
+ "comparison": "887a8ab11ef71466571f023f91c6d0ec3a4ae7c99aaeb0a27a058c7103efc026",
  "planned": 2,
  "rejected": [
   {
@@ -855,9 +855,9 @@
   {
    "label": "melee + magic: Tumeken's shadow (Ancestral) / Scythe of Vitur / Osmumten's fang (Torva) / Keris partisan of breaching (Torva)",
    "kind": "alternative",
-   "deltaSeconds": -11.132273841233086,
+   "deltaSeconds": -19.821237520323166,
    "deltaSlots": -6,
-   "reason": "11.1 s slower",
+   "reason": "19.8 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Scythe of Vitur",
@@ -942,7 +942,7 @@
   "items": [
    {
     "item": "Zaryte crossbow",
-    "saved": 11.577251208207485,
+    "saved": 11.516962170200259,
     "slots": 1,
     "how": "a slot from the kit (re-optimised)"
    }
@@ -954,22 +954,24 @@
    "rows": [
     {
      "weapon": "elderMaul",
+     "carriers": 2,
+     "drivers": [],
+     "lastSaved": 0
+    },
+    {
+     "weapon": "tonalztics",
      "carriers": 1,
-     "drivers": [
-      "Ba-Ba (before supplies) (15.0 s)",
-      "Zebak (6.4 s)",
-      "Wardens (0.3 s)"
-     ],
-     "lastSaved": 39.129625100453836
+     "drivers": [],
+     "lastSaved": 0
     },
     {
      "weapon": "ayak",
      "carriers": 1,
      "drivers": [
-      "Wardens (12.9 s)",
+      "Wardens (12.8 s)",
       "Akkha (0.8 s)"
      ],
-     "lastSaved": 13.693538840420047
+     "lastSaved": 13.625546481376205
     }
    ],
    "perTarget": [
@@ -1103,39 +1105,27 @@
      "ayak": 0
     }
    ],
-   "text": "6-man: 1 Elder maul, 1 Eye of Ayak",
+   "text": "6-man: 2 Elder maul, 1 Tonalztics, 1 Eye of Ayak",
    "carriers": {
-    "elderMaul": 1,
+    "elderMaul": 2,
     "dwh": 0,
     "bgs": 0,
-    "tonalztics": 0,
+    "tonalztics": 1,
     "ayak": 1
    },
-   "mode": "auto",
-   "steps": [
-    {
-     "weapon": "elderMaul",
-     "saved": 47.29376072662376,
-     "seconds": 873.7241848960382
-    },
-    {
-     "weapon": "ayak",
-     "saved": 13.693538840420047,
-     "seconds": 860.0306460556181
-    }
-   ]
+   "mode": "auto"
   },
   "share": {
    "weapon": null,
    "carry": false,
-   "reason": "your spec energy goes to your Zaryte crossbow specs — let a teammate carry Elder maul (most needed: 1 carrier)",
+   "reason": "your spec energy goes to your Zaryte crossbow specs — let a teammate carry Elder maul (most needed: 2 carriers)",
    "manual": false
   },
   "notes": [
-   "Voidwaker: saves 1.4 s with a free slot, but none is free and the kit without a slot for it loses more",
-   "Burning claws: saves 1.0 s with a free slot, but none is free and the kit without a slot for it loses more",
+   "Voidwaker: saves 1.7 s with a free slot, but none is free and the kit without a slot for it loses more",
+   "Burning claws: saves 1.1 s with a free slot, but none is free and the kit without a slot for it loses more",
    "Surge potion(4): saves 2.3 s with a free slot, but none is free and the kit without a slot for it loses more",
-   "Your spec bar goes to Zaryte crossbow: 2 carriers (party − 1), 14:20.0 vs 14:31.6 if you carry a drain weapon instead."
+   "Your spec bar goes to Zaryte crossbow: 4 carriers (party − 1), 14:22.6 vs 14:34.1 if you carry a drain weapon instead."
   ]
  },
  "ring": {
@@ -1144,32 +1134,32 @@
   "screened": [
    {
     "ring": "Ultor ring",
-    "seconds": 860.0306460556181,
+    "seconds": 862.6287533265815,
     "full": true
    },
    {
     "ring": "Bellator ring",
-    "seconds": 870.4595898565699,
+    "seconds": 872.7558818447114,
     "full": true
    },
    {
     "ring": "Venator ring",
-    "seconds": 871.9518095118381,
-    "full": true
-   },
-   {
-    "ring": "Magus ring",
-    "seconds": 873.0814782252639,
+    "seconds": 874.5121683549908,
     "full": true
    },
    {
     "ring": "Ring of shadows",
-    "seconds": 873.1705568742238,
+    "seconds": 875.4147049908299,
+    "full": true
+   },
+   {
+    "ring": "Magus ring",
+    "seconds": 876.0810845746696,
     "full": true
    },
    {
     "ring": "Lightbearer",
-    "seconds": 892.0044108489956,
+    "seconds": 894.2482331655913,
     "full": false,
     "atLeast": 0
    }
@@ -1211,22 +1201,22 @@
  "droppedPinned": [],
  "ownershipNotices": [],
  "searchRows": "33a2f575d76fbed5cbb02dc64ef9f30a829b9edee10a1f6075965bd95a22a173",
- "objectiveSeconds": 860.0306460556181,
+ "objectiveSeconds": 862.6287533265815,
  "fightSeconds": null,
  "plannedRoute": {
   "id": "toa-kephri-before-supplies>toa-baba-before-supplies>toa-zebak>toa-akkha>toa-wardens",
-  "seconds": 860.0306460556181,
+  "seconds": 862.6287533265815,
   "surgeDoses": null,
   "encounters": [
    {
     "id": "toa-kephri-before-supplies",
-    "seconds": 156.32077133336264,
+    "seconds": 158.85088624528228,
     "events": [
      {
       "npc": "Kephri",
       "firstRowKey": "kephri-shield",
       "counts": {
-       "elderMaul": 1,
+       "elderMaul": 4,
        "ayak": 2
       }
      },
@@ -1249,9 +1239,7 @@
       "npc": "Kephri",
       "reset": "the final phase",
       "firstRowKey": "kephri-final",
-      "counts": {
-       "elderMaul": 1
-      }
+      "counts": {}
      }
     ],
     "damage": {
@@ -1272,7 +1260,8 @@
       "npc": "Ba-Ba",
       "firstRowKey": "baba",
       "counts": {
-       "elderMaul": 2,
+       "elderMaul": 4,
+       "tonalztics": 2,
        "ayak": 2
       }
      }
@@ -1292,8 +1281,8 @@
       "npc": "Zebak",
       "firstRowKey": "zebak",
       "counts": {
-       "elderMaul": 4,
-       "ayak": 4
+       "tonalztics": 2,
+       "ayak": 2
       }
      }
     ],
@@ -1312,8 +1301,9 @@
       "npc": "Akkha",
       "firstRowKey": "akkha-Praying Melee",
       "counts": {
-       "elderMaul": 4,
-       "ayak": 4
+       "tonalztics": 2,
+       "ayak": 2,
+       "elderMaul": 4
       }
      },
      {
@@ -1334,27 +1324,31 @@
    },
    {
     "id": "toa-wardens",
-    "seconds": 340.0991649658197,
+    "seconds": 340.16715732486335,
     "events": [
      {
       "npc": "Obelisk",
       "firstRowKey": "wardens-p1",
       "counts": {
        "elderMaul": 4,
-       "ayak": 4
+       "tonalztics": 2,
+       "ayak": 2
       }
      },
      {
       "npc": "Elidinis' Warden",
       "firstRowKey": "wardens-p2-shield",
-      "counts": {}
+      "counts": {
+       "elderMaul": 2,
+       "tonalztics": 2
+      }
      },
      {
       "npc": "Tumeken's Warden",
       "firstRowKey": "wardens-p3",
       "counts": {
-       "elderMaul": 1,
-       "ayak": 1
+       "tonalztics": 1,
+       "ayak": 2
       }
      },
      {
@@ -1362,7 +1356,7 @@
       "reset": "the enrage",
       "firstRowKey": "wardens-p3-enraged",
       "counts": {
-       "elderMaul": 2,
+       "elderMaul": 4,
        "ayak": 2
       }
      }

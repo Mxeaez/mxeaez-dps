@@ -124,11 +124,8 @@ describe('team carrier steps re-timed on the returned kit', () => {
       partners: 1,
       seeds: 2,
     });
-    const steps = r.specs.team!.steps!;
-    expect(steps.length).toBeGreaterThan(0);
-    // the last step's time is the returned kit's time with all the carriers (Team: matrix = exact)
-    expect(Math.abs(steps[steps.length - 1].seconds - r.comparison!.routes[r.planned].seconds)).toBeLessThan(0.05); // same kit, same model: exact, not a time pin
-    // consecutive: each step's saving is the previous time minus its own
-    steps.slice(1).forEach((st, i) => expect(Math.abs(steps[i].seconds - st.seconds - st.saved)).toBeLessThan(1e-9));
+    // phase 38g: the carriers are taken by headcount, not added one by one on the route time: no steps any more
+    expect(r.specs.team!.steps).toBeUndefined();
+    expect(r.specs.team!.mode).toBe('auto');
   }, 300000);
 });

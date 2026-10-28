@@ -1562,6 +1562,41 @@ Zaryte crossbow + Surge + Crimson kisten; the beam keeps that).
 swaps, which add only a few route evaluations).
 
 
+### Drains as facts: order, 95% count, carriers by headcount (phase 38g)
+
+**Why.** The user (2026-10-27): no drain choice may rest on seconds (the fight length can't be predicted); show the facts.
+
+**Drain facts** (drainLine.ts `drainFacts`, one line on Search, Plan and Summary; `DrainLine.facts`, computed on first
+read): the Defence drain weapons that can hit, ordered by the Defence one spec removes on average from the undrained
+Defence (teamSpecs.ts `drainOrder`: Σ P(outcome) × drop, floor applied), each with its hit chance; the specs to the
+floor at the threshold (`neededSpecs`: for n = 1, 2, … the best combination of n specs, the first with P(floor) ≥ 95%;
+was "if every spec lands"; at most `MAX_FLOOR_SPECS` = 8, else "floor not reached in 8 specs"); Team (party > 1): the
+fewest carriers at 95% from the first round (`recommendCarriers`). Eye of Ayak (when brought): the fewest specs to magic
+def 0 at 95%. The same in Solo and Team and for any party size except the carriers. When the drain state's own specs
+(`paid`: Search / Summary the drain state's plan, Plan the time model's event) are fewer than the specs to the floor:
+"(needs 4 specs, you have ~2)" ("the team has" in Team). E.g. ToA Kephri: one landed maul reaches the floor, but at 63%
+per spec 4 are needed (1 − 0.37³ = 94.9%, 1 − 0.37⁴ = 98.1%).
+
+**Time model** (encounterBudget.ts `eventWantedCounts`, `budgetedEncounter`): each drain event makes ONE fixed drain set
+(the seconds-based option search, `countVectors` / `capOptions` / `MAX_EVENT_OPTIONS` and the top-up are gone). Team:
+per phase of the event the fewest of the kit's carriers at 95% (`recommendCarriers` with `available` = the kit), 2 specs
+each from 100%; no team within the kit reaches it (floor 0 bosses: Tekton, Olm's claws, Smorks, Ocellus P2): every
+carrier whose weapon can hit; per weapon the most any phase wants. Solo: the fewest of your specs at 95% (unreachable:
+the best 8). Then cut to what the bars pay at the event's spend rows (`simulateBudget` with drains only; events in order;
+Team per weapon group, Solo Eye of Ayak first then the weapon last in the drain order). The Defence those specs reach
+applies from the event on. The DP (specBudget.ts, unchanged: 38h) only places your damage specs and the surge dose.
+`CLOCK_ROUNDS` stays (re-planned on the drained clock).
+
+**Kit carriers** (planner.ts `headcountOf`, specChoice.ts `kitCarriers`; was `greedyCarriers` on the route time): per
+weapon the most any boss / phase of the raid needs (`teamRoles`), Eye of Ayak capped at the mages; when that exceeds the
+party (or party − 1 with your damage specs: `fitBars`), the fewest carriers within it that still give every boss one of
+its 95% teams (`passingTeams`), else the most bosses covered. No carrier steps ("saved s") any more.
+
+**Consequences** (headlines): drains are spent on every event at 95% whatever the time it saves, so energy a later
+event would use better is gone (Ocellus: P2's 8 specs leave P3 2 Tonalztics specs; CoX Olm: the right claw takes every
+carrier, the left claw none; ToB Sotetseg: maze 2 gets none); Solo pays the drains before damage specs. Every headline
+is slower: see PROGRESS phase 38g.
+
 ## Routes tab (phase 16: raid time model)
 
 **Phase 23: the tab is gone.** Its route table is now part of the Plan tab's results (the *planned* kit timed on every

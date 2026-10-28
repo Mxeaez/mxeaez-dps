@@ -334,19 +334,19 @@
  "kitMarginal": [
   {
    "slots": 1,
-   "seconds": 24.629722160746667
+   "seconds": 21.346850334658313
   },
   {
    "slots": 1,
-   "seconds": 3.9145161939705417
+   "seconds": 3.914516193970485
   },
   {
    "slots": 3,
-   "seconds": 19.058035139355866
+   "seconds": 21.0968510419533
   },
   {
    "slots": 4,
-   "seconds": 20.114744132573037
+   "seconds": 20.11474413257298
   }
  ],
  "slots": {
@@ -616,13 +616,13 @@
    "slot": "ring"
   }
  ],
- "comparison": "9a76cb9dba6e0c4705f89025b0e0b2092f700ac8355d6fbd9502ca1b867f9d02",
+ "comparison": "27b14e492697a15a493d291419beafe4573d339c7b175ce3fe2ec06f84f1d2ab",
  "planned": 0,
  "rejected": [
   {
    "label": "Twisted bow + Seeking dragon arrow",
    "kind": "addition",
-   "deltaSeconds": 2.884670755771083,
+   "deltaSeconds": 2.8846707557711397,
    "deltaSlots": 7,
    "reason": "needs 7 more slots, 3 free",
    "weapons": [
@@ -632,7 +632,7 @@
   {
    "label": "Twisted bow (Masori)",
    "kind": "addition",
-   "deltaSeconds": 1.584673749595538,
+   "deltaSeconds": 1.584673749595595,
    "deltaSlots": 5,
    "reason": "needs 5 more slots, 3 free",
    "weapons": [
@@ -642,7 +642,7 @@
   {
    "label": "Twisted bow + Seeking dragon arrow #2",
    "kind": "addition",
-   "deltaSeconds": 1.3967434154014882,
+   "deltaSeconds": 1.396743415401545,
    "deltaSlots": 6,
    "reason": "needs 6 more slots, 3 free",
    "weapons": [
@@ -654,7 +654,7 @@
   {
    "label": "Lighter kit: Scythe of Vitur #4 / Scythe of Vitur #4 + Salve amulet(ei) / Tumeken's shadow (Ancestral) / Twisted bow switch on Tumeken's shadow (Ancestral)",
    "kind": "alternative",
-   "deltaSeconds": -1.2604192330317687,
+   "deltaSeconds": -1.2604192330317119,
    "deltaSlots": -2,
    "reason": "−2 slots for +1.3 s (each freed slot cost < 1 s)",
    "weapons": [
@@ -665,14 +665,15 @@
    ]
   },
   {
-   "label": "melee + ranged: Scythe of Vitur #4 / Twisted bow + Seeking dragon arrow / Scythe of Vitur #2",
+   "label": "melee + ranged: Scythe of Vitur #4 / Twisted bow + Seeking dragon arrow / Scythe of Vitur #5 / Scythe of Vitur #2",
    "kind": "alternative",
-   "deltaSeconds": -13.679964851941804,
-   "deltaSlots": 0,
-   "reason": "13.7 s slower",
+   "deltaSeconds": -14.165427141368752,
+   "deltaSlots": 1,
+   "reason": "14.2 s slower",
    "weapons": [
     "Scythe of Vitur",
     "Twisted bow",
+    "Scythe of Vitur",
     "Scythe of Vitur"
    ]
   },
@@ -690,25 +691,25 @@
    ]
   },
   {
-   "label": "melee: Scythe of Vitur #4 / Scythe of Vitur / Scythe of Vitur #2",
+   "label": "melee: Scythe of Vitur #4 / Scythe of Vitur / Scythe of Vitur #5 / Scythe of Vitur #2",
    "kind": "alternative",
-   "deltaSeconds": -68.12793513558535,
-   "deltaSlots": -9,
-   "reason": "68.1 s slower",
+   "deltaSeconds": -68.61339742501224,
+   "deltaSlots": -8,
+   "reason": "68.6 s slower",
    "weapons": [
+    "Scythe of Vitur",
     "Scythe of Vitur",
     "Scythe of Vitur",
     "Scythe of Vitur"
    ]
   },
   {
-   "label": "ranged + magic: Twisted bow (Masori) / Tumeken's shadow (Ancestral) / Tumeken's shadow / Twisted bow + Seeking dragon arrow / Twisted bow + Seeking dragon arrow #2",
+   "label": "ranged + magic: Tumeken's shadow (Ancestral) / Tumeken's shadow / Twisted bow + Seeking dragon arrow / Twisted bow + Seeking dragon arrow #2",
    "kind": "alternative",
-   "deltaSeconds": -450.62148606615386,
-   "deltaSlots": 0,
-   "reason": "450.6 s slower",
+   "deltaSeconds": -453.33501250898377,
+   "deltaSlots": -4,
+   "reason": "453.3 s slower",
    "weapons": [
-    "Twisted bow",
     "Tumeken's shadow",
     "Tumeken's shadow",
     "Twisted bow",
@@ -718,9 +719,9 @@
   {
    "label": "ranged: Twisted bow (Masori) / Twisted bow + Seeking dragon arrow #3 / Twisted bow + Seeking dragon arrow",
    "kind": "alternative",
-   "deltaSeconds": -567.3769680842286,
+   "deltaSeconds": -569.4677033361995,
    "deltaSlots": -8,
-   "reason": "567.4 s slower",
+   "reason": "569.5 s slower",
    "weapons": [
     "Twisted bow",
     "Twisted bow",
@@ -730,9 +731,9 @@
   {
    "label": "magic: Tumeken's shadow (Ancestral) / Tumeken's shadow",
    "kind": "alternative",
-   "deltaSeconds": -597.9783115083042,
+   "deltaSeconds": -593.4943360879456,
    "deltaSlots": -13,
-   "reason": "598.0 s slower",
+   "reason": "593.5 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Tumeken's shadow"
@@ -781,21 +782,21 @@
      "weapon": "elderMaul",
      "carriers": 2,
      "drivers": [
-      "Sotetseg (1.6 s)",
+      "Sotetseg (2.0 s)",
       "Xarpus (0.8 s)",
       "The Maiden of Sugadinti (0.3 s)"
      ],
-     "lastSaved": 2.718703681298962
+     "lastSaved": 3.113225990655792
     },
     {
      "weapon": "bgs",
      "carriers": 2,
      "drivers": [
-      "Sotetseg (1.2 s)",
+      "Sotetseg (2.0 s)",
       "Xarpus (0.6 s)",
       "The Maiden of Sugadinti (0.3 s)"
      ],
-     "lastSaved": 2.058944244111842
+     "lastSaved": 2.8963357379818717
     }
    ],
    "perTarget": [
@@ -913,11 +914,11 @@
  "droppedPinned": [],
  "ownershipNotices": [],
  "searchRows": "66b4030d87dc3f75c1969f77824b507a0e2ed36bcf0b4cc07cb6bb4b79841be1",
- "objectiveSeconds": 457.26602152578386,
+ "objectiveSeconds": 461.7499969461423,
  "fightSeconds": null,
  "plannedRoute": {
   "id": "tob-maiden>tob-bloat>tob-nylocas>tob-sotetseg>tob-xarpus>tob-verzik",
-  "seconds": 457.26602152578386,
+  "seconds": 461.7499969461423,
   "surgeDoses": null,
   "encounters": [
    {
@@ -944,7 +945,7 @@
       "npc": "Pestilent Bloat",
       "firstRowKey": "bloat-first",
       "counts": {
-       "elderMaul": 4,
+       "elderMaul": 2,
        "bgs": 4
       }
      },
@@ -966,7 +967,6 @@
       "npc": "Nylocas Vasilias",
       "firstRowKey": "vasilias-melee",
       "counts": {
-       "elderMaul": 4,
        "bgs": 4
       }
      }
@@ -976,13 +976,14 @@
    },
    {
     "id": "tob-sotetseg",
-    "seconds": 75.87686593579204,
+    "seconds": 80.36084135615044,
     "events": [
      {
       "npc": "Sotetseg",
       "firstRowKey": "sotetseg-1",
       "counts": {
-       "elderMaul": 1
+       "elderMaul": 4,
+       "bgs": 2
       }
      },
      {
@@ -990,16 +991,14 @@
       "reset": "maze 1",
       "firstRowKey": "sotetseg-2",
       "counts": {
-       "elderMaul": 3
+       "bgs": 2
       }
      },
      {
       "npc": "Sotetseg",
       "reset": "maze 2",
       "firstRowKey": "sotetseg-3",
-      "counts": {
-       "bgs": 4
-      }
+      "counts": {}
      }
     ],
     "damage": {},

@@ -6,7 +6,7 @@ import { BriefingRow, damageText } from '@/lib/fracturedArchive/briefing';
 import { itemImageByName, LOADOUT_SLOT_ORDER, searchItemIcon } from '@/lib/fracturedArchive/loadoutIcons';
 import SurgeImg from '@/public/img/supplies/Surge potion(4).png';
 import { ItemIcon, LoadoutIconRow } from '@/app/components/bestSetup/ItemIcons';
-import { DrainBrief } from '@/app/components/bestSetup/DrainLineView';
+import { DrainBrief, DrainFactsLine } from '@/app/components/bestSetup/DrainLineView';
 
 // Phase 34: the Plan tab's raid briefing (one row per encounter: boss, what to wear, specs at the start, seconds). Data:
 // src/lib/fracturedArchive/briefing.ts. Every explanation is a tooltip; the per-phase table is under "Per-phase details".
@@ -98,6 +98,8 @@ const PlanBriefing: React.FC<{
                     {g.times > 1 && <span className="font-bold" title="The Defence is restored mid-fight: the same specs again each time">{`× ${g.times}`}</span>}
                   </span>
                 ))}
+                {/* phase 38g: the drain facts per drain event, the same line as on Search and Summary */}
+                {r.facts.map((f) => <DrainFactsLine key={`${f.label ?? ''}|${f.facts.text}`} facts={f.facts} label={f.label} />)}
                 {/* phase 36: your damage specs and the surge dose (your own spec energy) */}
                 {(r.damage.length > 0 || r.surge) && (
                   <span className="inline-flex flex-wrap items-center gap-x-2" data-testid="plan-briefing-damage" data-text={damageText(r.damage)} data-surge={r.surge ? 'true' : 'false'}>

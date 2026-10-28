@@ -3,7 +3,7 @@ import {
   DrainModel, PlannerWeapon, specAttempts,
 } from '@/lib/fracturedArchive/specs';
 import {
-  ayakOutcome, DEFAULT_FLOOR_THRESHOLD, DefenceDrainWeapon, formatProbability, recommendCarriers,
+  ayakOutcome, DEFAULT_FLOOR_THRESHOLD, DefenceDrainWeapon, formatProbability, passingTeams, recommendCarriers,
 } from '@/lib/fracturedArchive/teamSpecs';
 
 /**
@@ -530,6 +530,62 @@ export const teamRoles = (
   return {
     partySize, mages: opts.mages, threshold, rows, perTarget, text,
   };
+};
+
+/**
+ * Phase 38g: the kit's carriers by headcount, no seconds: per weapon the most any boss / phase needs (`teamRoles`: each
+ * boss's fewest carriers at the threshold, `recommendCarriers`; Eye of Ayak capped at the mages). When those add up to
+ * more than the party, the fewest carriers within the party (each weapon at most that maximum) that still give every
+ * boss one of its teams at the threshold (`passingTeams`); when no such kit fits, the one covering the most bosses
+ * (then fewer carriers, then the higher sum of the bosses' best P(floor) within it, then more of the weapon first in
+ * ROLE_ORDER). `uncovered` = the bosses / phases left without a team at the threshold.
+ */
+export const kitCarriers = (
+  targets: RoleTarget[],
+  opts: { partySize: number, mages: number, threshold?: number },
+): { carriers: CarrierCounts, uncovered: string[] } => {
+  const threshold = opts.threshold ?? DEFAULT_FLOOR_THRESHOLD;
+  const party = Math.max(1, Math.floor(opts.partySize));
+  const roles = teamRoles(targets, { partySize: party, mages: opts.mages, threshold });
+  const max: CarrierCounts = { ...NO_CARRIERS };
+  roles.rows.forEach((r) => { max[r.weapon] = r.weapon === 'ayak' ? Math.min(r.carriers, Math.max(0, opts.mages)) : r.carriers; });
+  const sum = (c: Partial<CarrierCounts>) => Object.values(c).reduce((t: number, v) => t + (v ?? 0), 0);
+  if (sum(max) <= party) return { carriers: max, uncovered: [] };
+  const ayak = Math.min(max.ayak, party);
+  const room = party - ayak;
+  const weapons: DefenceDrainWeapon[] = ['elderMaul', 'tonalztics', 'dwh', 'bgs'];
+  const bosses = targets.filter((t) => t.model.def > t.model.floor)
+    .map((t) => ({ label: t.label, teams: passingTeams(t.model, { partySize: Math.max(1, room), threshold }) }))
+    .filter((b) => b.teams.length);
+  const fits = (c: Partial<Record<DefenceDrainWeapon, number>>, k: Partial<Record<DefenceDrainWeapon, number>>) => weapons.every((w) => (c[w] ?? 0) <= (k[w] ?? 0));
+  let best: { k: Partial<Record<DefenceDrainWeapon, number>>, covered: number, total: number, p: number } | null = null;
+  const walk = (i: number, k: Partial<Record<DefenceDrainWeapon, number>>, total: number) => {
+    if (i === weapons.length) {
+      let covered = 0;
+      let p = 0;
+      bosses.forEach((b) => {
+        const within = b.teams.filter((c) => fits(c.carriers, k));
+        if (within.length) {
+          covered += 1;
+          p += Math.max(...within.map((c) => c.pFloor));
+        }
+      });
+      if (!best || covered > best.covered || (covered === best.covered && (total < best.total
+        || (total === best.total && p > best.p + 1e-12)))) {
+        best = {
+          k: { ...k }, covered, total, p,
+        };
+      }
+      return;
+    }
+    const w = weapons[i];
+    // more of the earlier weapon first, so that ties keep it
+    for (let n = Math.min(max[w], room - total); n >= 0; n--) walk(i + 1, { ...k, [w]: n }, total + n);
+  };
+  walk(0, {}, 0);
+  const k = (best as { k: Partial<Record<DefenceDrainWeapon, number>> } | null)?.k ?? {};
+  const carriers: CarrierCounts = { ...NO_CARRIERS, ...k, ayak };
+  return { carriers, uncovered: bosses.filter((b) => !b.teams.some((c) => fits(c.carriers, k))).map((b) => b.label) };
 };
 
 /** The weapon whose carrier count is hardest to fill (most carriers; ties: ROLE_ORDER), among `allowed`. */

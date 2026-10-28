@@ -433,7 +433,8 @@ const USER_PLAN_NOT_OWNED = ['Obligator', "Zorya's tome", 'Rondache', "Inquisito
 // "24:60.0"): 25:46.3 → 25:00.0. Phase 36 review: 25:00.0 → 25:15.5 — the plan had 4 carriers + your bar for a party of
 // 4; with your damage specs you are not a carrier now (BGS + 2 Tonalztics; the Elder maul carrier made way)
 // phase 38f: 25:58.7 now (the pin followed the model through 38a-38e)
-const USER_PLAN: [string, number] = ['25:58.7', 1558.67];
+// phase 38g (one fixed drain set per event, carriers by headcount): 25:58.7 → 27:16.5
+const USER_PLAN: [string, number] = ['27:16.5', 1636.54];
 
 (process.env.RUN_SLOW_TESTS ? describe : describe.skip)('the user\'s plan (slow)', () => {
   test('no blessing; the freed slot buys Onyx bolts for the void switch (−1.1 s); slots = the exhaustive count', () => {

@@ -25,7 +25,7 @@ import {
   ItemIcon, ItemNames, LoadoutIconRow, WeaponLine,
 } from '@/app/components/bestSetup/ItemIcons';
 import DPS_TEXT_CLASS from '@/app/components/bestSetup/styles';
-import { DrainBrief } from '@/app/components/bestSetup/DrainLineView';
+import { DrainBrief, DrainFactsLine } from '@/app/components/bestSetup/DrainLineView';
 import { briefResultText } from '@/lib/fracturedArchive/drainLine';
 import { scaleMonster } from '@/lib/MonsterScaling';
 import { raidOf, teamDpsMultiplier, teamTimeLabel } from '@/lib/raids';
@@ -208,7 +208,7 @@ const SummaryView: React.FC<{
               const target = findTarget(row.targetKey);
               const hp = scaleMonster(buildTargetMonster(target, row.phase, 'none', assumptions).monster).skills.hp;
               return (
-                <tr key={`${row.targetKey}|${row.phase}`} data-testid="summary-row">
+                <tr key={`${row.targetKey}|${row.phase}`} data-testid="summary-row" data-target={row.targetKey} data-phase={row.phase ?? ''}>
                   <td className="px-2 py-1 align-top">
                     <div className="flex items-center gap-1 font-bold">
                       <ItemIcon name={target.label} src={targetImageUrl(target)} size={24} />
@@ -232,6 +232,7 @@ const SummaryView: React.FC<{
                         key={d.id}
                         className={`px-2 py-1 align-top ${unowned.length ? 'opacity-50 grayscale' : ''}`}
                         data-testid="summary-cell"
+                        data-drain={d.id}
                         data-unowned={unowned.length ? unownedLabel(unowned) : undefined}
                       >
                         <WeaponLine parts={searchRowWeaponParts(cell.top)} className="text-xs font-bold" iconSize={18} />
@@ -269,6 +270,8 @@ const SummaryView: React.FC<{
                               title={`${cell.drain.line.text}${cell.drain.line.budget ? ` (fight ≈ ${cell.drain.line.budget.fightSeconds} s → ${cell.drain.line.budget.specs} spec${cell.drain.line.budget.specs === 1 ? '' : 's'})` : ''}`}
                             />
                           )}
+                          {/* phase 38g: the drain facts, the same line as on Search and Plan */}
+                          {cell.drain.line?.facts && !target.noDrains && <div><DrainFactsLine facts={cell.drain.line.facts} /></div>}
                         </div>
                       </td>
                     );

@@ -1,6 +1,6 @@
 import { DrainStateId, findTarget } from '@/lib/fracturedArchive/bestSetup';
 import {
-  BriefGroup, encounterBrief, encounterDrainSummary,
+  BriefGroup, DrainFacts, encounterBrief, encounterDrainSummary, EncounterDrainSummary,
 } from '@/lib/fracturedArchive/drainLine';
 import { EncounterTime } from '@/lib/fracturedArchive/raidTime';
 import type { DamageSpecWeapon } from '@/lib/fracturedArchive/damageSpecs';
@@ -93,7 +93,27 @@ export interface BriefingRow {
   damage: { weapon: DamageSpecWeapon, label: string, count: number, saved: number }[];
   /** Phase 36: a surge dose here (right after the first specs). */
   surge: boolean;
+  /** Phase 38g: the drain facts per drain event (the same line as Search / Summary), equal ones once; [] for None. */
+  facts: { label?: string, facts: DrainFacts }[];
 }
+
+/**
+ * Phase 38g: an encounter's drain facts (drainLine.ts `drainFacts`), one per drain event that has them; events with the
+ * same facts once (Sotetseg's three); labelled ("Bork", "after maze 1") only when more than one is left.
+ */
+export const encounterFacts = (summary: EncounterDrainSummary | undefined): BriefingRow['facts'] => {
+  const out: BriefingRow['facts'] = [];
+  const seen = new Set<string>();
+  (summary?.events ?? []).forEach((e) => {
+    if (!e.facts) return;
+    const k = `${e.facts.text}|${e.facts.short ?? ''}`;
+    if (seen.has(k)) return;
+    seen.add(k);
+    const label = [e.npc ?? '', e.reset ? `after ${e.reset}` : ''].filter(Boolean).join(', ');
+    out.push({ ...(label ? { label } : {}), facts: e.facts });
+  });
+  return out.length > 1 ? out : out.map((x) => ({ facts: x.facts }));
+};
 
 /** Phase 36: an encounter's damage specs per weapon (phase order of first use), summed over its phases. */
 export const encounterDamageSpecs = (e: Pick<EncounterTime, 'phases'>): BriefingRow['damage'] => {
@@ -130,5 +150,6 @@ export const briefingRows = (encounters: EncounterTime[], drain: DrainStateId, s
     specsText: specs.length ? specs.map((g) => g.text).join(' · ') : 'no specs',
     damage: encounterDamageSpecs(e),
     surge: surgeDoses.includes(e.id),
+    facts: encounterFacts(summary),
   };
 });

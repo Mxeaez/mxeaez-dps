@@ -218,8 +218,9 @@ describe('encounter line = the first phase\'s line (FA, presets kit)', () => {
     // phase 36: one spec budget for Bork and the Smorks: different specs on each (without NPC names: two parts)
     expect(s.parts.map((x) => x.phaseKey)).toEqual(['bork-8', 'smorks']);
     expect(s.parts[0].line).toBe(e.phases[0].choice!.drainLine);
-    expect(s.parts[0].line.defAfter).toBe(195);
-    expect(s.text).toBe('Bork, armour 8: 1 Elder maul carrier (1 spec) → Def 195 · The Smorks: 2 Elder maul carriers (3 specs) + 2 Tonalztics carriers (4 specs) → Def 15');
+    // phase 38g: Bork wants 2 Elder maul carriers (the fewest at 95%, 96%); the maul bars are spent there, so the Smorks get the Tonalztics only
+    expect(s.parts[0].line.defAfter).toBe(180);
+    expect(s.text).toBe('Bork, armour 8: 2 Elder maul carriers (4 specs) → Def 180 · 96% · The Smorks: 2 Tonalztics carriers (4 specs) → Def 82');
   });
 
   test('with a stun uptime the stunned row joins Bork\'s line (six rows)', () => {
@@ -230,12 +231,12 @@ describe('encounter line = the first phase\'s line (FA, presets kit)', () => {
     expect(s.parts.map((p) => p.phaseKey)).toEqual(['bork-8', 'smorks']);
   });
 
-  test('Archive Guardian (Team): the flying shield first (Tonalztics only), then grounded (Elder maul + Tonalztics)', () => {
+  test('Archive Guardian (Team): the flying shield first (Tonalztics only); phase 38g: grounded needs no maul (4 Tonalztics specs reach its floor at 99%)', () => {
     const e = encounter(TEAM, 'team', 'archive-guardian');
     const s = summary(e, 'team');
-    expect(s.parts.map((p) => p.phaseKey)).toEqual(['ag-shield', 'ag-grounded']);
+    expect(s.parts.map((p) => p.phaseKey)).toEqual(['ag-shield']);
     expect(s.parts[0].line).toBe(e.phases.find((p) => p.key === 'ag-shield')!.choice!.drainLine);
-    expect(s.text).toBe('Flying shield: 2 Tonalztics carriers (4 specs) → Def 156 · 98% · Grounded: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 156 · >99.9%');
+    expect(s.text).toBe('Start of fight: 2 Tonalztics carriers (4 specs) → Def 156 · 98%');
   });
 
   test('Ocellus (Team): phase 38c: three events (the Defence resets at P2 and P3), P3\'s specs on quadrants 1-3', () => {
@@ -248,12 +249,14 @@ describe('encounter line = the first phase\'s line (FA, presets kit)', () => {
       ['P1', 'ocellus-p2', ['P2 The Blade']],
       ['P2', 'ocellus-p3', ['P3 quadrants 1-3']],
     ]);
-    expect(s.text).toBe('Start of fight: 1 Tonalztics carrier (2 specs) → Def 129 · 99% · After P1 (Defence restored), again: 2 Elder maul carriers (4 specs) → Def 69 · After P2 (Defence restored), again: 2 Tonalztics carriers (4 specs) → Def 150 · 84%');
+    // phase 38g: each event its fewest carriers at 95% within the kit (P1 1 Tonalztics; P2 no team reaches the floor 0, so every carrier: the
+    // Tonalztics bars pay 2 more specs; P3 2 Elder maul, but their bars are spent in P2: the Tonalztics left)
+    expect(s.text).toBe('Start of fight: 1 Tonalztics carrier (2 specs) → Def 129 · 99% · After P1 (Defence restored), again: 2 Elder maul carriers (4 specs) + 1 Tonalztics carrier (2 specs) → Def 15 · After P2 (Defence restored), again: 1 Tonalztics carrier (2 specs) → Def 176');
   });
 
   test('single-phase encounters: the line is that phase\'s (Xarth)', () => {
     const e = encounter(TEAM, 'team', 'xarth');
-    expect(summary(e, 'team').text).toBe('Start of fight: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 102 · >99.9%');
+    expect(summary(e, 'team').text).toBe('Start of fight: 1 Tonalztics carrier (2 specs) → Def 102 · 97%');
   });
 
   test('Solo (party 1, Tonalztics): "Start: 3 Tonalztics specs → Def 267" on Bork, the AG flying shield\'s 86%', () => {
@@ -261,8 +264,8 @@ describe('encounter line = the first phase\'s line (FA, presets kit)', () => {
     const s = summary(bork, 'solo');
     expect(s.parts).toHaveLength(1);
     expect(s.parts[0].line).toBe(bork.phases[0].choice!.drainLine);
-    // phase 36: Bork and the Smorks share your 100%: 1 spec here
-    expect(s.text).toBe(`Start: 1 Tonalztics spec → Def ${bork.phases[0].choice!.drainLine!.defAfter}`);
+    // phase 38g: your bar pays the drains first: 2 specs on Bork (100%), the Smorks get what regen pays
+    expect(s.text).toBe(`Start: 2 Tonalztics specs → Def ${bork.phases[0].choice!.drainLine!.defAfter}`);
     const ag = encounter(SOLO, 'solo', 'archive-guardian');
     const sa = summary(ag, 'solo');
     expect(sa.parts).toHaveLength(1); // the same weapon on every phase
@@ -344,8 +347,12 @@ describe('drain events (Defence restored mid-fight)', () => {
     expect(s.events.map((ev) => ev.reset)).toEqual([undefined, 'maze 1', 'maze 2']);
     s.events.forEach((ev, i) => {
       expect(ev.phaseKey).toBe(`sotetseg-${i + 1}`);
-      expect(ev.parts[0].line).toBe(e.phases[i].choice!.drainLine);
+      // phase 38g: maze 2 gets no specs (the carriers' bars are spent; the drain line marks it: "the team has ~0")
+      if (i < 2) expect(ev.parts[0].line).toBe(e.phases[i].choice!.drainLine);
+      else expect(ev.parts).toEqual([]);
     });
+    expect(s.events[2].text).toBe('After maze 2 (Defence restored), again: no specs');
+    expect(s.events[2].facts?.short).toBe('needs 4 specs, the team has ~0');
     expect(s.events[0].text).toMatch(/^Start of fight: .+ → Def \d+/);
     expect(s.events[1].text).toMatch(/^After maze 1 \(Defence restored\), again: .+ → Def \d+/);
     expect(s.text).toBe(s.events.map((ev) => ev.text).join(' · '));

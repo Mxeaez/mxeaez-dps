@@ -112,24 +112,26 @@ describe('raid briefing rows (FA, presets kit): the phase 33 encounter lines are
   test('Team (2 Elder maul + 2 Tonalztics carriers)', () => {
     const rows = briefingRows(faEncounters(TEAM, 'team'), 'team');
     expect(rows.map((r) => `${r.id} | ${r.specsText}`)).toEqual([
-      'archive-guardian | Flying shield: Tonalztics 4 hits → Def 156 · Grounded: Tonalztics 4 hits → Def 156',
-      'ezekiel | Elder maul 1 spec + Tonalztics 3 hits → Def 78',
+      // phase 38g: each event its fewest carriers at 95% within the kit (AG: 2 Tonalztics; Ezekiel: 2 Elder maul)
+      'archive-guardian | Tonalztics 4 hits → Def 156',
+      'ezekiel | Elder maul 2 specs → Def 78',
       // phase 35b: one line per NPC (was Bork's line only); phase 36: one spec budget for both NPCs (was 100% each):
-      // 1 maul spec on Bork, the rest on the Smorks
-      'bork-smorks | Bork: Elder maul 1 spec → Def 195 · Smorks: Elder maul 3 specs + Tonalztics 2 hits → Def 15',
+      // phase 38g: 2 Elder maul carriers on Bork (96%); their bars are spent, so the Smorks get the Tonalztics
+      'bork-smorks | Bork: Elder maul 2 specs → Def 180 · Smorks: Tonalztics 6 hits → Def 82',
       'moia | Tonalztics 2 hits → Def 117',
       'dreadnoth | Tonalztics 5 hits → Def 0',
       'dagonhai | Tonalztics 3 hits → Def 0',
       'xarth | Tonalztics 2 hits → Def 102',
       // phase 38c: three events (the Defence resets at P2 and P3), P3's specs on quadrants 1-3
       // fix round (P2's 120 s on the budget clock: more regen, so the P1 / P2 split changed)
-      'ocellus | start: Tonalztics 2 hits → Def 129 · after P1: Elder maul 3 specs → Def 69 · after P2: Tonalztics 3 hits → Def 150',
+      // phase 38g: P2 (no team reaches its floor 0) gets every carrier the bars pay, P3 the Tonalztics left
+      'ocellus | start: Tonalztics 2 hits → Def 129 · after P1: Elder maul 3 specs + Tonalztics 2 hits → Def 15 · after P2: Tonalztics 2 hits → Def 176',
     ]);
     // the tooltip is phase 33's line, unchanged (phase 35b: Bork + Smorks one line per NPC)
-    expect(rows.find((r) => r.id === 'bork-smorks')!.drainText).toBe('Bork: 1 Elder maul carrier (1 spec) → Def 195 · Smorks: 2 Elder maul carriers (3 specs) + 2 Tonalztics carriers (4 specs) → Def 15');
-    expect(rows.find((r) => r.id === 'archive-guardian')!.drainText).toBe('Flying shield: 2 Tonalztics carriers (4 specs) → Def 156 · 98% · Grounded: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 156 · >99.9%');
+    expect(rows.find((r) => r.id === 'bork-smorks')!.drainText).toBe('Bork: 2 Elder maul carriers (4 specs) → Def 180 · 96% · Smorks: 2 Tonalztics carriers (4 specs) → Def 82');
+    expect(rows.find((r) => r.id === 'archive-guardian')!.drainText).toBe('Start of fight: 2 Tonalztics carriers (4 specs) → Def 156 · 98%');
     // phase 38c: three events (the Defence resets at P2 and P3)
-    expect(rows.find((r) => r.id === 'ocellus')!.drainText).toBe('Start of fight: 1 Tonalztics carrier (2 specs) → Def 129 · 99% · After P1 (Defence restored), again: 2 Elder maul carriers (4 specs) → Def 69 · After P2 (Defence restored), again: 2 Tonalztics carriers (4 specs) → Def 150 · 84%');
+    expect(rows.find((r) => r.id === 'ocellus')!.drainText).toBe('Start of fight: 1 Tonalztics carrier (2 specs) → Def 129 · 99% · After P1 (Defence restored), again: 2 Elder maul carriers (4 specs) + 1 Tonalztics carrier (2 specs) → Def 15 · After P2 (Defence restored), again: 1 Tonalztics carrier (2 specs) → Def 176');
     // carriers are not repeated in the short form
     rows.forEach((r) => expect(r.specsText).not.toMatch(/carrier/));
     expect(rows.find((r) => r.id === 'ocellus')!.loadouts).toEqual(["Inquisitor's + Obligator", 'Twisted bow (Masori)']);
@@ -152,9 +154,11 @@ describe('raid briefing rows (FA, presets kit): the phase 33 encounter lines are
     const kit = createKitEvaluator(TOB.presets.map((p) => presetKitLoadout(generateEmptyPlayer(), p, a)), a);
     const enc = (id: string) => encounterTime(id, kit, raidTimeAssumptionsFrom(a, 'team', TOB.defaultTimeSettings, TOB.time));
     const [sote, bloat] = briefingRows([enc('tob-sotetseg'), enc('tob-bloat')], 'team');
-    expect(sote.specs).toHaveLength(3);
+    // phase 38g: the start wants 2 Elder maul + 1 BGS carrier (the fewest at 95% within the kit); maze 1 gets the BGS bar
+    // left, maze 2 nothing (the bars are spent; its drain facts say "the team has ~0")
+    expect(sote.specs).toHaveLength(2);
     expect(sote.specs.every((g) => g.times === 1)).toBe(true);
-    expect(sote.specsText).toBe('start: Elder maul 1 spec → Def 130 · after maze 1: Elder maul 2 specs → Def 100 · after maze 2: BGS 4 specs → Def 111');
+    expect(sote.specsText).toBe('start: Elder maul 2 specs + BGS 2 specs → Def 100 · after maze 1: BGS 2 specs → Def 142');
     expect(bloat.specsText).toBe('Elder maul 2 specs + BGS 4 specs → Def 0');
     expect(bloat.drainText).toMatch(/After the stomp \(Defence restored\), again: no specs$/);
   });
@@ -291,19 +295,20 @@ describe('render: icons next to every item name', () => {
     // phase 38f: the gear and the spec text exactly, the seconds within 2% of the headline fixture's encounters
     rows.forEach((x) => expect(Math.abs(x.seconds - headline('fa').encounters[x.id]) <= headline('fa').encounters[x.id] * 0.02).toBe(true));
     expect(rows.map((x) => `${x.label} | ${x.specsText}`)).toEqual([
-      'Archive Guardian | Flying shield: Tonalztics 4 hits → Def 156 · Grounded: Tonalztics 4 hits → Def 156',
-      'Bork + Smorks | Bork: Elder maul 2 specs + Tonalztics 1 hit → Def 184 · Smorks: Tonalztics 9 hits → Def 13',
+      // phase 38g: one fixed drain set per event (the fewest carriers at 95%, cut to what the bars pay)
+      'Archive Guardian | Tonalztics 4 hits → Def 156',
+      'Bork + Smorks | Bork: Elder maul 2 specs → Def 180 · Smorks: Tonalztics 8 hits → Def 36',
       'Moia | Tonalztics 2 hits → Def 117',
       'Xarth | Tonalztics 2 hits → Def 102',
-      'Ocellus | start: Tonalztics 2 hits → Def 129 · after P1: Elder maul 2 specs + Tonalztics 4 hits → Def 1 · after P2: Tonalztics 3 hits → Def 150',
+      'Ocellus | start: Tonalztics 2 hits → Def 129 · after P1: Elder maul 4 specs + Tonalztics 2 hits → Def 0 · after P2: Tonalztics 2 hits → Def 176',
     ]);
     // "Per-phase details": phase 33's encounter lines (before the phase 34 layout)
     expect(rows.map((x) => x.drainText)).toEqual([
-      'Flying shield: 4 Tonalztics carriers (8 specs) → Def 156 · >99.9% · Grounded: 1 Elder maul carrier (2 specs) + 4 Tonalztics carriers (8 specs) → Def 156 · >99.9%',
-      'Bork: 1 Elder maul carrier (2 specs) + 1 Tonalztics carrier (1 spec) → Def 184 · Smorks: 4 Tonalztics carriers (7 specs) → Def 13',
-      'Start of fight: 4 Tonalztics carriers (8 specs) → Def 117 · >99.9%',
-      'Start of fight: 1 Elder maul carrier (2 specs) + 4 Tonalztics carriers (8 specs) → Def 102 · >99.9%',
-      'Start of fight: 2 Tonalztics carriers (4 specs) → Def 129 · >99.9% · After P1 (Defence restored), again: 1 Elder maul carrier (2 specs) + 2 Tonalztics carriers (4 specs) → Def 1 · After P2 (Defence restored), again: 2 Tonalztics carriers (4 specs) → Def 150 · 84%',
+      'Start of fight: 2 Tonalztics carriers (4 specs) → Def 156 · 98%',
+      'Bork: 2 Elder maul carriers (4 specs) → Def 180 · 96% · Smorks: 3 Tonalztics carriers (6 specs) → Def 36',
+      'Start of fight: 1 Tonalztics carrier (2 specs) → Def 117 · 99%',
+      'Start of fight: 1 Tonalztics carrier (2 specs) → Def 102 · 97%',
+      'Start of fight: 1 Tonalztics carrier (2 specs) → Def 129 · 99% · After P1 (Defence restored), again: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 0 · 98% · After P2 (Defence restored), again: 1 Tonalztics carrier (2 specs) → Def 176',
     ]);
     expect(rows.map((x) => x.loadouts)).toEqual([
       ['Ascension crossbows + diamond (e) (Masori)', "Inquisitor's + Obligator"],
@@ -335,6 +340,7 @@ describe('render: icons next to every item name', () => {
     // "Spec plan" / the briefing's Bring and your share
     expect(r.specs.text).toBe('Bring: Zaryte crossbow, Burning claws, Crimson kisten, Surge potion');
     expect(r.specs.share!.reason).toMatch(/^your spec energy goes to your Zaryte crossbow specs .* — let a teammate carry Tonalztics \(most needed: [0-9] carriers\)$/);
-    expect(r.specs.team!.steps!.map((st) => st.weapon).sort()).toEqual(['elderMaul', 'tonalztics', 'tonalztics', 'tonalztics', 'tonalztics']);
+    // phase 38g: carriers by headcount (no steps)
+    expect(r.specs.team!.steps).toBeUndefined();
   }, 1800000);
 });

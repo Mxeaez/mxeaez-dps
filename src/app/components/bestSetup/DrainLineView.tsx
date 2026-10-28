@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  briefItems, briefText, countText, DrainLine, DrainLineItem, neededText,
+  briefItems, briefText, countText, DrainFacts, DrainLine, DrainLineItem, neededText,
 } from '@/lib/fracturedArchive/drainLine';
 import { equipmentImageUrl } from '@/lib/fracturedArchive/loadoutIcons';
 import { ItemIcon } from '@/app/components/bestSetup/ItemIcons';
@@ -106,5 +106,24 @@ export const DrainBrief: React.FC<{
     {result && <span className="text-xs text-gray-600 dark:text-gray-300 whitespace-nowrap" data-testid="drain-brief-result">{result}</span>}
   </span>
 );
+
+/**
+ * Phase 38g: the drain facts line (drainLine.ts `drainFacts`), the same on Search, Plan and Summary: "Drain: Elder maul
+ * (lands 62%) → Tonalztics (88%), ~4 specs to the floor; 2 bring Elder maul, 2 bring Tonalztics for 95%", then, when the
+ * bars pay fewer, "(needs 4 specs, you have ~2)" in orange.
+ */
+export const DrainFactsLine: React.FC<{ facts: DrainFacts | undefined, label?: string, className?: string }> = ({ facts, label, className }) => (facts ? (
+  <span
+    className={`text-[11px] text-gray-600 dark:text-gray-300 ${className ?? ''}`}
+    data-testid="drain-facts"
+    data-text={facts.text}
+    data-short={facts.short ?? ''}
+    title="Drain weapons that can hit, best first (the Defence one spec removes on average), with the chance a spec lands; the specs to reach the Defence floor at the confidence in Advanced; Team: the fewest carriers for it from the first round"
+  >
+    {label ? `${label}: ` : ''}
+    {facts.text}
+    {facts.short && <span className="ml-1 font-semibold text-orange-700 dark:text-orange-300" data-testid="drain-facts-short">{`(${facts.short})`}</span>}
+  </span>
+) : null);
 
 export default DrainLineView;

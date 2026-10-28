@@ -3,6 +3,47 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 38g — drains as facts: order to the floor, carriers by headcount (2026-10-28)
+
+Numbers phase (ROADMAP 38g; docs/BEST_SETUP.md *Drains as facts (phase 38g)*). No drain choice rests on seconds any more.
+
+- **Drain facts** (drainLine.ts `drainFacts`, `DrainLine.facts`, computed on first read): per boss / phase the drain
+  weapons that can hit, ordered by the Defence one spec removes on average (teamSpecs.ts `drainOrder`), with hit
+  chances; the specs to the floor at 95% (`neededSpecs`, was "if every spec lands"; ≤ `MAX_FLOOR_SPECS` 8); Team: the
+  fewest carriers at 95% (`recommendCarriers`). Shown under the drain box (Search), in each Summary cell, and per drain
+  event in the Plan briefing (`DrainFactsLine`), the same text everywhere; "(needs 4 specs, you have ~2)" when the
+  drain state's own specs are fewer.
+- **Time model** (encounterBudget.ts `eventWantedCounts`): one fixed drain set per event (Team: the fewest of the kit's
+  carriers at 95%, 2 specs each, all carriers when no team reaches the floor; Solo: your specs to the floor at 95%), cut
+  to what the bars pay (`simulateBudget`, drains only); the DP only places damage specs and the dose. Removed:
+  `countVectors`, `capOptions`, `MAX_EVENT_OPTIONS`, event-option pruning, the top-up. `CLOCK_ROUNDS` kept.
+- **Kit carriers** (planner.ts `headcountOf` → specChoice.ts `kitCarriers`; was `greedyCarriers` on the route time):
+  per weapon the most any boss needs; over the party: the fewest within it covering every boss. No carrier steps.
+- **Headlines** (`pinHeadlines --full`, every one slower — the energy now goes to each event's 95% drain whatever it
+  saves): FA 21:40.7 → **22:07.3** (carriers 1 maul + 4 Tonalztics → 2 + 3; Ocellus 690.8 → 715.3: P2's drain takes
+  the maul bars, P3 gets 2 Tonalztics specs); ToA 14:20.0 → **14:22.6** (1 maul + 1 Ayak → 2 maul + 1 Tonalztics + 1
+  Ayak); CoX 7:06.9 → **7:27.3** (3 maul + 2 Tonalztics → 2 + 3 + 1 Ayak = the party, so Zaryte crossbow + Burning
+  claws dropped, your share Tonalztics; kit Twisted bow + Scythe #2 + Inquisitor's helm instead of Inquisitor's +
+  Scythe; Olm 202.4 → 216.2: the right claw takes every carrier); ToB 7:23.4 → **7:37.3** (1 maul + 2 Tonalztics → 3
+  Tonalztics + 1 Ayak, Dragon claws dropped, your share Tonalztics; Sotetseg maze 2 gets no specs); FA Solo 22:53.4 →
+  **23:39.1** (your bar pays the drains first: Crimson kisten + Burning claws dropped, surge at AG / Ezekiel / Xarth);
+  FA without Obligator / Ascension 24:40.3 → **25:17.4** (1 maul + 4 Tonalztics → 2 + 2 + 1 Ayak).
+- **Tests**: Phase38g.test.ts (hand-computed Elder maul counts: FA Bork armour 8 best case 2 → 4 at 95%; ToA Kephri
+  (63%) best case 1 → 4; ToB Sotetseg maul alone 5 (4 give 94.9%); CoX Tekton floor 0 unreachable; carriers per event;
+  Solo can't-pay "needs 4 specs, you have ~2"; the three tabs render the same line for one boss per raid). Updated
+  pins: Phase27 switch totals, Phase29 (95% count, headcount carriers), Phase33 / 34 / 35b drain lines, CrossRaid preset
+  pins, Phase36 (option cap test removed), Phase37c Xarth probe, r27*.json, `PHASE37_MEMO` (re-measured).
+- **Slow pins followed** (RUN_SLOW_TESTS): Phase29 (6-man carriers 2 maul + 3 Tonalztics, no steps; Solo {maul, Tonalztics}
+  1415.95 → 1463.9; Solo planner = the faSolo headline; Ayak carriers with 2 mages), Phase30 (no carrier steps), Phase32
+  (the user's plan 25:58.7 → 27:16.5), Phase34 / 35b (FA briefing strings).
+- **Verify**: new scripts/verifyPhase38g.mjs (Plan / Search / Summary show the same Xarth line; Solo mark); strings /
+  steps / the user's total updated in verifyPhase29, 30, 31, 32, 33, 34, 35b (34: the facts line may say "needs").
+- Run: fast suite green (31 s; 176 s earlier while the machine was loaded, HEAD 264 s then); slow suites
+  (CrossRaid Phase2 Phase3) green after the pin updates; verifyAll 38g 21 23 29 30 31 32 33 34 35b 36 OK; tsc, lint clean.
+- **Left / unverified**: the rule spends drains on fixed-length / unreachable events (Ocellus P2, Olm's right claw)
+  that a seconds-based plan skipped — a user call for 38h; "floor not reached in 8 specs" next to "5 bring Tonalztics"
+  (10 specs) on the Smorks reads oddly; Eye of Ayak carriers come in with any mage (teamRoles' rule).
+
 ## Phase 38f — pin gear, not seconds; the fast suite fast again (2026-10-27)
 
 Tooling only: no src/lib change; `node scripts/pinHeadlines.mjs --full --check` unchanged (240 s, no change).

@@ -16,7 +16,9 @@ import {
   ayakOutcome, ayakSpecsToThreshold, carriersFromCounts, countsToReductions, DEFENCE_DRAIN_ORDER, defenceOutcome,
   describeAttempts, describeDefence, formatProbability, inUpstreamOrder, soloNeeds, soloSpecPlan, specsNeeded, teamSpecPlan,
 } from '@/lib/fracturedArchive/teamSpecs';
-import { DrainLine, drainLineFromAttempts, drainLineNote } from '@/lib/fracturedArchive/drainLine';
+import {
+  DrainLine, drainFacts, drainLineFromAttempts, drainLineNote,
+} from '@/lib/fracturedArchive/drainLine';
 import { minimalPlayer } from '@/lib/fracturedArchive/hittable';
 import { isOutOfMeleeReach } from '@/lib/fracturedArchive/immunities';
 import { BestSetupTarget } from '@/lib/raids/types';
@@ -191,6 +193,26 @@ const drainKeyModels = new Map<string, DrainModel | null>();
 const drainKeys = new Map<string, string>();
 const DRAIN_KEYS_MAX = 200000;
 
+const drainModelKey = (target: BestSetupTarget, phase: string | undefined, assumptions: BestSetupAssumptions): string => JSON.stringify([
+  target.key, phase ?? null, assumptions.partySize, assumptions.raid ?? null, assumptions.toa ?? null, assumptions.cox ?? null,
+  assumptions.tob ?? null, assumptionsForTarget(target, assumptions).potions, assumptions.useZeal]);
+
+/**
+ * Phase 36 / 38g: the undrained drain model of a phase target (cached; null when drains never apply there: the target's `noDrains`).
+ * Phase 38a: a room before the ToA supplies drains with the normal potions.
+ */
+export const drainModelOf = (target: BestSetupTarget, phase: string | undefined, assumptions: BestSetupAssumptions): DrainModel | null => {
+  if (target.noDrains) return null;
+  const k = drainModelKey(target, phase, assumptions);
+  let model = drainKeyModels.get(k);
+  if (model === undefined) {
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    model = drainModel(buildTargetMonster(target, phase, 'none', assumptions).monster, assumptionsForTarget(target, assumptions));
+    drainKeyModels.set(k, model);
+  }
+  return model;
+};
+
 /**
  * Phase 36: the drains a drain event's spec counts leave on one phase target, as a key (the `defenceReductions` the
  * ranking uses; 'none' when drains never apply there): two counts with the same key give the same monster, so the
@@ -204,17 +226,9 @@ export const specCountsDrainKey = (
   counts: SpecCounts,
 ): string => {
   if (drain === 'none' || target.noDrains) return 'none';
-  // phase 38a: a room before the ToA supplies drains with the normal potions
-  const ta = assumptionsForTarget(target, assumptions);
-  const k = JSON.stringify([target.key, phase ?? null, assumptions.partySize, assumptions.raid ?? null, assumptions.toa ?? null,
-    assumptions.cox ?? null, assumptions.tob ?? null, ta.potions, assumptions.useZeal]);
-  let model = drainKeyModels.get(k);
-  if (model === undefined) {
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    model = drainModel(buildTargetMonster(target, phase, 'none', assumptions).monster, ta);
-    drainKeyModels.set(k, model);
-  }
+  const model = drainModelOf(target, phase, assumptions);
   if (!model) return 'none';
+  const k = drainModelKey(target, phase, assumptions);
   const attempts = attemptsFromCounts(model, counts);
   const memoKey = `${k}|${assumptions.floorThreshold}|${attempts.join(',')}`;
   const hit = drainKeys.get(memoKey);
@@ -337,6 +351,22 @@ export const drainStateFor = (m: Monster, id: DrainStateId, assumptions: BestSet
     // phase 24: plain remark (low hit chance / one landed spec already reaches the floor)
     const note = drainLineNote(model, attemptsMade);
     if (note) line = { ...line, note };
+    // phase 38g: the drain facts (drain order with hit chances, specs to the floor at the threshold, Team carriers), the
+    // same line on every tab; `paid` = the Defence specs this drain state makes. Computed on first read (speed: the
+    // planner builds many drain states and shows few; reading the property, a spread, JSON or a worker message computes it)
+    const ayak = id === 'solo' ? assumptions.mySpecs.ayak > 0 : (assumptions.team.carriers.ayak ?? 0) > 0;
+    const factsOpts = {
+      drain: id, partySize: assumptions.partySize, threshold: assumptions.floorThreshold, paid: attemptsMade.filter((w) => w !== 'ayak').length, ayak,
+    };
+    let facts: DrainLine['facts'];
+    Object.defineProperty(line, 'facts', {
+      enumerable: true,
+      configurable: true,
+      get: () => {
+        if (!facts) facts = drainFacts(model, factsOpts);
+        return facts;
+      },
+    });
   }
   return {
     id,

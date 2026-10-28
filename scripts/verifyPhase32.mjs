@@ -19,7 +19,7 @@ import { durationClose, headlineClose, headlineOf } from './headlines.mjs';
 import { openSections } from './phase34Sections.mjs';
 
 const BASE = (process.argv[2] || 'http://localhost:3001/osrs-dps/').replace(/\/?$/, '/');
-const USER_TOTAL = process.env.USER_TOTAL || '25:58.7';
+const USER_TOTAL = process.env.USER_TOTAL || '27:16.5'; // phase 38g (was 25:58.7)
 const NOT_OWNED = ['Obligator', "Zorya's tome", 'Rondache', "Inquisitor's great helm", "Inquisitor's hauberk", "Inquisitor's plateskirt", "Inquisitor's mace"];
 const BLESSING = "Rada's blessing 4";
 
