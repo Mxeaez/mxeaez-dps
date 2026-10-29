@@ -57,12 +57,15 @@ describe('Death Charge', () => {
 
   test('toy encounter with N = 2 kills: +15% each at the rows\' ends turns 1 + 1 maul specs into 2 + 1 (by hand)', () => {
     // Solo, one bar, 30 s regen. Event 0 = rows a (0-50 s, a kill at 50) and b (50-110 s, a kill at 110), maul specs
-    // (50%) at row a; event 1 = row c (110-170 s), maul specs at row c.
+    // (50%) at row a; event 1 = row c (110-170 s), maul specs at row c. Phase 38h-2: options worth HP (event 0: 1 maul
+    // 50, 2 mauls 75; event 1: 1 maul 40)
+    const values = [[0, 50, 75], [0, 40]];
     const opt = (n: number, row: number) => ({
       counts: (n ? { maul: n } : {}) as Record<string, number>,
       spends: n ? [{
         group: 'me', specs: n, cost: 50, row,
       }] : [],
+      value: values[row === 0 ? 0 : 1][n],
     });
     const secs = [[30, 25, 20], [30, 25, 20], [60, 40]];
     const clock: BudgetRow[] = [{
@@ -79,25 +82,27 @@ describe('Death Charge', () => {
       start: { me: [100] },
       rowOutcome: (i, o) => ({ seconds: secs[i][o], damage: 100, damageSpecs: [] }),
     });
-    // without Death Charge: 2 specs leave 0% + 1 tick (row a) + 2 ticks (row b) = 30% at row c (no spec): 100 s;
-    // 1 spec leaves 50 + 30 = 80% at row c (a spec): 25 + 25 + 40 = 90 s, the best
+    // without Death Charge: 2 specs leave 0% + 1 tick (row a) + 2 ticks (row b) = 30% at row c (no spec): 75 HP;
+    // 1 spec leaves 50 + 30 = 80% at row c (a spec): 50 + 40 = 90 HP, the best
     const plain = allocateBudget(problem(clock));
     expect(plain.options).toEqual([1, 1]);
+    expect(plain.hp).toBeCloseTo(90, 9);
     expect(plain.seconds).toBeCloseTo(90, 9);
     // with Death Charge (party 1): both kills covered (cast at 50, the second kill at 110 = cast + 60 s) → +15% at the
     // ends of rows a and b
     const dc = withDeathCharge(clock, [1, 1, 0], 1, 0);
     expect(dc.plan).toEqual({ kills: 2, covered: 2, perKill: DEATH_CHARGE_ENERGY });
     expect(dc.rows.map((r) => r.restore ?? 0)).toEqual([15, 15, 0]);
-    // 2 specs: 0 + 10 (tick) + 15 (kill) + 20 (2 ticks) + 15 (kill) = 60% at row c: a spec → 20 + 20 + 40 = 80 s
+    // 2 specs: 0 + 10 (tick) + 15 (kill) + 20 (2 ticks) + 15 (kill) = 60% at row c: a spec → 75 + 40 = 115 HP
     const charged = allocateBudget(problem(dc.rows));
     expect(charged.options).toEqual([2, 1]);
+    expect(charged.hp).toBeCloseTo(115, 9);
     expect(charged.seconds).toBeCloseTo(80, 9);
     expect(simulateBudget(problem(dc.rows), { options: [2, 1], damage: [{}, {}, {}], drinkRow: -1 }).end.me[0]).toBeCloseTo(60 - 50 + 20, 9);
-    // party 2 (7.5% per kill): 0 + 10 + 7.5 + 20 + 7.5 = 45% < 50%, back to 1 + 1 (90 s)
+    // party 2 (7.5% per kill): 0 + 10 + 7.5 + 20 + 7.5 = 45% < 50%, back to 1 + 1 (90 HP)
     const half = allocateBudget(problem(withDeathCharge(clock, [1, 1, 0], 0.5, 0).rows));
     expect(half.options).toEqual([1, 1]);
-    expect(half.seconds).toBeCloseTo(90, 9);
+    expect(half.hp).toBeCloseTo(90, 9);
     // a kill at a full bar restores nothing (wiki: it "will trigger the active effect ... without actually restoring")
     const full = simulateBudget(problem(dc.rows), { options: [0, 0], damage: [{}, {}, {}], drinkRow: -1 });
     expect(full.end.me[0]).toBe(100);
@@ -190,9 +195,9 @@ otherRaidsDescribe('Liquid adrenaline (ToA)', () => {
   });
 });
 
-describe('Liquid adrenaline: a row crossing the end of the window (fix round)', () => {
-  // one row, 0-200 s, window to 100 s, 30 s regen: ticks at 30 / 60 / 90 s before the window closes (100 + 30 = 130%),
-  // 120 / 150 / 180 s after it (160% in all); a damage spec costs 50% (25% inside the window), net 10 of 1000 damage
+describe('Liquid adrenaline: a row crossing the end of the window (phase 38h-2: no window guard)', () => {
+  // one row, 0-200 s, window to 100 s, 30 s regen: ticks at 30 / 60 / 90 / 120 / 150 / 180 s (160% in all); a damage
+  // spec costs 50% (25% on a row starting inside the window), net 10 HP of 1000 damage
   const problem = (halfCostUntil?: number): AllocationProblem => ({
     rows: [{
       key: 'a', event: 0, start: 0, end: 200,
@@ -203,24 +208,22 @@ describe('Liquid adrenaline: a row crossing the end of the window (fix round)', 
     rowOutcome: () => ({ seconds: 200, damage: 1000, damageSpecs: [{ weapon: 'x', cost: 50, net: 10 }] }),
     ...(halfCostUntil !== undefined ? { halfCostUntil } : {}),
   });
-  test('specs funded before the window closes cost half, the rest full (by hand)', () => {
+  test('a row starting inside the window: every spec costs half; starting after it: full (by hand)', () => {
     const p = problem(100);
     const row = p.rows[0];
     const choice = [{ weapon: 'x', cost: 50 }];
-    // 130% before the close pays 5 half-price specs (125%); a 6th is full price: 125 + 50 = 175
-    expect(damageSpecCost(p, row, choice, { x: 5 }, 130)).toBe(125);
-    expect(damageSpecCost(p, row, choice, { x: 6 }, 130)).toBe(175);
-    // a row inside the window: all half; a row starting after it: all full
-    expect(damageSpecCost(p, { start: 0, end: 90 }, choice, { x: 6 }, 0)).toBe(150);
-    expect(damageSpecCost(p, { start: 100, end: 200 }, choice, { x: 2 }, 200)).toBe(100);
-    // the DP: 5 specs (125% of 160%; a 6th would cost 175%) → 200 × (1 − 5 × 10 ÷ 1000) = 190 s; 35% left
+    // phase 38h-2: the row starts at 0 s, inside the window: 6 specs cost 6 × 25 = 150% (was 175%: the window guard
+    // priced the specs only the ticks after 100 s fund at full cost; gone with the seconds objective)
+    expect(damageSpecCost(p, row, choice, { x: 6 })).toBe(150);
+    expect(damageSpecCost(p, { start: 100 }, choice, { x: 2 })).toBe(100);
+    // the DP: 160% buys 6 specs at 25% (a 7th would need 175%): 6 × 10 = 60 HP; 10% left
     const r = allocateBudget(p);
-    expect(r.rows[0].damage).toEqual({ x: 5 });
-    expect(r.seconds).toBeCloseTo(190, 9);
-    expect(simulateBudget(p, { options: [0], damage: [{ x: 5 }], drinkRow: -1 }).end.me[0]).toBeCloseTo(35, 9);
-    expect(simulateBudget(p, { options: [0], damage: [{ x: 6 }], drinkRow: -1 }).feasible).toBe(false);
-    // no window: 160% buys 3 full-price specs → 194 s
-    expect(allocateBudget(problem()).seconds).toBeCloseTo(194, 9);
+    expect(r.rows[0].damage).toEqual({ x: 6 });
+    expect(r.hp).toBeCloseTo(60, 9);
+    expect(simulateBudget(p, { options: [0], damage: [{ x: 6 }], drinkRow: -1 }).end.me[0]).toBeCloseTo(10, 9);
+    expect(simulateBudget(p, { options: [0], damage: [{ x: 7 }], drinkRow: -1 }).feasible).toBe(false);
+    // no window: 160% buys 3 full-price specs → 30 HP
+    expect(allocateBudget(problem()).hp).toBeCloseTo(30, 9);
   });
 });
 

@@ -397,6 +397,11 @@ export interface PhaseTime {
    * phase): the spec budget's clock takes them as they are instead of seconds × multiplier ÷ party size.
    */
   fixedWall?: boolean;
+  /**
+   * Phase 38h-2: the share of this fixed-length phase's damage that comes off a later phase (Ocellus P2 → P3, the
+   * carry-over): a drain's HP value here is the extra damage dealt × this share.
+   */
+  carryOver?: number;
 }
 
 export interface EncounterTime {
@@ -621,6 +626,7 @@ const evalEncounterPass = (
       note: `${Math.round(carried)} carried to P3 (${pctText(settings.ocellusP2CarryOver)})`,
       noDamageSpecs: 'a fixed-length phase',
       fixedWall: true,
+      carryOver: settings.ocellusP2CarryOver,
       // phase 38c: the Defence resets P1 → P2 (the user, in-game): a new drain event ("After P1 (Defence restored)")
       drainReset: 'P1',
     });

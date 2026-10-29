@@ -1691,6 +1691,58 @@ order (maul first) while the plan sends Tonalztics first (AG Grounded); counts a
 the event's plan (Ocellus P3 after P2: the maul bars are below 50%), the specs paid are the plan's minus what doesn't
 fit, not a re-plan of what fits.
 
+### Spec bars valued in boss HP (phase 38h-2, FA)
+
+**Why.** The user (2026-10-28): no spec choice may rest on seconds (the fight length can't be predicted); the unit is
+boss HP. A drain and a damage spec now compete on the HP they are worth, and a drain's specs go to the events where they
+are worth most.
+
+**Values** (encounterBudget.ts `drainHpValue`, damageSpecs.ts net):
+- **Drain**: H × g ÷ (1 + g) per row of the event (H = the row's damage until the next Defence reset, g = the DPS gain at
+  the drained Defence: DPS with ÷ DPS without − 1), i.e. damage × (1 − DPS without ÷ DPS with); the fight length cancels.
+  Computed from the encounter pass with the event at the plan vs at none (the other events at their line plans), so the
+  coupled rows count too: Ocellus P2 (fixed 120 s, `fixedWall`) counts through the damage it carries off P3 (P3's
+  damage − P3's damage with the drain). A partial drain is valued at its ranked Defence.
+- **Damage spec**: its net damage (E[spec] − DPS × its ticks × 0.6, at the Defence the event's drain leaves).
+- **Per bar** (specBudget.ts `allocateBudget`, `DRAIN_CLOSE_CALL` = 0.1): the DP maximises Σ drain value × 1.1 + Σ damage
+  net (was the least seconds), ties: the earlier options (the line's plan first), then fewer specs. So a damage spec wins
+  only when worth more than 1.1 × the drain; when its energy would buy damage specs worth ≥ 0.9 × the drain, the event is
+  a **close call** (`EncounterAllocEvent.closeCall`, Solo: your bar pays the drain; e.g. Ocellus P2, party 4, Elder maul +
+  ZCB: 1 maul spec 54 HP kept). Every event's value is in the plan (`EncounterAllocEvent.hp`, `EncounterSpecPlan.hp`).
+- **Liquid adrenaline** (ToA): a row's specs cost what its start says (half inside the window); the window guard
+  (`ticksBefore`, specs funded after the window at full cost) is gone with the seconds objective. Surge and Death Charge
+  placement unchanged.
+
+**Options per event** (`eventOptions`, memoised by drain model content): the line's plan within the kit
+(`eventWantedCounts`) and that plan cut short after each spec in its send order (partial drains); the line's plan within
+every cap (Team: per weapon up to the carriers' first round; Solo: in all, up to 8): what is left when the bars can't
+pay the plan is **re-planned over every weapon left, not cut** (review 38h-1 a: Ocellus P3 quadrants 1-3 with 1 maul
+spec left: T ×3 → M → T 98.1%, the cut M → T 68.9%); Eye of Ayak every count up to the line's (partial counts count). Exact
+drops: options leaving every phase where none does, or where one with no more of any weapon does. Not offered: a partial
+drain ranked at the floor without reaching it at the threshold (1 Tonalztics on Ocellus P1: 73%, ranked at the floor as
+the reachable Defence nearest the expected; it would be worth a full drain). **Team** (speed): the carriers' bars pay only
+drains and yours only damage specs, so the DP picks the drains first over the carriers' bars, then your damage specs and
+dose at the chosen Defence (a damage spec's net changes a little with the drain's DPS; not weighed in the drain choice).
+No option pruning (an option's HP grows with its specs, so dominance almost never drops one).
+
+**Interleaved send orders** (review 38h-1 b; teamSpecs.ts `bestDrainPlan`, `MAX_DRAIN_BLOCKS` = 3): a weapon may come
+back while the order has fewer than 3 blocks (T ×3 → M ×3 → T ×3); every block order is still tried. `defenceOutcome`
+(every drain state's ranked Defence) searches the same orders for its counts (`exact`). The Smorks with 2 maul + 3
+Tonalztics carriers: T ×3 → M ×3 → T ×3 97.5% vs the best block order 95.0% (Phase38h2.test.ts, upstream's spec calc at
+each Defence). The line plans of 38h-1 are unchanged (no interleaved order gains there).
+
+**Kit carriers by HP** (specChoice.ts `kitCarriers` `value`, planner.ts `drainValueOf`; replaces the coverage count and
+the worst-boss P(floor) tie-break): each kit within the bars is worth Σ over every boss / phase of the raid of its drain
+value at the line's plan within the kit (H = the phase's damage in the kit's undrained pass, g from the kit's best DPS;
+Ocellus P2: the extra damage × its carry-over); the most HP wins (ties: more carriers, then ROLE_ORDER), except that a
+kit leaving you out wins unless the other is worth > 1.1 × it (your slot stays yours on a close call). Per weapon still
+at most what its line needs (the early return when that fits is unchanged).
+
+**Result** (`pinHeadlines --full`; PROGRESS phase 38h-2 has every moved total): fa 21:39.9 → 21:41.7, faSolo 23:39.1 →
+23:04.4, faNotOwned 24:40.2 → 24:53.7. Times move both ways: the objective is HP, not seconds.
+
+**Speed** (Node, one plan alone): fa 13.2 → 18.5 s, faSolo ~35-43 → 46 s (the option grid, the per-option passes).
+
 ## Routes tab (phase 16: raid time model)
 
 **Phase 23: the tab is gone.** Its route table is now part of the Plan tab's results (the *planned* kit timed on every

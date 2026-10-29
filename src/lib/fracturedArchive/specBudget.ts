@@ -19,11 +19,14 @@
  *   the row, paid from your pool after its regen (specs can be done any time during the row, so the row's regen is
  *   usable); (5) every pool capped at 100%.
  * - **Time.** A row's seconds come from its event's option (`rowOutcome`); damage specs take m × net damage off the row
- *   (seconds × (1 − removed ÷ damage), not below 0).
- * - **Choice.** Exact dynamic programme over the rows (state: every pool's energy and the options of the events still
- *   running): the least total seconds; ties (≤ 1e-9 s): fewer specs, then the earlier option / fewer damage specs in
- *   enumeration order. "No specs" is always an option, so the result is never slower than spending nothing, and adding a
- *   pool (a carrier) or energy never makes it slower.
+ *   (seconds × (1 − removed ÷ damage), not below 0). Reported only: phase 38h-2, no choice rests on seconds.
+ * - **Choice** (phase 38h-2: in boss HP, was the least total seconds). Exact dynamic programme over the rows (state:
+ *   every pool's energy and the options of the events still running): the most HP, where an event's option is worth its
+ *   drain value (`EventOption.value`, HP: H × g ÷ (1 + g), encounterBudget.ts) × (1 + {@link DRAIN_CLOSE_CALL}) (within
+ *   10% of a damage spec the drain is kept) and a damage spec its net damage (`DamageChoice.net`, HP); ties (≤ 1e-9 HP):
+ *   the earlier options (Σ option indices; the caller lists its preferred options first), then fewer specs, then fewer
+ *   damage specs in enumeration order. "No specs" is always an option (value 0), so adding a pool (a carrier) or energy
+ *   never lowers the HP.
  * - **Phase 38b, Death Charge** (`BudgetRow.restore`): energy every pool gets at the row's end (the kills of the row,
  *   {@link deathChargeSchedule}), after the row's damage specs and the cap, capped again. **Liquid adrenaline**
  *   (`AllocationProblem.halfCostUntil`): every spend (drain or damage spec) on a row starting before that clock time
@@ -52,6 +55,11 @@ export const DEATH_CHARGE_KILLS_PER_CAST = 2;
 export const ADRENALINE_COST_FACTOR = 0.5;
 /** The group of your own pool (Solo drains, damage specs). */
 export const MY_POOL = 'me';
+/**
+ * Phase 38h-2 (ROADMAP 38h): a drain is kept over damage specs unless they are worth more than (1 + this) × its value;
+ * within 10% the line calls it a close call.
+ */
+export const DRAIN_CLOSE_CALL = 0.1;
 
 const EPS = 1e-9;
 
@@ -88,6 +96,8 @@ export interface EventOption {
   /** Spec counts per weapon (for the caller; the DP reads `spends`). */
   counts: Record<string, number>;
   spends: OptionSpend[];
+  /** Phase 38h-2: the drain's value in boss HP (H × g ÷ (1 + g)); undefined = 0. */
+  value?: number;
 }
 
 export interface BudgetEvent {
@@ -100,7 +110,7 @@ export interface DamageChoice {
   weapon: string;
   /** Energy per spec. */
   cost: number;
-  /** Net damage of one spec on this row (> 0; rows list only the useful weapons). */
+  /** Net damage of one spec on this row (> 0; rows list only the useful weapons): its value in HP (phase 38h-2). */
   net: number;
 }
 
@@ -146,42 +156,17 @@ export const costFactorAt = (p: Pick<AllocationProblem, 'halfCostUntil'>, row: P
   p.halfCostUntil !== undefined && row.start < p.halfCostUntil - EPS ? ADRENALINE_COST_FACTOR : 1);
 
 /**
- * Phase 38b fix: regen ticks of period `period` on a row strictly before the adrenaline window closes (`until`; a tick
- * at `until` itself comes after the window).
- */
-export const ticksBefore = (row: Pick<BudgetRow, 'start' | 'end'>, until: number, period: number): number => {
-  const b = Math.min(row.end, until);
-  if (!(period > 0) || !(b > row.start)) return 0;
-  return Math.max(0, Math.floor((b - EPS) / period) - Math.floor((row.start + EPS) / period));
-};
-
-/**
- * Phase 38b fix: the energy a row's damage specs cost under Liquid adrenaline. Outside the window (or none): full cost;
- * a row inside it: half; a row that starts inside and runs past `halfCostUntil`: the specs `before` can pay (the energy
- * after the row's drain spends, the dose and the regen ticks before the window closes) cost half — per weapon in order,
- * min(n, floor(left ÷ half)) — and the rest full (paid from the ticks after it).
+ * Phase 38b: the energy a row's damage specs cost: full, or {@link ADRENALINE_COST_FACTOR} of it on a row starting while
+ * Liquid adrenaline is active (`costFactorAt`). Phase 38h-2: the window guard (a row running past the window paid full
+ * cost for the specs only its later regen funds) is gone with the seconds objective: a row's specs cost what its start
+ * says.
  */
 export const damageSpecCost = (
   p: Pick<AllocationProblem, 'halfCostUntil'>,
-  row: Pick<BudgetRow, 'start' | 'end'>,
+  row: Pick<BudgetRow, 'start'>,
   choices: Pick<DamageChoice, 'weapon' | 'cost'>[],
   counts: Record<string, number>,
-  before: number,
-): number => {
-  const factor = costFactorAt(p, row);
-  const full = choices.reduce((t, c) => t + (counts[c.weapon] ?? 0) * c.cost, 0);
-  if (factor === 1) return full;
-  if (!(row.end > p.halfCostUntil! + EPS)) return full * factor;
-  let left = before;
-  return choices.reduce((t, c) => {
-    const n = counts[c.weapon] ?? 0;
-    if (!n) return t;
-    const half = c.cost * factor;
-    const nHalf = Math.min(n, Math.max(0, Math.floor((left + EPS) / half)));
-    left -= nHalf * half;
-    return t + nHalf * half + (n - nHalf) * c.cost;
-  }, 0);
-};
+): number => costFactorAt(p, row) * choices.reduce((t, c) => t + (counts[c.weapon] ?? 0) * c.cost, 0);
 
 /** Phase 38b: a pool's energy after the row's cap and its Death Charge restore (capped again). */
 const restored = (e: number, row: Pick<BudgetRow, 'restore'>): number => Math.min(SPEC_MAX_ENERGY, Math.min(SPEC_MAX_ENERGY, e) + (row.restore ?? 0));
@@ -230,6 +215,9 @@ export interface RowDecision {
 }
 
 export interface AllocationResult {
+  /** Phase 38h-2: the plan's value in boss HP (drains + damage specs, without the close-call weight). */
+  hp: number;
+  /** The rows' seconds under the plan (reported, not chosen on). */
   seconds: number;
   specs: number;
   /** Chosen option per event. */
@@ -324,10 +312,15 @@ export const allocateBudget = (p: AllocationProblem): AllocationResult => {
     if (!outcomeMemo.has(k)) outcomeMemo.set(k, p.rowOutcome(row, opt));
     return outcomeMemo.get(k)!;
   };
-  type Val = { seconds: number, specs: number, decision: RowDecision, after: PoolState, next: string | null };
+  // phase 38h-2: the objective is boss HP (`w` = drains × (1 + DRAIN_CLOSE_CALL) + damage specs' net), then the
+  // earlier options (`pref`), then fewer specs; `hp` (unweighted) and `seconds` are reported along
+  type Val = {
+    w: number, hp: number, pref: number, seconds: number, specs: number, decision: RowDecision, after: PoolState, next: string | null,
+  };
   const memo = new Map<string, Val>();
-  const better = (a: { seconds: number, specs: number }, b: { seconds: number, specs: number } | null) => !b
-    || a.seconds < b.seconds - EPS || (Math.abs(a.seconds - b.seconds) <= EPS && a.specs < b.specs);
+  const better = (a: Val, b: Val | null) => !b
+    || a.w > b.w + EPS || (Math.abs(a.w - b.w) <= EPS && (a.pref < b.pref || (a.pref === b.pref && a.specs < b.specs)));
+  const keep = 1 + DRAIN_CLOSE_CALL;
 
   const solve = (i: number, state: PoolState, chosen: number[], pending: boolean): { key: string, v: Val } | null => {
     if (i >= p.rows.length) return null;
@@ -383,21 +376,20 @@ export const allocateBudget = (p: AllocationProblem): AllocationResult => {
       // (4) damage specs on the row, (5) cap
       const ev = row.event;
       const o = outcome(i, ch[ev] !== undefined && ch[ev] >= 0 ? ch[ev] : 0);
-      // phase 38b: Liquid adrenaline halves the damage specs' cost too (`damageSpecCost`: a row running past the window
-      // pays full cost for the specs only the later ticks fund); the combos are enumerated at the cheapest price
+      // phase 38b: Liquid adrenaline halves the damage specs' cost on a row starting inside its window
       const cheap = factor === 1 ? o.damageSpecs : o.damageSpecs.map((c) => ({ ...c, cost: c.cost * factor }));
       const mine = regen[dmgGroup]?.[0] ?? 0;
-      const beforeClose = factor === 1 ? 0 : (paidState[dmgGroup]?.[0] ?? 0)
-        + ticksBefore(row, p.halfCostUntil!, groups.get(dmgGroup)?.regenSeconds ?? 30) * SPEC_REGEN_STEP;
       // with a pending dose, the row's specs may use it (drunk below 100%, or right after the first spec)
       const combosD = o.damageSpecs.length && regen[dmgGroup]?.length
         ? damageCombos(cheap, mine + (dose ? SURGE_DOSE_ENERGY : 0)) : [{}];
       const drainSpecs = starting.reduce((t, ei, j) => t + countSpecs(p.events[ei].options[combo[j]].counts), 0);
+      const drainValue = starting.reduce((t, ei, j) => t + Math.max(0, p.events[ei].options[combo[j]].value ?? 0), 0);
+      const pref = combo.reduce((t, oi) => t + oi, 0);
       for (const d of combosD) {
         // a pending dose may be drunk now (if the bar is below 100% or a spec is made: the potion does nothing at
         // 100%) or kept for a later row
         for (const drink of dose ? [false, true] : [false]) {
-          const spent = damageSpecCost(p, row, o.damageSpecs, d, beforeClose + (drink ? SURGE_DOSE_ENERGY : 0));
+          const spent = damageSpecCost(p, row, o.damageSpecs, d);
           if (drink && !(spent > 0 || mine < SPEC_MAX_ENERGY - EPS)) continue;
           if (spent > mine + (drink ? SURGE_DOSE_ENERGY : 0) + EPS) continue;
           const after: PoolState = {};
@@ -406,8 +398,12 @@ export const allocateBudget = (p: AllocationProblem): AllocationResult => {
             after[gid] = list.map((e) => restored(e, row)).sort((x, y) => y - x);
           });
           const secs = rowSecondsAfter(o, d);
+          const dmgHp = o.damageSpecs.reduce((t, c) => t + (d[c.weapon] ?? 0) * c.net, 0);
           const nxt = solve(i + 1, after, ch, dose && !drink);
           const cand: Val = {
+            w: drainValue * keep + dmgHp + (nxt?.v.w ?? 0),
+            hp: drainValue + dmgHp + (nxt?.v.hp ?? 0),
+            pref: pref + (nxt?.v.pref ?? 0),
             seconds: secs + (nxt?.v.seconds ?? 0),
             specs: drainSpecs + countSpecs(d) + (nxt?.v.specs ?? 0),
             decision: {
@@ -416,6 +412,7 @@ export const allocateBudget = (p: AllocationProblem): AllocationResult => {
             after,
             next: nxt?.key ?? null,
           };
+          if (!Number.isFinite(cand.w)) continue;
           if (better(cand, best)) best = cand;
         }
       }
@@ -424,7 +421,7 @@ export const allocateBudget = (p: AllocationProblem): AllocationResult => {
     // always has one: every option 0)
     if (!best) {
       best = {
-        seconds: Infinity, specs: Infinity, decision: { started: [], damage: {}, seconds: Infinity }, after: state, next: null,
+        w: -Infinity, hp: -Infinity, pref: Infinity, seconds: Infinity, specs: Infinity, decision: { started: [], damage: {}, seconds: Infinity }, after: state, next: null,
       };
     }
     memo.set(key, best);
@@ -433,7 +430,7 @@ export const allocateBudget = (p: AllocationProblem): AllocationResult => {
 
   if (!p.rows.length) {
     return {
-      seconds: 0, specs: 0, options: p.events.map(() => 0), rows: [], end: p.start,
+      hp: 0, seconds: 0, specs: 0, options: p.events.map(() => 0), rows: [], end: p.start,
     };
   }
   const root = solve(0, p.start, p.events.map(() => -1), !!p.surge)!;
@@ -448,6 +445,7 @@ export const allocateBudget = (p: AllocationProblem): AllocationResult => {
     cur = cur.next ? memo.get(cur.next)! : null;
   }
   return {
+    hp: root.v.hp,
     seconds: root.v.seconds,
     specs: root.v.specs,
     options,
@@ -516,37 +514,36 @@ const spendVector = (o: EventOption): Map<string, number> => {
 };
 
 /**
- * Whether option `b` makes option `a` useless: on every row of the event `b` is at least as fast and every damage spec
- * saves at least as much per spec (seconds × net ÷ damage), and `b` spends no more energy from any pool at any row (so
- * whatever `a` allows later, `b` allows too). Exact, so pruning keeps the DP's optimum.
+ * Whether option `b` (at index `bi`) makes option `a` (at `ai`) useless (phase 38h-2: in boss HP): `b` spends no more
+ * energy from any pool at any row (so whatever `a` allows later, `b` allows too), every damage spec on the event's rows
+ * is worth at least as much (net HP, no dearer), and `b` is worth more, or as much and listed earlier (the DP's tie-break).
+ * Exact, so pruning keeps the DP's optimum.
  */
 export const optionDominates = (
   b: { option: EventOption, rows: RowOutcome[] },
   a: { option: EventOption, rows: RowOutcome[] },
+  bi = 0,
+  ai = 1,
 ): boolean => {
   const vb = spendVector(b.option);
   const va = spendVector(a.option);
   for (const [k, e] of vb) if (e > (va.get(k) ?? 0) + EPS) return false;
-  const per = (o: RowOutcome, c: DamageChoice) => (o.damage > 0 && Number.isFinite(o.seconds) ? (o.seconds * c.net) / o.damage : 0);
-  return b.rows.every((rb, i) => {
-    const ra = a.rows[i];
-    // the seconds of the row and of any coupling (`extra`, not touched by damage specs)
-    if (!(rb.seconds <= ra.seconds + EPS) || !((rb.extra ?? 0) <= (ra.extra ?? 0) + EPS)) return false;
-    return ra.damageSpecs.every((ca) => {
-      const cb = rb.damageSpecs.find((x) => x.weapon === ca.weapon);
-      return !!cb && cb.cost <= ca.cost + EPS && per(rb, cb) >= per(ra, ca) - EPS;
-    });
-  });
+  const xb = b.option.value ?? 0;
+  const xa = a.option.value ?? 0;
+  if (!(xb > xa + EPS || (Math.abs(xb - xa) <= EPS && bi < ai))) return false;
+  return b.rows.every((rb, i) => a.rows[i].damageSpecs.every((ca) => {
+    const cb = rb.damageSpecs.find((x) => x.weapon === ca.weapon);
+    return !!cb && cb.cost <= ca.cost + EPS && cb.net >= ca.net - EPS;
+  }));
 };
 
 /**
  * The options of an event worth keeping (indices, in order; option 0 is always kept): an option dominated by another
- * ({@link optionDominates}; on ties the earlier one is kept) can never be part of a better plan.
+ * ({@link optionDominates}) can never be part of a better plan.
  */
 export const prunedOptions = (options: { option: EventOption, rows: RowOutcome[] }[]): number[] => options
   .map((_, i) => i)
-  .filter((i) => i === 0 || !options.some((o, j) => j !== i && optionDominates(o, options[i])
-    && (j < i || !optionDominates(options[i], o))));
+  .filter((i) => i === 0 || !options.some((o, j) => j !== i && optionDominates(o, options[i], j, i)));
 
 // --- a fixed plan replayed (the top-up and the tests) ---------------------------------------------------------------
 
@@ -586,7 +583,6 @@ export const simulateBudget = (p: AllocationProblem, d: BudgetDecisions): { feas
       pending = false;
     }
     const row = p.rows[i];
-    const paidMine = s[dmgGroup]?.[0] ?? 0;
     for (const gid of Object.keys(s)) {
       const t = regenTicks(row.start, row.end, p.groups.find((g) => g.id === gid)?.regenSeconds ?? 30) * SPEC_REGEN_STEP;
       s[gid] = s[gid].map((e) => e + t);
@@ -595,9 +591,7 @@ export const simulateBudget = (p: AllocationProblem, d: BudgetDecisions): { feas
     const counts = d.damage[i] ?? {};
     const mine = s[dmgGroup]?.[0] ?? 0;
     const drink = pending && i === d.drinkRow;
-    // phase 38b fix: specs only the ticks after the adrenaline window funds cost full (`damageSpecCost`)
-    const beforeClose = factor === 1 ? 0 : (paidMine + ticksBefore(row, p.halfCostUntil!, p.groups.find((g) => g.id === dmgGroup)?.regenSeconds ?? 30) * SPEC_REGEN_STEP);
-    const spent = damageSpecCost(p, row, o.damageSpecs, counts, beforeClose + (drink ? SURGE_DOSE_ENERGY : 0));
+    const spent = damageSpecCost(p, row, o.damageSpecs, counts);
     if (drink && !(spent > 0 || mine < SPEC_MAX_ENERGY - EPS)) return { feasible: false, seconds: Infinity, end: s };
     if (spent > mine + (drink ? SURGE_DOSE_ENERGY : 0) + EPS) return { feasible: false, seconds: Infinity, end: s };
     if (drink) pending = false;

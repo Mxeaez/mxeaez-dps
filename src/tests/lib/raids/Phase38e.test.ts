@@ -121,7 +121,8 @@ const sitePlanInputs = (): PlanInputs => {
   test('25:07.9 (was 25:18.1 with Crimson kisten + Voidwaker on 38c; the beam alone): Zaryte crossbow + Surge + Crimson kisten; never more cells than slots', () => {
     const r = plan(sitePlanInputs(), { model: fa.time });
     const seconds = r.comparison!.routes[r.planned].seconds;
-    expect(seconds).toBeLessThanOrEqual(25 * 60 + 7.95);
+    // phase 38h-2 (bars valued in boss HP, not seconds): 25:07.9 → 25:08.7
+    expect(seconds).toBeLessThanOrEqual(25 * 60 + 8.75);
     expect(r.specItems.map((x) => x.name)).toContain('Zaryte crossbow');
     const cells = r.inventory.filter((x) => x.kind !== 'free').length;
     expect(r.slots!.overfull).toBe(false);

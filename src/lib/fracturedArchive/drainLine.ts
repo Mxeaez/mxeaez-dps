@@ -149,11 +149,13 @@ const drainFactsOf = (model: DrainModel, opts: Omit<DrainFactsOptions, 'paid'>):
   const help: HelpfulSpecs | undefined = plan && !plan.floor && !atFloor
     ? { dStar: plan.target, counts: plan.counts, specs: plan.specs } : undefined;
   const per = (w: DefenceDrainWeapon) => Math.max(1, specAttempts(100, model.energy[w]));
-  const carrierCounts = (p: DrainPlan) => Object.fromEntries(p.steps.map((s) => [s.weapon, Math.ceil(s.count / per(s.weapon))])) as
+  // phase 38h-2: a weapon may come back in an interleaved plan (Tonalztics → Elder maul → Tonalztics): count it once
+  const carrierCounts = (p: DrainPlan) => Object.fromEntries(Object.entries(p.counts).map(([w, n]) => [w, Math.ceil((n ?? 0) / per(w as DefenceDrainWeapon))])) as
     Partial<Record<DefenceDrainWeapon, number>>;
   const bring = (p: DrainPlan) => {
     const c = carrierCounts(p);
-    return p.steps.map((s) => `${c[s.weapon]} bring${c[s.weapon] === 1 ? 's' : ''} ${FACT_LABELS[s.weapon]}`).join(', ');
+    return Array.from(new Set(p.steps.map((s) => s.weapon)))
+      .map((w) => `${c[w]} bring${c[w] === 1 ? 's' : ''} ${FACT_LABELS[w]}`).join(', ');
   };
   const parts: string[] = [];
   if (atFloor) parts.push(`already at the Defence floor (Def ${model.floor})`);

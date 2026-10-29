@@ -285,10 +285,11 @@ describe('ring policy', () => {
    * the supplies is a route, this kit's cheapest Zebak + Akkha): FA 1493.8 → 1544.4 (Ocellus 767.3 → 818.0), ToA 925.0
    * → 905.5; CoX / ToB unchanged. Phase 38c fix (P2's 120 s on the spec budget's wall clock): FA 1544.4 → 1534.7.
    * Phase 38g (one fixed drain set per event, the fewest carriers at 95%, no seconds-based option search): FA 1534.7 →
-   * 1564.4, ToA 905.5 → 918.2, CoX 452.7 → 469.8, ToB 457.3 → 461.7.
+   * 1564.4, ToA 905.5 → 918.2, CoX 452.7 → 469.8, ToB 457.3 → 461.7. Phase 38h-2 (bars valued in boss HP, specs where
+   * they are worth most; ToA / CoX / ToB frozen): FA 1564.4 → 1545.8.
    */
   test.each(rowsFor(faRows([
-    { id: 'fractured-archive', seconds: 1564.4 },
+    { id: 'fractured-archive', seconds: 1545.8 },
     { id: 'toa', seconds: 918.2 },
     { id: 'cox', seconds: 469.8 },
     { id: 'tob', seconds: 461.7 },

@@ -634,7 +634,8 @@ slowDescribe('FA defaults (slow)', () => {
     // phase 32: no blessing in the melee / magic loadouts and a loadout without ammo keeps the kit's ammo: 1382.50 → 1329.96
     // phase 36 (one spec budget per encounter: no fight regen for the start-of-fight drains): 1329.96 → 1364.55
     // phase 38g (your bar pays the 95% drains first): 1415.95 → 1463.90
-    expect(withinPct(total(r), 1463.9, 1)).toBe(true); // phase 38f: was 1364.55 at phase 36
+    // phase 38h-2 (your bar's drains and damage specs by their HP value): 1463.90 → 1417.96
+    expect(withinPct(total(r), 1417.96, 1)).toBe(true); // phase 38f: was 1364.55 at phase 36
   }, 900000);
 
   test('Team, 6-man: the planner picks 2 Elder maul + 3 Tonalztics by headcount (phase 38g; 38c-38f: 1 + 4 by route time), within 3% of the Advanced 2 / 2 / 1', () => {

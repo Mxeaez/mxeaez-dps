@@ -3,9 +3,10 @@ import {
   DrainModel, PlannerWeapon, specAttempts,
 } from '@/lib/fracturedArchive/specs';
 import {
-  ayakOutcome, DEFAULT_FLOOR_THRESHOLD, DefenceDrainWeapon, formatProbability, passingTeams, planCarriers, recommendCarriers,
-  teamLinePlan,
+  ayakOutcome, DEFAULT_FLOOR_THRESHOLD, DefenceDrainWeapon, formatProbability, kitDrainPlan, passingTeams, planCarriers,
+  recommendCarriers, teamLinePlan,
 } from '@/lib/fracturedArchive/teamSpecs';
+import { DRAIN_CLOSE_CALL } from '@/lib/fracturedArchive/specBudget';
 
 /**
  * Phase 29: the planner decides the spec weapons. Pure and React-free (the planner runs it in the worker; Jest tests it
@@ -506,6 +507,13 @@ export const teamRoles = (
  * must not crowd out your items) a kit that leaves you out (fewer carriers than `party`, the real party size); then the
  * worst covered boss's best P(floor) within it (higher); only then more carriers (spare slots filled); then more of the
  * weapon first in ROLE_ORDER. `uncovered` = the needs left without a team.
+ *
+ * Phase 38h-2 (with `value`, the planner): no reachable-floor count and no P(floor) tie-break: each kit within the bars
+ * is worth the HP its drains are worth (`value` of every boss / phase at the drain line's plan within the kit,
+ * `kitDrainPlan`, + its Eye of Ayak specs: the fewest of its Ayak carriers to magic def 0 at the threshold, else all);
+ * the most HP wins (ties: more carriers, then more of the weapon first in ROLE_ORDER), except that a kit leaving you out
+ * wins over one making you a carrier unless that one is worth more than (1 + DRAIN_CLOSE_CALL) × it (your slot is yours
+ * on a close call; the user: carriers must not crowd out your items).
  */
 export const kitCarriers = (
   targets: RoleTarget[],
@@ -513,6 +521,11 @@ export const kitCarriers = (
     partySize: number, mages: number, threshold?: number,
     /** The real party size (default `partySize`): a kit of this many carriers makes you one. */
     party?: number,
+    /**
+     * Phase 38h-2: a boss / phase's drain value in boss HP (H × g ÷ (1 + g)) with these specs (`key` = the target's key);
+     * undefined = the phase 38g scoring (coverage, P(floor)).
+     */
+    value?: (key: string, counts: Partial<Record<PlannerWeapon, number>>) => number,
   },
 ): { carriers: CarrierCounts, uncovered: string[] } => {
   const threshold = opts.threshold ?? DEFAULT_FLOOR_THRESHOLD;
@@ -561,9 +574,31 @@ export const kitCarriers = (
       };
     }
   };
+  // phase 38h-2: the kits' HP values
+  type Valued = { k: Partial<CarrierCounts>, hp: number, total: number };
+  const valued: Valued[] = [];
+  const hpOf = (k: Partial<CarrierCounts>): number => targets.reduce((t, x) => {
+    const m = x.model;
+    const counts: Partial<Record<PlannerWeapon, number>> = {};
+    if (m.def > m.floor) Object.assign(counts, kitDrainPlan(m, { drain: 'team', carriers: k }, threshold)?.counts ?? {});
+    const ak = Math.floor(k.ayak ?? 0);
+    if (ak > 0 && m.canHit.ayak && m.magicDef > 0) {
+      const per = specAttempts(100, m.energy.ayak);
+      let n = ak;
+      for (let j = 1; j <= ak; j++) {
+        if (ayakOutcome(m, j * per, threshold).pZero >= threshold) {
+          n = j;
+          break;
+        }
+      }
+      counts.ayak = n * per;
+    }
+    return Object.keys(counts).length ? t + opts.value!(x.key, counts) : t;
+  }, 0);
   const walk = (i: number, k: Partial<CarrierCounts>, total: number) => {
     if (i === weapons.length) {
-      score(k, total);
+      if (opts.value) valued.push({ k: { ...k }, hp: hpOf(k), total });
+      else score(k, total);
       return;
     }
     const w = weapons[i];
@@ -571,7 +606,15 @@ export const kitCarriers = (
     for (let n = Math.min(max[w], party - total); n >= 0; n--) walk(i + 1, { ...k, [w]: n }, total + n);
   };
   walk(0, {}, 0);
-  const k = (best as Best | null)?.k ?? {};
+  let k = (best as Best | null)?.k ?? {};
+  if (opts.value) {
+    const top = (xs: Valued[]) => xs.reduce<Valued | null>((b, x) => (!b || x.hp > b.hp + 1e-9
+      || (Math.abs(x.hp - b.hp) <= 1e-9 && x.total > b.total) ? x : b), null);
+    const all = top(valued);
+    const free = top(valued.filter((x) => leavesYou(x.total)));
+    const pick = all && free && !leavesYou(all.total) && !(all.hp > (1 + DRAIN_CLOSE_CALL) * free.hp + 1e-9) ? free : all;
+    k = pick?.k ?? {};
+  }
   return {
     carriers: { ...NO_CARRIERS, ...k },
     uncovered: [

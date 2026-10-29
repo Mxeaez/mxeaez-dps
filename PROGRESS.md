@@ -3,6 +3,54 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 38h-2 - spec bars valued in boss HP (FA, 2026-10-29)
+
+Numbers phase (ROADMAP 38h-2; docs/BEST_SETUP.md *Spec bars valued in boss HP (phase 38h-2, FA)*).
+
+- **Drain value** H × g ÷ (1 + g) (encounterBudget.ts `drainHpValue`: per row damage × (1 − DPS without ÷ DPS with), from
+  the pass with the event's plan vs none; Ocellus P2 counts through the damage it carries off P3). **Damage spec** = its
+  net (E[spec] − DPS × ticks, at the drained Defence). **Per bar** (specBudget.ts `allocateBudget`): the DP now maximises
+  HP (drains × 1.1 + damage nets; `DRAIN_CLOSE_CALL`), was the least seconds; seconds are only reported. `closeCall` on
+  an event your bar pays when its energy buys damage specs worth ≥ 0.9 × the drain; every event carries its `hp`.
+  Liquid adrenaline window guard removed (a row's specs cost what its start says). Surge / Death Charge placement unchanged.
+- **Options per event** (`eventOptions`): the line's plan, it cut short in send order (partial drains), the line's plan
+  within every cap (Team per weapon, Solo in all): **re-planned, not cut** (carry-over a; Ocellus P3 Q1-3 with 1 maul
+  left: T ×3 → M → T 98.1% vs the cut M → T 68.9%); partial Eye of Ayak counts. A partial drain that ranks at the floor
+  below the threshold is not offered (1 Tonalztics on Ocellus P1 73% would be worth a full drain: the ranked-Defence
+  rounding). Team: drains chosen first over the carriers' bars, then your damage specs (speed; see BEST_SETUP).
+- **Interleaved orders** (carry-over b; `bestDrainPlan`, `defenceOutcome`): up to 3 weapon blocks (T ×3 → M ×3 → T ×3);
+  the Smorks with 2 maul + 3 Tonalztics: 97.5% vs block 95.0%. The 38h-1 line plans are unchanged.
+- **Kit carriers by HP** (`kitCarriers` `value`, planner `drainValueOf`): replaces the coverage count and the worst-boss
+  P(floor) tie-break; a kit leaving you out wins unless the other is worth > 1.1 × it. **Scope choice (report)**: H for the
+  carriers' value = each phase's damage in the kit's undrained pass and all bosses of every route are summed (a heuristic
+  over the raid, like the old "most any boss needs").
+- **Headlines** (`pinHeadlines --full`): **fa 21:39.9 → 21:41.7** (+1.8 s): Bork + Smorks 189.79 → 190.43 (same drains;
+  the Zaryte crossbow spec moves from Bork armour 12 to armour 8, where it is worth more HP: its ruby proc is a share of
+  the HP left; the seconds objective preferred the slower row), Ocellus 690.73 → 691.84 (P2 Elder maul ×4 → Tonalztics
+  ×1, 59%, ranked Def 15, was ×2 97% Def 0; P3 gets 5 Tonalztics specs, 97% Def 150, was 4, 91%: P3's drain is worth more
+  HP than P2's last Tonalztics spec). **faSolo 23:39.1 → 23:04.4** (−34.7 s, all Ocellus 774.09 → 739.40): P2 no drain
+  (its 1 Tonalztics spec was worth little: Def 250 → 223 for a fixed 120 s), P3 2 Tonalztics specs (Def 176, was 1, Def
+  213), a Crimson kisten spec on P3 and the Zaryte crossbow on the last quadrant; the kit now brings Crimson kisten (free
+  slots 4 → 3). **faNotOwned 24:40.2 → 24:53.7** (+13.5 s, Ocellus 783.89 → 797.40): kit carriers by HP 2 Elder maul + 3
+  Tonalztics → 4 Tonalztics + 1 Eye of Ayak (summed over the raid the Ayak's magic defence drain and the 4th Tonalztics
+  carrier are worth more HP than the 2 mauls); Ocellus P2 Tonalztics ×3 + Ayak ×2 (Def 115, magic def 58) instead of the
+  mauls. r27fa re-pinned (1562.5 → 1545.8 s; memo 1113 / 1251 / 21007 / 155, within PHASE37_MEMO; fa / faSolo / faNotOwned
+  counters measured within ±20%, unchanged). Phase27 ring pin 1564.4 → 1545.8; CrossRaid preset-kit pins Bork + Smorks
+  230.2 → 221.2, Ocellus 844.7 → 833.8. ToA / CoX / ToB frozen (their pins not re-run).
+- **Tests**: Phase38h2.test.ts (drainHpValue by hand incl. the P2 → P3 carry; interleaved Smorks and the two-weapon
+  re-plan by upstream enumeration; kitCarriers HP rule + 10% leave-you-out by hand; per FA boss Team and Solo (AG, Bork +
+  Smorks, Ezekiel, Moia, Xarth, Dagon'hai, Ocellus): each event's HP recomputed with the formula from the model's passes,
+  plan HP = drains + damage nets; a real close call (Ocellus P2, party 4, maul + ZCB) checked against the rule). DP toys
+  rewritten in HP with hand values and exhaustive search (Phase36, 37, 38b). Updated strings with comments: Phase32, 33,
+  34, 35b, 38g, CrossRaid, Phase27.
+- Speed (Node, one plan alone): fa 13.2 → 18.5 s, faSolo ~43 → 46 s (option memo by model content, Solo caps in all, no
+  option pruning, Team drains-first DP).
+- Run: `verifyAll 38g 38g2` 2 / 2 OK; fast suite 1412 passed / 196 skipped; FA slow (`CrossRaid Phase2 Phase3`) once: 4 slow pins out of date (Phase32 user plan 27:16.5 → 26:07.5, Phase29 Solo {maul, Tonalztics} 1463.9 → 1418.0, Phase38e party-8 25:07.9 → 25:08.7, Phase34 Ocellus strings), updated and those files re-run green; retime probe gap 0 (fa, faSolo, faNotOwned);
+  drainOutcome archive-guardian / bork-smorks / ocellus (fa, faSolo, faNotOwned): spec plan = the plan's; tsc, lint clean.
+- Open: partial drains are valued at the ranked Defence (nearest reachable to the expected), not the expected DPS over
+  the outcomes; the Team two-stage DP ignores a damage spec's net change with the drain; the close-call flag is in the
+  plan data only (the briefing line is 38h-3).
+
 ## Phase 38h-1 - the bars pay the drain line's plan (FA, 2026-10-28)
 
 Numbers phase (ROADMAP 38h-1; docs/BEST_SETUP.md *The bars pay the line's plan (phase 38h-1, FA)*).

@@ -8,8 +8,8 @@ import {
   specCalcNumbers, specSecondsSaved,
 } from '@/lib/fracturedArchive/damageSpecs';
 import {
-  allocateBudget, AllocationProblem, CARRY_SPEC_ENERGY, costFactorAt, damageSpecCost, dosesAllowed, placeDoses, regenTicks, rowSecondsAfter,
-  spendFromGroup, SPEC_MAX_ENERGY, SURGE_COOLDOWN_SECONDS, SURGE_DOSE_ENERGY, ticksBefore,
+  allocateBudget, AllocationProblem, CARRY_SPEC_ENERGY, costFactorAt, damageSpecCost, dosesAllowed, DRAIN_CLOSE_CALL, drinkRowOf, placeDoses,
+  regenTicks, rowSecondsAfter, spendFromGroup, SPEC_MAX_ENERGY, SURGE_COOLDOWN_SECONDS, SURGE_DOSE_ENERGY,
 } from '@/lib/fracturedArchive/specBudget';
 import {
   budgetedEncounter, budgetGroups, CLOCK_ROUNDS, damageLimited, drainEventsOf, rowHpLeft,
@@ -147,10 +147,19 @@ describe('value of a damage spec (toy)', () => {
 
 // --- the budget DP vs an exhaustive search ------------------------------------------------------------------------
 
-/** One fixed plan simulated directly (the module's rules, written out again): seconds, or Infinity if it can't be paid. */
-const simulateOnce = (p: AllocationProblem, opts: number[], choice: Record<string, number>[], drinkAt: number): number => {
+/**
+ * One fixed plan simulated directly (the module's rules, written out again). Phase 38h-2: its value in boss HP (`w`:
+ * drains × (1 + DRAIN_CLOSE_CALL) + damage specs' net; `hp` unweighted), or null if it can't be paid.
+ */
+const simulateOnce = (p: AllocationProblem, opts: number[], choice: Record<string, number>[], drinkAt: number): { w: number, hp: number } | null => {
   const state: Record<string, number[]> = JSON.parse(JSON.stringify(p.start));
-  let total = 0;
+  let w = 0;
+  let hp = 0;
+  p.events.forEach((e, ei) => {
+    const v = e.options[opts[ei]].value ?? 0;
+    w += v * (1 + DRAIN_CLOSE_CALL);
+    hp += v;
+  });
   for (let r = 0; r < p.rows.length; r++) {
     let mineSpent = false;
     for (let ei = 0; ei < p.events.length; ei++) {
@@ -158,7 +167,7 @@ const simulateOnce = (p: AllocationProblem, opts: number[], choice: Record<strin
         if (sp.row === r && sp.specs) {
           // phase 38b: Liquid adrenaline halves the cost on rows starting before `halfCostUntil`
           const paid = spendFromGroup(state[sp.group], sp.specs, sp.cost * costFactorAt(p, p.rows[r]));
-          if (!paid) return Infinity;
+          if (!paid) return null;
           state[sp.group] = paid;
           if (sp.group === 'me') mineSpent = true;
         }
@@ -170,29 +179,29 @@ const simulateOnce = (p: AllocationProblem, opts: number[], choice: Record<strin
       drank = true;
     }
     const row = p.rows[r];
-    const paidMe = state.me?.[0] ?? 0;
     for (const g of Object.keys(state)) {
       const reg = regenTicks(row.start, row.end, p.groups.find((x) => x.id === g)!.regenSeconds) * 10;
       state[g] = state[g].map((e) => e + reg);
     }
     const o = p.rowOutcome(r, opts[row.event]);
     const late = r === drinkAt && !drank;
-    // phase 38b fix: under Liquid adrenaline the specs funded after the window closes cost full
-    const before = paidMe + (p.halfCostUntil !== undefined ? ticksBefore(row, p.halfCostUntil, p.groups.find((x) => x.id === 'me')?.regenSeconds ?? 30) * 10 : 0);
-    const spent = damageSpecCost(p, row, o.damageSpecs, choice[r], before + (late ? SURGE_DOSE_ENERGY : 0));
-    if (late && !(spent > 0 || state.me[0] < SPEC_MAX_ENERGY)) return Infinity;
-    if (spent > (state.me?.[0] ?? 0) + (late ? SURGE_DOSE_ENERGY : 0) + 1e-9) return Infinity;
+    // phase 38h-2: a row's specs cost what its start says (no adrenaline window guard)
+    const spent = damageSpecCost(p, row, o.damageSpecs, choice[r]);
+    if (late && !(spent > 0 || state.me[0] < SPEC_MAX_ENERGY)) return null;
+    if (spent > (state.me?.[0] ?? 0) + (late ? SURGE_DOSE_ENERGY : 0) + 1e-9) return null;
     if (state.me) state.me[0] = state.me[0] - spent + (late ? SURGE_DOSE_ENERGY : 0);
     // phase 38b: the Death Charge restore at the row's end, after the cap (capped again)
     for (const g of Object.keys(state)) state[g] = state[g].map((e) => Math.min(SPEC_MAX_ENERGY, Math.min(SPEC_MAX_ENERGY, e) + (row.restore ?? 0))).sort((x, y) => y - x);
-    total += rowSecondsAfter(o, choice[r]);
+    const dmg = o.damageSpecs.reduce((t, c) => t + (choice[r][c.weapon] ?? 0) * c.net, 0);
+    w += dmg;
+    hp += dmg;
   }
-  return total;
+  return { w, hp };
 };
 
-/** Exhaustive: every option per event × every damage count (0-3) per row × every row to drink the dose. */
+/** Exhaustive: every option per event × every damage count (0-3) per row × every row to drink the dose; the most HP. */
 const bruteForce = (p: AllocationProblem): number => {
-  let best = Infinity;
+  let best = -Infinity;
   const n = p.rows.length;
   const assign = (ei: number, opts: number[]) => {
     if (ei < p.events.length) {
@@ -208,7 +217,7 @@ const bruteForce = (p: AllocationProblem): number => {
     });
     const walk = (i: number, choice: Record<string, number>[]) => {
       if (i === n) {
-        for (let drinkAt = -1; drinkAt < (p.surge ? n : 0); drinkAt++) best = Math.min(best, simulateOnce(p, opts, choice, drinkAt));
+        for (let drinkAt = -1; drinkAt < (p.surge ? n : 0); drinkAt++) best = Math.max(best, simulateOnce(p, opts, choice, drinkAt)?.w ?? -Infinity);
         return;
       }
       per[i].forEach((c) => walk(i + 1, [...choice, c]));
@@ -219,17 +228,21 @@ const bruteForce = (p: AllocationProblem): number => {
   return best;
 };
 
+/** The DP's plan re-simulated (its weighted HP). */
+const dpValue = (p: AllocationProblem, r: ReturnType<typeof allocateBudget>) => simulateOnce(p, r.options, r.rows.map((x) => x.damage), drinkRowOf(r))!;
+
 /**
  * A Solo toy: event 0 (rows 0-1, 0-40-70 s) and a Defence reset, event 1 (row 2, 70-130 s); maul specs at 50%; Voidwaker
- * damage specs (50%, net 30 on 300 damage) on every row. More maul specs = faster rows of that event, with diminishing
- * returns.
+ * damage specs (50%, net `vw` HP) on every row. Phase 38h-2: each option is worth its drain value in HP (event 0: 1 maul
+ * 60, 2 mauls 80; event 1: 50, 70: diminishing returns); the seconds are only reported.
  */
-const toy = (surge = false): AllocationProblem => {
-  const opt = (n: number, row: number) => ({
+const toy = (surge = false, vw = 60): AllocationProblem => {
+  const opt = (n: number, row: number, value: number) => ({
     counts: (n ? { maul: n } : {}) as Record<string, number>,
     spends: n ? [{
       group: 'me', specs: n, cost: 50, row,
     }] : [],
+    value,
   });
   const secs = [[40, 30, 25], [30, 22, 20], [60, 40, 36]];
   return {
@@ -240,68 +253,82 @@ const toy = (surge = false): AllocationProblem => {
     }, {
       key: 'c', event: 1, start: 70, end: 130,
     }],
-    events: [{ firstRow: 0, options: [opt(0, 0), opt(1, 0), opt(2, 0)] }, { firstRow: 2, options: [opt(0, 2), opt(1, 2), opt(2, 2)] }],
+    events: [{ firstRow: 0, options: [opt(0, 0, 0), opt(1, 0, 60), opt(2, 0, 80)] }, { firstRow: 2, options: [opt(0, 2, 0), opt(1, 2, 50), opt(2, 2, 70)] }],
     groups: [{ id: 'me', count: 1, regenSeconds: 30 }],
     start: { me: [100] },
-    rowOutcome: (i, o) => ({ seconds: secs[i][o], damage: 300, damageSpecs: [{ weapon: 'vw', cost: 50, net: 30 }] }),
+    rowOutcome: (i, o) => ({ seconds: secs[i][o], damage: 300, damageSpecs: [{ weapon: 'vw', cost: 50, net: vw }] }),
     ...(surge ? { surge: true } : {}),
   };
 };
 
-describe('budget allocation (specBudget.ts allocateBudget)', () => {
-  test('toy with two events: the DP matches an exhaustive search over spec counts', () => {
+describe('budget allocation (specBudget.ts allocateBudget; phase 38h-2: in boss HP)', () => {
+  test('toy with two events: the DP matches an exhaustive search; a damage spec worth > 1.1 × a drain wins', () => {
     const p = toy();
     const r = allocateBudget(p);
-    expect(r.seconds).toBeCloseTo(bruteForce(p), 9);
-    // by hand: 100% at the start, +10% at 30, 60, 90, 120 s. 2 maul specs at the start (25 + 20) leave 20% at 70 s: row c
-    // unspecced, 105 s. 1 maul spec (30 + 22) leaves 50 + 10 + 10 = 70% at 70 s: one more maul spec on event 1 (40):
-    // 92 s, the best (a Voidwaker spec on row a or b would leave event 1 short of 50%)
+    expect(dpValue(p, r).w).toBeCloseTo(bruteForce(p), 9);
+    // by hand: 100% at the start, +10% at 30, 60, 90, 120 s = 140% in all: 2 specs at 50% (a third needs 150%).
+    // Weighted: 1 maul on event 0 = 60 × 1.1 = 66, the second 20 × 1.1 = 22; event 1's first maul 50 × 1.1 = 55;
+    // Voidwaker 60 (> 55: worth more than 1.1 × the drain). Best two: maul (66) + Voidwaker (60) = 126 (vs 66 + 55 =
+    // 121); the Voidwaker spec on row c (equal rows: the DP keeps the first it finds, the latest spend)
+    expect(r.options).toEqual([1, 0]);
+    expect(r.rows[2].damage).toEqual({ vw: 1 });
+    expect(r.hp).toBeCloseTo(60 + 60, 9);
+  });
+  test('within 10% the drain is kept (Voidwaker 52 < 1.1 × 50)', () => {
+    const p = toy(false, 52);
+    const r = allocateBudget(p);
+    expect(dpValue(p, r).w).toBeCloseTo(bruteForce(p), 9);
+    // 66 + 55 = 121 > 66 + 52 = 118: the event-1 maul stays
     expect(r.options).toEqual([1, 1]);
     expect(r.rows.every((x) => !Object.keys(x.damage).length)).toBe(true);
+    expect(r.hp).toBeCloseTo(60 + 50, 9);
     expect(r.seconds).toBeCloseTo(30 + 22 + 40, 9);
   });
-  test('with a surge dose: matches the exhaustive search; the dose pays for a Voidwaker spec on row c', () => {
+  test('with a surge dose: matches the exhaustive search; the dose pays for a third spec (Voidwaker on row c)', () => {
     const p = toy(true);
     const r = allocateBudget(p);
-    expect(r.seconds).toBeCloseTo(bruteForce(p), 9);
-    // 1 maul (50%), the dose right after (75%), 95% at 70 s: 1 maul on event 1 (45%), 65% at the end of row c: Voidwaker
-    expect(r.options).toEqual([1, 1]);
-    expect(r.rows[2].damage).toEqual({ vw: 1 });
-    expect(r.seconds).toBeCloseTo(30 + 22 + 40 * 0.9, 9);
+    expect(dpValue(p, r).w).toBeCloseTo(bruteForce(p), 9);
+    // 100 + 25 (the dose) + 40 (regen) = 165%: 3 specs at 50%. 1 maul (50%), the dose right after (75%), +10 +10 = 95%
+    // at 70 s, +20 = 115% on row c: 2 Voidwaker specs (15% left): 66 + 60 + 60 = 186, more than the event-1 maul + 1
+    // Voidwaker (66 + 55 + 60 = 181)
+    expect(r.options).toEqual([1, 0]);
+    expect(r.rows[2].damage).toEqual({ vw: 2 });
+    expect(r.hp).toBeCloseTo(60 + 60 + 60, 9);
   });
-  test('never slower than no specs; a richer budget (Lightbearer) is never slower', () => {
+  test('never less HP than no specs; a richer budget (Lightbearer) never less', () => {
     const p = toy();
-    const none = [0, 1, 2].reduce((t, i) => t + p.rowOutcome(i, 0).seconds, 0);
-    expect(allocateBudget(p).seconds).toBeLessThanOrEqual(none + 1e-9);
+    expect(allocateBudget(p).hp).toBeGreaterThanOrEqual(0);
     const lb = { ...p, groups: [{ id: 'me', count: 1, regenSeconds: 15 }] };
-    expect(allocateBudget(lb).seconds).toBeLessThanOrEqual(allocateBudget(p).seconds + 1e-9);
-    expect(allocateBudget(lb).seconds).toBeCloseTo(bruteForce(lb), 9);
+    expect(allocateBudget(lb).hp).toBeGreaterThanOrEqual(allocateBudget(p).hp - 1e-9);
+    expect(dpValue(lb, allocateBudget(lb)).w).toBeCloseTo(bruteForce(lb), 9);
   });
-  test('Team: carriers are pools; spends come from the fullest carrier; the DP matches the exhaustive search', () => {
+  test('Team: carriers are pools; spends come from the fullest carrier; the specs go where they are worth most', () => {
     expect(spendFromGroup([100, 60], 1, 50)).toEqual([60, 50]);
     expect(spendFromGroup([40, 30], 1, 50)).toBeNull();
     const base = toy();
+    const values = [[0, 60, 80, 90, 95], [0, 50, 70, 78, 80]];
     const p: AllocationProblem = {
       ...base,
       groups: [{ id: 'maul', count: 2, regenSeconds: 30 }],
       start: { maul: [100, 100] },
-      events: base.events.map((e) => ({
+      events: base.events.map((e, ei) => ({
         ...e,
         options: [0, 1, 2, 3, 4].map((n) => ({
           counts: (n ? { maul: n } : {}) as Record<string, number>,
           spends: n ? [{
             group: 'maul', specs: n, cost: 50, row: e.firstRow,
           }] : [],
+          value: values[ei][n],
         })),
       })),
       rowOutcome: (i, o) => ({ seconds: [[40, 30, 25, 24, 23], [30, 22, 20, 19, 19], [60, 40, 36, 35, 35]][i][o], damage: 300, damageSpecs: [] }),
     };
     const r = allocateBudget(p);
-    expect(r.seconds).toBeCloseTo(bruteForce(p), 9);
-    // 4 specs at the start leave 20% each at 70 s (102 s); 3 + 1: 24 + 19 + 40 = 83; 2 + 2 (each carrier 50% → 70%
-    // at 70 s): 25 + 20 + 36 = 81, the best
+    expect(dpValue(p, r).w).toBeCloseTo(bruteForce(p), 9);
+    // by hand: each carrier +20% by 70 s. 4 + 0 = 95; 3 + 1 (pools 50 / 0 → 70 / 20) = 90 + 50 = 140; 2 + 2 (50 / 50 →
+    // 70 / 70) = 80 + 70 = 150; 1 + 3 (100 / 50 → 100 / 70) = 60 + 78 = 138; 0 + 4 = 80: 2 + 2 is worth the most
     expect(r.options).toEqual([2, 2]);
-    expect(r.seconds).toBeCloseTo(81, 9);
+    expect(r.hp).toBeCloseTo(150, 9);
   });
   test('regen ticks: on the clock, a tick at a row\'s start belongs to the row before', () => {
     expect(regenTicks(0, 30, 30)).toBe(1);
@@ -436,10 +463,10 @@ describe('brute force on real encounters: the DP = an exhaustive search (phase 3
   otherRaidsTest('ToB Sotetseg (Team, 2 Elder maul + 2 BGS, three events): every option combination', () => {
     const { r, pruned, full } = problemOf('tob', 'tob-sotetseg', A('tob'), 'team');
     expect(full.events).toHaveLength(3);
-    const dp = allocateBudget(pruned).seconds;
-    expect(dp).toBeCloseTo(bruteForce(full), 6);
+    const dp = allocateBudget(pruned);
+    expect(dpValue(pruned, dp).w).toBeCloseTo(bruteForce(full), 6);
     // the plan the time model reports is the DP's
-    expect(r.seconds).toBeCloseTo(dp, 6);
+    expect(r.plan.hp).toBeCloseTo(dp.hp, 6);
   });
   test('FA Xarth (Solo, party 4, Elder maul + Tonalztics + Voidwaker + a surge dose): drains, damage specs and the dose', () => {
     const a: BestSetupAssumptions = {
@@ -452,9 +479,10 @@ describe('brute force on real encounters: the DP = an exhaustive search (phase 3
       surgePotions: 1,
     };
     const { r, pruned, full } = problemOf('fractured-archive', 'xarth', a, 'solo', true);
-    const dp = allocateBudget(pruned).seconds;
-    expect(dp).toBeCloseTo(bruteForce(full), 6);
-    expect(r.seconds).toBeCloseTo(dp, 6);
+    const dp = allocateBudget(pruned);
+    // phase 38h-2: the pruned DP (every drain plan within the bars, each worth its HP) = the exhaustive search
+    expect(dpValue(pruned, dp).w).toBeCloseTo(bruteForce(full), 6);
+    expect(r.plan.hp).toBeCloseTo(dp.hp, 6);
     expect(r.plan.events[0].counts.elderMaul ?? 0).toBeGreaterThanOrEqual(0);
   });
 });

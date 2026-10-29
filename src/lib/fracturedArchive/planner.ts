@@ -16,6 +16,7 @@ import {
   resolveItem,
   resolvePresetEquipment,
   monsterForSpecCounts,
+  SpecCounts,
   specCountsDrainKey,
   styleLabel,
 } from '@/lib/fracturedArchive/bestSetup';
@@ -40,6 +41,7 @@ import {
   KitLoadout,
   PhaseQuery,
   phaseKey,
+  PhaseTime,
   RaidKit,
   RaidTimeAssumptions,
   raidTimeAssumptionsFrom,
@@ -2246,14 +2248,55 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       }
       return roleTargets;
     };
+    // phase 38h-2: a boss / phase's drain value in boss HP for the kit's members (kitCarriers `value`): over its rows
+    // in the undrained pass (H = the row's damage), damage × (1 − DPS ÷ drained DPS) = H × g ÷ (1 + g); a fixed-length
+    // row (Ocellus P2) the extra damage it deals × its carry-over (what comes off P3); DPS = the members' best
+    const undrainedRows = new Map<string, Map<string, PhaseTime[]>>();
+    const valueMemo = new Map<string, number>();
+    const drainValueOf = (m: number[], key: string, counts: SpecCounts): number => {
+      const mk = [...m].sort((x, y) => x - y).join(',');
+      const vk = `${mk}|${key}|${specCountsKey(counts)}`;
+      const hit = valueMemo.get(vk);
+      if (hit !== undefined) return hit;
+      const kit = kitMemo.kit(m);
+      let rows = undrainedRows.get(mk);
+      if (!rows) {
+        rows = new Map();
+        const noneA: RaidTimeAssumptions = {
+          ...exactA, drain: 'none', specBudget: undefined, fixedAlloc: undefined,
+        };
+        for (const e of Array.from(byEncounter.keys())) {
+          encounterTime(e, kit, noneA).phases.forEach((r) => {
+            const pk = phaseKey(r.targetKey, r.phase);
+            rows!.set(pk, [...(rows!.get(pk) ?? []), r]);
+          });
+        }
+        undrainedRows.set(mk, rows);
+      }
+      let v = 0;
+      (rows.get(key) ?? []).forEach((r) => {
+        if (!(r.damage > 0) || !(r.dps > 0)) return;
+        const d1 = kit.best({
+          targetKey: r.targetKey, phase: r.phase, drain, fightSeconds: fallbackFight, rowKey: r.key, specs: { counts },
+        })?.dps ?? 0;
+        if (!(d1 > 0)) return;
+        v += r.fixedWall ? r.damage * (d1 / r.dps - 1) * (r.carryOver ?? 0) : r.damage * (1 - r.dps / d1);
+      });
+      valueMemo.set(vk, v);
+      return v;
+    };
     const headcountMemo = new Map<string, CarrierCounts>();
     const headcountOf = (m: number[], totalCarriers: number): CarrierCounts => {
       const mages = magesOf(m);
-      const k = `${totalCarriers}|${mages}`;
+      const k = `${totalCarriers}|${mages}|${[...m].sort((x, y) => x - y).join(',')}`;
       let c = headcountMemo.get(k);
       if (!c) {
         c = kitCarriers(allRoleTargets(), {
-          partySize: Math.max(1, totalCarriers), mages, threshold: assumptions.floorThreshold, party: Math.max(1, Math.floor(assumptions.partySize)),
+          partySize: Math.max(1, totalCarriers),
+          mages,
+          threshold: assumptions.floorThreshold,
+          party: Math.max(1, Math.floor(assumptions.partySize)),
+          value: (key, counts) => drainValueOf(m, key, counts),
         }).carriers;
         headcountMemo.set(k, c);
       }

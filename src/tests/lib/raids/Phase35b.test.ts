@@ -76,20 +76,20 @@ describe('FA (presets kit, 2 Elder maul + 2 Tonalztics carriers)', () => {
     expect(s.events.map((e) => e.phaseKey)).toEqual(['bork-8', 'smorks']);
     expect(s.events[0].parts[0].line).toBe(bork.phases.find((p) => p.key === 'bork-8')!.choice!.drainLine);
     expect(s.events[1].parts[0].line).toBe(bork.phases.find((p) => p.key === 'smorks')!.choice!.drainLine);
-    // phase 38g: Bork wants its fewest carriers at 95% (2 Elder maul, 96%); the maul bars are spent there, the Smorks get
-    // the Tonalztics (no team reaches their floor 0)
-    expect(s.events.map((e) => e.parts[0].line.defAfter)).toEqual([180, 82]);
-    expect(s.text).toBe('Bork: 2 Elder maul carriers (4 specs) → Def 180 · 97% · Smorks: 2 Tonalztics carriers (4 specs) → Def 82');
+    // phase 38h-2 (bars in boss HP): the 4 maul specs go where each is worth most: 1 on Bork (Def 195), 3 on the Smorks
+    // with the Tonalztics (Def 9; was 4 on Bork → Def 180, the Smorks Def 82)
+    expect(s.events.map((e) => e.parts[0].line.defAfter)).toEqual([195, 9]);
+    expect(s.text).toBe('Bork: 1 Elder maul carrier (1 spec) → Def 195 · Smorks: 2 Elder maul carriers (3 specs) + 2 Tonalztics carriers (4 specs) → Def 9');
     const row = rows[0];
     expect(row.specs.map((g) => g.label)).toEqual(['Bork', 'Smorks']);
-    expect(row.specs.map((g) => g.result)).toEqual(['→ Def 180', '→ Def 82']);
-    expect(row.specsText).toBe('Bork: Elder maul 2 specs → Def 180 · Smorks: Tonalztics 6 hits → Def 82');
+    expect(row.specs.map((g) => g.result)).toEqual(['→ Def 195', '→ Def 9']);
+    expect(row.specsText).toBe('Bork: Elder maul 1 spec → Def 195 · Smorks: Elder maul 3 specs + Tonalztics 3 hits → Def 9');
   });
 
   test('Bork + Smorks: the Wear cell names the loadouts per NPC when they differ (default carriers: Shadow on armour 14)', () => {
-    // phase 38g: with 2 Elder maul + 2 Tonalztics Bork is at its floor and both NPCs use the same loadout (one group); with
-    // the default carriers (+ 1 Eye of Ayak) armour 14 uses the Shadow: named groups
-    expect(rows[0].wear.map((w) => w.npc)).toEqual([undefined]);
+    // phase 38g: with the default carriers (+ 1 Eye of Ayak) armour 14 uses the Shadow: named groups. Phase 38h-2: with
+    // 2 Elder maul + 2 Tonalztics Bork now stays at Def 195 (1 maul spec), so armour 14 takes the Shadow there too
+    expect(rows[0].wear.map((w) => w.npc)).toEqual(['Bork', 'Smorks']);
     const [def] = encountersOf('fractured-archive', ['bork-smorks']);
     const borkLoadouts = Array.from(new Set(def.phases.filter((p) => p.targetKey === 'bork').map((p) => p.choice!.loadout)));
     const smorksLoadouts = def.phases.filter((p) => p.targetKey === 'smorks').map((p) => p.choice!.loadout);
@@ -115,7 +115,8 @@ describe('FA (presets kit, 2 Elder maul + 2 Tonalztics carriers)', () => {
     expect(rows[2].wear).toHaveLength(1);
     const s = summaryOf(ocellus);
     expect(s.events.map((ev) => [ev.reset, ev.parts.map((p) => p.label)])).toEqual([
-      [undefined, ['P1 at a corner']], ['P1', ['P2 The Blade']], ['P2', ['P3 quadrants 1-3']],
+      // phase 38h-2: the last quadrant (Deflect Melee: no Elder maul) has its own part once P3's specs include a maul
+      [undefined, ['P1 at a corner']], ['P1', ['P2 The Blade']], ['P2', ['P3 quadrants 1-3', 'P3 last quadrant, Deflect Melee']],
     ]);
     expect(rows[3].wear).toEqual([{ loadouts: rows[3].loadouts }]);
   });

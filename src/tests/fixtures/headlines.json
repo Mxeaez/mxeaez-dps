@@ -4,8 +4,8 @@
   "fa": {
    "raid": "fractured-archive",
    "label": "Fractured Archive (Team defaults)",
-   "total": "21:39.9",
-   "seconds": 1299.9193069260182,
+   "total": "21:41.7",
+   "seconds": 1301.678746202194,
    "route": "archive-guardian>bork-smorks>moia>xarth>ocellus",
    "ring": "Ultor ring",
    "kit": [
@@ -36,10 +36,10 @@
    ],
    "encounters": {
     "archive-guardian": 173.49,
-    "bork-smorks": 189.79,
+    "bork-smorks": 190.43,
     "moia": 65.32,
     "xarth": 180.61,
-    "ocellus": 690.73
+    "ocellus": 691.84
    }
   },
   "toa": {
@@ -164,8 +164,8 @@
   "faSolo": {
    "raid": "fractured-archive",
    "label": "Fractured Archive Solo (party 1)",
-   "total": "23:39.1",
-   "seconds": 1419.1078866426606,
+   "total": "23:04.4",
+   "seconds": 1384.418481554921,
    "route": "archive-guardian>ezekiel>moia>xarth>ocellus",
    "ring": "Ultor ring",
    "kit": [
@@ -173,11 +173,12 @@
     "Twisted bow (Masori)",
     "Inquisitor's + Obligator"
    ],
-   "freeSlots": 4,
+   "freeSlots": 3,
    "carriers": null,
-   "bring": "Bring: Tonalztics, Zaryte crossbow, Surge potion",
+   "bring": "Bring: Tonalztics, Crimson kisten, Zaryte crossbow, Surge potion",
    "items": [
     "Tonalztics of Ralos",
+    "Crimson kisten",
     "Zaryte crossbow",
     "Surge potion(4)"
    ],
@@ -192,14 +193,14 @@
     "ezekiel": 210.43,
     "moia": 71.13,
     "xarth": 182.78,
-    "ocellus": 774.09
+    "ocellus": 739.4
    }
   },
   "faNotOwned": {
    "raid": "fractured-archive",
    "label": "Fractured Archive without Obligator / Ascension crossbows",
-   "total": "24:40.2",
-   "seconds": 1480.2086412551002,
+   "total": "24:53.7",
+   "seconds": 1493.7200975363153,
    "route": "archive-guardian>ezekiel>moia>xarth>ocellus",
    "ring": "Ultor ring",
    "kit": [
@@ -208,11 +209,11 @@
    ],
    "freeSlots": 4,
    "carriers": {
-    "elderMaul": 2,
+    "elderMaul": 0,
     "dwh": 0,
     "bgs": 0,
-    "tonalztics": 3,
-    "ayak": 0
+    "tonalztics": 4,
+    "ayak": 1
    },
    "bring": "Bring: Crimson kisten, Zaryte crossbow, Burning claws, Surge potion",
    "items": [
@@ -232,7 +233,7 @@
     "ezekiel": 237.73,
     "moia": 65.32,
     "xarth": 206.83,
-    "ocellus": 783.89
+    "ocellus": 797.4
    }
   }
  }

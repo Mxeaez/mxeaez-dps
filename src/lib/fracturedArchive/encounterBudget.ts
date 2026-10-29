@@ -10,15 +10,15 @@ import {
 } from '@/lib/fracturedArchive/specs';
 import {
   ayakOutcome, ayakSpecsToThreshold, DEFAULT_FLOOR_THRESHOLD, DEFENCE_DRAIN_ORDER, DefenceDrainWeapon,
-  defenceOutcome, drainOrder, kitDrainPlan, MAX_FLOOR_SPECS,
+  defenceOutcome, DrainCap, kitDrainPlan, MAX_FLOOR_SPECS,
 } from '@/lib/fracturedArchive/teamSpecs';
 import {
   bestDamageVariant, DAMAGE_SPEC_WEAPONS, DamageSpecProfile, DamageSpecWeapon, netSpecDamage, specSecondsSaved,
 } from '@/lib/fracturedArchive/damageSpecs';
 import {
-  allocateBudget, AllocationProblem, BudgetEvent, BudgetRow, CARRY_SPEC_ENERGY, DamageChoice,
-  DEATH_CHARGE_ENERGY, deathChargeSchedule, drinkRowOf, EventOption, MY_POOL, OptionSpend, PoolGroup, PoolState,
-  RowOutcome, rowSecondsAfter, simulateBudget, SPEC_MAX_ENERGY,
+  allocateBudget, AllocationProblem, AllocationResult, BudgetRow, CARRY_SPEC_ENERGY, DamageChoice,
+  DEATH_CHARGE_ENERGY, deathChargeSchedule, DRAIN_CLOSE_CALL, drinkRowOf, EventOption, MY_POOL, OptionSpend, PoolGroup,
+  PoolState, RowOutcome, rowSecondsAfter, simulateBudget, SPEC_MAX_ENERGY,
 } from '@/lib/fracturedArchive/specBudget';
 
 /**
@@ -78,6 +78,13 @@ export interface EncounterAllocEvent {
   reset?: string;
   firstRowKey: string;
   counts: SpecCounts;
+  /** Phase 38h-2: the drain's value in boss HP (H × g ÷ (1 + g), `drainHpValue`); undefined = no drain made. */
+  hp?: number;
+  /**
+   * Phase 38h-2: your bar pays this drain (Solo) and the damage specs its energy would buy instead are worth within 10%
+   * of it (`DRAIN_CLOSE_CALL`): a close call, the drain is kept.
+   */
+  closeCall?: boolean;
 }
 
 /** An encounter's spec plan (also what the planner's optimiser replays: `RaidTimeAssumptions.fixedAlloc`). */
@@ -103,6 +110,8 @@ export interface DeathChargePlan {
 export interface EncounterSpecPlan extends EncounterAlloc {
   /** Specs made (drains + damage). */
   specs: number;
+  /** Phase 38h-2: the plan's value in boss HP (drains + damage specs; specBudget.ts `AllocationResult.hp`). */
+  hp?: number;
   /** The encounter's seconds with no specs at all (every event's option 0, no damage specs). */
   noSpecSeconds: number;
   /** Energy per pool at the start and the end of the encounter. */
@@ -380,10 +389,12 @@ export const eventWantedCounts = (
   cfg: Pick<SpecBudgetConfig, 'drain' | 'solo' | 'carriers'>,
   models: (DrainModel | null)[],
   threshold = DEFAULT_FLOOR_THRESHOLD,
+  /** Phase 38h-2: at most this many specs (teamSpecs.ts `DrainCap`; the plans within less; undefined = no cap). */
+  cap?: DrainCap,
 ): SpecCounts => {
   const out: SpecCounts = {};
   const more = (w: PlannerWeapon, n: number) => { if (n > (out[w] ?? 0)) out[w] = n; };
-  const key = JSON.stringify([cfg.drain, cfg.drain === 'solo' ? cfg.solo : cfg.carriers, threshold]);
+  const key = JSON.stringify([cfg.drain, cfg.drain === 'solo' ? cfg.solo : cfg.carriers, threshold, cap ?? null]);
   models.forEach((m) => {
     if (!m) return;
     let memo = WANTED_MEMO.get(m);
@@ -394,7 +405,7 @@ export const eventWantedCounts = (
     let one = memo.get(key);
     if (!one) {
       // eslint-disable-next-line @typescript-eslint/no-use-before-define
-      one = phaseWantedCounts(cfg, m, threshold);
+      one = phaseWantedCounts(cfg, m, threshold, cap);
       memo.set(key, one);
     }
     // phase 38h-1: the specs so far already floor this phase (Defence; Eye of Ayak counted on its own)
@@ -414,6 +425,7 @@ const phaseWantedCounts = (
   cfg: Pick<SpecBudgetConfig, 'drain' | 'solo' | 'carriers'>,
   m: DrainModel,
   threshold: number,
+  cap?: DrainCap,
 ): SpecCounts => {
   const out: SpecCounts = {};
   const more = (w: PlannerWeapon, n: number) => { if (n > (out[w] ?? 0)) out[w] = n; };
@@ -422,7 +434,7 @@ const phaseWantedCounts = (
   if (m.def > m.floor) {
     const plan = kitDrainPlan(m, cfg.drain === 'team'
       ? { drain: 'team', carriers: kit }
-      : { drain: 'solo', weapons: DEFENCE_DRAIN_ORDER.filter((w) => (cfg.solo?.[w] ?? 0) > 0) }, threshold);
+      : { drain: 'solo', weapons: DEFENCE_DRAIN_ORDER.filter((w) => (cfg.solo?.[w] ?? 0) > 0) }, threshold, cap);
     if (plan) DEFENCE_DRAIN_ORDER.forEach((w) => more(w, plan.counts[w] ?? 0));
   }
   if (cfg.drain === 'team') {
@@ -441,6 +453,143 @@ const phaseWantedCounts = (
     const asked = Math.floor(cfg.solo?.ayak ?? 0);
     if (asked > 0 && m.canHit.ayak && m.magicDef > 0) more('ayak', ayakSpecsToThreshold(m, asked, threshold));
   }
+  return out;
+};
+
+/** Phase 38h-2: total specs of a count set. */
+const countsSum = (c: SpecCounts | undefined): number => Object.values(c ?? {}).reduce((t: number, n) => t + (n ?? 0), 0);
+
+const OPTIONS_MEMO_MAX = 20000;
+/** Phase 38h-2: ids of drain models by content (the option memo's key; kits build equal models as new objects). */
+const MODEL_IDS = new WeakMap<DrainModel, number>();
+const MODEL_TEXT_IDS = new Map<string, number>();
+let modelCount = 0;
+const modelId = (m: DrainModel | null): number => {
+  if (!m) return 0;
+  let id = MODEL_IDS.get(m);
+  if (id === undefined) {
+    const text = JSON.stringify(m);
+    id = MODEL_TEXT_IDS.get(text);
+    if (id === undefined) {
+      if (MODEL_TEXT_IDS.size >= OPTIONS_MEMO_MAX) MODEL_TEXT_IDS.clear();
+      modelCount += 1;
+      id = modelCount;
+      MODEL_TEXT_IDS.set(text, id);
+    }
+    MODEL_IDS.set(m, id);
+  }
+  return id;
+};
+const OPTIONS_MEMO = new Map<string, SpecCounts[]>();
+const countsKey = (c: SpecCounts) => JSON.stringify(Object.keys(c).sort().map((w) => [w, c[w as PlannerWeapon]]));
+
+/**
+ * Phase 38h-2: the drain plans a drain event may make (without option 0, "none"), from the drain models of its phases
+ * (`models`, in order) and the weapons that can spend on it (`weapons`): the drain line's plan within the kit / your
+ * weapons ({@link eventWantedCounts}) and that plan cut short after each spec in its send order (a partial drain, worth
+ * its ranked Defence); the line's plan within every cap (what is left when the bars can't pay the plan: re-planned over
+ * every weapon left, not cut; review 38h-1), the caps being per weapon in Team (each weapon its carriers' bars, up to
+ * their first round) and in all in Solo (one bar, up to the line's 8); Eye of Ayak every count up to the line's (partial
+ * counts count). Dropped (exact): an option leaving every phase where none does, or where another one with no more of
+ * any weapon does (the same Defence / magic defence: the same DPS and value). Not offered: a partial drain ranked at the
+ * floor without reaching it at the threshold (1 Tonalztics spec on Ocellus P1: 73%, ranked at the floor as the reachable
+ * Defence nearest to the expected) — it would be worth a full drain. Order: the line's plan, then more specs first (on
+ * equal HP the DP keeps the earlier option, the surer drain). Memoised (drain models by content).
+ */
+export const eventOptions = (
+  cfg: Pick<SpecBudgetConfig, 'drain' | 'solo' | 'carriers'>,
+  models: (DrainModel | null)[],
+  weapons: PlannerWeapon[],
+  threshold = DEFAULT_FLOOR_THRESHOLD,
+): SpecCounts[] => {
+  const memoKey = JSON.stringify([models.map(modelId), cfg.drain, cfg.drain === 'solo' ? cfg.solo : cfg.carriers, [...weapons].sort(), threshold]);
+  const hit = OPTIONS_MEMO.get(memoKey);
+  if (hit) return hit;
+  const can = new Set(weapons);
+  const clean = (c: SpecCounts): SpecCounts => Object.fromEntries(Object.entries(c)
+    .filter(([w, n]) => (n ?? 0) > 0 && can.has(w as PlannerWeapon))) as SpecCounts;
+  const perCarrier = (w: PlannerWeapon) => specAttempts(SPEC_MAX_ENERGY, SPEC_WEAPONS[w].energy);
+  const wanted = clean(eventWantedCounts(cfg, models, threshold));
+  const capOf = (w: PlannerWeapon) => (cfg.drain === 'team'
+    ? Math.floor(cfg.carriers?.[w] ?? 0) * perCarrier(w)
+    : Math.min(MAX_FLOOR_SPECS, Math.floor(cfg.solo?.[w] ?? 0)));
+  // Team: per weapon (each weapon its own carriers' bars); Solo: in all (one bar pays every weapon)
+  let caps: DrainCap[] = [{}];
+  if (cfg.drain === 'solo') caps = Array.from({ length: MAX_FLOOR_SPECS + 1 }, (_, n) => ({ total: n }));
+  else {
+    DEFENCE_DRAIN_ORDER.filter((w) => can.has(w) && capOf(w) > 0).forEach((w) => {
+      caps = caps.flatMap((c) => Array.from({ length: capOf(w) + 1 }, (_, n) => ({ ...c, [w]: n })));
+    });
+  }
+  // the drained state of every phase (ranked Defence, magic defence drained): equal = the same monsters
+  const live = models.filter((m): m is DrainModel => !!m);
+  const stateOf = (c: SpecCounts) => live.map((m) => {
+    const att = attemptsFromCounts(m, c);
+    const def = att.filter((w): w is DefenceDrainWeapon => w !== 'ayak');
+    const o = def.length && m.def > m.floor ? defenceOutcome(m, def, threshold) : null;
+    const ayak = att.length - def.length;
+    return `${o ? o.rankedDef : m.def}/${ayak ? ayakOutcome(m, ayak, threshold).rankedDrain : 0}${o && o.rankedDef <= m.floor && o.pFloor < threshold - 1e-12 ? '!' : ''}`;
+  }).join('#');
+  const ayakMax = wanted.ayak ?? 0;
+  const byState = new Map<string, SpecCounts[]>();
+  const seen = new Set<string>();
+  // the plans: the line's within the kit and within every cap; each plan cut short in its send order (a partial drain)
+  const plansSeen = new Map<string, SpecCounts>();
+  [wanted, ...caps.map((c) => clean(eventWantedCounts(cfg, models, threshold, c)))].forEach((d0) => {
+    const d = { ...d0 };
+    delete d.ayak;
+    plansSeen.set(countsKey(d), d);
+  });
+  const candidates = new Map<string, SpecCounts>();
+  const lineKey = (() => {
+    const d = { ...wanted };
+    delete d.ayak;
+    return countsKey(d);
+  })();
+  plansSeen.forEach((d) => {
+    const isLine = countsKey(d) === lineKey;
+    const m = live.find((x) => x.def > x.floor && attemptsFromCounts(x, d).some((w) => w !== 'ayak'));
+    const att = m ? attemptsFromCounts(m, d).filter((w): w is DefenceDrainWeapon => w !== 'ayak') : [];
+    const steps = m && att.length ? defenceOutcome(m, att, threshold).steps ?? [] : [];
+    const seq = steps.flatMap((st) => Array(st.count).fill(st.weapon) as DefenceDrainWeapon[]);
+    // weapons the order doesn't list (they can't hit the phase the order is for: AG's maul on the shield) come last
+    (Object.keys(d) as PlannerWeapon[]).forEach((w) => {
+      const extra = (d[w] ?? 0) - seq.filter((x) => x === w).length;
+      for (let k = 0; k < extra; k++) seq.push(w as DefenceDrainWeapon);
+    });
+    // speed: only the line's plan is cut short (the re-plans count whole)
+    const cur: SpecCounts = {};
+    seq.forEach((w, i) => {
+      cur[w] = (cur[w] ?? 0) + 1;
+      if (isLine || i === seq.length - 1) candidates.set(countsKey(cur), { ...cur });
+    });
+  });
+  candidates.forEach((x) => {
+    for (let n = 0; n <= ayakMax; n++) {
+      const y = n ? { ...x, ayak: n } : x;
+      const k = countsKey(y);
+      if (seen.has(k)) continue;
+      seen.add(k);
+      const s = stateOf(y);
+      byState.set(s, [...(byState.get(s) ?? []), y]);
+    }
+  });
+  const none = stateOf({});
+  const fewer = (a: SpecCounts, b: SpecCounts) => (Object.keys({ ...a, ...b }) as PlannerWeapon[])
+    .every((w) => (a[w] ?? 0) <= (b[w] ?? 0));
+  const rest: SpecCounts[] = [];
+  byState.forEach((xs, s) => {
+    if (s === none || s.includes('!')) return;
+    xs.forEach((c, i) => {
+      if (!xs.some((o, j) => j !== i && fewer(o, c) && (countsKey(o) !== countsKey(c)))) rest.push(c);
+    });
+  });
+  const wk = countsKey(wanted);
+  const out = [wanted, ...rest.filter((c) => countsKey(c) !== wk)
+    .sort((x, y) => (countsSum(y) - countsSum(x)) || countsKey(x).localeCompare(countsKey(y)))]
+    .filter((c) => countsSum(c) > 0);
+  if (OPTIONS_MEMO.size >= OPTIONS_MEMO_MAX) OPTIONS_MEMO.clear();
+  OPTIONS_MEMO.set(memoKey, out);
   return out;
 };
 
@@ -541,16 +690,33 @@ export const fixedEncounter = (
   return { phases, seconds: sum(phases) };
 };
 
+/**
+ * Phase 38h-2 (ROADMAP 38h): a drain's value in boss HP, from a pass without it (`before`) and with it (`after`), rows
+ * matched by key: a row's damage × (1 − DPS before ÷ DPS after) = H × g ÷ (1 + g) (H = the damage of the row, g = the
+ * DPS gain at the drained Defence; the fight length cancels), plus the damage a row no longer has to deal (Ocellus P3
+ * after the extra damage P2 carries over). Fixed-length rows (`fixedWall`: Ocellus P2) count only through the rows they
+ * shorten. A row with no DPS before counts its whole damage once the drain gives it some.
+ */
+export const drainHpValue = (before: PhaseTime[], after: PhaseTime[]): number => {
+  const by = new Map(after.map((r) => [r.key, r]));
+  return before.reduce((t, r0) => {
+    const r1 = by.get(r0.key);
+    if (!r1 || r0.fixedWall || !(r0.damage > 0) || !(r1.dps > 0)) return t;
+    if (!(r0.dps > 0)) return t + r0.damage;
+    return t + r0.damage - r1.damage * (r0.dps / r1.dps);
+  }, 0);
+};
+
 /** Review: re-plans of an encounter on the drained clock (`budgetedEncounter`). */
 export const CLOCK_ROUNDS = 2;
 
 /**
- * Phase 36, phase 38g: the encounter under the budget (see the module comment) and its phases. Each drain event makes
- * ONE fixed set of drain specs ({@link eventWantedCounts}: carriers / specs to the floor at the threshold, no seconds
- * involved), cut to what the bars pay at the event's spend rows: events in order; Team per carrier group (weapon) the
- * most specs ≤ wanted its pools pay; Solo your pool pays the event's drains first (Eye of Ayak dropped first, then the
- * weapon last in the drain order). The Defence those specs reach applies from the event on (`attemptsFromCounts`). The
- * DP (specBudget.ts `allocateBudget`) only places your damage specs and the surge dose around them.
+ * Phase 36, phase 38g, phase 38h-2: the encounter under the budget (see the module comment) and its phases. Each drain
+ * event offers its drain plans ({@link eventOptions}: the line's plan, re-plans within less, partial drains), each worth
+ * its HP ({@link drainHpValue}: the pass with it vs without it, the other events at their line plans); the DP
+ * (specBudget.ts `allocateBudget`, in HP, drains kept within 10% of damage specs) picks per event the plan and places
+ * your damage specs and the surge dose (Team: the drains first over the carriers' bars, then your bar). The Defence the
+ * chosen specs reach applies from the event on (`attemptsFromCounts`). No choice rests on seconds.
  */
 export const budgetedEncounter = (
   kit: RaidKit,
@@ -596,7 +762,9 @@ export const budgetedEncounter = (
     : (Object.keys(cfg.carriers ?? {}) as PlannerWeapon[]).filter((w) => (cfg.carriers![w] ?? 0) > 0))
     .filter((w) => w in SPEC_WEAPONS);
   const threshold = cfg.threshold ?? DEFAULT_FLOOR_THRESHOLD;
-  // per event: the row each weapon spends at (the first drained row it can hit) and the wanted counts
+  const perCarrier = (w: PlannerWeapon) => specAttempts(SPEC_MAX_ENERGY, SPEC_WEAPONS[w].energy);
+  // phase 38h-2: per event the drain plans it may make (option 0 = none, then the line's plan within the kit, then the
+  // plans within less: what is left when the bars can't pay it, partial Eye of Ayak counts), each worth its HP value
   const plans = evs.map((e) => {
     const drained = e.rows.filter((i) => !targetNoDrains(rows0[i].targetKey));
     const spendRow = new Map<PlannerWeapon, number>();
@@ -604,81 +772,45 @@ export const budgetedEncounter = (
       const r = drained.find((i) => hitsOf[i][w] !== false);
       if (r !== undefined) spendRow.set(w, r);
     });
-    let wanted: SpecCounts = {};
+    const options: SpecCounts[] = [{}];
     if (drained.length && spendRow.size) {
       if (kit.drainModel) {
-        wanted = eventWantedCounts(cfg, drained.map((i) => kit.drainModel!(noneQuery(rows0[i]))), threshold);
+        options.push(...eventOptions(cfg, drained.map((i) => kit.drainModel!(noneQuery(rows0[i]))), Array.from(spendRow.keys()), threshold));
       } else {
-        // a kit without drain models (toys): Team every carrier's first-round specs, Solo as many as the bar pays
-        drainWeapons.forEach((w) => {
-          wanted[w] = cfg.drain === 'team'
-            ? Math.floor(cfg.carriers![w] ?? 0) * specAttempts(SPEC_MAX_ENERGY, SPEC_WEAPONS[w].energy)
+        // a kit without drain models (toys): Team every carrier's first-round specs, Solo as many as the bar pays, and
+        // every smaller count (more specs first)
+        let grid: SpecCounts[] = [{}];
+        drainWeapons.filter((w) => spendRow.has(w)).forEach((w) => {
+          const n0 = cfg.drain === 'team'
+            ? Math.floor(cfg.carriers![w] ?? 0) * perCarrier(w)
             : Math.min(Math.floor(cfg.solo![w] ?? 0), MAX_FLOOR_SPECS);
+          grid = grid.flatMap((c) => Array.from({ length: n0 + 1 }, (_, n) => (n ? { ...c, [w]: n0 - n + 1 } : c)));
         });
+        options.push(...grid.filter((c) => countsSum(c) > 0).sort((x, y) => countsSum(y) - countsSum(x)));
       }
-      wanted = Object.fromEntries(Object.entries(wanted).filter(([w, n]) => (n ?? 0) > 0 && spendRow.has(w as PlannerWeapon)));
     }
-    // Solo: the specs dropped first when the bar can't pay (Eye of Ayak, then from the last weapon in the drain order)
-    const firstModel = cfg.drain === 'solo' && kit.drainModel && drained.length ? kit.drainModel(noneQuery(rows0[drained[0]])) : null;
-    const ranked: PlannerWeapon[] = firstModel ? drainOrder(firstModel).map((x) => x.weapon) : [];
-    const dropOrder: PlannerWeapon[] = ['ayak', ...DEFENCE_DRAIN_ORDER.filter((w) => !ranked.includes(w)).reverse(), ...[...ranked].reverse()];
-    return { spendRow, wanted, dropOrder };
+    return { spendRow, options };
   });
-  const optionOf = (ei: number, counts: SpecCounts): EventOption => ({
+  const optionOf = (ei: number, counts: SpecCounts, value = 0): EventOption => ({
     counts: counts as Record<string, number>,
     spends: Object.entries(counts).filter(([, n]) => (n ?? 0) > 0).map(([w, n]): OptionSpend => ({
       group: cfg.drain === 'solo' ? MY_POOL : w, specs: n!, cost: SPEC_WEAPONS[w as PlannerWeapon].energy, row: plans[ei].spendRow.get(w as PlannerWeapon)!,
     })),
+    value,
   });
   const zeroOutcome = (): RowOutcome => ({ seconds: 0, damage: 0, damageSpecs: [] });
-  // what the bars pay: events in order, each cut until the drains alone (no damage specs; your dose right after your
-  // first drain spends) are payable on this clock
-  const paidCounts = (rows: BudgetRow[]): SpecCounts[] => {
-    const paid: SpecCounts[] = evs.map(() => ({}));
-    const feasible = () => {
-      const events: BudgetEvent[] = evs.map((e, ei) => ({ firstRow: e.rows[0], options: [optionOf(ei, paid[ei])] }));
-      const mine = events.flatMap((e) => e.options[0].spends).filter((sp) => sp.group === MY_POOL && sp.specs > 0).map((sp) => sp.row);
-      return simulateBudget({
-        rows, events, groups, start, damageGroup: MY_POOL, rowOutcome: zeroOutcome, surge: ctx.surge, ...halfCost,
-      }, { options: evs.map(() => 0), damage: [], drinkRow: mine.length ? Math.min(...mine) : -1 }).feasible;
-    };
-    evs.forEach((_, ei) => {
-      const { wanted, dropOrder } = plans[ei];
-      if (cfg.drain === 'team') {
-        (Object.keys(wanted) as PlannerWeapon[]).forEach((w) => {
-          for (let n = wanted[w]!; n >= 0; n--) {
-            paid[ei] = { ...paid[ei], [w]: n };
-            if (n === 0 || feasible()) break;
-          }
-        });
-      } else {
-        paid[ei] = { ...wanted };
-        for (let guard = 0; guard < 64 && !feasible(); guard++) {
-          const w = dropOrder.find((x) => (paid[ei][x] ?? 0) > 0);
-          if (!w) break;
-          paid[ei] = { ...paid[ei], [w]: paid[ei][w]! - 1 };
-        }
-      }
-      paid[ei] = Object.fromEntries(Object.entries(paid[ei]).filter(([, n]) => (n ?? 0) > 0));
-    });
-    return paid;
-  };
   const rowEventMap = new Map(rows0.map((r, i) => [r.key, rowEvent[i]]));
   const npcEvent = new Map<string, number>();
   evs.forEach((e, i) => { if (!npcEvent.has(e.npc)) npcEvent.set(e.npc, i); });
-  const solve = (clockRows: BudgetRow[]): BudgetedEncounter => {
-    const dc = cfg.deathCharge ? withDeathCharge(clockRows, kills, cfg.deathCharge.share, ctx.clock0) : { rows: clockRows };
-    const { rows } = dc;
-    const counts = paidCounts(rows);
-    const fixed: Pick<EncounterAlloc, 'events' | 'rowEvent'> = {
-      events: evs.map((e, i) => ({
-        npc: e.npc, ...(e.reset ? { reset: e.reset } : {}), firstRowKey: rows0[e.rows[0]].key, counts: counts[i],
-      })),
-      rowEvent: Object.fromEntries(rows0.map((r, i) => [r.key, rowEvent[i]])),
-    };
-    // the row outcomes of the pass with every event at its counts (a phase of the pass that isn't a row: on the last
-    // row of its event)
-    const { rows: passRows, queryOf } = assignedPass(kit, ctx, fixed);
+  const allocOf = (counts: SpecCounts[]): Pick<EncounterAlloc, 'events' | 'rowEvent'> => ({
+    events: evs.map((e, i) => ({
+      npc: e.npc, ...(e.reset ? { reset: e.reset } : {}), firstRowKey: rows0[e.rows[0]].key, counts: counts[i],
+    })),
+    rowEvent: Object.fromEntries(rows0.map((r, i) => [r.key, rowEvent[i]])),
+  });
+  // the row outcomes of a pass for the rows of event `only` (a phase of the pass that isn't a row: on the last row of
+  // its event)
+  const outcomesOf = (passRows: PhaseTime[], queryOf: (r: PhaseTime) => PhaseQuery, only: number): Map<number, RowOutcome> => {
     const outcomes = new Map<number, RowOutcome>();
     passRows.forEach((r) => {
       let idx = rows0.findIndex((x) => x.key === r.key);
@@ -689,44 +821,87 @@ export const budgetedEncounter = (
         idx = evs[ev].rows[evs[ev].rows.length - 1];
         extra = true;
       }
+      if (rowEvent[idx] !== only) return;
       const prev = outcomes.get(idx);
       const damageSpecs = extra ? [] : damageChoices(kit, queryOf(r), r, cfg.damage, hitsOf[idx], mult);
       outcomes.set(idx, prev
         ? { seconds: prev.seconds + r.seconds, damage: prev.damage, damageSpecs: prev.damageSpecs }
         : { seconds: r.seconds, damage: r.damage, damageSpecs });
     });
-    const problem: AllocationProblem = {
+    return outcomes;
+  };
+  // phase 38h-2: each option's HP value (`drainHpValue`: the pass with the event at the option vs at none, the other
+  // events at their line plans) and its rows (seconds, damage specs at the option's Defence); no clock involved
+  const base = plans.map((pl) => pl.options[1] ?? {});
+  const values: { value: number, rows: Map<number, RowOutcome> }[][] = plans.map((pl, ei) => {
+    const at = (c: SpecCounts) => assignedPass(kit, ctx, allocOf(base.map((b, j) => (j === ei ? c : b))));
+    const none = at({});
+    return pl.options.map((c, oi) => {
+      const pass = oi === 0 ? none : at(c);
+      return { value: oi === 0 ? 0 : drainHpValue(none.rows, pass.rows), rows: outcomesOf(pass.rows, pass.queryOf, ei) };
+    });
+  });
+  // phase 38h-2: no option pruning (`prunedOptions`): an option's HP grows with its specs, so dominance almost never
+  // drops one and the pairwise check cost more than the DP it saved; the DP is exact over every option
+  const kept = plans.map((pl) => pl.options.map((_, oi) => oi));
+  const solve = (clockRows: BudgetRow[]): BudgetedEncounter & { problem: AllocationProblem, result: AllocationResult } => {
+    const dc = cfg.deathCharge ? withDeathCharge(clockRows, kills, cfg.deathCharge.share, ctx.clock0) : { rows: clockRows };
+    const { rows } = dc;
+    const full: AllocationProblem = {
       rows,
-      events: evs.map((e, ei) => ({ firstRow: e.rows[0], options: [optionOf(ei, counts[ei])] })),
+      events: evs.map((e, ei) => ({ firstRow: e.rows[0], options: plans[ei].options.map((c, oi) => optionOf(ei, c, values[ei][oi].value)) })),
       groups,
       start,
       damageGroup: MY_POOL,
-      rowOutcome: (i) => outcomes.get(i) ?? zeroOutcome(),
+      rowOutcome: (i, o) => values[rowEvent[i]][o]?.rows.get(i) ?? zeroOutcome(),
       surge: ctx.surge,
       keepEnd: cfg.carry,
       ...halfCost,
     };
-    ctx.onProblem?.(problem, problem);
-    const result = allocateBudget(problem);
+    const problem: AllocationProblem = {
+      ...full,
+      events: full.events.map((e, ei) => ({ ...e, options: kept[ei].map((oi) => e.options[oi]) })),
+      rowOutcome: (i, o) => values[rowEvent[i]][kept[rowEvent[i]][o]]?.rows.get(i) ?? zeroOutcome(),
+    };
+    ctx.onProblem?.(problem, full);
+    let result: AllocationResult;
+    if (cfg.drain === 'team') {
+      // Team (speed): the carriers' bars pay only drains and yours only damage specs, so the drains are chosen first
+      // (their HP; every carrier bar), then your damage specs and the dose at the chosen drains' Defence (a damage
+      // spec's net changes a little with the drain's DPS: not weighed in the drain choice)
+      const drains = allocateBudget({ ...problem, rowOutcome: (i, o) => ({ ...problem.rowOutcome(i, o), damageSpecs: [] }), surge: false });
+      const one = allocateBudget({
+        ...problem,
+        events: problem.events.map((e, ei) => ({ ...e, options: [e.options[drains.options[ei]]] })),
+        rowOutcome: (i) => problem.rowOutcome(i, drains.options[rowEvent[i]]),
+      });
+      result = { ...one, options: drains.options, hp: one.hp };
+    } else result = allocateBudget(problem);
+    const counts = evs.map((_, ei) => plans[ei].options[kept[ei][result.options[ei]]]);
+    const fixed = allocOf(counts);
+    const { rows: passRows, queryOf } = assignedPass(kit, ctx, fixed);
     const alloc: EncounterAlloc = {
       ...fixed,
       damage: Object.fromEntries(result.rows.map((d, i) => [rows0[i].key, d.damage as Partial<Record<DamageSpecWeapon, number>>])
         .filter(([, d]) => Object.values(d as Record<string, number>).some((n) => n > 0))),
       surge: ctx.surge,
     };
-    const sim = simulateBudget(problem, { options: evs.map(() => 0), damage: result.rows.map((r) => r.damage), drinkRow: drinkRowOf(result) });
-    const specsUsed = counts.reduce((tt, c) => tt + Object.values(c).reduce((x: number, n) => x + (n ?? 0), 0), 0)
+    const sim = simulateBudget(problem, { options: result.options, damage: result.rows.map((r) => r.damage), drinkRow: drinkRowOf(result) });
+    const specsUsed = counts.reduce((tt, c) => tt + countsSum(c), 0)
       + result.rows.reduce((tt, r) => tt + Object.values(r.damage).reduce((x, n) => x + n, 0), 0);
     const phases = withDamage(kit, passRows, alloc.damage, cfg, queryOf, mult);
     return {
       phases,
       seconds: sum(phases),
+      problem,
+      result,
       plan: {
         ...alloc,
         specs: specsUsed,
         noSpecSeconds: sum(rows0),
         start,
         end: sim.feasible ? sim.end : result.end,
+        hp: result.hp,
         ...(dc.plan ? { deathCharge: dc.plan } : {}),
         ...(adrenaline > 0 ? { adrenalineSeconds: adrenaline } : {}),
       },
@@ -743,7 +918,25 @@ export const budgetedEncounter = (
     out = next;
     if (same) break;
   }
-  return out;
+  // phase 38h-2: per event its drain's HP value; a drain your bar pays (Solo) is a close call when the damage specs its
+  // energy would buy instead are worth at least (1 − DRAIN_CLOSE_CALL) × its value (the drain is kept up to 1 + that)
+  const { problem, result } = out;
+  const events = out.plan.events.map((ev, ei) => {
+    const oi = result.options[ei];
+    const option = problem.events[ei].options[oi];
+    const value = option?.value ?? 0;
+    if (!oi || !(value > 0)) return ev;
+    let closeCall = false;
+    if (option.spends.some((sp) => sp.group === MY_POOL && sp.specs > 0)) {
+      const alt = allocateBudget({
+        ...problem, events: problem.events.map((e, j) => (j === ei ? { ...e, options: [e.options[0]] } : e)),
+      });
+      const instead = alt.hp - (result.hp - value);
+      closeCall = Number.isFinite(instead) && instead >= (1 - DRAIN_CLOSE_CALL) * value - 1e-9;
+    }
+    return { ...ev, hp: value, ...(closeCall ? { closeCall: true } : {}) };
+  });
+  return { phases: out.phases, seconds: out.seconds, plan: { ...out.plan, events } };
 };
 
 export { CARRY_SPEC_ENERGY };

@@ -285,6 +285,7 @@ describe('spec budget DP', () => {
             spends: [{
               group: 'elderMaul', specs: 2, cost: 50, row: 0,
             }],
+            value: 40,
           }],
         },
         {
@@ -294,6 +295,7 @@ describe('spec budget DP', () => {
             spends: [{
               group: 'tonalztics', specs: 2, cost: 50, row: 1,
             }],
+            value: 30,
           }],
         },
       ],
@@ -303,7 +305,10 @@ describe('spec budget DP', () => {
     };
     const a = allocateBudget(p);
     const b = allocateBudget({ ...p, keepEnd: true });
+    // phase 38h-2: each drain worth its HP (40, 30): both made
     expect(a.options).toEqual([1, 1]);
+    expect(a.hp).toBe(b.hp);
+    expect(a.hp).toBeCloseTo(70, 9);
     expect(a.seconds).toBe(b.seconds);
     expect(a.options).toEqual(b.options);
   });

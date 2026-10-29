@@ -212,20 +212,23 @@ describe('carriers by headcount (no seconds)', () => {
 });
 
 describe('Solo: your bar pays the drains first; the line says when it can\'t pay for 95%', () => {
-  test('FA Bork, party 1, Elder maul only: 4 specs to the floor at 95%, the bar pays 2 (100% ÷ 50%)', () => {
+  test('FA Bork, party 1, Elder maul only: 4 specs to the floor at 95%, the bar pays 2 (100% ÷ 50%), one per NPC (38h-2)', () => {
     const fa = raidConfig('fractured-archive');
     const a: BestSetupAssumptions = {
       ...fa.defaultAssumptions, partySize: 1, mySpecs: { ...fa.defaultAssumptions.mySpecs, elderMaul: true },
     };
     const kit = createKitEvaluator(fa.presets.map((p) => presetKitLoadout(generateEmptyPlayer(), p, a)), a);
     const e = encounterTime('bork-smorks', kit, raidTimeAssumptionsFrom(a, 'solo', fa.defaultTimeSettings, fa.time));
-    expect(e.specPlan!.events[0].counts).toEqual({ elderMaul: 2 });
+    // phase 38h-2 (in HP): the bar's 2 specs go where each is worth most: 1 on Bork (107 HP) and 1 on the Smorks (101 HP)
+    // beat 2 on Bork (the second takes Bork from Def 195 only to 180, worth less than the Smorks' first)
+    expect(e.specPlan!.events.map((x) => x.counts)).toEqual([{ elderMaul: 1 }, { elderMaul: 1 }]);
+    expect(e.specPlan!.events[0].hp).toBeGreaterThan(e.specPlan!.events[1].hp!);
     const facts = e.phases[0].choice!.drainLine!.facts!;
-    expect(facts.paid).toBe(2);
+    expect(facts.paid).toBe(1);
     expect(facts.specs).toBe(4);
-    expect(facts.short).toBe('needs 4 specs, you have ~2');
-    // the time model uses what the bar paid: 2 maul specs (both land: 300 → 195 → 127, floor 180)
-    expect(e.phases[0].choice!.drainLine!.items.find((i) => i.weapon === 'elderMaul')!.count).toBe(2);
+    expect(facts.short).toBe('needs 4 specs, you have ~1');
+    // the time model uses what the bar paid: 1 maul spec on Bork (300 → 195)
+    expect(e.phases[0].choice!.drainLine!.items.find((i) => i.weapon === 'elderMaul')!.count).toBe(1);
   });
 });
 

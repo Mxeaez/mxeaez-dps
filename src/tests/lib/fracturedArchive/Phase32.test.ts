@@ -381,9 +381,10 @@ describe('drain line wording: "needs N landed hits · N specs (C carriers) = S a
     expect(neededText(teamItem('xarth', 'tonalztics'))).toBe('needs 2 landed hits · 2 specs (1 carrier) = 4 attacks, 2 must land · 98%');
     expect(neededText(teamItem('bork', 'elderMaul'))).toBe('needs 2 landed specs · 4 specs (2 carriers) · 97%');
     expect(teamItem('bork', 'tonalztics')).toBeUndefined();
-    expect(neededText(teamItem('smorks', 'elderMaul'))).toBe('needs the other drains too · 3 specs (2 carriers) · → Def 5 · team: 4 specs (2 carriers) · → Def 5');
-    // The Smorks: Tonalztics counted after the maul's drains (3 landed mauls: Def 61)
-    expect(neededText(teamItem('smorks', 'tonalztics'))).toBe('needs 3 landed hits once 3 Elder maul specs land (Def 61) · 4 specs (2 carriers) = 8 attacks, 3 must land · → Def 5');
+    // phase 38h-2: interleaved send orders (T → M → T): the kit's 8 specs now leave Def 3 (was Def 5 from a block order)
+    expect(neededText(teamItem('smorks', 'elderMaul'))).toBe('needs the other drains too · 4 specs (2 carriers) · → Def 3');
+    // The Smorks: Tonalztics counted after the maul's drains (phase 38h-2: 4 landed mauls, Def 40; was 3, Def 61)
+    expect(neededText(teamItem('smorks', 'tonalztics'))).toBe('needs 2 landed hits once 4 Elder maul specs land (Def 40) · 4 specs (2 carriers) = 8 attacks, 2 must land · → Def 3');
     // Eye of Ayak: magic defence drained
     expect(neededText(teamItem('ag-flying', 'ayak'))).toBe('needs ≈ 39 magic defence drained · 2 specs (1 carrier) · → magic def 91');
   });
@@ -441,7 +442,8 @@ const USER_PLAN_NOT_OWNED = ['Obligator', "Zorya's tome", 'Rondache', "Inquisito
 // 4; with your damage specs you are not a carrier now (BGS + 2 Tonalztics; the Elder maul carrier made way)
 // phase 38f: 25:58.7 now (the pin followed the model through 38a-38e)
 // phase 38g (one fixed drain set per event, carriers by headcount): 25:58.7 → 27:16.5
-const USER_PLAN: [string, number] = ['27:16.5', 1636.54];
+// phase 38h-2 (bars valued in boss HP: specs where they are worth most, carriers by HP): 27:16.5 → 26:07.5
+const USER_PLAN: [string, number] = ['26:07.5', 1567.53];
 
 (process.env.RUN_SLOW_TESTS ? describe : describe.skip)('the user\'s plan (slow)', () => {
   test('no blessing; the freed slot buys Onyx bolts for the void switch (−1.1 s); slots = the exhaustive count', () => {

@@ -288,18 +288,38 @@ export const defenceOutcome = (
   const used = DEFENCE_DRAIN_ORDER.filter((w, i) => counts[i] > 0)
     .sort((a, b) => (drop(b) - drop(a)) || (DEFENCE_DRAIN_ORDER.indexOf(a) - DEFENCE_DRAIN_ORDER.indexOf(b)));
   let best: { states: DefenceState[], steps: DrainStep[], p: number, ed: number } | undefined;
-  permutations(used).forEach((order) => {
-    const steps = order.map((w) => ({ weapon: w, count: counts[DEFENCE_DRAIN_ORDER.indexOf(w)] }));
-    const states = orderedDistribution(model, steps);
-    const p = states.filter((s) => s.def <= model.floor).reduce((t, s) => t + s.p, 0);
-    const ed = states.reduce((t, s) => t + s.p * s.def, 0);
-    // permutations of the drain-ordered list come in rank order, so the first of equals is the earlier
-    if (!best || p > best.p + 1e-12 || (Math.abs(p - best.p) <= 1e-12 && ed < best.ed - 1e-9)) {
+  // phase 38h-2: interleaved orders too (T T T → M M M → T T T), the search of the drain line's plan with exactly these
+  // specs (`bestDrainPlan` `exact`); models without hit chances (hand-built toys) keep the block orders
+  const full = model as Partial<DrainModel>;
+  if (used.length > 1 && full.canHit && full.hitChance && full.energy && used.every((w) => full.canHit![w] && full.hitChance![w] > 0)) {
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    const plan = bestDrainPlan(model as DrainModel, {
+      weapons: used,
+      maxSpecs: attempts.length,
+      threshold,
+      exact: Object.fromEntries(used.map((w) => [w, counts[DEFENCE_DRAIN_ORDER.indexOf(w)]])),
+    });
+    if (plan && plan.steps.length) {
+      const states = orderedDistribution(model, plan.steps);
       best = {
-        states, steps, p, ed,
+        states, steps: plan.steps, p: plan.p, ed: plan.expectedDef,
       };
     }
-  });
+  }
+  if (!best) {
+    permutations(used).forEach((order) => {
+      const steps = order.map((w) => ({ weapon: w, count: counts[DEFENCE_DRAIN_ORDER.indexOf(w)] }));
+      const states = orderedDistribution(model, steps);
+      const p = states.filter((s) => s.def <= model.floor).reduce((t, s) => t + s.p, 0);
+      const ed = states.reduce((t, s) => t + s.p * s.def, 0);
+      // permutations of the drain-ordered list come in rank order, so the first of equals is the earlier
+      if (!best || p > best.p + 1e-12 || (Math.abs(p - best.p) <= 1e-12 && ed < best.ed - 1e-9)) {
+        best = {
+          states, steps, p, ed,
+        };
+      }
+    });
+  }
   const b = best!;
   const o = rankedDefence(b.states, model.floor, threshold);
   const out: DefenceOutcome = { ...o, rankedCounts: reproducingCounts(model, o.rankedDef, o.rankedCounts), steps: b.steps };
@@ -352,10 +372,10 @@ export interface AyakOutcome {
 }
 
 /** Exact P(Σ Ayak damage ≥ magic defence bonus) over `attempts` specs + the expected / ranked drain. */
-export const ayakOutcome = (
+const ayakOutcomeOf = (
   model: Pick<DrainModel, 'magicDef' | 'outcomes' | 'expectedDamage'>,
   attempts: number,
-  threshold = DEFAULT_FLOOR_THRESHOLD,
+  threshold: number,
 ): AyakOutcome => {
   const target = Math.max(0, model.magicDef);
   if (target === 0) {
@@ -383,6 +403,28 @@ export const ayakOutcome = (
   return {
     attempts, pZero, expectedDrain, rankedDrain, magicDefAfter: model.magicDef - rankedDrain,
   };
+};
+
+const ayakMemo = new WeakMap<object, Map<string, AyakOutcome>>();
+
+export const ayakOutcome = (
+  model: Pick<DrainModel, 'magicDef' | 'outcomes' | 'expectedDamage'>,
+  attempts: number,
+  threshold = DEFAULT_FLOOR_THRESHOLD,
+): AyakOutcome => {
+  // phase 38h-2 (speed): memoised per model
+  let memo = ayakMemo.get(model);
+  if (!memo) {
+    memo = new Map();
+    ayakMemo.set(model, memo);
+  }
+  const mk = `${attempts}|${threshold}`;
+  const hit = memo.get(mk);
+  if (hit) return hit;
+  const out = ayakOutcomeOf(model, attempts, threshold);
+  if (memo.size >= 20000) memo.clear();
+  memo.set(mk, out);
+  return out;
 };
 
 // --- reductions / text ---------------------------------------------------------------------------------------------
@@ -813,6 +855,9 @@ export interface DrainPlan {
   expectedDef: number;
 }
 
+/** Phase 38h-2: a cap on a drain plan's specs: per weapon (a weapon not listed: no cap) and in all. */
+export type DrainCap = Partial<Record<DefenceDrainWeapon, number>> & { total?: number };
+
 export interface DrainPlanOptions {
   /** The Defence drain weapons available (those that can't hit are skipped). */
   weapons: DefenceDrainWeapon[];
@@ -823,9 +868,19 @@ export interface DrainPlanOptions {
   maxCarriers?: number;
   /** Phase 38h-1: the most specs of each weapon (the kit's carriers × their specs; undefined = no cap but `maxSpecs`). */
   available?: Partial<Record<DefenceDrainWeapon, number>>;
+  /**
+   * Phase 38h-2: exactly these specs (no threshold search): the order of them that lands the floor most often (then the
+   * lowest expected Defence, fewer weapon changes, the drain order); {@link defenceOutcome} uses it.
+   */
+  exact?: Partial<Record<DefenceDrainWeapon, number>>;
 }
 
 const planMemo = new Map<string, DrainPlan | null>();
+/**
+ * Phase 38h-2: the most weapon blocks an order may have where a weapon comes back (T ×3 → M ×3 → T ×3); orders with
+ * every weapon in one block are always tried.
+ */
+export const MAX_DRAIN_BLOCKS = 3;
 
 /**
  * Phase 38g-2 (the user, 2026-10-28: "just what to do to land it most often"): the combination of the available drain
@@ -883,7 +938,8 @@ export const bestDrainPlan = (
     };
     const carriersOk = (c: number[]) => (opts.maxCarriers === undefined
       || c.reduce((t, n, wi) => t + Math.ceil(n / per(weapons[wi])), 0) <= opts.maxCarriers)
-      && (!opts.available || c.every((n, wi) => n <= (opts.available![weapons[wi]] ?? 0)));
+      && (!opts.available || c.every((n, wi) => n <= (opts.available![weapons[wi]] ?? 0)))
+      && (!opts.exact || c.every((n, wi) => n <= Math.floor(opts.exact![weapons[wi]] ?? 0)));
     const rank = (s: DrainStep[]) => s.flatMap((x) => Array(x.count).fill(weapons.indexOf(x.weapon)) as number[]);
     const earlier = (a: number[], b: number[]) => {
       for (let j = 0; j < Math.min(a.length, b.length); j++) if (a[j] !== b[j]) return a[j] < b[j];
@@ -905,7 +961,12 @@ export const bestDrainPlan = (
     const expand = (layer: Node[]): Node[] => {
       const groups = new Map<string, Node[]>();
       layer.forEach((node) => {
-        const options = [...(node.last >= 0 ? [node.last] : []), ...weapons.map((_, wi) => wi).filter((wi) => !node.counts[wi])];
+        // phase 38h-2 (review 38h-1): interleaved orders too (T T T → M M M → T T T): a weapon used before may come
+        // back while the order has fewer than MAX_DRAIN_BLOCKS blocks (speed: every interleaving made the dominance
+        // groups too large), an unused one always; the groups below (same counts, last weapon and blocks) have the same
+        // continuations
+        const options = weapons.map((_, wi) => wi)
+          .filter((wi) => wi === node.last || !node.counts[wi] || node.steps.length < MAX_DRAIN_BLOCKS);
         options.forEach((wi) => {
           const counts = node.counts.map((n, j) => (j === wi ? n + 1 : n));
           if (!carriersOk(counts)) return;
@@ -931,7 +992,7 @@ export const bestDrainPlan = (
             run += diff[d];
             states[d] = run > 1e-15 ? run : 0; // drops the round-off the differences leave
           }
-          const group = `${counts.join(',')}|${wi}`;
+          const group = `${counts.join(',')}|${wi}|${Math.min(steps.length, MAX_DRAIN_BLOCKS)}`;
           const g = groups.get(group);
           const child = {
             steps, counts, last: wi, states,
@@ -989,7 +1050,7 @@ export const bestDrainPlan = (
     };
     const planOf = (b: { node: Node, p: number, ed: number }, floor: boolean, target: number): DrainPlan => {
       const counts: Partial<Record<DefenceDrainWeapon, number>> = {};
-      b.node.steps.forEach((s) => { counts[s.weapon] = s.count; });
+      b.node.steps.forEach((s) => { counts[s.weapon] = (counts[s.weapon] ?? 0) + s.count; });
       return {
         steps: b.node.steps, counts, specs: countsTotal(counts), floor, target, p: b.p, expectedDef: b.ed,
       };
@@ -1002,6 +1063,17 @@ export const bestDrainPlan = (
       }];
     };
     out = null;
+    if (opts.exact) {
+      // phase 38h-2: exactly these specs, the order that lands most often
+      const n = weapons.reduce((t, w) => t + Math.max(0, Math.floor(opts.exact![w] ?? 0)), 0);
+      let layer0 = root();
+      for (let k = 0; k < n && layer0.length; k++) layer0 = expand(layer0);
+      const b = n > 0 ? best(layer0, model.floor) : undefined;
+      out = b ? planOf(b, b.p >= threshold - 1e-12, model.floor) : empty(model.floor);
+      if (planMemo.size >= 20000) planMemo.clear();
+      planMemo.set(key, out);
+      return out;
+    }
     // pass 1: the fewest specs reaching the floor at the threshold (and d* on the way)
     let dStar = model.def;
     let layer = root();
@@ -1029,8 +1101,12 @@ export const bestDrainPlan = (
 export const planPerCarrier = (model: Pick<DrainModel, 'energy'>, w: DefenceDrainWeapon): number => Math.max(1, specAttempts(100, model.energy[w]));
 
 /** Phase 38h-1: a plan's carriers per weapon (each carrier makes {@link planPerCarrier} specs). */
-export const planCarriers = (model: Pick<DrainModel, 'energy'>, plan: Pick<DrainPlan, 'steps'>): Partial<Record<DefenceDrainWeapon, number>> => Object
-  .fromEntries(plan.steps.map((s) => [s.weapon, Math.ceil(s.count / planPerCarrier(model, s.weapon))]));
+export const planCarriers = (model: Pick<DrainModel, 'energy'>, plan: Pick<DrainPlan, 'steps'>): Partial<Record<DefenceDrainWeapon, number>> => {
+  // phase 38h-2: an interleaved plan lists a weapon more than once
+  const n: Partial<Record<DefenceDrainWeapon, number>> = {};
+  plan.steps.forEach((s) => { n[s.weapon] = (n[s.weapon] ?? 0) + s.count; });
+  return Object.fromEntries(Object.entries(n).map(([w, k]) => [w, Math.ceil(k! / planPerCarrier(model, w as DefenceDrainWeapon))]));
+};
 
 /**
  * Phase 38h-1: the drain line's Team plan (drainLine.ts `drainFacts`, party > 1): every Defence drain weapon that can
@@ -1060,19 +1136,35 @@ export const kitDrainPlan = (
   model: Pick<DrainModel, 'def' | 'floor' | 'magicLevel' | 'outcomes' | 'accuracy' | 'canHit' | 'hitChance' | 'energy'>,
   kit: { drain: 'team', carriers: Partial<Record<PlannerWeapon, number>> } | { drain: 'solo', weapons: DefenceDrainWeapon[] },
   threshold = DEFAULT_FLOOR_THRESHOLD,
+  /**
+   * Phase 38h-2: what the bars can still pay: at most this many specs of a weapon (a weapon not listed: no cap) and at
+   * most `total` in all; undefined = no cap.
+   */
+  cap?: DrainCap,
 ): DrainPlan | null => {
+  const capOf = (w: DefenceDrainWeapon, n: number) => (cap && cap[w] !== undefined ? Math.min(n, Math.max(0, Math.floor(cap[w]!))) : n);
+  const total = cap?.total !== undefined ? Math.max(0, Math.floor(cap.total)) : Infinity;
   if (kit.drain === 'solo') {
-    const weapons = DEFENCE_DRAIN_ORDER.filter((w) => kit.weapons.includes(w) && model.canHit[w]);
+    const weapons = DEFENCE_DRAIN_ORDER.filter((w) => kit.weapons.includes(w) && model.canHit[w] && capOf(w, MAX_FLOOR_SPECS) > 0);
+    if (!weapons.length || !(total > 0)) return null;
+    const available = cap ? Object.fromEntries(weapons.map((w) => [w, capOf(w, MAX_FLOOR_SPECS)])) : undefined;
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    return weapons.length ? bestDrainPlan(model, { weapons, maxSpecs: MAX_FLOOR_SPECS, threshold }) : null;
+    return bestDrainPlan(model, {
+      weapons,
+      maxSpecs: Math.min(total, available ? Math.min(MAX_FLOOR_SPECS, Object.values(available).reduce((t, n) => t + n, 0)) : MAX_FLOOR_SPECS),
+      threshold,
+      ...(available ? { available } : {}),
+    });
   }
-  const weapons = DEFENCE_DRAIN_ORDER.filter((w) => Math.floor(kit.carriers[w] ?? 0) > 0 && model.canHit[w]);
+  const weapons = DEFENCE_DRAIN_ORDER.filter((w) => Math.floor(kit.carriers[w] ?? 0) > 0 && model.canHit[w]
+    && capOf(w, Math.floor(kit.carriers[w] ?? 0) * planPerCarrier(model, w)) > 0);
   if (!weapons.length) return null;
-  const available = Object.fromEntries(weapons.map((w) => [w, Math.floor(kit.carriers[w] ?? 0) * planPerCarrier(model, w)]));
+  const available = Object.fromEntries(weapons.map((w) => [w, capOf(w, Math.floor(kit.carriers[w] ?? 0) * planPerCarrier(model, w))]));
+  if (!(total > 0)) return null;
   // eslint-disable-next-line @typescript-eslint/no-use-before-define
   return bestDrainPlan(model, {
     weapons,
-    maxSpecs: Object.values(available).reduce((t, n) => t + n, 0),
+    maxSpecs: Math.min(total, Object.values(available).reduce((t, n) => t + n, 0)),
     threshold,
     maxCarriers: weapons.reduce((t, w) => t + Math.floor(kit.carriers[w] ?? 0), 0),
     available,
