@@ -1183,7 +1183,7 @@ const PlanView: React.FC<{
                 ) : <div>No other candidate loadout would make the route faster.</div>}
                 {result.alternatives.length > 0 && (
                   <>
-                    <div>Alternatives (a lighter kit, then the best kit of each other style mix):</div>
+                    <div title="Each alternative's % is timed with the plan's reference spec plan (the optimiser's score), not its own: up to ~1% off (under the 2% close-call margin); the kit itself is chosen on its own spec plan">Alternatives (a lighter kit, then the best kit of each other style mix):</div>
                     <RejectionList rows={result.alternatives} testId="plan-alternatives" total={secs(planned.seconds)} />
                   </>
                 )}

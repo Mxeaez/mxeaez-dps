@@ -384,6 +384,8 @@ export interface BruteForce {
   /** The reduced plan's time; `ms` = plan + kits. */
   planMs: number;
   ms: number;
+  /** Phase 38j review: the plan's largest (borrowed − own) ÷ borrowed among the kits re-timed with their own plan. */
+  ownPlanSlack: number;
 }
 
 export const BRUTE_TOLERANCE = 1e-6;
@@ -470,6 +472,7 @@ export const bruteForceKits = (raid: RaidId, opts: {
     top: sorted.slice(0, 5).map((t) => ({ seconds: t.seconds, kit: names(t.members) })),
     planMs,
     ms: Date.now() - t0,
+    ownPlanSlack: res.stats.ownPlanSlack ?? 0,
   };
 };
 

@@ -527,19 +527,6 @@
  "rejected": [],
  "alternatives": [
   {
-   "label": "melee + ranged + magic: Twisted bow (Masori) / Inquisitor's + Obligator / Ascension crossbows + diamond (e) (Masori) / Tumeken's shadow switch on Inquisitor's + Obligator",
-   "kind": "alternative",
-   "deltaSeconds": 0,
-   "deltaSlots": 2,
-   "reason": "0.0 s slower",
-   "weapons": [
-    "Twisted bow",
-    "Obligator",
-    "Ascension crossbows",
-    "Tumeken's shadow"
-   ]
-  },
-  {
    "label": "melee + magic: Tumeken's shadow (Ancestral) / Inquisitor's + Obligator / Harmonised Nightmare staff / Harmonised Nightmare staff #4",
    "kind": "alternative",
    "deltaSeconds": -86.73904358212144,

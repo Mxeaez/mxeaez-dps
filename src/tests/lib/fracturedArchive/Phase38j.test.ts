@@ -193,10 +193,11 @@ describe('close calls (by hand)', () => {
       ['kit', 0.019, 'A11,A1,A2,A5'],
       ['loadout', 0.015, 'A11,A1,A2'],
       ['loadout', 0.02, 'A11'],
-      ['ring', 0.01, 'A11'],
-      ['carrier', 0.008, 'A11'],
-      ['share', 0.0149, 'A11'],
-      ['damage-spec', 0.01, 'A11'],
+      // review 38j: the energy choices also rest on D36 (the measured room times)
+      ['ring', 0.01, 'A11,D36'],
+      ['carrier', 0.008, 'A11,D36'],
+      ['share', 0.0149, 'A11,D36'],
+      ['damage-spec', 0.01, 'A11,D36'],
       ['drain', 0.1, 'A11'],
     ]);
     expect(cs.map((c) => c.text)).toEqual([
@@ -210,6 +211,17 @@ describe('close calls (by hand)', () => {
       'Xarth: the drain on Xarth vs the damage specs its energy would buy (within 10%; the drain is kept)',
     ]);
     expect(closeCallTag(cs[1])).toBe('close call (depends on A11, A1, A2)');
+    expect(closeCallTag(cs[4])).toBe('close call (depends on A11, D36)');
+  });
+
+  test("review 38j: an alternative that is the plan's kit plus loadouts at the same time is no runner-up", () => {
+    const superset = {
+      label: "melee + ranged + magic: Twisted bow (Masori) / Inquisitor's + Obligator / Tumeken's shadow (Ancestral) / Kodai wand",
+      deltaSeconds: 0,
+    };
+    expect(closeCalls({ ...input, alternatives: [superset] }).filter((c) => c.kind === 'kit')).toEqual([]);
+    // slower by 1.0%: still a close call
+    expect(closeCalls({ ...input, alternatives: [{ ...superset, deltaSeconds: -10 }] }).filter((c) => c.kind === 'kit')).toHaveLength(1);
   });
 
   test('nothing within 2%: no close calls', () => {
@@ -228,14 +240,14 @@ describe('close calls (by hand)', () => {
     expect(assumptionsFor(['Emberlight', 'Zorya\'s tome', 'Obligator'])).toEqual(['A11', 'A1', 'A2', 'A8', 'A9']);
   });
 
-  test('the fa headline: the tied kit, the worn Ascension crossbows (0.6%) and both carriers', () => {
+  test('the fa headline: the worn Ascension crossbows (0.6%) and both carriers (review 38j: no superset kit)', () => {
     const fx = phase37Fixture('fa');
     const r = retimeHeadline('fa');
     const planned = r.comparison.routes.findIndex((x) => x.route.id === r.route);
     const cs = planCloseCalls({ ...fx, comparison: r.comparison, planned });
-    expect(cs.map((c) => c.kind)).toEqual(['kit', 'loadout', 'carrier', 'carrier']);
-    expect(cs[0].text).toMatch(/: the same boss time as this kit$/);
-    expect(cs[1].text).toBe('Ascension crossbows + diamond (e) (Masori) (worn): 0.6% less boss time than the kit without it');
-    expect(cs[1].dependsOn).toEqual(['A11', 'A5']);
+    expect(cs.map((c) => c.kind)).toEqual(['loadout', 'carrier', 'carrier']);
+    expect(cs[0].text).toBe('Ascension crossbows + diamond (e) (Masori) (worn): 0.6% less boss time than the kit without it');
+    expect(cs[0].dependsOn).toEqual(['A11', 'A5']);
+    expect(cs[1].dependsOn).toEqual(['A11', 'D36']);
   }, 120000);
 });

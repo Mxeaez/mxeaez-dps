@@ -1884,6 +1884,10 @@ brute-force probes found kits 0.2-0.5% faster). That time is now a pre-screen: e
 the best exact × 1.01; the fastest keeping the dedupe rule on exact times wins. Run again after the Team carriers are
 re-picked by HP (the brute force times every kit under the final carriers). The winners needed 0.50% (small pool) and
 0.77% (tiny pool) of borrowed slack. Phase36's brute force now applies the dedupe rule, as the probe does since 38c.
+Review 38j: the margin is 1.5% (a kit's own plan beat its borrowed time by up to 1.16% in the tiny pool;
+`stats.ownPlanSlack`, Phase37c checks < 0.8 × the margin). The Plan's alternative kits and rejected additions are still
+timed with the reference kit's spec plan (the optimiser's score, error up to ~1.2%, under the 2% close-call margin; the
+tooltip says so); the chosen kit is not.
 
 ## Routes tab (phase 16: raid time model)
 

@@ -202,8 +202,10 @@ slowDescribe('caches (review fix)', () => {
     const second = plan(inputs(7), reduced(raid));
     expect(first.stats.searches).toBeGreaterThan(0);
     expect(second.stats.searches).toBe(0);
-    // phase 38j: the kits re-timed with their own spec plan (exact, a fresh evaluator per plan) add evaluations: / 5 → / 4
-    expect(second.stats.evaluations).toBeLessThan(first.stats.evaluations / 4);
+    // phase 38j review: the exact re-times (kits ranked by their own spec plan) use a fresh evaluator per plan, so the
+    // cached part is the search / matrix DPS: evaluations − exactEvaluations
+    const cachedPart = (r: typeof first) => r.stats.evaluations - (r.stats.exactEvaluations ?? 0);
+    expect(cachedPart(second)).toBeLessThan(cachedPart(first) / 5);
     // same DPS as an uncached run
     clearPlanCaches();
     const fresh = plan(inputs(7), reduced(raid));

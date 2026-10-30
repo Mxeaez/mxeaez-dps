@@ -33,6 +33,11 @@ const WEAPON_ASSUMPTIONS: [string, string[]][] = [
 
 /** Every FA choice rests on A11 (Defence doesn't scale with the party). */
 export const BASE_ASSUMPTIONS = ['A11'];
+/**
+ * Review 38j: the choices the spec energy decides (ring, carriers, your bar, the damage spec weapon) also rest on D36 (the
+ * measured room times).
+ */
+export const ENERGY_ASSUMPTIONS = [...BASE_ASSUMPTIONS, 'D36'];
 
 /** The (A) rows a choice between these names rests on (A11 first, then by number). */
 export const assumptionsFor = (names: (string | null | undefined)[]): string[] => {
@@ -105,8 +110,12 @@ const closeBy = (saved: number, total: number): number | null => {
 export const closeCalls = (r: CloseCallInput): CloseCall[] => {
   const out: CloseCall[] = [];
   const kitNames = r.kit.flatMap((c) => [c.label, c.equipment.weapon?.name]);
-  // the kit vs the best other kit (alternatives are slower or equal)
+  // the kit vs the best other kit (alternatives are slower or equal); review 38j: not the plan's kit plus extra loadouts
+  // at the same time (a superset the dedupe rule would drop, not a runner-up)
+  const kitLabels = r.kit.map((c) => c.label);
   r.alternatives.forEach((x) => {
+    const loadouts = x.label.slice(x.label.indexOf(': ') + 2).split(' / ');
+    if (x.deltaSeconds >= -1e-9 && kitLabels.every((l) => loadouts.includes(l)) && loadouts.length > kitLabels.length) return;
     const m = x.deltaSeconds <= 1e-9 ? closeBy(x.deltaSeconds, r.total) : null;
     if (m === null) return;
     out.push({
@@ -141,7 +150,7 @@ export const closeCalls = (r: CloseCallInput): CloseCall[] => {
         kind: 'ring',
         text: `${x.ring} instead of ${r.ring.ring}: ${bossTimeDiff(base - x.seconds, r.total)}`,
         margin: m,
-        dependsOn: [...BASE_ASSUMPTIONS],
+        dependsOn: [...ENERGY_ASSUMPTIONS],
       });
     });
   }
@@ -155,7 +164,7 @@ export const closeCalls = (r: CloseCallInput): CloseCall[] => {
       kind: 'carrier',
       text: `${row.carriers} ${w} carrier${row.carriers === 1 ? '' : 's'} vs ${row.carriers - 1}: the last saves ${bossTimeDiff(s!, r.total).replace(' less', '')}`,
       margin: m,
-      dependsOn: [...BASE_ASSUMPTIONS],
+      dependsOn: [...ENERGY_ASSUMPTIONS],
     });
   });
   // your spec bar (Team): "the bars pay X HP on the route vs Y HP if you carry"
@@ -169,7 +178,7 @@ export const closeCalls = (r: CloseCallInput): CloseCall[] => {
       kind: 'share',
       text: `your spec bar: ${x.toFixed(0)} HP with your damage specs vs ${y.toFixed(0)} HP if you carry a drain weapon (${pct(m)} apart)`,
       margin: m,
-      dependsOn: [...BASE_ASSUMPTIONS],
+      dependsOn: [...ENERGY_ASSUMPTIONS],
     });
   });
   // the damage spec weapon brought first vs the runner-up (HP per full bar over the route's bosses / phases)
@@ -186,7 +195,7 @@ export const closeCalls = (r: CloseCallInput): CloseCall[] => {
           kind: 'damage-spec',
           text: `${damageLabel(br.first)} vs ${damageLabel(runner)}: ${pct(Math.abs(m))} apart in HP per bar over the route`,
           margin: Math.abs(m),
-          dependsOn: [...BASE_ASSUMPTIONS],
+          dependsOn: [...ENERGY_ASSUMPTIONS],
         });
       }
     }

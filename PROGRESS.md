@@ -3,6 +3,24 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 38j review fixes (FA, 2026-10-30)
+
+Review of 7d882dd2 + dcbf15cb: PASS with findings.
+- (1) Close calls skip an alternative that is the plan's kit plus extra loadouts at the same time. The planner no longer
+  forces a style's loadout into an alternative when it saves less than switchSavingRequired(its slots). fa loses its
+  "melee + ranged + magic … Tumeken's shadow switch" alternative (0 s, +2 slots), so phase37/fa.json changed in
+  `alternatives` only. Close calls: fa 4 → 3.
+- (2) The ring, carrier, your-bar and damage-spec close calls also depend on D36 ("close call (depends on A11, D36)").
+- (3) `stats.ownPlanSlack` records the largest (borrowed − own) ÷ borrowed among the kits re-timed. Phase37c tiny
+  measured 1.16%, more than the 1% margin, so **OWN_PLAN_MARGIN is now 1.5%**; Phase37c asserts slack < 0.8 × the margin.
+- (4) The second pass starts from the chosen kit's borrowed time under the new carriers, not its old optimiser time.
+- (5) Comment on OWN_PLAN_MEMBER_MIN (a pre-filter on borrowed times).
+- (6) BEST_SETUP and the alternatives' tooltip: their % still use the reference kit's spec plan (up to ~1.2% off).
+- Headlines unchanged (`pinHeadlines --full --check`: only phase37/fa.json's alternatives). Planning time alone: fa
+  45.1 s, faSolo 53.1 s, faNotOwned 65.4 s. Tests: Phase38j (superset case, D36 tags, fa 3 close calls), Phase34
+  alternatives; verifyPhase38j expects 3 close calls.
+- Run: fast suite green (1452); FA slow suites green (380, Phase36 + Phase37c brute force gap 0, Phase27 caches re-run after its fix); `pinHeadlines --full --check` no change; verifyPhase38j OK (screenshot re-taken: 3 close calls); tsc, lint clean.
+
 ## Phase 38j follow-up: kits ranked by their own spec plan (FA, 2026-10-30)
 
 Orchestrator decision on 7d882dd2's open items. docs/BEST_SETUP.md *Kits ranked by their own spec plan*.

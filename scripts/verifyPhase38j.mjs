@@ -5,7 +5,7 @@
  * - Plan (FA defaults, Team): the total = the fa headline, labelled "a rough estimate" (data-testid plan-estimate).
  * - "Why this kit": alternatives and kit loadouts as % of boss time ("… more boss time than this kit"), no seconds in the
  *   text; the ring line's others as %.
- * - Close calls box: the fa headline's 4 (the tied kit, the worn Ascension crossbows, both carriers), each tagged
+ * - Close calls box: the fa headline's 3 (the worn Ascension crossbows, both carriers; review 38j: no superset kit), each tagged
  *   "close call (depends on A11…)".
  * - Advanced (plan): "Travel time (min)" = 4.5 (the travel between the measured rooms).
  * - Per-phase details, routes table: the planned route in m:ss, the others as a % difference.
@@ -64,8 +64,9 @@ const main = async () => {
     kind: e.getAttribute('data-kind'), depends: e.getAttribute('data-depends'), text: e.textContent.replace(/\s+/g, ' ').trim(),
   })));
   calls.forEach((c) => console.log(`     close call [${c.kind}] ${c.text}`));
-  check(await box.getAttribute('data-count') === '4', `close calls: ${await box.getAttribute('data-count')} (expected 4)`);
-  check(calls.map((c) => c.kind).join(',') === 'kit,loadout,carrier,carrier', `kinds: ${calls.map((c) => c.kind).join(',')}`);
+  check(await box.getAttribute('data-count') === '3', `close calls: ${await box.getAttribute('data-count')} (expected 3)`);
+  check(calls.map((c) => c.kind).join(',') === 'loadout,carrier,carrier', `kinds: ${calls.map((c) => c.kind).join(',')}`);
+  check(calls.filter((c) => c.kind === 'carrier').every((c) => c.depends === 'A11,D36'), 'carriers: depends on A11, D36');
   check(calls.every((c) => c.depends.startsWith('A11') && /close call \(depends on A11/.test(c.text)), 'each tagged "close call (depends on A11…)"');
   check(calls.some((c) => c.kind === 'loadout' && c.text.startsWith('Ascension crossbows + diamond (e) (Masori) (worn): 0.6% less boss time') && c.depends === 'A11,A5'), 'the worn Ascension crossbows: 0.6%, depends on A11, A5');
 

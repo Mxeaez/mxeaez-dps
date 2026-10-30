@@ -340,8 +340,9 @@ describe('render: icons next to every item name', () => {
     expect(r.rejected).toEqual([]);
     expect(r.alternatives.map((x) => `${x.label}: ${x.deltaSlots} — ${x.reason.replace(/[0-9.]+ s slower/, 'N s slower')}`)).toEqual([
       // phase 38h-3 (ZCB only: 3 more free slots): a four-loadout kit fits now. Phase 38h-3b (+ Burning claws, a Surge
-      // potion: 2 fewer free): the ranged + magic one takes diamond ascension bolts, 4 slots more
-      "melee + ranged + magic: Twisted bow (Masori) / Inquisitor's + Obligator / Ascension crossbows + diamond (e) (Masori) / Tumeken's shadow switch on Inquisitor's + Obligator: 2 — N s slower",
+      // potion: 2 fewer free): the ranged + magic one takes diamond ascension bolts, 4 slots more. Review 38j: the
+      // melee + ranged + magic line (the plan + a Tumeken's shadow switch saving 0 s) is gone: a forced loadout must keep
+      // the dedupe rule
       "melee + magic: Tumeken's shadow (Ancestral) / Inquisitor's + Obligator / Harmonised Nightmare staff / Harmonised Nightmare staff #4: 3 — N s slower",
       "ranged + magic: Tumeken's shadow (Ancestral) / Twisted bow (Masori) / Ascension crossbows + diamond (e) (Masori) / Ascension crossbows + Diamond ascension bolts (e): 4 — N s slower",
       "magic: Tumeken's shadow (Ancestral) / Harmonised Nightmare staff / Harmonised Nightmare staff #4: -5 — N s slower",

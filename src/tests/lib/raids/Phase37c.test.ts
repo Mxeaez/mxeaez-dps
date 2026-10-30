@@ -8,6 +8,7 @@ import {
 } from '@/tests/utils/probes';
 import { headline } from '@/tests/utils/headlines';
 import { slowTest } from '@/tests/utils/slow';
+import { OWN_PLAN_MARGIN } from '@/lib/fracturedArchive/planner';
 
 // Phase 37c: smoke tests of the three review probes (scripts/probes/*.mjs over src/tests/utils/probes.ts) on small cases.
 
@@ -109,6 +110,8 @@ describe('brute-force kits: the planner\'s kit = the best of every kit (tiny poo
     expect(b.gap).toBeLessThanOrEqual(1e-6);
     expect(b.gap).toBeGreaterThanOrEqual(-1e-6);
     expect(bruteForceOk(b)).toBe(true);
+    // phase 38j review: a kit's own spec plan beats its borrowed (reference-plan) time by well under the re-time margin
+    expect(b.ownPlanSlack).toBeLessThan(0.8 * OWN_PLAN_MARGIN);
     // the CLI's exit condition: a kit faster than the planner's, or the planner's kit re-timing differently, fails
     expect(bruteForceOk({ ...b, gap: 2e-6 })).toBe(false);
     expect(bruteForceOk({ ...b, plannedInSpace: b.planned + 1e-3 })).toBe(false);

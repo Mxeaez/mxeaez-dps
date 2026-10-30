@@ -1349,8 +1349,12 @@ const RETIME_TOP = 5;
  * Phase 38j: kits within this fraction of the best borrowed-plan time are re-timed with their own spec plan (the
  * brute-force probes: the planner's kit = the best kit).
  */
-export const OWN_PLAN_MARGIN = 0.01;
-/** Phase 38j: a kit re-timed with its own plan has every loadout saving at least this (s) on the borrowed plan. */
+export const OWN_PLAN_MARGIN = 0.015;
+/**
+ * Phase 38j: a pre-filter on borrowed (reference-plan) times: a kit is re-timed with its own plan only if each of its
+ * loadouts saves at least this (s) there. A loadout saving ~0 makes the kit a superset of one already in the pool, which
+ * the dedupe rule (checked again on exact times for the winner) would drop anyway; this keeps the re-time count small.
+ */
 export const OWN_PLAN_MEMBER_MIN = 0.5;
 
 export interface PlanProgress {
@@ -1458,6 +1462,13 @@ export interface PlanResult {
     objectiveSeconds: number;
     /** Kits re-timed exactly before picking the winner. */
     retimed: number;
+    /**
+     * Phase 38j review: the largest (borrowed − own) ÷ borrowed of the kits re-timed with their own spec plan (it must stay
+     * below OWN_PLAN_MARGIN for the margin to be safe; Phase37c's brute-force test checks < 0.8 × it).
+     */
+    ownPlanSlack?: number;
+    /** Phase 38j review: of `evaluations`, those of the exact re-times (a fresh evaluator per plan: never cached). */
+    exactEvaluations?: number;
     /**
      * Phase 37: the ring run's encounter / pass memos (kitMemo.ts): remembered results reused (hits) and runs made —
      * deterministic, so the tests catch a memo that stops working whatever the machine's load.
@@ -3046,6 +3057,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     // fitting kit the optimisers timed whose borrowed time is within OWN_PLAN_MARGIN of the best is re-timed with its own
     // plan (exact); the fastest that keeps the dedupe rule on exact times (each loadout saves switchSavingRequired(its
     // slots) vs the kit without it) wins.
+    let ownPlanSlack = 0;
     const ownPlanPick = () => {
       if (screen || !budgetOn) return;
       const keyOf = (m: number[]) => [...m].sort((a, b) => a - b).join(',');
@@ -3061,7 +3073,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       };
       const fits = Array.from(seenKits.values()).map((m) => ({ m, t: borrowedOf(m), used: usedWith(runCarried, m) }))
         .filter((x) => x.used <= total && Number.isFinite(x.t));
-      const best = Math.min(...fits.map((x) => x.t), chosen.time);
+      const best = Math.min(...fits.map((x) => x.t), borrowedOf(chosen.members));
       // within the margin, and every loadout pulls its weight on the borrowed plan (a member saving < OWN_PLAN_MEMBER_MIN
       // s is a superset of a kit already in the pool: the dedupe rule would drop it)
       const pool = fits.filter((x) => x.t <= best * (1 + OWN_PLAN_MARGIN) + EPS
@@ -3077,6 +3089,8 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       for (const x of pool) {
         if (x.t > bestExact * (1 + OWN_PLAN_MARGIN) + EPS) break;
         const e = exactSeconds(exactOf(x.m).cmp);
+        // review 38j: how much a kit's own plan beat its borrowed time (the margin's evidence; stats.ownPlanSlack)
+        if (Number.isFinite(e) && x.t > 0) ownPlanSlack = Math.max(ownPlanSlack, (x.t - e) / x.t);
         if (e < bestExact - EPS && dedupeOk(x.m, e)) {
           bestExact = e;
           win = x;
@@ -3244,6 +3258,8 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
           }
         }
         const pick = fit ?? over?.k;
+        // review 38j: a forced loadout must pull its weight (the dedupe rule), else the mix has no alternative
+        if (pick && Number.isFinite(base.time) && base.time - pick.time < switchSavingRequired(pick.used - base.used)) break;
         if (pick) s = pick;
       }
       if (mixOf(s) !== label) continue;
@@ -3366,9 +3382,11 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
           preset: nPreset, search: nSearch, partial: nPartial, total: candidates.length, capped,
         },
         evaluations: evaluations + exactEvaluations,
+        exactEvaluations,
         kitsEvaluated: opt.kitsEvaluated,
         objectiveSeconds: chosen.time,
         retimed: finalists.length,
+        ownPlanSlack,
         memo: { ...kitMemo.stats },
         ...(soloFight ? { fightSeconds: soloFight } : {}),
         ms: {
