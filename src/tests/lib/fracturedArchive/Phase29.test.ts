@@ -433,7 +433,7 @@ describe('planner: spec modes', () => {
     // phase 38g: carriers by headcount (no seconds, so no steps): every boss / phase's fewest team at 95% fits in them
     expect(team.steps).toBeUndefined();
     // phase 40b: the HP walk (38h-2) no longer gives every phase its 95% team: with stun-swap (Bork mostly stunned, no
-    // drain there) this kit takes 1 Elder maul + 4 Tonalztics (the Smorks' 4th Tonalztics carrier is worth more HP), so
+    // drain there) this kit takes 1 Elder maul + 4 Tonalztics (stunned Bork needs no maul; the 4th Tonalztics bar is worth more HP on Ocellus than a 2nd maul), so
     // Ocellus P2 and Bork's armour 14 remainder (2-maul teams) are short. Still: no weapon has more carriers than some
     // boss / phase needs
     (Object.keys(team.carriers!) as (keyof CarrierCounts)[]).forEach((w) => {
@@ -547,7 +547,7 @@ slowDescribe('FA defaults (slow)', () => {
     const auto = full({ carrierMode: 'auto' });
     // phase 38g: per weapon the most any boss needs at 95% (Bork / Ezekiel: 2 Elder maul; Ocellus P3's last quadrant: 3
     // Tonalztics); you damage-spec, so the carriers fit in party − 1 = 5 bars. Phase 40b (stun-swap): stunned Bork needs
-    // no drain, so the HP walk (38h-2) trades the 2nd maul for a 4th Tonalztics (the Smorks to Def 0), as the fa headline
+    // no drain, so the HP walk (38h-2) trades the 2nd maul for a 4th Tonalztics (worth more HP on Ocellus; Bork + Smorks is 128.98 s either way), as the fa headline
     expect(auto.specs.team!.carriers).toEqual({
       elderMaul: 1, dwh: 0, bgs: 0, tonalztics: 4, ayak: 0,
     });

@@ -19,8 +19,8 @@ ROADMAP 40b. docs/BEST_SETUP.md *Bork + Smorks stun-swap*; DATA_SOURCES *Phase 4
   kit the drains are worth nothing there, so fa puts no drain on Bork (all bars on the Smorks).
 - **Headlines** (`pinHeadlines --full`): fa 21:17.1 → **20:18.9** (Bork + Smorks 186.19 → 128.98: Bork 1500 at the
   stunned 15.68 DPS instead of 8.9-7.6 at armour 8-14; Ocellus 678.32 → 677.28: carriers 2 maul + 3 Tonalztics → 1 + 4,
-  the bars' new split); same three loadouts. faSolo 22:08.7 → **22:06.1**: the Bork route now beats Ezekiel (party 1:
-  4 stuns cover 16.8% of Bork, the rest at armour 14: 214.02 vs Ezekiel 216.71). faNotOwned 24:21.2 → **22:43.2**: a new
+  the bars' new split); same three loadouts. faSolo 22:08.7 → **22:06.1** (close call): the Bork route now beats Ezekiel (party 1:
+  4 stuns cover 16.3% of Bork, the rest at armour 14: 214.02 vs Ezekiel 216.71). faNotOwned 24:21.2 → **22:43.2**: a new
   kit (Twisted bow, Torva + Scythe, Inquisitor's + Scythe, Zaryte crossbow + ruby bolts; Crimson kisten + Surge),
   Bork 214.78 → 142.46 (Scythe on stunned Bork 14.71; 17 hp left at armour 14), AG 191.91 → 182.85, Xarth 213.26 →
   210.31, Ocellus 781.17 → 768.09.
