@@ -3,6 +3,26 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 40c: Rigour / Augury unlocked checkboxes (FA, numbers, 2026-10-30)
+
+ROADMAP 40c. DATA_SOURCES *Phase 40c*; BEST_SETUP *Assumptions*. Built in the main session (new workflow: only the
+reviewer is an agent).
+- **Inputs**: "Rigour unlocked" / "Augury unlocked" next to "Zeal instead of Piety" (FA only, ticked by default, prayer
+  icons). `BestSetupAssumptions.rigourUnlocked` / `auguryUnlocked` (default true in every raid via
+  `DEFAULT_ASSUMPTIONS`); saved settings restore them (missing / wrong type → true).
+- **Model**: `prayerFor(group, assumptions)` in `loadout.ts` (Piety / Zeal, Rigour / Eagle Eye, Augury / Mystic Might),
+  used by `applyLoadoutToPlayer`, the one place every preset, Search, Summary, Plan and spec player gets its prayer.
+  Spec / damage-spec profile caches key on the prayer (was the Zeal flag); `autoFightSeconds` and the drain-model key
+  add both flags; the Search / Summary / Plan keys already hash the whole assumptions. Xarth freezer: unaffected (it
+  checks the gear's magic attack bonus ≥ 75; prayers don't change bonuses). Footer "Prayers: ..." follows the boxes.
+- **Wiki**: no FA ranged / magic prayer (Zeal is the only one). Eagle Eye / Mystic Might values match upstream.
+  Deadeye / Mystic Vigour (Royal Titans) override Eagle Eye / Mystic Might in game: not modelled, open question.
+- **Headlines** (`pinHeadlines --full`): **no change** (fa 20:18.9, faSolo 21:32.8, faNotOwned 22:39.5).
+- **Tests**: `Phase40c.test.ts` (10): defaults, prayer per group, Tbow / Shadow presets lower DPS unticked, Ayak attack
+  roll lower without Augury (Elder maul unchanged), ZCB damage lower without Rigour, Search key, settings round-trip /
+  old settings. `scripts/verifyPhase40c.mjs` (dev server): defaults ticked, footer, Summary changes, persisted after
+  reload; screenshot `docs/screenshots/phase40c-prayers.png`.
+
 ## Phase 40b-2: Bork stun length ≈ 5 Scythe hits (FA, numbers, 2026-10-30)
 
 ROADMAP 40b-2. DATA_SOURCES *Phase 40b-2*; UNVERIFIED A6 / D3; BEST_SETUP *Bork + Smorks stun-swap*.

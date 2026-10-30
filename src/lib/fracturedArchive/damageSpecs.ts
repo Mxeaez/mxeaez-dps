@@ -6,7 +6,9 @@ import { WEAPON_SPEC_COSTS } from '@/lib/Equipment';
 import PlayerVsNPCCalc from '@/lib/PlayerVsNPCCalc';
 import { getCombatStylesForCategory } from '@/utils';
 import { canWeaponHit, minimalPlayer } from '@/lib/fracturedArchive/hittable';
-import { applyLoadoutToPlayer, resolveItem, resolvePresetEquipment } from '@/lib/fracturedArchive/loadout';
+import {
+  applyLoadoutToPlayer, prayerFor, resolveItem, resolvePresetEquipment,
+} from '@/lib/fracturedArchive/loadout';
 import {
   BestSetupAssumptions, DEFAULT_ASSUMPTIONS, ItemRef, PRESETS, StyleGroup,
 } from '@/lib/fracturedArchive/presets';
@@ -226,7 +228,7 @@ export const damageSpecProfile = (
   const def = DAMAGE_SPEC_WEAPONS[w];
   const key = JSON.stringify([
     monster.id, monster.version, monster.name, monster.attributes, monster.inputs, w,
-    assumptions.potions[def.group], def.group === 'melee' && assumptions.useZeal,
+    assumptions.potions[def.group], prayerFor(def.group, assumptions),
   ]);
   const hit = profileCache.get(key);
   if (hit) return hit;

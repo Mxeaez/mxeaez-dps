@@ -1143,3 +1143,17 @@ stun than the model (not all six on Bork, time lost getting to him, misses with 
 only as a cap, so at party 6 they change nothing; the room is still ~16 s + the Smorks' ~13 s of team hitting in the
 user's 2:00-2:30 (the rest: waiting for cannonballs, moving), and the Smorks are still killed last (they die after Bork,
 "together" only in the sense that the team finishes them right after).
+
+## Phase 40c — Rigour / Augury unlocked (read 2026-10-30)
+
+Sources: https://oldschool.runescape.wiki/w/Prayer (Prayers list), https://oldschool.runescape.wiki/w/Zeal,
+https://oldschool.runescape.wiki/w/The_Fractured_Archive (Rewards). User request 2026-10-30.
+
+- **No FA ranged / magic prayer.** The raid's only prayer unlock is Zeal (Horn of Bran); nothing Zeal-like for ranged or
+  magic, so the boxes fall back to the standard prayers.
+- Fallbacks (wiki, match upstream `PrayerMap`): Eagle Eye +15% ranged attack / +15% ranged strength; Mystic Might +15%
+  magic attack / defence, +2% magic damage. Rigour +20% / +23%; Augury +25%, +4% magic damage. Rigour / Augury come
+  from the CoX prayer scrolls.
+- Not modelled: Deadeye (+18% / +18%) and Mystic Vigour (+18%, +3% magic damage), from the Royal Titans' prayer scrolls,
+  "permanently override Eagle Eye and Mystic Might when unlocked" (wiki). A player without Rigour / Augury but with
+  those scrolls prays them, not Eagle Eye / Mystic Might; the user asked for Eagle Eye / Mystic Might (open question).

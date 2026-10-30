@@ -5,6 +5,7 @@ import React, {
 } from 'react';
 import { PotionMap } from '@/utils';
 import Potion from '@/enums/Potion';
+import { Prayer, PrayerMap } from '@/enums/Prayer';
 import {
   buildTargetMonster,
   DRAIN_STATES,
@@ -24,7 +25,7 @@ import {
 } from '@/lib/fracturedArchive/specs';
 import { SpecMode } from '@/lib/fracturedArchive/planner';
 import { subsetOfMySpecs, withPlanSpecs } from '@/lib/fracturedArchive/specChoice';
-import { resolveItem } from '@/lib/fracturedArchive/loadout';
+import { prayerFor, resolveItem } from '@/lib/fracturedArchive/loadout';
 import SpecPlanPanel from '@/app/components/bestSetup/SpecPlanPanel';
 import SearchView from '@/app/components/bestSetup/SearchView';
 import SummaryView from '@/app/components/bestSetup/SummaryView';
@@ -70,7 +71,9 @@ import {
 /** Phase 34: a potion as an icon-select option. */
 const potionOption = (p: Potion): IconOption<Potion> => ({ value: p, label: PotionMap[p].name, src: PotionMap[p].image.src });
 
-const GROUP_PRAYER: Record<StyleGroup, string> = { melee: 'Piety', ranged: 'Rigour', magic: 'Augury' };
+/** The prayers the setups pray (Zeal / Rigour / Augury follow the assumptions box, phase 40c). */
+const groupPrayers = (a: BestSetupAssumptions): string => (['melee', 'ranged', 'magic'] as StyleGroup[])
+  .map((g) => PrayerMap[prayerFor(g, a)].name).join(' / ');
 
 type MyWeapon = 'elderMaul' | 'dwh' | 'bgs' | 'tonalztics';
 const MY_SPEC_WEAPONS: MyWeapon[] = ['elderMaul', 'dwh', 'bgs', 'tonalztics'];
@@ -271,7 +274,7 @@ const AssumptionsBox: React.FC<{
       <div className="flex items-center gap-2">
         <span
           className="font-bold text-sm"
-          title={`All skills 99 · ${raid.raidOnlyAssumptions ? 'Piety (or Zeal)' : 'Piety'} / Rigour / Augury by style. ${raid.raidOnlyAssumptions ? 'Items per preset: src/lib/fracturedArchive/presets.ts' : raid.presetsNote}`}
+          title={`All skills 99 · ${raid.raidOnlyAssumptions ? 'Piety (or Zeal) / Rigour (or Eagle Eye) / Augury (or Mystic Might)' : 'Piety / Rigour / Augury'} by style. ${raid.raidOnlyAssumptions ? 'Items per preset: src/lib/fracturedArchive/presets.ts' : raid.presetsNote}`}
         >
           Assumptions
         </span>
@@ -308,6 +311,20 @@ const AssumptionsBox: React.FC<{
             <input id="bs-zeal" type="checkbox" checked={value.useZeal} onChange={(e) => set({ useZeal: e.target.checked })} />
             <ItemIcon name="Zeal" src={ZealImg.src} size={18} />
             Zeal instead of Piety
+          </label>
+        )}
+        {raid.raidOnlyAssumptions && (
+          <label htmlFor="bs-rigour" className="flex items-center gap-1" title="Ranged setups pray Rigour; untick if you haven't unlocked it (they pray Eagle Eye)">
+            <input id="bs-rigour" type="checkbox" checked={value.rigourUnlocked} onChange={(e) => set({ rigourUnlocked: e.target.checked })} />
+            <ItemIcon name="Rigour" src={PrayerMap[Prayer.RIGOUR].image.src} size={18} />
+            Rigour unlocked
+          </label>
+        )}
+        {raid.raidOnlyAssumptions && (
+          <label htmlFor="bs-augury" className="flex items-center gap-1" title="Magic setups pray Augury; untick if you haven't unlocked it (they pray Mystic Might)">
+            <input id="bs-augury" type="checkbox" checked={value.auguryUnlocked} onChange={(e) => set({ auguryUnlocked: e.target.checked })} />
+            <ItemIcon name="Augury" src={PrayerMap[Prayer.AUGURY].image.src} size={18} />
+            Augury unlocked
           </label>
         )}
       </div>
@@ -697,7 +714,7 @@ const RaidBestSetup: React.FC<{
           {mode === 'plan' && <PlanView key={generation} carriersBox={drain === 'team' ? <TeamCarriersBox value={assumptions} onChange={setAssumptions} planCarriers={planCarriers} /> : undefined} assumptions={assumptions} drain={drain} raid={raid} timeSettings={timeSettings} notOwned={notOwned} onLightbearer={setPlanLightbearer} onCarriers={setPlanCarriers} specMode={specMode} onSpecMode={setSpecMode} onSpecs={setPlanBring} initialInputs={settings.plan} onInputs={setPlanInputs} />}
 
           <div className="text-[11px] text-gray-500 dark:text-gray-400">
-            {`Same calculation as the main calculator. ${raid.hpNote} ${teamTimeLabel(teamDpsMultiplier(assumptions))}. Prayers: ${Object.values(GROUP_PRAYER).join(' / ')}. See docs/BEST_SETUP.md for caveats.`}
+            {`Same calculation as the main calculator. ${raid.hpNote} ${teamTimeLabel(teamDpsMultiplier(assumptions))}. Prayers: ${groupPrayers(assumptions)}. See docs/BEST_SETUP.md for caveats.`}
           </div>
         </div>
       </div>

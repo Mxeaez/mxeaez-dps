@@ -52,6 +52,13 @@ export const PRAYERS: Record<StyleGroup, Prayer> = {
   magic: Prayer.AUGURY,
 };
 
+/** The prayer a style group prays: Zeal instead of Piety, and (phase 40c) Eagle Eye / Mystic Might when locked. */
+export const prayerFor = (group: StyleGroup, assumptions: BestSetupAssumptions): Prayer => {
+  if (group === 'melee') return assumptions.useZeal ? Prayer.ZEAL : Prayer.PIETY;
+  if (group === 'ranged') return assumptions.rigourUnlocked === false ? Prayer.EAGLE_EYE : Prayer.RIGOUR;
+  return assumptions.auguryUnlocked === false ? Prayer.MYSTIC_MIGHT : Prayer.AUGURY;
+};
+
 const ALL_ELEMENTS: Spellement[] = ['air', 'water', 'earth', 'fire'];
 
 /** Same as the store's recomputeBoosts: for each skill, the highest boost of the active potions. */
@@ -85,7 +92,7 @@ export const applyLoadoutToPlayer = (
   assumptions: BestSetupAssumptions,
 ): Player => {
   const potion = assumptions.potions[group];
-  const prayer = group === 'melee' && assumptions.useZeal ? Prayer.ZEAL : PRAYERS[group];
+  const prayer = prayerFor(group, assumptions);
   const spell = spellName ? spells.find((s) => s.name === spellName) : null;
   if (spellName && !spell) {
     throw new Error(`Best setup: no spell named '${spellName}'`);

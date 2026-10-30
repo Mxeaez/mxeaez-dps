@@ -15,7 +15,8 @@ import type { DamageSpecWeapon } from '@/lib/fracturedArchive/damageSpecs';
  *   picked automatically (see `ITEM_VERSION_PREFERENCE` in bestSetup.ts); to force one, write `['Name', 'Version']`.
  *   `src/tests/lib/fracturedArchive/Presets.test.ts` fails if a name doesn't exist, so run `yarn test` after editing.
  * - Leave a slot out to keep it empty. Two-handed weapons must not have a `shield`.
- * - `group` picks the potion and prayer from the assumptions box (melee: Piety or Zeal; ranged: Rigour; magic: Augury).
+ * - `group` picks the potion and prayer from the assumptions box (melee: Piety or Zeal; ranged: Rigour or
+ *   Eagle Eye; magic: Augury or Mystic Might, phase 40c).
  * - `styles`: combat style names to try (as in the calculator's style list, e.g. 'Chop', 'Jab', 'Rapid'); every style
  *   with that name is tried and the best one per boss is shown. Leave it out to try every non-defensive style.
  * - `spells`: for autocasting presets, spell names to try (the best one per boss is shown).
@@ -198,6 +199,10 @@ export interface BestSetupAssumptions {
   potions: Record<StyleGroup, Potion>;
   /** Melee presets use Zeal (Fractured Archive prayer) instead of Piety. */
   useZeal: boolean;
+  /** Phase 40c: Rigour is unlocked (ranged setups pray it); false = Eagle Eye. */
+  rigourUnlocked: boolean;
+  /** Phase 40c: Augury is unlocked (magic setups pray it); false = Mystic Might. */
+  auguryUnlocked: boolean;
   /** Magic presets have all four elemental fragments unlocked (+2 base max hit for elemental spells). */
   elementalFragments: boolean;
   /**
@@ -306,6 +311,8 @@ export const DEFAULT_ASSUMPTIONS: BestSetupAssumptions = {
     magic: Potion.SATURATED_HEART,
   },
   useZeal: false,
+  rigourUnlocked: true,
+  auguryUnlocked: true,
   elementalFragments: true,
   partySize: 6,
   // phase 33: nothing is brought unless the user picks it (in "Planner decides" mode the chips mirror the last plan)

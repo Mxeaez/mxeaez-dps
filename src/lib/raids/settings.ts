@@ -28,8 +28,9 @@ import { Spellbook, SPELLBOOKS } from '@/lib/raids/types';
  * Restoring validates every field on its own (`validateRaidSettings`): unknown keys are ignored, a value of the wrong
  * type or out of range falls back to that input's default, and a missing part keeps its defaults. The assumptions
  * restored are the Assumptions box's inputs only (party size and the raid inputs, potions / heart, Zeal, fragments,
- * Specs I bring + Lightbearer + energy priority, team carriers + mode + Lightbearer, floor threshold, players at your
- * DPS); what the planner sets for its own runs (fight length, damage specs, surge potions, ...) is not.
+ * Rigour / Augury unlocked (phase 40c), Specs I bring + Lightbearer + energy priority, team carriers + mode +
+ * Lightbearer, floor threshold, players at your DPS); what the planner sets for its own runs (fight length, damage
+ * specs, surge potions, ...) is not.
  */
 export const SETTINGS_STORAGE_KEY = 'mxeaez-dps:settings:v1';
 export const SETTINGS_VERSION = 1;
@@ -169,6 +170,8 @@ export const validateAssumptions = (raid: RaidConfig, raw: unknown): BestSetupAs
     ...d,
     potions: { melee: potionOf('melee'), ranged: potionOf('ranged'), magic: potionOf('magic') },
     useZeal: bool(field(raw, 'useZeal'), d.useZeal),
+    rigourUnlocked: bool(field(raw, 'rigourUnlocked'), d.rigourUnlocked),
+    auguryUnlocked: bool(field(raw, 'auguryUnlocked'), d.auguryUnlocked),
     elementalFragments: bool(field(raw, 'elementalFragments'), d.elementalFragments),
     mySpecs,
     team: teamOut,

@@ -20,7 +20,8 @@ presentation only; the numbers are unchanged except the Solo fight length (below
 
 - **Tabs**: Search · Plan · Summary.
 - **Assumptions, simple view** (≤ 10 inputs): raid scaling (party size; ToA raid / path levels; CoX Challenge Mode;
-  ToB mode), the potion per style and the Heart (FA / ToB), Zeal and Elemental fragments (FA), and **Specs I bring**
+  ToB mode), the potion per style and the Heart (FA / ToB), Zeal, Rigour / Augury unlocked (phase 40c) and Elemental
+  fragments (FA), and **Specs I bring**
   (phase 29; was "My specs") as icon toggles (Elder maul, DWH, BGS, Tonalztics, Ayak × N; phase 33: none by default,
   and filled read-only from the last plan while "Planner decides" — see *Specs follow the plan* below), and **Ring: I wear a
   Lightbearer** (phase 29: a ring toggle, not a spec weapon; the Plan tab's ring policy sets it while that tab is open). Every input has a plain-language tooltip; Reset
@@ -83,7 +84,7 @@ Summary's "best preset" reference; `computeBestSetup` / `evaluatePreset` stay as
 
 Every best-setup input is remembered in this browser (localStorage, key `mxeaez-dps:settings:v1`) and restored when
 the page loads: per raid, the Assumptions box (party size and the raid inputs — ToA raid / path levels, CoX Challenge
-Mode, ToB mode — potions / heart, Zeal, Specs I bring + mode, Lightbearer), Advanced (team carriers + mode + "carriers
+Mode, ToB mode — potions / heart, Zeal, Rigour / Augury unlocked, Specs I bring + mode, Lightbearer), Advanced (team carriers + mode + "carriers
 use Lightbearer", elemental fragments, floor threshold, players at your DPS, spec-energy priority, the time-model
 settings), the Drains selector (None / Solo / Team, as chosen: a party of 1 still shows Solo), and the Plan tab's
 inputs (Spec weapons, Route, comfort supplies, rune pouch, Rings, Mages in party, Items I always bring); plus the active
@@ -978,6 +979,7 @@ tooltip's "a charged Tonalztics spec attacks twice and each attack can miss"; El
 | Assumptions | "All skills 99 · Piety / Rigour / Augury" | tooltip of "Assumptions" |
 | Assumptions | Melee / Ranged potion, Heart (native selects) | icon lists (`IconSelect.tsx`, `potionChoices.ts`): Super combat, Overload (+), Smelling salts / Ranging potion, Overload (+), Smelling salts / Saturated, Imbued heart first, the rest under "▸ more" (the same options as the old selects) |
 | Assumptions | Zeal | checkbox with the Zeal prayer icon (stays visible) |
+| Assumptions | Rigour / Augury unlocked (phase 40c) | two checkboxes with the prayer icons, FA only, ticked by default |
 | Assumptions | Elemental fragments | Advanced |
 | Assumptions | Solo Ayak hint ("Solo: ≈ 40 magic def drained …") | "ⓘ" with the hint as tooltip |
 | Assumptions | "(from the last plan; Search / Summary use them)", the ring lock reason | screen-reader text (the chips' tooltips say it); "(run a plan to fill these)" stays visible |
@@ -2067,7 +2069,10 @@ The view tries every listed style (and spell) per preset and shows the one with 
 - Potions per style: Super combat / Ranging potion / Saturated heart (selectable; in FA / ToB the magic one is labelled
   **Heart** and offers Saturated / Imbued heart — phase 31: the Plan tab brings it as magic's kit potion, see *Plan tab → Heart*; CoX-only overloads/super potions and
   ToA smelling salts are available in the dropdown but don't work in the raid).
-- Prayers: Piety / Rigour / Augury; "Zeal instead of Piety" switches melee to the raid prayer.
+- Prayers: Piety / Rigour / Augury; "Zeal instead of Piety" switches melee to the raid prayer. Phase 40c: unticking
+  "Rigour unlocked" / "Augury unlocked" (FA, ticked by default) makes ranged / magic pray Eagle Eye / Mystic Might —
+  presets, Search, Summary, the Plan tab, drain specs (Ayak) and damage specs (ZCB). The Xarth freezer switch only
+  needs ≥75 magic attack *bonus* (gear), which no prayer changes. The footer lists the prayers in use.
 - Elemental fragments: on for magic presets (all four elements, +2 base max hit to elemental spells). Only the Kodai
   preset casts spells, so only it is affected.
 - **Fight length**: no input since phase 23 — computed per boss / phase (see *Layout and glossary*); it was 90 s for

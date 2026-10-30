@@ -10,7 +10,9 @@ import BaseCalc from '@/lib/BaseCalc';
 import { getDefenceFloor } from '@/lib/scaling/DefenceReduction';
 import { getCombatStylesForCategory } from '@/utils';
 import { canWeaponHit, HitStyle, minimalPlayer } from '@/lib/fracturedArchive/hittable';
-import { applyLoadoutToPlayer, resolveItem, resolvePresetEquipment } from '@/lib/fracturedArchive/loadout';
+import {
+  applyLoadoutToPlayer, prayerFor, resolveItem, resolvePresetEquipment,
+} from '@/lib/fracturedArchive/loadout';
 import {
   BestSetupAssumptions, DEFAULT_ASSUMPTIONS, ItemRef, PRESETS, StyleGroup,
 } from '@/lib/fracturedArchive/presets';
@@ -363,7 +365,7 @@ export const specProfile = (
   const def = SPEC_WEAPONS[weapon];
   const key = player ? undefined : JSON.stringify([
     monster.id, monster.version, monster.attributes, monster.inputs, weapon,
-    assumptions.potions[def.group], def.group === 'melee' && assumptions.useZeal,
+    assumptions.potions[def.group], prayerFor(def.group, assumptions),
   ]);
   const cached = key ? profileCache.get(key) : undefined;
   if (cached) {

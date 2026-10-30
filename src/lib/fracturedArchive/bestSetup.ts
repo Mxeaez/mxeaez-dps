@@ -157,6 +157,7 @@ export const autoFightSeconds = (m: Monster, assumptions: BestSetupAssumptions):
   const players = Math.max(1, Math.trunc(m.inputs.partySize || assumptions.partySize || 1));
   const key = JSON.stringify([
     m.id, m.name, m.version, undrainedM.inputs, players, assumptions.raid, assumptions.potions, assumptions.useZeal,
+    assumptions.rigourUnlocked, assumptions.auguryUnlocked,
     assumptions.elementalFragments, assumptions.withoutPotion,
   ]);
   const cached = autoFightCache.get(key);
@@ -196,7 +197,8 @@ const DRAIN_KEYS_MAX = 200000;
 
 const drainModelKey = (target: BestSetupTarget, phase: string | undefined, assumptions: BestSetupAssumptions): string => JSON.stringify([
   target.key, phase ?? null, assumptions.partySize, assumptions.raid ?? null, assumptions.toa ?? null, assumptions.cox ?? null,
-  assumptions.tob ?? null, assumptionsForTarget(target, assumptions).potions, assumptions.useZeal]);
+  assumptions.tob ?? null, assumptionsForTarget(target, assumptions).potions, assumptions.useZeal,
+  assumptions.rigourUnlocked, assumptions.auguryUnlocked]);
 
 /**
  * Phase 36 / 38g: the undrained drain model of a phase target (cached; null when drains never apply there: the target's `noDrains`).
