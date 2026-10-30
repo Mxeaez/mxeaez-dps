@@ -1829,10 +1829,10 @@ leaving 22-40% per encounter. HP only, no seconds:
   re-optimised, as for the bring rule's weapons). "Leftover energy (+ surge) covers its cost" is what makes the HP > 0.
   Then the surge rule runs again (a dose can now buy a filler spec). At most one filler.
 - **Briefing**: Plan, per encounter where the plan makes a filler spec: "Then: 1. Zaryte crossbow (per bar) · leftover:
-  Burning claws" (`withLeftover`). Search / Summary (no route): the leftover weapon is the best per bar of those cheaper
-  than the first (`leftoverWeapon`: energy below the first's cost can only go to a cheaper one); "Then: 1. A (per bar) ·
-  leftover: B" when it is the second, else "1. A 2. B (per bar) · leftover: C". Search can name a different weapon than
-  the plan (FA Xarth: Crimson kisten, 50%, best per bar; the plan's leftover of 22-40% fits Burning claws, 35%).
+  Burning claws" (`withLeftover`). Search / Summary (no route): the leftover weapon is the cheapest of those that gain
+  and cost less than the first (`leftoverWeapon`, review 38h-3b: energy below the first's cost can only go to a cheaper
+  one, and the cheapest fits the most leftovers; ties: most HP per bar); with one, "Then: 1. A (per bar) · leftover: B" (the
+  Plan's form), else the top two "Then: 1. A 2. B (per bar)". FA: Burning claws, the same line as on the Plan.
 
 **Result**: fa 21:47.8 → 21:43.3 (Burning claws + one Surge potion; claws on AG, Bork + Smorks, Xarth, Ocellus), faSolo
 22:57.2 → 22:53.9 (Burning claws on Ezekiel, Xarth, Ocellus), faNotOwned 24:43.4 unchanged (no free slot: claws add 40 HP,

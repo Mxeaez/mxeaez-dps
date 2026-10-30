@@ -197,25 +197,29 @@ export const withLeftover = (then: string | null, filler: DamageSpecWeapon | nul
 };
 
 /**
- * Phase 38h-3b (Search / Summary, no plan): the filler for the energy the first-ranked weapon leaves, the best of the
- * others (most HP per bar) that costs less than the first (energy too little for another of its specs); null: none.
+ * Phase 38h-3b (Search / Summary, no plan): the filler for the energy the first-ranked weapon leaves: of the others that
+ * gain anything and cost less than the first (the leftover is below the first's cost by definition), the cheapest (it
+ * fits the most leftovers; ties: the ranked order, most HP per bar first); null: none. FA (ZCB 75%): Burning claws (35%),
+ * as the plan's 22-40% leftover picks (review 38h-3b).
  */
 export const leftoverWeapon = (p: Pick<PhaseSpecGains, 'gains'>, weapons: DamageSpecWeapon[]): DamageSpecWeapon | null => {
   const ranked = rankedAt({ key: '', label: '', gains: p.gains }, weapons);
   if (!ranked.length) return null;
   const firstCost = DAMAGE_SPEC_WEAPONS[ranked[0]].energy;
-  return ranked.slice(1).find((w) => DAMAGE_SPEC_WEAPONS[w].energy < firstCost) ?? null;
+  const cheaper = ranked.slice(1).filter((w) => DAMAGE_SPEC_WEAPONS[w].energy < firstCost);
+  if (!cheaper.length) return null;
+  const least = Math.min(...cheaper.map((w) => DAMAGE_SPEC_WEAPONS[w].energy));
+  return cheaper.find((w) => DAMAGE_SPEC_WEAPONS[w].energy === least) ?? null;
 };
 
 /**
- * Phase 38h-3b: the Search / Summary "Then": the top two (per bar) and the leftover weapon ({@link leftoverWeapon});
- * when the leftover weapon is the second, "Then: 1. A (per bar) · leftover: B".
+ * Phase 38h-3b: the Search / Summary "Then", in the Plan's form: with a leftover weapon ({@link leftoverWeapon}) "Then:
+ * 1. A (per bar) · leftover: B" (review 38h-3b: as the Plan's line), else the top two "Then: 1. A 2. B (per bar)".
  */
 export const thenWithLeftover = (p: Pick<PhaseSpecGains, 'gains'>, weapons: DamageSpecWeapon[]): string | null => {
   const filler = leftoverWeapon(p, weapons);
   if (!filler) return thenText(p, weapons, 2);
-  const second = rankedAt({ key: '', label: '', gains: p.gains }, weapons)[1];
-  return withLeftover(thenText(p, weapons, second === filler ? 1 : 2), filler);
+  return withLeftover(thenText(p, weapons, 1), filler);
 };
 
 /**

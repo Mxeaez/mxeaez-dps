@@ -2696,7 +2696,9 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       // phase 38h-3b: a filler weapon for the energy the brought weapons leave (no seconds): each owned damage weapon not
       // brought, spent only after the others (the spec budget's second objective: `damageFiller`); the one adding the
       // most HP on the planned route is brought when that HP is above 0 and a slot is free, or at least the HP the kit
-      // change costs (kitHpCost) when one is taken from the kit; then the surge rule again (its dose may now buy a spec)
+      // change costs (kitHpCost) when one is taken from the kit; then the surge rule again (its dose may now buy a spec).
+      // Review 38h-3b: one candidate (the most HP) is priced against kitHpCost, not each in turn: it bounds planning time
+      // (one kit re-optimisation at most), and in FA Burning claws is the only weapon fitting the 22-40% leftover
       const fillerOf = cur.damage.length ? ownedDamage.filter((w) => !cur.damage.includes(w)) : [];
       if (fillerOf.length) {
         const m = cur.opt.best.members;

@@ -3,7 +3,7 @@
  * (per bar) · leftover: Burning claws") on Search, Summary and Plan.
  *
  * Usage (dev server running): node scripts/verifyPhase38h3b.mjs [baseUrl]
- * - Search (FA, Team, Xarth): the Specs box's "Then" ends in "· leftover: <weapon>", a weapon cheaper than the first.
+ * - Search (FA, Team, Xarth): the Specs box's "Then" ends in "· leftover: Burning claws" (the cheapest cheaper weapon).
  * - Summary: the Xarth Team cell shows the same "Then".
  * - Plan (FA defaults, Team): the bring line = the fa headline (Burning claws in it); the spec items list Burning claws
  *   as the filler; the briefing rows of the encounters where the plan specs it end in "· leftover: Burning claws"
@@ -34,7 +34,6 @@ const waitPlan = async (page) => {
   await page.locator('[data-testid="plan-result"]').waitFor({ timeout: 900000 });
 };
 const thenOf = async (loc) => loc.locator('[data-testid="drain-facts-then"]').evaluateAll((els) => els.map((e) => e.getAttribute('data-text')));
-const LEFTOVER = / · leftover: ([A-Z][A-Za-z ]+)$/;
 
 const main = async () => {
   const t0 = Date.now();
@@ -54,7 +53,7 @@ const main = async () => {
   const box = page.locator('[data-testid="spec-damage-box"]');
   const search = (await thenOf(box))[0] ?? '';
   console.log(`     Search Xarth: ${search}`);
-  check(search.startsWith('Then: 1. Zaryte crossbow') && LEFTOVER.test(search), `Search Xarth (Team): "${search}" (a leftover weapon after ZCB)`);
+  check(search.startsWith('Then: 1. Zaryte crossbow') && search.endsWith(' · leftover: Burning claws'), `Search Xarth (Team): "${search}" (leftover: Burning claws, as on the Plan)`);
 
   // --- Summary
   await page.locator('[data-testid="summary-tab"]').click();

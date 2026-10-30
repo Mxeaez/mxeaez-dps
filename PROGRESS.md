@@ -3,6 +3,17 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 38h-3b review fixes (FA, 2026-10-30)
+
+Review of 5dabafac: PASS with findings; display only. (1) `leftoverWeapon` (bringRule.ts) picks the cheapest weapon
+cheaper than the first that gains (ties: ranked order), and Search / Summary use the Plan's form "Then: 1. A (per bar) ·
+leftover: B": FA Xarth now reads "… · leftover: Burning claws" on Search, Summary and Plan (was Crimson kisten on Search).
+Tests (Phase38h3b): {zcb 80, kisten 60, claws 50} → Burning claws; a cheaper weapon gaining nothing is skipped; FA Xarth
+`damageThenText` at the plan's Xarth DPS = the Plan's Xarth line. verifyPhase38h3b expects "leftover: Burning claws";
+BEST_SETUP sentence about the mismatch removed. (2) planner.ts: comment that one filler candidate (the most HP) is priced
+against kitHpCost on purpose (planning time; in FA claws is the only weapon fitting 22-40%).
+- Run: `pinHeadlines --full --check` no change; Phase38h3b / Phase38h3, fast suite green; verifyAll 38h3 38h3b OK; tsc, lint clean.
+
 ## Phase 38h-3b: filler spec weapon for leftover energy (FA, 2026-10-30)
 
 ROADMAP row 38h-3b (user decision A). docs/BEST_SETUP.md *Filler spec weapon for leftover energy (phase 38h-3b, FA)*.

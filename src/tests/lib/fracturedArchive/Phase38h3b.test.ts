@@ -1,8 +1,10 @@
 import { describe, expect, test } from '@jest/globals';
 import { allocateBudget, AllocationProblem } from '@/lib/fracturedArchive/specBudget';
 import {
-  leftoverWeapon, thenWithLeftover, withLeftover,
+  damageThenText, leftoverWeapon, thenWithLeftover, withLeftover,
 } from '@/lib/fracturedArchive/bringRule';
+import { buildTargetMonster, findTarget } from '@/lib/fracturedArchive/bestSetup';
+import { assumptionsForTarget } from '@/lib/raids/toa/supplies';
 import { PlanResult } from '@/lib/fracturedArchive/planner';
 import { compareRoutes, createKitEvaluator, raidTimeAssumptionsFrom } from '@/lib/fracturedArchive/raidTime';
 import { finalAssumptions, kitLoadouts, retimeHeadline } from '@/tests/utils/probes';
@@ -85,16 +87,18 @@ describe('the "leftover" text', () => {
     expect(withLeftover('Then: 1. Zaryte crossbow (per bar)', 'crimsonKisten')).toBe('Then: 1. Zaryte crossbow (per bar) · leftover: Crimson kisten');
     expect(withLeftover(null, 'burningClaws')).toBe('Then: leftover: Burning claws');
     expect(withLeftover('Then: 1. Voidwaker (per bar)', null)).toBe('Then: 1. Voidwaker (per bar)');
-    // ZCB first (75%): the best of the cheaper ones (kisten 50% at 60 > claws 35% at 50) fills; it is the second, so
-    // "1. A (per bar) · leftover: B"
+    // ZCB first (75%): of the cheaper ones that gain (kisten 50%, claws 35%) the cheapest fills (review 38h-3b), though
+    // kisten deals more per bar: the leftover is below 75% and 35% fits more of it; the Plan's form "1. A (per bar) · leftover"
     const g = { zcb: 80, crimsonKisten: 60, burningClaws: 50 };
-    expect(leftoverWeapon({ gains: g }, ['zcb', 'crimsonKisten', 'burningClaws'])).toBe('crimsonKisten');
-    expect(thenWithLeftover({ gains: g }, ['zcb', 'crimsonKisten', 'burningClaws'])).toBe('Then: 1. Zaryte crossbow (per bar) · leftover: Crimson kisten');
-    // Voidwaker first (50%): ZCB (75%) can't fill, kisten 50% neither (not cheaper); Burning claws (35%) does
+    expect(leftoverWeapon({ gains: g }, ['zcb', 'crimsonKisten', 'burningClaws'])).toBe('burningClaws');
+    expect(thenWithLeftover({ gains: g }, ['zcb', 'crimsonKisten', 'burningClaws'])).toBe('Then: 1. Zaryte crossbow (per bar) · leftover: Burning claws');
+    // a cheaper weapon that gains nothing is no filler: kisten then
+    expect(leftoverWeapon({ gains: { zcb: 80, crimsonKisten: 60, burningClaws: 0 } }, ['zcb', 'crimsonKisten', 'burningClaws'])).toBe('crimsonKisten');
+    // Voidwaker first (50%): ZCB (75%) and kisten (50%) are not cheaper; Burning claws (35%) is
     const v = {
       voidwaker: 90, zcb: 80, crimsonKisten: 60, burningClaws: 40,
     };
-    expect(thenWithLeftover({ gains: v }, ['voidwaker', 'zcb', 'crimsonKisten', 'burningClaws'])).toBe('Then: 1. Voidwaker 2. Zaryte crossbow (per bar) · leftover: Burning claws');
+    expect(thenWithLeftover({ gains: v }, ['voidwaker', 'zcb', 'crimsonKisten', 'burningClaws'])).toBe('Then: 1. Voidwaker (per bar) · leftover: Burning claws');
     // Burning claws first (the cheapest): no filler, the plain top two
     expect(thenWithLeftover({ gains: { burningClaws: 90, zcb: 80 } }, ['burningClaws', 'zcb'])).toBe('Then: 1. Burning claws 2. Zaryte crossbow (per bar)');
   });
@@ -144,5 +148,18 @@ describe.each(['fa', 'faSolo'] as HeadlineName[])('the %s headline: Burning claw
     // Death Charge 15 − 50 − 75 = 50 left ≥ 35: claws, 15% at the end
     expect(sp.events.map((e) => e.counts)).toEqual(name === 'fa' ? [{ elderMaul: 2, tonalztics: 1 }] : [{ tonalztics: 1 }]);
     expect(sp.end.me[0]).toBeCloseTo(name === 'fa' ? 100 + 10 + 2.5 - 75 - 35 : 100 + 60 + 15 - 50 - 75 - 35, 6);
+  }, 120000);
+});
+
+describe('Search / Summary name the filler of the Plan (review 38h-3b)', () => {
+  test('FA Xarth (Team): damageThenText at the Xarth DPS of the plan = the "Then" line of the Plan', () => {
+    const fx = phase37Fixture('fa') as PlanResult;
+    const { cmp } = countsOf('fa');
+    const row = cmp.routes[0].encounters.find((e) => e.id === 'xarth')!.phases.find((r) => r.targetKey === 'xarth')!;
+    const t = findTarget('xarth');
+    const ta = assumptionsForTarget(t, finalAssumptions('fa', fx));
+    const { monster } = buildTargetMonster(t, undefined, 'team', ta);
+    expect(fx.specs.then!.xarth).toBe('Then: 1. Zaryte crossbow (per bar) · leftover: Burning claws');
+    expect(damageThenText(monster, ta, row.dps)).toBe(fx.specs.then!.xarth);
   }, 120000);
 });
