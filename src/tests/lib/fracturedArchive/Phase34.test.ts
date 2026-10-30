@@ -353,8 +353,9 @@ describe('render: icons next to every item name', () => {
     // "Spec plan" / the briefing's Bring and your share
     // phase 38h-3 (the bring rule: ZCB first on every boss / phase, no second); 38h-3b: Burning claws as the filler, and
     // a Surge potion (its dose now buys a claws spec)
-    expect(r.specs.text).toBe('Bring: Zaryte crossbow, Burning claws, Surge potion');
-    expect(r.specs.share!.reason).toMatch(/^your spec energy goes to your Zaryte crossbow specs \/ Burning claws specs \/ surge doses — let a teammate carry Tonalztics \(most needed: [0-9] carriers\)$/);
+    // phase 38j (the room times' regen): Crimson kisten is the filler
+    expect(r.specs.text).toBe('Bring: Zaryte crossbow, Crimson kisten, Surge potion');
+    expect(r.specs.share!.reason).toMatch(/^your spec energy goes to your Zaryte crossbow specs \/ Crimson kisten specs \/ surge doses — let a teammate carry Tonalztics \(most needed: [0-9] carriers\)$/);
     // phase 38g: carriers by headcount (no steps)
     expect(r.specs.team!.steps).toBeUndefined();
   }, 1800000);

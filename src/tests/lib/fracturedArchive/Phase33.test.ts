@@ -272,7 +272,8 @@ describe('encounter line = the first phase\'s line (FA, presets kit)', () => {
     expect(s.parts[0].line).toBe(bork.phases[0].choice!.drainLine);
     // phase 38g: your bar pays the drains first: 2 specs on Bork (100%), the Smorks get what regen pays
     // phase 38h-2 (bars in boss HP): 1 spec on Bork; the bar's energy is worth more on the Smorks / as damage specs
-    expect(s.text).toBe(`Start: 1 Tonalztics spec → Def ${bork.phases[0].choice!.drainLine!.defAfter}`);
+    // phase 38j: Bork's room time (solo: 259 s global best × the user's pace 1.82 = 471 s, 15 ticks) pays a second
+    expect(s.text).toBe(`Start: 2 Tonalztics specs → Def ${bork.phases[0].choice!.drainLine!.defAfter}`);
     const ag = encounter(SOLO, 'solo', 'archive-guardian');
     const sa = summary(ag, 'solo');
     expect(sa.parts).toHaveLength(1); // the same weapon on every phase

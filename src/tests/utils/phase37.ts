@@ -139,15 +139,17 @@ export const PHASE37_MEMO: Record<string, MemoCounters> = {
   // 58528 / 10474 / 1579384 / 59896
   // phase 38h-3 review fix 2 (each Solo drain weapon checked against a kit slot: one optimiser run without it):
   // faSolo was 9706 / 9352 / 640382 / 1292
+  // phase 38j (the room times: Solo plans every camp ring in full): faSolo was 23993 / 18648 / 1141713 / 7065
   faSolo: {
-    encounterRuns: 23993, passRuns: 18648, encounterHits: 1141713, passHits: 7065,
+    encounterRuns: 25386, passRuns: 23603, encounterHits: 1088304, passHits: 3478,
   },
   // phase 38h-1 (2 Elder maul + 3 Tonalztics carriers cover every boss, so you are no longer a carrier: free slots, the
   // item beam re-optimises kits with damage specs / surge): faNotOwned was 9153 / 9086 / 583727 / 227
   // phase 38h-2 review fixes (the final carrier choice by the budgeted plans' HP: one route pass per carrier set):
   // faNotOwned was 74977 / 9838 / 1854095 / 66172
+  // phase 38j (the room times: every camp ring planned in full): faNotOwned was 29805 / 13946 / 822703 / 18920
   faNotOwned: {
-    encounterRuns: 29805, passRuns: 13946, encounterHits: 822703, passHits: 18920,
+    encounterRuns: 35675, passRuns: 12487, encounterHits: 822877, passHits: 27203,
   },
 };
 export const memoCountersWithin = (m: MemoCounters | undefined, want: MemoCounters | undefined): boolean => {

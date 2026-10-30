@@ -4,6 +4,7 @@ import {
 } from '@/lib/fracturedArchive/presets';
 import { SEARCH_POOL, StylePool } from '@/lib/fracturedArchive/searchCandidates';
 import { BEST_SETUP_TARGETS } from '@/lib/fracturedArchive/targets';
+import { FA_TRAVEL_MINUTES, faRoomSecondsFor } from '@/lib/fracturedArchive/roomTimes';
 import {
   BestSetupTarget, DEFAULT_COX_INPUTS, DEFAULT_RAID, DEFAULT_TOA_INPUTS, DEFAULT_TOB_INPUTS, RaidId, ScalingInputDef,
   Spellbook, TOA_PATHS, TOB_MODES,
@@ -77,6 +78,12 @@ export interface RaidBase {
    * longer fight lengthens the raid instead of squeezing the travel; UNVERIFIED D30).
    */
   nonFightMinutes: number;
+  /**
+   * Phase 38j: measured room seconds per encounter for a party size (the FA: the user's raid stats, roomTimes.ts). When
+   * set, each encounter lasts at least its room time on the spec budget's clock and `nonFightMinutes` is the travel time
+   * between the rooms, spread evenly (UNVERIFIED D36); undefined = the phase 38c clock (fight wall + non-fight time).
+   */
+  roomSeconds?: (partySize: number) => Record<string, number>;
   /** Phase 38a (ToB): the surge cooldown pauses between encounters (only fight time counts for it). */
   surgePausesBetweenEncounters?: boolean;
   /**
@@ -133,8 +140,10 @@ export const FRACTURED_ARCHIVE_BASE: RaidBase = {
   boostsNeedSupplies: true,
   planDefaults: FA_PLAN_DEFAULTS,
   typicalRaidMinutes: 25,
-  // 25 min − the FA headline's 210.9 s of fight wall (party 6) = 21.49
-  nonFightMinutes: 21.5,
+  // phase 38j: the travel between the measured rooms (roomTimes.ts FA_TRAVEL_MINUTES; was 38c's 21.5 min of non-fight
+  // time spread in proportion to the fight)
+  nonFightMinutes: FA_TRAVEL_MINUTES,
+  roomSeconds: faRoomSecondsFor,
   spellbook: 'arceuus',
 };
 

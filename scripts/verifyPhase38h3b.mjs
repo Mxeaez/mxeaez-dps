@@ -1,13 +1,15 @@
 /**
  * Phase 38h-3b UI check (not part of the Jest run): the filler spec weapon in the briefing ("Then: 1. Zaryte crossbow
- * (per bar) · leftover: Burning claws") on Search, Summary and Plan.
+ * (per bar) · leftover: Crimson kisten") on Search, Summary and Plan. Phase 38j: Crimson kisten (was Burning claws): the
+ * measured room times' regen leaves ≥ 50% after the ZCB specs, and Search / Summary name the cheaper weapon with the most
+ * HP for one spec.
  *
  * Usage (dev server running): node scripts/verifyPhase38h3b.mjs [baseUrl]
- * - Search (FA, Team, Xarth): the Specs box's "Then" ends in "· leftover: Burning claws" (the cheapest cheaper weapon).
+ * - Search (FA, Team, Xarth): the Specs box's "Then" ends in "· leftover: Crimson kisten".
  * - Summary: the Xarth Team cell shows the same "Then".
- * - Plan (FA defaults, Team): the bring line = the fa headline (Burning claws in it); the spec items list Burning claws
- *   as the filler; the briefing rows of the encounters where the plan specs it end in "· leftover: Burning claws"
- *   (Archive Guardian, Bork + Smorks, Xarth, Ocellus; not Moia).
+ * - Plan (FA defaults, Team): the bring line = the fa headline (Crimson kisten in it); the spec items list Crimson kisten
+ *   as the filler; the briefing rows of the encounters where the plan specs it end in "· leftover: Crimson kisten"
+ *   (Xarth, Ocellus).
  * Screenshot docs/screenshots/phase38h3b-plan.png.
  */
 import { chromium } from '@playwright/test';
@@ -53,7 +55,7 @@ const main = async () => {
   const box = page.locator('[data-testid="spec-damage-box"]');
   const search = (await thenOf(box))[0] ?? '';
   console.log(`     Search Xarth: ${search}`);
-  check(search.startsWith('Then: 1. Zaryte crossbow') && search.endsWith(' · leftover: Burning claws'), `Search Xarth (Team): "${search}" (leftover: Burning claws, as on the Plan)`);
+  check(search.startsWith('Then: 1. Zaryte crossbow') && search.endsWith(' · leftover: Crimson kisten'), `Search Xarth (Team): "${search}" (leftover: Crimson kisten, as on the Plan)`);
 
   // --- Summary
   await page.locator('[data-testid="summary-tab"]').click();
@@ -68,16 +70,16 @@ const main = async () => {
   await waitPlan(page);
   const h = headlineOf('fa');
   const bring = ((await page.locator('[data-testid="plan-bring"]').textContent()) ?? '').trim();
-  check(bring === h.bring && bring.includes('Burning claws'), `Plan: "${bring}" = the fa headline`);
+  check(bring === h.bring && bring.includes('Crimson kisten'), `Plan: "${bring}" = the fa headline`);
   const items = await page.locator('[data-testid="plan-spec-item"]').evaluateAll((els) => els.map((e) => e.textContent.trim()));
-  check(items.some((t) => t.includes('Burning claws') && t.includes('filler')), `Plan: spec items: ${items.join('; ')}`);
+  check(items.some((t) => t.includes('Crimson kisten') && t.includes('filler')), `Plan: spec items: ${items.join('; ')}`);
   const rows = await page.locator('[data-testid="plan-briefing"] tr').evaluateAll((els) => els.map((e) => ({
     text: e.textContent.trim().slice(0, 40),
     then: e.querySelector('[data-testid="drain-facts-then"]')?.getAttribute('data-text') ?? null,
   })));
-  const filled = rows.filter((r) => (r.then ?? '').endsWith(' · leftover: Burning claws'));
+  const filled = rows.filter((r) => (r.then ?? '').endsWith(' · leftover: Crimson kisten'));
   rows.filter((r) => r.then).forEach((r) => console.log(`     ${r.text} … ${r.then}`));
-  check(filled.length === 4 && filled.every((r) => r.then.startsWith('Then: 1. Zaryte crossbow (per bar)')), `Plan: ${filled.length} briefing rows end in "· leftover: Burning claws" (4: AG, Bork + Smorks, Xarth, Ocellus)`);
+  check(filled.length === 2 && filled.every((r) => r.then.startsWith('Then: 1. Zaryte crossbow (per bar)')), `Plan: ${filled.length} briefing rows end in "· leftover: Crimson kisten" (2: Xarth, Ocellus)`);
   await page.locator('[data-testid="plan-briefing"]').scrollIntoViewIfNeeded();
   await page.mouse.move(0, 0);
   await page.screenshot({ path: 'docs/screenshots/phase38h3b-plan.png', fullPage: false });

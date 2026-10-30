@@ -92,7 +92,8 @@ const runPlan = async (page, raid) => {
     group: e.getAttribute('data-group'),
     slots: e.querySelector('[data-testid="kit-marginal"]')?.getAttribute('data-slots'),
     items: e.getAttribute('data-items'),
-    saves: (e.querySelector('[data-testid="kit-marginal"]')?.textContent.match(/saves ([\d.]+|∞)/) || [])[1],
+    // phase 38j: the text is a % of boss time; the seconds are in data-seconds ('Infinity' for ∞)
+    saves: ((s) => (s === undefined || s === null ? undefined : (s === 'Infinity' ? '∞' : s)))(e.querySelector('[data-testid="kit-marginal"]')?.getAttribute('data-seconds')),
   })));
   console.log(`     ${raid} plan (${secs.toFixed(1)} s): ${headline}; free ${free}`);
   kit.forEach((k) => console.log(`       ${k.text.slice(0, 150)}`));

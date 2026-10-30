@@ -445,7 +445,8 @@ const USER_PLAN_NOT_OWNED = ['Obligator', "Zorya's tome", 'Rondache', "Inquisito
 // phase 38h-2 (bars valued in boss HP: specs where they are worth most, carriers by HP): 27:16.5 → 26:07.5
 // phase 38h-2 review fixes (values averaged over the outcomes, carriers on the planned route and re-taken on the final
 // kit): 26:07.5 → 26:28.0
-const USER_PLAN: [string, number] = ['26:28.0', 1587.98];
+// phase 38j (the measured room times' regen: more damage specs per encounter): 26:28.0 → 25:42.2
+const USER_PLAN: [string, number] = ['25:42.2', 1542.2];
 
 (process.env.RUN_SLOW_TESTS ? describe : describe.skip)('the user\'s plan (slow)', () => {
   test('no blessing; the freed slot buys Onyx bolts for the void switch (−1.1 s); slots = the exhaustive count', () => {
@@ -467,6 +468,8 @@ const USER_PLAN: [string, number] = ['26:28.0', 1587.98];
     };
     const r = plan(inputs, { model: FA.time });
     expect(kitNames(r)).not.toContain(BLESSING);
+    // eslint-disable-next-line no-console
+    if (process.env.PRINT_PINS) console.log('USER_PLAN', total(r));
     expect(Math.abs(total(r) - USER_PLAN[1])).toBeLessThanOrEqual(USER_PLAN[1] * 0.01);
     expect(r.slots!.used).toBe(r.slots!.supplies + r.slots!.nonItem + exhaustive(kitIds(r), carriedOf(r)));
     // phase 36 review: the Onyx bolts switch is gone (the slot went to the kit's Scythe of Vitur); a quiver holds quiver ammo

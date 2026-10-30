@@ -144,6 +144,9 @@ const independentGains = (name: HeadlineName, drain: DrainStateId) => {
 // and the best other weapon. Melee can't hit AG (Flying), Moia and Ocellus P3's Deflect Melee quadrant: ZCB alone there.
 // Closest calls: Team Ocellus P3 Q1-3, Crimson kisten 59.8 vs ZCB 62.3 (0.96×); Solo Ocellus P3 Q1-3, Crimson kisten
 // 59.3 vs 58.7 (1.01×: first there, but < 1.2×, so no second weapon). ZCB is first on 12 of 12 Team phases, 7 of 8 Solo.
+// Phase 38j: the Solo kit now camps the Lightbearer (+ a Torva full helm switch): lower DPS on some phases, so ZCB per
+// bar rises there (AG grounded 81.9 → 86.0, Ezekiel 67.1 → 71.4, Xarth 74.9 → 79.2, Ocellus P1 86.5 → 90.6, P3 Q1-3
+// 58.7 → 62.8); the ranking is unchanged.
 const ZCB_PER_BAR: Record<string, Record<string, [number, string | null]>> = {
   fa: {
     'ag-flying|': [90.9, null],
@@ -161,12 +164,12 @@ const ZCB_PER_BAR: Record<string, Record<string, [number, string | null]>> = {
   },
   faSolo: {
     'ag-flying|': [90.9, null],
-    'ag-grounded|': [81.9, 'crimsonKisten'],
-    'ezekiel|': [67.1, 'crimsonKisten'],
+    'ag-grounded|': [86.0, 'crimsonKisten'],
+    'ezekiel|': [71.4, 'crimsonKisten'],
     'moia|': [85.5, null],
-    'xarth|': [74.9, 'crimsonKisten'],
-    'ocellus-p1|At a corner': [86.5, 'crimsonKisten'],
-    'ocellus-p3|Quadrants 1-3': [58.7, 'crimsonKisten'],
+    'xarth|': [79.2, 'crimsonKisten'],
+    'ocellus-p1|At a corner': [90.6, 'crimsonKisten'],
+    'ocellus-p3|Quadrants 1-3': [62.8, 'crimsonKisten'],
     'ocellus-p3|Last quadrant: Deflect Melee': [79.1, null],
   },
 };
@@ -177,6 +180,8 @@ describe.each([
 ] as [HeadlineName, DrainStateId][])('per FA boss on the %s headline (%s): Zaryte crossbow, no second weapon', (name, drain) => {
   test('every boss / phase: ZCB per bar as pinned, no other weapon ≥ 1.2× it; ZCB first on the most; the plan brings ZCB only', () => {
     const phases = independentGains(name, drain);
+    // eslint-disable-next-line no-console
+    if (process.env.PRINT_PINS) console.log(name, JSON.stringify(phases.map((p) => [p.key, Math.round(p.gains.zcb! * 10) / 10, rankedAt(p, ALL.filter((w) => w !== 'zcb'))[0] ?? null, rankedAt(p, ALL)[0]])));
     // every FA boss / phase of the route that takes damage specs (Ocellus P2 is a fixed-length phase: none)
     expect(phases.map((p) => p.key)).toEqual(Object.keys(ZCB_PER_BAR[name]));
     let firsts = 0;
@@ -192,9 +197,10 @@ describe.each([
     expect(firsts).toBe(name === 'fa' ? 12 : 7);
     expect(bringRule(phases, ALL).bring).toEqual(['zcb']);
     const { fx } = routeOf(name);
-    // phase 38h-3b: Burning claws comes along as the filler (leftover energy), outside the bring rule
-    expect(fx.specs.damage).toEqual(['zcb', 'burningClaws']);
-    expect(fx.specs.filler).toBe('burningClaws');
+    // phase 38h-3b: a filler comes along (leftover energy), outside the bring rule; phase 38j: Crimson kisten (50%), not
+    // Burning claws (35%): the room times' regen leaves ≥ 50% after the ZCB specs on Xarth / Ocellus P3
+    expect(fx.specs.damage).toEqual(['zcb', 'crimsonKisten']);
+    expect(fx.specs.filler).toBe('crimsonKisten');
     expect(fx.specs.bringRule).toMatchObject({ first: 'zcb', second: null, bring: ['zcb'] });
     // the plan's stored decision is the rule on its own stored gains
     expect(bringRule(fx.specs.bringRule!.gains, ALL)).toEqual(fx.specs.bringRule);
@@ -211,21 +217,23 @@ describe.each([
   test('the briefing: "Then: 1. Zaryte crossbow (per bar)" on every encounter of the route (38h-3b: + the filler where specced)', () => {
     const { fx } = routeOf(name);
     expect(Object.keys(fx.specs.then ?? {})).toEqual(Object.keys(headline(name).encounters));
-    // phase 38h-3b: "· leftover: Burning claws" on the encounters where the plan makes a Burning claws spec
-    const fills = name === 'fa' ? ['archive-guardian', 'bork-smorks', 'xarth', 'ocellus'] : ['ezekiel', 'xarth', 'ocellus'];
+    // phase 38h-3b: "· leftover: <filler>" on the encounters where the plan makes a filler spec (phase 38j: Crimson kisten
+    // on Xarth and Ocellus P3 (fa), Ocellus P3 (faSolo))
+    const fills = name === 'fa' ? ['xarth', 'ocellus'] : ['ocellus'];
     Object.entries(fx.specs.then ?? {}).forEach(([id, t]) => expect([id, t]).toEqual([id,
-      `Then: 1. Zaryte crossbow (per bar)${fills.includes(id) ? ' · leftover: Burning claws' : ''}`]));
+      `Then: 1. Zaryte crossbow (per bar)${fills.includes(id) ? ' · leftover: Crimson kisten' : ''}`]));
   }, 120000);
 });
 
 describe('no seconds in the spec choices (the headline plans)', () => {
-  test('Solo: brought ⇔ the plan with every owned one specs it (Elder maul 2, Tonalztics 10); the final plan makes 1 / 7', () => {
+  // phase 38j (room times: more energy): Elder maul 2 → 5 in the reference plan, 1 → 2 in the final one
+  test('Solo: brought ⇔ the plan with every owned one specs it (Elder maul 5, Tonalztics 10); the final plan makes 2 / 7', () => {
     const fx = phase37Fixture('faSolo') as PlanResult;
     // review fix 3: `specs` = the final plan's route (the damage specs and the surge dose take energy), `refSpecs` = the
     // reference plan that chose them; free slots there, so no slot check
     expect(fx.specs.solo!.perWeapon).toEqual([
       {
-        weapon: 'elderMaul', chosen: true, specs: 1, refSpecs: 2,
+        weapon: 'elderMaul', chosen: true, specs: 2, refSpecs: 5,
       },
       {
         weapon: 'dwh', chosen: false, specs: 0, refSpecs: 0,
@@ -281,9 +289,10 @@ describe('Solo drain weapons against a kit slot (review fix 2)', () => {
       if (!d.chosen) expect(r.specs.notes.some((n) => n.includes('no free slot') && n.includes(`${d.slot!.adds.toFixed(0)} HP`))).toBe(true);
     });
     // as measured (0.1 HP): Elder maul adds 0 HP (Tonalztics / Eye of Ayak cover its drains) vs 148.9: left at home;
-    // Tonalztics 1045.0 vs 194.0 and Eye of Ayak 420.4 vs 339.8: kept
+    // Tonalztics 1045.0 vs 194.0 and Eye of Ayak 420.4 vs 339.8: kept. Phase 38j (the room times' regen): Tonalztics adds
+    // 1061.4, Eye of Ayak 436.8
     const hp = Object.fromEntries(checked.map((d) => [d.weapon, [Math.round(d.slot!.adds * 10) / 10, Math.round(d.slot!.costs * 10) / 10]]));
-    expect(hp).toEqual({ elderMaul: [0, 148.9], tonalztics: [1045, 194], ayak: [420.4, 339.8] });
+    expect(hp).toEqual({ elderMaul: [0, 148.9], tonalztics: [1061.4, 194], ayak: [436.8, 339.8] });
     expect(r.specs.bring).toEqual(['tonalztics', 'ayak']);
   }, 900000);
 });

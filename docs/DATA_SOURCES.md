@@ -975,6 +975,14 @@ Power bundle is "2 smelling salts and 1 liquid adrenaline" (the Chaos bundle: ad
 Smelling salts imply the Power bundle, so 2 doses per drop; when they are drunk (one each in rooms 3-4, two on the
 Wardens, at the encounter's start) is ours: **unverified**, UNVERIFIED D33.
 
+### Phase 38j — FA room times (2026-10-30)
+
+- Source: the user's in-game raid statistics panel, read 2026-10-25, transcribed in docs/calibration/fa-times-2026-10-25.md
+  (personal best, global best, global today per boss and party size; overall raid). Used in
+  src/lib/fracturedArchive/roomTimes.ts: personal bests (AG, Bork, Dreadnoth, Xarth 2-6 players; Ocellus 3-6) and global
+  bests (all eight encounters, 1-7 players). The Bork row is the Bork + Smorks encounter. **Unverified** (UNVERIFIED
+  D36): bests, not typical times; four encounters have no personal time (global × the user's pace).
+
 ### Phase 38c — Ocellus events, ToA path pair, raid clock (2026-10-27)
 
 - **Ocellus's Defence resets P1 → P2 and P2 → P3**: the user, in-game (2026-10-27; not on the wiki's Ocellus page).

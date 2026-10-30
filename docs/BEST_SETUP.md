@@ -1838,6 +1838,48 @@ leaving 22-40% per encounter. HP only, no seconds:
 22:57.2 → 22:53.9 (Burning claws on Ezekiel, Xarth, Ocellus), faNotOwned 24:43.4 unchanged (no free slot: claws add 40 HP,
 the kit change costs 788 HP). The ZCB specs per encounter are unchanged (Phase38h3b.test.ts).
 
+### Plan tab you can trust (phase 38j, FA)
+
+ROADMAP 38j (absorbs 41; user, 2026-10-28: "right about choices, not minutes"). Three parts, FA only; switches stay free
+(D10).
+
+- **Kits compared, not timed.** The score is unchanged: Σ HP ÷ DPS over the route ("boss time", your DPS alone, the 38h
+  spec values). The Plan shows the total once, labelled "boss time, your DPS alone: a rough estimate"
+  (`plan-estimate`), and every comparison as a difference: alternatives / rejected kits "1.4% more boss time than this
+  kit", kit loadouts "0.6% less boss time than without it", other rings "Bellator ring 3.8% more boss time", the routes
+  table's other routes "+x% more" (closeCalls.ts `bossTimeDiff` / `bossTimeVs`; the seconds stay in the tooltips and
+  `data-seconds`).
+- **Spec energy from the measured room times** (roomTimes.ts, UNVERIFIED D36). Each FA encounter's room time is the
+  user's personal best at the party size (docs/calibration/fa-times-2026-10-25.md), else the global best × the user's
+  pace at that size (mean personal ÷ global over the bosses with both; 6 players 1.763698), else (1, 7, 8 players: no
+  personal times) × the pace over all 24 pairs (1.819193); 8 players use the 7-player bests. `RaidBase.roomSeconds` →
+  `RaidTimeAssumptions.roomSeconds`. On the spec budget's clock an encounter lasts max(room, fight wall): the rows are
+  stretched in proportion, a fixed-length phase (Ocellus P2, 120 s) kept (`rowWallsOn`), so regen (+10% per tick) and
+  Death Charge run over the real room. The raid clock (surge doses, the carry option) = the rooms (`clockWall`) + the
+  travel between them, spread evenly (`raidClock(..., even)`, `routeClock`); the FA's "Non-fight time" input becomes
+  "Travel time", default 4.5 min = the user's overall best − the five room bests, averaged over 3-6 players (268.75 s).
+  The other raids keep the phase 38c clock. Boss time (the score) doesn't use the room times: only the energy moves.
+  Hand check (Phase37c / Phase38j): fa Xarth, room 141 s = 4 ticks: your bar 100 + 40 + Death Charge 2.5 − ZCB 75 −
+  Crimson kisten 50 = 17.5 (was 1 tick on the 30 s fight wall); faSolo Archive Guardian 178 × 1.819193 = 323.8 s on the
+  Lightbearer (15 s): 21 ticks, 100 + 210 + 25 (dose) + 15 − (2 Tonalztics + 3 ZCB = 325) = 25.
+- **Close calls** (closeCalls.ts, `CloseCallsBox` under the Bring box): a choice within 2% of its runner-up
+  (`CLOSE_CALL_MARGIN`): the kit vs an alternative kit (boss time), a kit loadout vs the kit without it, the camped ring
+  vs another planned in full, the last carrier of a drain weapon vs one fewer (`lastSaved`), your spec bar (Team: the HP
+  the bars pay with your damage specs vs carrying), the first damage spec weapon vs the best other (HP per bar summed
+  over the route), and the Solo drains already flagged by 38h-2 (within 10%). Each is tagged "close call (depends on
+  A11, …)": A11 (Defence doesn't scale) for every FA choice, plus the rows of the weapons involved (Obligator A1 / A2,
+  Ascension crossbows A5, demonbane weapons A8, Zorya's tome A9). Not computed: whether a choice really flips under an
+  assumption (that needs a magnitude per assumption, e.g. how much Defence would scale).
+- **Search / Summary filler name** (`leftoverWeapon`): the cheaper weapon with the most HP for one spec (HP per bar ×
+  cost), no longer the cheapest: with the room times' regen the plan's leftover after the ZCB specs is ≥ 50% where it
+  specs a filler, and it takes Crimson kisten (FA Xarth: Search = Summary = Plan "· leftover: Crimson kisten").
+
+**Result** (`pinHeadlines --full`): fa 21:43.3 → 21:14.1, faSolo 22:53.9 → 22:08.7, faNotOwned 24:43.4 → 24:17.4 (more
+energy per encounter: the rooms last 2-5× the 6-man fight wall). PROGRESS has the per-encounter changes.
+**Known gap** (open at commit): the optimiser times kits with a reference kit's spec plan; with the spare energy the
+exact plans differ more between kits, and the brute-force probes find kits 0.2-0.5% faster than the planner's on the
+reduced pools (Phase36 4.39 s, Phase37c tiny 7.88 s). The headline plans re-time exactly (gap 0).
+
 ## Routes tab (phase 16: raid time model)
 
 **Phase 23: the tab is gone.** Its route table is now part of the Plan tab's results (the *planned* kit timed on every

@@ -81,7 +81,8 @@ describe('the raid clock', () => {
     // solo with the presets only takes ~25 min of fight: a 50-min raid leaves gaps to regenerate in
     // phase 38c: an explicit raid length (the default would be the fight wall + the non-fight time)
     const ta = {
-      ...ta0, raidSeconds: 3000, nonFightSeconds: undefined, specBudget: { ...ta0.specBudget!, carry: true },
+      // phase 38j: without the measured room times (this is the 38a clock: the fight walls, the gaps in proportion)
+      ...ta0, raidSeconds: 3000, nonFightSeconds: undefined, roomSeconds: undefined, specBudget: { ...ta0.specBudget!, carry: true },
     };
     expect(budgetGroups(ta.specBudget!).find((g) => g.id === 'me')!.regenSeconds).toBe(30);
     const presets = (['melee', 'ranged', 'magic'] as const).map((g) => raid.presets.find((p) => p.group === g)!);
@@ -111,11 +112,12 @@ describe('the raid clock', () => {
 
   test('Plan input: saved and validated (0-120 min), default per raid (phase 38c: "Non-fight time")', () => {
     const fa = raidConfig('fractured-archive');
-    expect(defaultPlanInputs(fa).nonFightMinutes).toBe(21.5);
+    // phase 38j: the FA default is the travel between the measured rooms (4.5 min)
+    expect(defaultPlanInputs(fa).nonFightMinutes).toBe(4.5);
     if (OTHER_RAIDS) expect(defaultPlanInputs(raidConfig('toa')).nonFightMinutes).toBe(15.5);
     expect(validatePlanInputs(fa, { nonFightMinutes: 40 }, fa.defaultAssumptions).nonFightMinutes).toBe(40);
-    expect(validatePlanInputs(fa, { nonFightMinutes: 121 }, fa.defaultAssumptions).nonFightMinutes).toBe(21.5);
-    expect(validatePlanInputs(fa, { nonFightMinutes: 'x' }, fa.defaultAssumptions).nonFightMinutes).toBe(21.5);
+    expect(validatePlanInputs(fa, { nonFightMinutes: 121 }, fa.defaultAssumptions).nonFightMinutes).toBe(4.5);
+    expect(validatePlanInputs(fa, { nonFightMinutes: 'x' }, fa.defaultAssumptions).nonFightMinutes).toBe(4.5);
   });
 });
 

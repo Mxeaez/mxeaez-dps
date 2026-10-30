@@ -46,6 +46,7 @@ import {
   RaidTimeAssumptions,
   raidTimeAssumptionsFrom,
   surgeClockSpan,
+  clockWall,
   RaidTimeModel,
   Route,
   RouteComparison,
@@ -2616,7 +2617,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       // phase 38a: the doses the surge clock allows (the raid clock; ToB: fight time only)
       const maxPotionsOn = (m: number[], a: BestSetupAssumptions) => {
         const route = dpCmp(m, a);
-        const wall = route.fastest >= 0 ? route.routes[route.fastest].encounters.reduce((t, e) => t + encounterWallSeconds(e.seconds, fastA), 0) : 0;
+        const wall = route.fastest >= 0 ? route.routes[route.fastest].encounters.reduce((t, e) => t + clockWall(e.id, encounterWallSeconds(e.seconds, fastA), fastA), 0) : 0;
         return dosesAllowed(surgeClockSpan(wall, fastA)) > SURGE_DOSES_PER_POTION ? 2 : 1;
       };
       let cur = {

@@ -57,27 +57,33 @@ describe('drain outcome: one encounter of a headline, for hand-checking', () => 
     expect(x.pFloor!).toBeGreaterThanOrEqual(0.95);
     expect(x.pFloor!).toBeLessThan(0.995);
     expect(x.rankedDef).toBe(102);
-    // wall clock = DPS seconds ÷ party 6; one +10% tick at 30 s
-    expect(d.wall).toBeCloseTo(d.seconds / 6, 9);
-    expect(d.wall).toBeGreaterThan(30);
+    // phase 38j: the spec budget's clock = Xarth's measured room time, 141 s (the user's personal best at 6 players;
+    // was DPS seconds ÷ party 6 ≈ 30 s): +10% ticks at 30, 60, 90, 120 s = 4
+    expect(d.wall).toBe(141);
+    expect(d.pools.map((g) => g.ticks)).toEqual([4, 4, 4]);
     const pool = Object.fromEntries(d.pools.map((g) => [g.group, g]));
     // phase 38g: 2 maul bars: 200 + 2 × 10 − 0 = 220; 3 Tonalztics bars: 300 + 3 × 10 − 2 × 50 = 230; yours (a surge dose
     // here, Crimson kisten): 100 + 10 + 25 − (ZCB 75 + kisten 50) = 10; Xarth's death (Death Charge, party 6) adds
     // 15 ÷ 6 = 2.5% per bar at the end: 225, 237.5, 12.5. Phase 38h-2: Elder maul ×2 + Tonalztics ×1: 220 − 100 + 5 = 125,
     // 330 − 50 + 7.5 = 287.5. Phase 38h-3 (bring rule: Zaryte crossbow only, no surge potion): yours 100 + 10 − 75 + 2.5 = 37.5;
-    // phase 38h-3b: the filler, Burning claws (35%), takes 35 of those 37.5: 2.5
-    expect([pool.elderMaul.balance, pool.tonalztics.balance, pool.me.balance]).toEqual([125, 287.5, 2.5]);
-    expect(pool.me.end).toEqual([2.5]);
+    // phase 38h-3b: the filler, Burning claws (35%), takes 35 of those 37.5: 2.5. Phase 38j (4 ticks): maul bars 200 + 80
+    // + 5 − 100 = 185; Tonalztics 300 + 120 + 7.5 − 50 = 377.5; yours 100 + 40 + 2.5 − ZCB 75 = 67.5, the filler is now
+    // Crimson kisten (50%): 17.5
+    expect([pool.elderMaul.balance, pool.tonalztics.balance, pool.me.balance]).toEqual([185, 377.5, 17.5]);
+    expect(pool.me.end).toEqual([17.5]);
   }, 60000);
 
-  test('FA Solo Archive Guardian: 2 Tonalztics + ZCB + the surge dose from one bar', () => {
+  test('FA Solo Archive Guardian: 2 Tonalztics + 3 ZCB + the surge dose from one bar (phase 38j: the room time, Lightbearer)', () => {
     const d = drainOutcome('faSolo', 'archive-guardian');
     expect(d.eventsMatch).toBe(true);
     expect(d.surge).toBe(true);
     const [me] = d.pools;
     // party 1: wall = DPS seconds (180.67 s: 6 ticks); 100 + 60 + 25 (dose) − (2 × 50 + 75) = 10; phase 38b: the
-    // Guardian's death (Death Charge, party 1) +15% = 25 = the bar at the end
-    expect([me.group, me.ticks, me.spent, me.restored, me.balance, me.end]).toEqual(['me', 6, 175, 15, 25, [25]]);
+    // Guardian's death (Death Charge, party 1) +15% = 25 = the bar at the end. Phase 38j: the room time, no personal solo
+    // time: the global best 178 s × the user's pace (mean personal ÷ global over the 24 pairs, 1.819193) = 323.82 s; the
+    // plan camps the Lightbearer (a tick per 15 s): 21 ticks; 100 + 210 + 25 − (2 × 50 + 3 × 75 = 325) + 15 = 25
+    expect(d.wall).toBeCloseTo(178 * 1.819193, 3);
+    expect([me.group, me.ticks, me.spent, me.restored, me.balance, me.end]).toEqual(['me', 21, 325, 15, 25, [25]]);
   }, 60000);
 
   slowTest('CLI: three tables, exit 0; an encounter on no headline route exits 2', () => {

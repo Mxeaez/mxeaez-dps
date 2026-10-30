@@ -58,6 +58,9 @@ import PlanBriefing from '@/app/components/bestSetup/PlanBriefing';
 import { briefingRows, drainSummaryPhases } from '@/lib/fracturedArchive/briefing';
 import DrainLineView from '@/app/components/bestSetup/DrainLineView';
 import {
+  bossTimeDiff, bossTimeVs, closeCallTag, planCloseCalls,
+} from '@/lib/fracturedArchive/closeCalls';
+import {
   encounterDrainSummary, encounterItemText, encounterResultText, EncounterDrainSummary,
 } from '@/lib/fracturedArchive/drainLine';
 import openInCalculator, { openLoadoutsInCalculator } from '@/app/components/bestSetup/loadIntoCalculator';
@@ -176,10 +179,13 @@ const fmtDelta = (v: number | null | undefined) => {
   return `${s > 0 ? '−' : '+'}${Math.abs(s).toFixed(1)} s`;
 };
 
-/** Phase 27 review: another camp ring vs the chosen one: exact when planned in full, else the screen's estimate. */
+/**
+ * Phase 27 review: another camp ring vs the chosen one: exact when planned in full, else the screen's estimate. Phase
+ * 38j: as a difference in boss time ("Bellator ring 3.8% more boss time").
+ */
 const ringOther = (x: PlanResult['ring']['screened'][number], chosen: number | null) => {
-  if (x.full) return `${x.ring} ${fmtDelta(secs(chosen) - secs(x.seconds))}`;
-  if ((x.atLeast ?? 0) >= 1) return `${x.ring} ≥ +${(x.atLeast ?? 0).toFixed(0)} s (estimate)`;
+  if (x.full) return `${x.ring} ${bossTimeDiff(secs(chosen) - secs(x.seconds), secs(chosen))}`;
+  if ((x.atLeast ?? 0) >= 1) return `${x.ring} ≥ ${bossTimeDiff(-(x.atLeast ?? 0), secs(chosen))} (estimate)`;
   return `${x.ring} (slower by the quick screen; not planned in full)`;
 };
 
@@ -300,17 +306,43 @@ const InventoryGrid: React.FC<{ cells: InventoryCell[], quiverAmmo?: PlanItem | 
   </div>
 );
 
-const RejectionList: React.FC<{ rows: PlanRejection[], testId: string }> = ({ rows, testId }) => (
+/**
+ * Phase 38j: the plan's close calls (closeCalls.ts): every choice within 2% of its runner-up, with the UNVERIFIED (A)
+ * assumptions it rests on.
+ */
+const CloseCallsBox: React.FC<{ result: PlanResult }> = ({ result }) => {
+  const calls = useMemo(() => planCloseCalls(result), [result]);
+  return (
+    <div className="text-xs flex flex-col gap-0.5 px-2 py-1 rounded border border-body-400 dark:border-dark-200" data-testid="plan-close-calls" data-count={calls.length}>
+      <div className="font-semibold" title="A choice within 2% of its runner-up (boss time, or the HP the spec bars pay): the plan could go either way, and an unverified assumption (docs/UNVERIFIED.md (A)) could flip it">
+        {calls.length ? `Close calls (${calls.length}): within 2% of the runner-up` : 'No close calls: every choice is more than 2% ahead of its runner-up.'}
+      </div>
+      {calls.length > 0 && (
+        <ul className="list-disc ml-5">
+          {calls.map((c) => (
+            <li key={`${c.kind}|${c.text}`} data-testid="plan-close-call" data-kind={c.kind} data-depends={c.dependsOn.join(',')}>
+              {c.text}
+              <span className="ml-1 text-orange-700 dark:text-orange-300">{`· ${closeCallTag(c)}`}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+};
+
+/** Phase 38j: differences in boss time vs the plan (`total`), the seconds in the tooltip. */
+const RejectionList: React.FC<{ rows: PlanRejection[], testId: string, total: number }> = ({ rows, testId, total }) => (
   <ul className="list-disc ml-5" data-testid={testId}>
     {rows.map((r) => (
-      <li key={r.label}>
+      <li key={r.label} title={`${fmtDelta(r.deltaSeconds)} boss time (your DPS alone)`} data-delta-seconds={r.deltaSeconds}>
         {/* phase 34: each loadout's weapon icon (icons add no text) */}
         {(r.weapons ?? []).filter(Boolean).map((w, i) => (
           // eslint-disable-next-line react/no-array-index-key
           <span key={`${w}|${i}`} className="inline-block align-middle mr-0.5"><ItemIcon name={w} src={itemImageByName(w)} size={16} /></span>
         ))}
         <span className="font-semibold">{r.label}</span>
-        {`: ${fmtDelta(r.deltaSeconds)} route time, ${r.deltaSlots >= 0 ? '+' : ''}${r.deltaSlots} slot${Math.abs(r.deltaSlots) === 1 ? '' : 's'} — ${r.reason}`}
+        {`: ${bossTimeVs(r.deltaSeconds, total, 'this kit')}, ${r.deltaSlots >= 0 ? '+' : ''}${r.deltaSlots} slot${Math.abs(r.deltaSlots) === 1 ? '' : 's'} — ${r.reason}`}
       </li>
     ))}
   </ul>
@@ -883,9 +915,9 @@ const PlanView: React.FC<{
             <label
               htmlFor="plan-non-fight-minutes"
               className="flex items-center gap-1"
-              title={`The raid's wall clock = the route's fight time + this non-fight time (travel, puzzles and mechanics), spread before each encounter in proportion to its fight time; Surge potion doses (one per 5 minutes) and spec regen between encounters follow it${raid.surgePausesBetweenEncounters ? ' (ToB: the surge cooldown pauses between rooms, so only fight time counts for it)' : ''}. A longer fight (a solo raid) makes a longer raid. 0 = fight time only. Default ${raid.nonFightMinutes} min = a typical ${raid.typicalRaidMinutes} min raid minus the Team headline's fight time; the ${raid.typicalRaidMinutes} min: ${RAID_LENGTH_SOURCES[raid.id]} (unverified)`}
+              title={raid.roomSeconds ? `The spec energy runs on measured room times (the user's in-game raid stats, docs/calibration/fa-times-2026-10-25.md: your personal best per boss and party size, else the global best × your pace; unverified): spec regen and Death Charge over each room, and the Surge potion doses (one per 5 minutes) on the raid clock = the rooms + this travel time between them, spread evenly. Default ${raid.nonFightMinutes} min = your overall best minus your five room bests (3-6 players, averaged). Boss time (Σ HP ÷ DPS) doesn't use it.` : `The raid's wall clock = the route's fight time + this non-fight time (travel, puzzles and mechanics), spread before each encounter in proportion to its fight time; Surge potion doses (one per 5 minutes) and spec regen between encounters follow it${raid.surgePausesBetweenEncounters ? ' (ToB: the surge cooldown pauses between rooms, so only fight time counts for it)' : ''}. A longer fight (a solo raid) makes a longer raid. 0 = fight time only. Default ${raid.nonFightMinutes} min = a typical ${raid.typicalRaidMinutes} min raid minus the Team headline's fight time; the ${raid.typicalRaidMinutes} min: ${RAID_LENGTH_SOURCES[raid.id]} (unverified)`}
             >
-              Non-fight time (min)
+              {raid.roomSeconds ? 'Travel time (min)' : 'Non-fight time (min)'}
               <input
                 id="plan-non-fight-minutes"
                 type="number"
@@ -1014,6 +1046,13 @@ const PlanView: React.FC<{
                 {formatDuration(secs(planned.seconds))}
               </span>
               <span className="sr-only" data-testid="plan-team-label">{` · ${teamTimeLabel(teamDpsMultiplier(assumptions))}`}</span>
+              <span
+                className="ml-2 text-xs text-gray-500 dark:text-gray-400"
+                data-testid="plan-estimate"
+                title="The planner scores a kit by its boss time (Σ HP ÷ DPS over the route's phases, the spec plan included). It ignores mechanics, travel and the rest of the team, so the minutes are rough; the choices come from the differences between kits, shown as % below"
+              >
+                boss time, your DPS alone: a rough estimate. Kits are compared by the differences below.
+              </span>
             </div>
             <span
               className={`px-2 py-0.5 rounded text-sm font-bold ${result.slots.free > 0 ? 'bg-green-600' : 'bg-orange-500'} text-white`}
@@ -1038,6 +1077,7 @@ const PlanView: React.FC<{
             imageOf={(id) => targetImageUrl(findTarget(raid.encounterTarget[id]))}
           />
           {result.specs && <BringBox specs={result.specs} />}
+          <CloseCallsBox result={result} />
           {result.unusedCarried.length > 0 && (
             <div className="px-2 py-1 rounded border border-orange-400 bg-orange-50 dark:bg-orange-900/30 flex flex-wrap items-center gap-2" data-testid="unused-carried">
               <span>
@@ -1083,8 +1123,8 @@ const PlanView: React.FC<{
                       {c.label}
                       <span className="text-gray-500 dark:text-gray-400">{` · ${c.group} · ${c.source}`}</span>
                       {result.kit.length > 1 && result.kitMarginal?.[i] && (
-                      <span className="text-gray-500 dark:text-gray-400" data-testid="kit-marginal" data-slots={result.kitMarginal[i].slots}>
-                        {` · +${result.kitMarginal[i].slots} slot${result.kitMarginal[i].slots === 1 ? '' : 's'}, saves ${fmtS(result.kitMarginal[i].seconds)}`}
+                      <span className="text-gray-500 dark:text-gray-400" data-testid="kit-marginal" data-slots={result.kitMarginal[i].slots} data-seconds={secs(result.kitMarginal[i].seconds)} title={`saves ${fmtS(result.kitMarginal[i].seconds)} of boss time (your DPS alone)`}>
+                        {` · +${result.kitMarginal[i].slots} slot${result.kitMarginal[i].slots === 1 ? '' : 's'}, ${bossTimeVs(secs(result.kitMarginal[i].seconds), secs(planned.seconds), 'without it')}`}
                       </span>
                       )}
                     </div>
@@ -1138,19 +1178,19 @@ const PlanView: React.FC<{
                 {result.rejected.length > 0 ? (
                   <>
                     <div>Faster with one more loadout, but it doesn&apos;t fit:</div>
-                    <RejectionList rows={result.rejected} testId="plan-rejected" />
+                    <RejectionList rows={result.rejected} testId="plan-rejected" total={secs(planned.seconds)} />
                   </>
                 ) : <div>No other candidate loadout would make the route faster.</div>}
                 {result.alternatives.length > 0 && (
                   <>
                     <div>Alternatives (a lighter kit, then the best kit of each other style mix):</div>
-                    <RejectionList rows={result.alternatives} testId="plan-alternatives" />
+                    <RejectionList rows={result.alternatives} testId="plan-alternatives" total={secs(planned.seconds)} />
                   </>
                 )}
               </div>
               <div className="text-[11px] text-gray-500 dark:text-gray-400" data-testid="plan-stats">
                 {`${result.stats.phases} phases, ${result.stats.searches} new searches; ${result.stats.candidates.total} candidate loadouts (${result.stats.candidates.preset} presets, ${result.stats.candidates.search} search rows, ${result.stats.candidates.partial} partial switches${result.stats.candidates.capped ? `, ${result.stats.candidates.capped} capped` : ''}); ${result.stats.evaluations} DPS evaluations, ${result.stats.kitsEvaluated} kits timed; ${(result.stats.ms.total / 1000).toFixed(1)} s (search ${(result.stats.ms.search / 1000).toFixed(1)}, matrix ${(result.stats.ms.matrix / 1000).toFixed(1)}, optimiser ${(result.stats.ms.optimise / 1000).toFixed(1)}).`}
-                {' Times: DPS only (Σ HP ÷ DPS per phase); switching is free and instant.'}
+                {' Times: DPS only (Σ HP ÷ DPS per phase; a rough estimate, compare kits by the differences); switching is free and instant.'}
               </div>
             </div>
           </details>
@@ -1247,7 +1287,10 @@ const PlanView: React.FC<{
                               <span className="ml-2 text-[10px] px-1 rounded bg-orange-400 text-white" data-testid="fastest-badge">{route === 'all' ? 'fastest' : 'planned'}</span>
                             )}
                           </td>
-                          <td className={`px-2 py-0.5 text-right font-mono ${DPS_TEXT_CLASS}`} data-testid="plan-route-total" title={fmtS(r.seconds)}>{formatDuration(secs(r.seconds))}</td>
+                          <td className={`px-2 py-0.5 text-right font-mono ${DPS_TEXT_CLASS}`} data-testid="plan-route-total" data-seconds={secs(r.seconds)} title={`${formatDuration(secs(r.seconds))} (${fmtS(r.seconds)})`}>
+                            {/* phase 38j: the planned route's boss time, the others as a difference */}
+                            {i === result.planned ? formatDuration(secs(r.seconds)) : bossTimeDiff(secs(planned.seconds) - secs(r.seconds), secs(planned.seconds)).replace(' boss time', '')}
+                          </td>
                           {r.encounters.map((e) => (
                             <td key={e.id} className="px-2 py-0.5 text-right whitespace-nowrap font-normal" data-testid={`plan-enc-${e.id}`} data-seconds={secs(e.seconds)}>
                               <div className="flex items-center justify-end gap-1 text-xs">

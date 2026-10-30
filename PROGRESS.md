@@ -3,6 +3,65 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 38j: FA Plan tab you can trust (FA, 2026-10-30)
+
+ROADMAP row 38j (absorbs 41). docs/BEST_SETUP.md *Plan tab you can trust (phase 38j, FA)*; UNVERIFIED D36 (new), D30
+note; DATA_SOURCES *Phase 38j*. Switches stay free (D10).
+
+- **Kits compared, not timed** (display): the score is unchanged (Σ HP ÷ DPS, "boss time"). The total is labelled "boss
+  time, your DPS alone: a rough estimate" (`plan-estimate`); alternatives / rejected kits, kit loadouts, other rings and
+  the other routes show % differences ("1.4% more boss time than this kit"; closeCalls.ts `bossTimeDiff` / `bossTimeVs`),
+  seconds in tooltips / `data-seconds`.
+- **Spec energy from the measured room times** (roomTimes.ts): personal best per encounter and party size, else global
+  best × the user's pace at that size (6 players 1.763698), else × the pace over all 24 pairs (1.819193; solo, 7, 8). The
+  spec budget's clock stretches an encounter's rows to max(room, fight wall) (`rowWallsOn`; Ocellus P2 kept at 120 s);
+  the raid clock = rooms + travel spread evenly (`clockWall`, `routeClock`, `raidClock(..., even)`); FA "Non-fight time"
+  → "Travel time", default 21.5 → 4.5 min (overall best − five room bests, 3-6 players: 268.75 s). Other raids unchanged.
+- **Close calls** (closeCalls.ts, `CloseCallsBox`): kit vs alternative, loadout vs without it, ring vs another full run,
+  last carrier vs one fewer, your bar (HP spec vs carry), first damage weapon vs the best other (HP per bar over the
+  route): within 2%; plus 38h-2's Solo drain flags (10%). Tagged "close call (depends on A11, …)" (A11 always; Obligator
+  A1 / A2, Ascension crossbows A5, demonbane A8, Zorya A9). Not computed: whether a choice flips under an assumption
+  (needs a magnitude per assumption).
+- **Search / Summary filler** (`leftoverWeapon`): the cheaper weapon with the most HP for one spec (was the cheapest): FA
+  Xarth "· leftover: Crimson kisten" on Search = Summary = Plan.
+- **Headlines** (`pinHeadlines --full`), all from the extra energy (rooms last 2-5× the fight wall at 6 players, ~1.8×
+  the solo fight): **fa 21:43.3 → 21:14.1** (−29.2 s): filler Burning claws → Crimson kisten (on Xarth, Ocellus P3); kit,
+  ring, route, carriers, surge (AG, Ocellus) unchanged; AG 174.77 → 169.50, Bork + Smorks 189.75 → 186.19, Moia 65.32 →
+  59.50, Xarth 181.62 → 180.61, Ocellus 691.84 → 678.32. **faSolo 22:53.9 → 22:08.7** (−45.2 s): ring Ultor →
+  Lightbearer (regen per 15 s pays more over long solo rooms; 1328.7 vs Ultor 1329.6 s: a close call), the melee switch
+  + Torva full helm, filler kisten (Ocellus P3), surge AG / Moia / Ocellus → AG / Ezekiel / Xarth / Ocellus; AG 180.67 →
+  175.15, Ezekiel 210.65 → 216.71 (Lightbearer's lost DPS), Moia 65.32 → 42.06, Xarth 181.62 → 179.20, Ocellus 735.60 →
+  715.62. **faNotOwned 24:43.4 → 24:17.4** (−26.0 s): ring Ultor → Lightbearer (0.2 s ahead), carriers 1 Elder maul + 4
+  Tonalztics → 2 + 2 + 1 Eye of Ayak (3822 vs 3785 HP); AG 191.91 → 186.21, Bork 222.80 → 212.78, Moia 65.97 → 60.07,
+  Xarth 209.70 → 211.66, Ocellus 792.97 → 786.72.
+- **Close calls on the headlines**: fa 4 (an alternative kit at the same boss time, the worn Ascension crossbows 0.6%,
+  the 3rd Tonalztics carrier 0.7%, the 2nd Elder maul 0.4%); faSolo 3 (the kit with a Tumeken's shadow worn 0.6%, the
+  Ascension crossbows 0.6%, Ultor vs Lightbearer 0.1%); faNotOwned 8 (the melee + ranged kit 1.4%, five rings within
+  0.0-1.7%, the 2nd Elder maul 1.8%, the Ayak carrier 0.3%).
+- **Hand checks**: fa Xarth room 141 s = 4 ticks: bars 2 maul 200 + 80 + 5 − 100 = 185, 3 Tonalztics 300 + 120 + 7.5 −
+  50 = 377.5, yours 100 + 40 + 2.5 − 75 − 50 = 17.5 (drainOutcome probe agrees); faSolo AG 178 × 1.819193 = 323.82 s on
+  the Lightbearer: 21 ticks, 100 + 210 + 25 + 15 − 325 = 25; faSolo Xarth 458.44 s: 30 ticks, 5 ZCB, 15 left.
+- **Tests**: Phase38j (room times by hand, rowWallsOn, the even clock and surge doses, Xarth ticks with / without the room,
+  bossTimeDiff, close calls by hand for every kind + none, the fa headline's close calls). Updated: Phase37c (Xarth /
+  Solo AG pools), Phase38h3b (kisten; the filler moves fa's second dose Ocellus → Xarth when removed, so the ZCB counts
+  are compared where the doses agree; leftoverWeapon), Phase38h3 (filler, Solo ZCB per bar with the Lightbearer kit,
+  Solo spec counts), Phase38h2 (faNotOwned carriers 3822.4 HP), Phase33 (Solo Bork 2 Tonalztics), Phase38a / 38c (4.5
+  min); Phase38g's Solo Bork and Phase38a's carry test pinned to the fight-wall clock (`roomSeconds: undefined`); r27fa
+  re-pinned. Slow pins: Phase34 (Bring / share: Crimson kisten), Phase38h3 slot check (Tonalztics 1061.4, Ayak 436.8
+  HP), Phase32 user plan 26:28.0 → 25:42.2, Phase29 Solo pinned list 1388.56 → 1349.05 s, PHASE37_MEMO faSolo / faNotOwned.
+- **Planning time** (pinHeadlines, alone): fa 38.8 s (HEAD ~35), faSolo 54.8 s (HEAD 29.8 s, **1.8×**: all six rings now
+  run in full, the ring screens are within the guard), faNotOwned 43.7 s (HEAD 57.2 s with two at once). verifyPhase27's re-plan limit 20 → 30 s (20.5 s measured alone).
+- **Open (blocker for review)**: the two brute-force kit tests fail: Phase36 (small pool, 294 kits) gap 4.39 s, Phase37c
+  (tiny pool) 7.88 s; `bruteForceKits.mjs fa` gap 2.68 s. Cause (measured): the optimiser times a kit with a reference
+  kit's spec plan (`fixedAlloc`); with the room times' spare energy the exact plans differ more between kits (other drain
+  weapons per event), so Inquisitor's mace + Twisted bow + Scythe is valued 1516.8 s under the reference plan vs 1500.0 s
+  exact and never reaches the exact re-time. Tried, no effect: RETIME_TOP 5 → 12; the best kit of each style mix re-timed
+  exactly; per-encounter min over the plans of the best single loadout per style. The headline plans re-time with gap 0
+  (`retime.mjs`); the missed kits are 0.2-0.5% faster (inside the close-call margin).
+- Run: fast suite green (1449); FA slow suites (CrossRaid, Phase2*, Phase3*) green except the two brute-force tests above;
+  `pinHeadlines --full` (then `--check` faNotOwned: no change); retime probe gap 0 (three FA); verifyAll 38j 38h3b 38h3 38a
+  21 29 OK, 27 OK alone (timing); tsc, lint clean.
+
 ## Phase 38h-3b review fixes (FA, 2026-10-30)
 
 Review of 5dabafac: PASS with findings; display only. (1) `leftoverWeapon` (bringRule.ts) picks the cheapest weapon

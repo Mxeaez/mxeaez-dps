@@ -3,10 +3,10 @@
  * time (min)", added to the fight time (was "Typical raid length").
  *
  * Usage (dev server running): node scripts/verifyPhase38a.mjs [baseUrl]
- * - FA: the input shows the default 21.5 min; ToA 15.5, CoX 12.9, ToB 12.6 (RaidBase.nonFightMinutes); its tooltip
+ * - FA: the input shows the default 4.5 min (phase 38j: "Travel time", between the measured rooms; was 21.5); ToA 15.5, CoX 12.9, ToB 12.6 (RaidBase.nonFightMinutes); its tooltip
  *   names the source (FA: the user's raid stats; ToB: the surge cooldown pauses between rooms).
  * - FA set to 40: kept after a reload and saved in `mxeaez-dps:settings:v1` (plan.nonFightMinutes = 40); FA "Reset" →
- *   21.5.
+ *   4.5.
  * Screenshot docs/screenshots/phase38a-raid-length.png (FA Plan inputs, Advanced open).
  */
 import { chromium } from '@playwright/test';
@@ -39,7 +39,7 @@ const main = async () => {
     await input.waitFor({ timeout: 30000 });
   };
 
-  for (const [raid, minutes] of [['fractured-archive', '21.5'], ['toa', '15.5'], ['cox', '12.9'], ['tob', '12.6']].filter(([r]) => OTHER_RAIDS || r === 'fractured-archive')) {
+  for (const [raid, minutes] of [['fractured-archive', '4.5'], ['toa', '15.5'], ['cox', '12.9'], ['tob', '12.6']].filter(([r]) => OTHER_RAIDS || r === 'fractured-archive')) {
     await openPlan(raid);
     check(await input.inputValue() === minutes, `${raid}: non-fight time ${await input.inputValue()} min (expected ${minutes})`);
     const title = await page.locator('label[for="plan-non-fight-minutes"]').getAttribute('title');
@@ -66,7 +66,7 @@ const main = async () => {
     await reset.first().click();
     await page.waitForTimeout(500);
     await openPlan('fractured-archive');
-    check(await input.inputValue() === '21.5', `FA after Reset: ${await input.inputValue()} min (expected 21.5)`);
+    check(await input.inputValue() === '4.5', `FA after Reset: ${await input.inputValue()} min (expected 4.5)`);
   } else {
     check(false, 'FA Reset button (data-testid="assumptions-reset") not found');
   }

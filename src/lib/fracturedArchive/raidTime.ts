@@ -466,6 +466,13 @@ export interface RaidTimeAssumptions {
    * non-fight time. Takes precedence over `raidSeconds` when set (`raidTimeAssumptionsFrom`: the default).
    */
   nonFightSeconds?: number;
+  /**
+   * Phase 38j: measured room seconds per encounter (the FA: the user's raid stats, roomTimes.ts). An encounter with one
+   * lasts max(room, fight wall) on the spec budget's clock (its phases stretched in proportion, a fixed-length phase
+   * kept) and on the raid clock, whose non-fight time (`nonFightSeconds`: the travel) is then spread evenly before the
+   * encounters (`raidClock`). Only the spec energy and the surge doses use it; the encounter seconds stay Σ HP ÷ DPS.
+   */
+  roomSeconds?: Partial<Record<EncounterId, number>>;
   /** Phase 38a (ToB): the surge cooldown pauses between encounters (its clock is fight time only). */
   surgePausesBetweenEncounters?: boolean;
 }
@@ -554,6 +561,7 @@ export const raidTimeAssumptionsFrom = (
   model?: RaidTimeModel,
 ): RaidTimeAssumptions => {
   const budget = specBudgetFrom(best, drain);
+  const rooms = raidBase(best.raid).roomSeconds?.(best.partySize);
   return {
     partySize: best.partySize,
     drain,
@@ -571,6 +579,7 @@ export const raidTimeAssumptionsFrom = (
       ? { raidSeconds: 60 * Math.max(0, best.raidMinutes) }
       : { nonFightSeconds: 60 * Math.max(0, best.nonFightMinutes ?? raidBase(best.raid).nonFightMinutes) }),
     ...(raidBase(best.raid).surgePausesBetweenEncounters ? { surgePausesBetweenEncounters: true } : {}),
+    ...(rooms ? { roomSeconds: rooms } : {}),
   };
 };
 
@@ -763,6 +772,7 @@ const encounterTimeOf = (id: EncounterId, kit: RaidKit, a: RaidTimeAssumptions, 
       fightSeconds: fight,
       clock0: opts.clock0 ?? 0,
       startState: opts.startState,
+      ...(a.roomSeconds?.[id] !== undefined ? { roomSeconds: a.roomSeconds[id] } : {}),
       surge: !!opts.surge,
       ...(adrenalineSeconds > 0 ? { adrenalineSeconds } : {}),
     });
@@ -818,15 +828,18 @@ export interface RaidClock {
  * max(0, raidSeconds − Σ walls) is spread before the encounters in proportion to their fight time (an encounter with
  * 30% of the fight time gets 30% of the travel / puzzles / mechanics), so the last fight ends at `raidSeconds` (or at
  * the fight total when that is longer). Phase 38c: with `nonFightSeconds` that much non-fight time is spread instead
- * (the raid lasts Σ walls + nonFightSeconds). Non-finite walls count 0. Phase 41 replaces the proportional spread with
- * measured room times.
+ * (the raid lasts Σ walls + nonFightSeconds). Non-finite walls count 0. Phase 38j (`even`, measured room times: the walls
+ * are then the rooms, `clockWalls`): the non-fight time is travel, spread evenly (each of n encounters gets 1 / n).
  */
-export const raidClock = (walls: number[], raidSeconds = 0, nonFightSeconds?: number): RaidClock => {
+export const raidClock = (walls: number[], raidSeconds = 0, nonFightSeconds?: number, even = false): RaidClock => {
   const w = walls.map((x) => (Number.isFinite(x) && x > 0 ? x : 0));
   const fight = w.reduce((t, x) => t + x, 0);
   let extra = Number.isFinite(raidSeconds) ? Math.max(0, raidSeconds - fight) : 0;
   if (nonFightSeconds !== undefined) extra = Number.isFinite(nonFightSeconds) ? Math.max(0, nonFightSeconds) : 0;
-  const gaps = w.map((x) => (fight > 0 ? (extra * x) / fight : 0));
+  const gaps = w.map((x) => {
+    if (even) return w.length ? extra / w.length : 0;
+    return fight > 0 ? (extra * x) / fight : 0;
+  });
   const starts: number[] = [];
   let t = 0;
   w.forEach((x, i) => {
@@ -838,13 +851,30 @@ export const raidClock = (walls: number[], raidSeconds = 0, nonFightSeconds?: nu
 };
 
 /**
+ * Phase 38j: an encounter's seconds on the raid clock: its fight wall, or its measured room time when longer
+ * (`RaidTimeAssumptions.roomSeconds`).
+ */
+export const clockWall = (id: EncounterId, wall: number, a: Pick<RaidTimeAssumptions, 'roomSeconds'>): number => {
+  const w = Number.isFinite(wall) && wall > 0 ? wall : 0;
+  const room = a.roomSeconds?.[id];
+  return room !== undefined && room > w ? room : w;
+};
+
+/** Phase 38j: the raid clock of a route's encounters (`clockWall` each; travel spread evenly with room times). */
+export const routeClock = (
+  ids: EncounterId[],
+  walls: number[],
+  a: Pick<RaidTimeAssumptions, 'raidSeconds' | 'nonFightSeconds' | 'roomSeconds'>,
+): RaidClock => raidClock(ids.map((id, i) => clockWall(id, walls[i], a)), a.raidSeconds ?? 0, a.nonFightSeconds, !!a.roomSeconds);
+
+/**
  * Phase 38a: when each encounter starts on the surge cooldown's clock: the raid clock, or fight time only where the
- * cooldown pauses between encounters (ToB).
+ * cooldown pauses between encounters (ToB). Phase 38j: `walls` are `clockWall`s; with room times the travel is even.
  */
 export const surgeClockStarts = (
   walls: number[],
-  a: Pick<RaidTimeAssumptions, 'raidSeconds' | 'nonFightSeconds' | 'surgePausesBetweenEncounters'>,
-): number[] => (a.surgePausesBetweenEncounters ? raidClock(walls) : raidClock(walls, a.raidSeconds ?? 0, a.nonFightSeconds)).starts;
+  a: Pick<RaidTimeAssumptions, 'raidSeconds' | 'nonFightSeconds' | 'surgePausesBetweenEncounters' | 'roomSeconds'>,
+): number[] => (a.surgePausesBetweenEncounters ? raidClock(walls) : raidClock(walls, a.raidSeconds ?? 0, a.nonFightSeconds, !!a.roomSeconds)).starts;
 
 /** Phase 38a: the span of the surge cooldown's clock for a route with this fight wall time (the doses it allows). */
 export const surgeClockSpan = (
@@ -865,10 +895,10 @@ export const surgeClockSpan = (
 export const routeSurgeDoses = (
   plain: EncounterTime[],
   dosed: EncounterTime[],
-  a: Pick<RaidTimeAssumptions, 'dpsMultiplier' | 'partySize' | 'raidSeconds' | 'nonFightSeconds' | 'surgePausesBetweenEncounters'>,
+  a: Pick<RaidTimeAssumptions, 'dpsMultiplier' | 'partySize' | 'raidSeconds' | 'nonFightSeconds' | 'surgePausesBetweenEncounters' | 'roomSeconds'>,
   potions: number,
 ): EncounterId[] => {
-  const starts = surgeClockStarts(plain.map((e) => encounterWallSeconds(e.seconds, a)), a);
+  const starts = surgeClockStarts(plain.map((e) => clockWall(e.id, encounterWallSeconds(e.seconds, a), a)), a);
   const items = plain.map((e, i) => ({ id: e.id, at: starts[i], gain: e.seconds - dosed[i].seconds }));
   return placeDoses(items, SURGE_DOSES_PER_POTION * Math.max(0, Math.floor(potions)), SURGE_COOLDOWN_SECONDS);
 };
@@ -897,7 +927,7 @@ export const raidTime = (
     // non-fight time before each encounter (`raidClock` of the full-bar encounter times) regenerates every pool (+10%
     // per tick of its period on the clock, capped at 100%) and counts for the surge cooldown (not in ToB).
     const groups = new Map(budgetGroups(budget).map((g) => [g.id, g.regenSeconds]));
-    const { gaps } = raidClock(route.encounters.map((id) => encounterWallSeconds(cached(id, false).seconds, assumptions)), assumptions.raidSeconds ?? 0, assumptions.nonFightSeconds);
+    const { gaps } = routeClock(route.encounters, route.encounters.map((id) => encounterWallSeconds(cached(id, false).seconds, assumptions)), assumptions);
     let clock = 0;
     let surgeClock = 0;
     let state: PoolState | undefined;
@@ -927,7 +957,7 @@ export const raidTime = (
         }
       }
       state = e.specPlan?.end;
-      const wall = encounterWallSeconds(e.seconds, assumptions);
+      const wall = clockWall(id, encounterWallSeconds(e.seconds, assumptions), assumptions);
       clock += wall;
       surgeClock += wall;
       return e;

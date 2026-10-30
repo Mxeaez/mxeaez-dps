@@ -359,6 +359,26 @@ export const rowWallSeconds = (
   a: Pick<RaidTimeAssumptions, 'dpsMultiplier' | 'partySize'>,
 ): number => (r.fixedWall ? Math.max(0, Number.isFinite(r.seconds) ? r.seconds : 0) : wallOf(r.seconds, a));
 
+/**
+ * Phase 38j: the wall seconds of a pass's rows on the spec budget's clock (`rowWallSeconds`), stretched to the
+ * encounter's measured room time when that is longer (`roomSeconds`; RaidTimeAssumptions.roomSeconds): every row that
+ * isn't fixed-length × (room − fixed) ÷ (Σ walls − fixed), so the rows keep their shares and the encounter lasts its
+ * room time. No room time, or one no longer than the walls: the walls as they are.
+ */
+export const rowWallsOn = (
+  rows: Pick<PhaseTime, 'seconds' | 'fixedWall'>[],
+  a: Pick<RaidTimeAssumptions, 'dpsMultiplier' | 'partySize'>,
+  roomSeconds?: number,
+): number[] => {
+  const walls = rows.map((r) => rowWallSeconds(r, a));
+  if (roomSeconds === undefined || !Number.isFinite(roomSeconds)) return walls;
+  const total = walls.reduce((t, w) => t + w, 0);
+  const fixed = rows.reduce((t, r, i) => t + (r.fixedWall ? walls[i] : 0), 0);
+  if (!(roomSeconds > total) || !(total - fixed > 0)) return walls;
+  const f = (roomSeconds - fixed) / (total - fixed);
+  return walls.map((w, i) => (rows[i].fixedWall ? w : w * f));
+};
+
 /** Every pool at 100%. */
 export const fullPools = (groups: PoolGroup[]): PoolState => Object.fromEntries(groups.map((g) => [g.id, Array(g.count).fill(SPEC_MAX_ENERGY)]));
 
@@ -621,6 +641,8 @@ export interface BudgetContext {
   clock0: number;
   /** Energy at the start (carry); undefined = every pool at 100%. */
   startState?: PoolState;
+  /** Phase 38j: the encounter's measured room seconds (`rowWallsOn`); undefined = the fight wall. */
+  roomSeconds?: number;
   /** A surge dose right after the encounter's first specs. */
   surge: boolean;
   /** Phase 38b: Liquid adrenaline seconds from the encounter's start (spec costs halved); undefined / 0 = none. */
@@ -749,8 +771,9 @@ export const budgetedEncounter = (
   const clockOf = (pass: PhaseTime[]): BudgetRow[] => {
     const at = new Map<string, { start: number, end: number }>();
     let t = ctx.clock0;
-    pass.forEach((r) => {
-      const w = rowWallSeconds(r, a);
+    const walls = rowWallsOn(pass, a, ctx.roomSeconds);
+    pass.forEach((r, i) => {
+      const w = walls[i];
       const cur = at.get(r.key);
       at.set(r.key, { start: cur ? cur.start : t, end: t + w });
       t += w;

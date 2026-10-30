@@ -122,9 +122,10 @@ otherRaidsDescribe('ToA: the pair of paths before the supplies is a route choice
 
 describe('the raid clock: fight wall + non-fight time', () => {
   test('defaults: typical length − the Team headline\'s fight wall (FA 25 min − 210.9 s = 21.5 min, ...)', () => {
-    expect(faRows(RAIDS).map((r) => [r.id, r.nonFightMinutes])).toEqual([['fractured-archive', 21.5], ['toa', 15.5], ['cox', 12.9], ['tob', 12.6]].filter(([id]) => OTHER_RAIDS || id === 'fractured-archive'));
+    // phase 38j: the FA's is the travel between the measured rooms (roomTimes.ts: mean 268.75 s ≈ 4.5 min)
+    expect(faRows(RAIDS).map((r) => [r.id, r.nonFightMinutes])).toEqual([['fractured-archive', 4.5], ['toa', 15.5], ['cox', 12.9], ['tob', 12.6]].filter(([id]) => OTHER_RAIDS || id === 'fractured-archive'));
     const t = raidTimeAssumptionsFrom(A('fractured-archive'), 'team');
-    expect(t.nonFightSeconds).toBe(1290);
+    expect(t.nonFightSeconds).toBe(270);
     expect(t.raidSeconds).toBeUndefined();
     expect(raidTimeAssumptionsFrom({ ...A('fractured-archive'), nonFightMinutes: 10 }, 'team').nonFightSeconds).toBe(600);
     // an explicit raid length is the phase 38a clock
@@ -154,12 +155,12 @@ describe('the raid clock: fight wall + non-fight time', () => {
 
   test('Plan input "Non-fight time": saved and validated (0-120 min), default per raid', () => {
     const fa = raidConfig('fractured-archive');
-    expect(defaultPlanInputs(fa).nonFightMinutes).toBe(21.5);
+    expect(defaultPlanInputs(fa).nonFightMinutes).toBe(4.5);
     if (OTHER_RAIDS) expect(defaultPlanInputs(raidConfig('toa')).nonFightMinutes).toBe(15.5);
     expect(validatePlanInputs(fa, { nonFightMinutes: 40 }, fa.defaultAssumptions).nonFightMinutes).toBe(40);
-    expect(validatePlanInputs(fa, { nonFightMinutes: -1 }, fa.defaultAssumptions).nonFightMinutes).toBe(21.5);
+    expect(validatePlanInputs(fa, { nonFightMinutes: -1 }, fa.defaultAssumptions).nonFightMinutes).toBe(4.5);
     // phase 38a's saved raid length is no longer read
-    expect(validatePlanInputs(fa, { raidMinutes: 40 }, fa.defaultAssumptions).nonFightMinutes).toBe(21.5);
+    expect(validatePlanInputs(fa, { raidMinutes: 40 }, fa.defaultAssumptions).nonFightMinutes).toBe(4.5);
   });
 });
 

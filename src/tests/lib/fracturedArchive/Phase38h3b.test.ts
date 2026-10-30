@@ -87,11 +87,13 @@ describe('the "leftover" text', () => {
     expect(withLeftover('Then: 1. Zaryte crossbow (per bar)', 'crimsonKisten')).toBe('Then: 1. Zaryte crossbow (per bar) · leftover: Crimson kisten');
     expect(withLeftover(null, 'burningClaws')).toBe('Then: leftover: Burning claws');
     expect(withLeftover('Then: 1. Voidwaker (per bar)', null)).toBe('Then: 1. Voidwaker (per bar)');
-    // ZCB first (75%): of the cheaper ones that gain (kisten 50%, claws 35%) the cheapest fills (review 38h-3b), though
-    // kisten deals more per bar: the leftover is below 75% and 35% fits more of it; the Plan's form "1. A (per bar) · leftover"
+    // ZCB first (75%): of the cheaper ones that gain (kisten 50%, claws 35%) the most HP for one spec fills (phase 38j:
+    // kisten 60 × 0.5 = 30 HP vs claws 50 × 0.35 = 17.5; the room times leave ≥ 50%); the Plan's form "1. A (per bar) · leftover"
     const g = { zcb: 80, crimsonKisten: 60, burningClaws: 50 };
-    expect(leftoverWeapon({ gains: g }, ['zcb', 'crimsonKisten', 'burningClaws'])).toBe('burningClaws');
-    expect(thenWithLeftover({ gains: g }, ['zcb', 'crimsonKisten', 'burningClaws'])).toBe('Then: 1. Zaryte crossbow (per bar) · leftover: Burning claws');
+    expect(leftoverWeapon({ gains: g }, ['zcb', 'crimsonKisten', 'burningClaws'])).toBe('crimsonKisten');
+    expect(thenWithLeftover({ gains: g }, ['zcb', 'crimsonKisten', 'burningClaws'])).toBe('Then: 1. Zaryte crossbow (per bar) · leftover: Crimson kisten');
+    // claws per spec ahead (90 × 0.35 = 31.5 > 60 × 0.5 = 30): claws
+    expect(leftoverWeapon({ gains: { zcb: 95, crimsonKisten: 60, burningClaws: 90 } }, ['zcb', 'crimsonKisten', 'burningClaws'])).toBe('burningClaws');
     // a cheaper weapon that gains nothing is no filler: kisten then
     expect(leftoverWeapon({ gains: { zcb: 80, crimsonKisten: 60, burningClaws: 0 } }, ['zcb', 'crimsonKisten', 'burningClaws'])).toBe('crimsonKisten');
     // Voidwaker first (50%): ZCB (75%) and kisten (50%) are not cheaper; Burning claws (35%) is
@@ -123,31 +125,40 @@ const countsOf = (name: HeadlineName, change?: (a: ReturnType<typeof finalAssump
   return { out, cmp };
 };
 
-describe.each(['fa', 'faSolo'] as HeadlineName[])('the %s headline: Burning claws fills after the Zaryte crossbow', (name) => {
-  test('the ZCB specs per encounter are those of the plan without the filler; claws only add', () => {
+// phase 38j: the filler is Crimson kisten now (the room times' regen leaves ≥ 50% after the ZCB specs)
+describe.each(['fa', 'faSolo'] as HeadlineName[])('the %s headline: Crimson kisten fills after the Zaryte crossbow', (name) => {
+  test('the ZCB specs per encounter are those of the plan without the filler; the filler only adds', () => {
     const fx = phase37Fixture(name) as PlanResult;
-    expect(fx.specs.filler).toBe('burningClaws');
-    const { out: withFiller } = countsOf(name);
-    const { out: without } = countsOf(name, (a) => {
+    expect(fx.specs.filler).toBe('crimsonKisten');
+    const { out: withFiller, cmp: cmpWith } = countsOf(name);
+    const { out: without, cmp: cmpWithout } = countsOf(name, (a) => {
       const { damageFiller, ...rest } = a;
       return { ...rest, damageSpecs: (a.damageSpecs ?? []).filter((w) => !(damageFiller ?? []).includes(w)) };
     });
-    Object.keys(withFiller).forEach((id) => expect([id, withFiller[id].zcb ?? 0]).toEqual([id, without[id].zcb ?? 0]));
-    const claws = Object.values(withFiller).reduce((t, n) => t + (n.burningClaws ?? 0), 0);
-    expect(claws).toBe(name === 'fa' ? 4 : 3);
+    // phase 38j: the filler moves where the surge doses help most: fa without it doses Xarth (2 ZCB there: 100 + 40 + 25 +
+    // 2.5 = 167.5 ≥ 150) instead of Ocellus; compare the encounters whose dose is the same in both plans
+    const dosesWith = new Set(cmpWith.routes[0].surgeDoses ?? []);
+    const dosesWithout = new Set(cmpWithout.routes[0].surgeDoses ?? []);
+    expect([...dosesWithout]).toEqual(name === 'fa' ? ['archive-guardian', 'xarth'] : [...dosesWith]);
+    const same = Object.keys(withFiller).filter((id) => dosesWith.has(id) === dosesWithout.has(id));
+    expect(same.length).toBe(name === 'fa' ? 3 : 5);
+    same.forEach((id) => expect([id, withFiller[id].zcb ?? 0]).toEqual([id, without[id].zcb ?? 0]));
+    const kisten = Object.values(withFiller).reduce((t, n) => t + (n.crimsonKisten ?? 0), 0);
+    expect(kisten).toBe(name === 'fa' ? 2 : 1);
   }, 120000);
 
-  test('Xarth by hand: the energy left after the ZCB spec covers one Burning claws spec (35%)', () => {
+  test('Xarth by hand (phase 38j: regen over the room time)', () => {
     const { cmp } = countsOf(name);
     const x = cmp.routes[0].encounters.find((e) => e.id === 'xarth')!;
     const sp = x.specPlan!;
     expect(sp.start.me).toEqual([100]);
-    expect(Object.values(sp.damage ?? {})).toEqual([{ zcb: 1, burningClaws: 1 }]);
-    // fa (Team, the carriers pay the drains): 100 + 1 regen tick (10) + Death Charge 2.5 (15% ÷ party 6) − ZCB 75 =
-    // 37.5 left ≥ 35: claws, 2.5% at the end. faSolo (your bar pays Tonalztics 50%): 100 + 6 ticks (60, 181.6 s) +
-    // Death Charge 15 − 50 − 75 = 50 left ≥ 35: claws, 15% at the end
+    // fa (Team, the carriers pay the drains; Ultor ring): Xarth's room 141 s (personal best, 6 players) = 4 regen ticks
+    // (40) + Death Charge 2.5 (15% ÷ party 6) − ZCB 75 = 67.5 left ≥ 50: kisten, 17.5% at the end. faSolo (your bar pays
+    // Tonalztics 50%; Lightbearer: a tick per 15 s; a surge dose here): room 252 × 1.819193 = 458.4 s (global best ×
+    // the user's pace) = 30 ticks (300) + 25 + Death Charge 15 − 50 = 390: 5 ZCB (375), 15% left < 50: no kisten
+    expect(Object.values(sp.damage ?? {})).toEqual([name === 'fa' ? { zcb: 1, crimsonKisten: 1 } : { zcb: 5 }]);
     expect(sp.events.map((e) => e.counts)).toEqual(name === 'fa' ? [{ elderMaul: 2, tonalztics: 1 }] : [{ tonalztics: 1 }]);
-    expect(sp.end.me[0]).toBeCloseTo(name === 'fa' ? 100 + 10 + 2.5 - 75 - 35 : 100 + 60 + 15 - 50 - 75 - 35, 6);
+    expect(sp.end.me[0]).toBeCloseTo(name === 'fa' ? 100 + 40 + 2.5 - 75 - 50 : 100 + 300 + 25 + 15 - 50 - 5 * 75, 6);
   }, 120000);
 });
 
@@ -159,7 +170,7 @@ describe('Search / Summary name the filler of the Plan (review 38h-3b)', () => {
     const t = findTarget('xarth');
     const ta = assumptionsForTarget(t, finalAssumptions('fa', fx));
     const { monster } = buildTargetMonster(t, undefined, 'team', ta);
-    expect(fx.specs.then!.xarth).toBe('Then: 1. Zaryte crossbow (per bar) · leftover: Burning claws');
+    expect(fx.specs.then!.xarth).toBe('Then: 1. Zaryte crossbow (per bar) · leftover: Crimson kisten');
     expect(damageThenText(monster, ta, row.dps)).toBe(fx.specs.then!.xarth);
   }, 120000);
 });

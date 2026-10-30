@@ -198,9 +198,11 @@ export const withLeftover = (then: string | null, filler: DamageSpecWeapon | nul
 
 /**
  * Phase 38h-3b (Search / Summary, no plan): the filler for the energy the first-ranked weapon leaves: of the others that
- * gain anything and cost less than the first (the leftover is below the first's cost by definition), the cheapest (it
- * fits the most leftovers; ties: the ranked order, most HP per bar first); null: none. FA (ZCB 75%): Burning claws (35%),
- * as the plan's 22-40% leftover picks (review 38h-3b).
+ * gain anything and cost less than the first (the leftover is below the first's cost by definition), the one with the
+ * most HP for one spec (HP per bar × cost; ties: the ranked order); null: none. Phase 38j: with the measured room times'
+ * regen the FA leftover after the ZCB specs is ≥ 50% on the headline encounters with a filler (Xarth 67.5%), where the
+ * plan's DP takes Crimson kisten (one spec, more HP) over Burning claws (review 38h-3b's "the cheapest" matched the
+ * fight-wall clock's 22-40% leftovers).
  */
 export const leftoverWeapon = (p: Pick<PhaseSpecGains, 'gains'>, weapons: DamageSpecWeapon[]): DamageSpecWeapon | null => {
   const ranked = rankedAt({ key: '', label: '', gains: p.gains }, weapons);
@@ -208,8 +210,8 @@ export const leftoverWeapon = (p: Pick<PhaseSpecGains, 'gains'>, weapons: Damage
   const firstCost = DAMAGE_SPEC_WEAPONS[ranked[0]].energy;
   const cheaper = ranked.slice(1).filter((w) => DAMAGE_SPEC_WEAPONS[w].energy < firstCost);
   if (!cheaper.length) return null;
-  const least = Math.min(...cheaper.map((w) => DAMAGE_SPEC_WEAPONS[w].energy));
-  return cheaper.find((w) => DAMAGE_SPEC_WEAPONS[w].energy === least) ?? null;
+  const perSpec = (w: DamageSpecWeapon) => (p.gains[w] ?? 0) * DAMAGE_SPEC_WEAPONS[w].energy;
+  return cheaper.reduce((b, w) => (perSpec(w) > perSpec(b) + 1e-9 ? w : b), cheaper[0]);
 };
 
 /**

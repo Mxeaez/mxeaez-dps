@@ -4,7 +4,7 @@ import {
   RouteComparison, routesFor, specBudgetFrom,
 } from '@/lib/fracturedArchive/raidTime';
 import {
-  budgetGroups, rowWallSeconds,
+  budgetGroups, rowWallsOn,
 } from '@/lib/fracturedArchive/encounterBudget';
 import { regenTicks, SPEC_REGEN_STEP, SURGE_DOSE_ENERGY } from '@/lib/fracturedArchive/specBudget';
 import {
@@ -235,10 +235,12 @@ export const drainOutcome = (name: HeadlineName, encounter: string, retimed?: Re
     npc: ev.npc, ...(ev.reset ? { reset: ev.reset } : {}), firstRowKey: ev.firstRowKey, counts: { ...ev.counts } as Record<string, number>,
   }));
   let clock = 0;
-  const phases: DrainPhaseRow[] = e.phases.map((p) => {
+  // phase 38c fix: a fixed-length phase (Ocellus P2) lasts its seconds; phase 38j: stretched to the room time (rowWallsOn,
+  // as the spec budget)
+  const walls = rowWallsOn(e.phases, r.timeA, r.timeA.roomSeconds?.[encounter]);
+  const phases: DrainPhaseRow[] = e.phases.map((p, pi) => {
     const start = clock;
-    // phase 38c fix: a fixed-length phase (Ocellus P2) lasts its seconds (rowWallSeconds, as the spec budget)
-    clock += rowWallSeconds(p, r.timeA);
+    clock += walls[pi];
     const event = sp?.rowEvent[p.key] ?? -1;
     const counts = event >= 0 ? sp!.events[event].counts : {};
     const target = findTarget(p.targetKey);
