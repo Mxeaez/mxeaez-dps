@@ -1096,7 +1096,8 @@ Phase 40 rework (2026-10-30). https://oldschool.runescape.wiki/w/Corpse_(Xarth) 
 on unfrozen corpses"; "Fire spells spawn more corpses". **No wave interval or corpse count** on the Corpse, Xarth or
 Strategies pages (a web search found none either). The user (2026-10-30): the freezer casts Ice Barrage on the corpses,
 then swaps back to DPS on Xarth (no barrage on Xarth); their switch is Kodai + Ancestral robe top + Elidinis' ward (f)
-(28 + 35 + 25 = 88 magic attack ≥ 75). Estimates (**unverified**, UNVERIFIED D37): one wave every 30 ticks (18 s); per
-wave the freezer loses 6 ticks (3.6 s: the switch with the cast, Ice Barrage's 5-tick delay, the swap back), so they keep
+(28 + 35 + 25 = 88 on their own; the plan scores a switch worn over the kit's Xarth loadout, review 2026-10-30). Estimates (**unverified**, UNVERIFIED D37): one wave every 30 ticks (18 s); per
+wave the freezer loses 6 ticks (3.6 s: Ice Barrage's 5-tick attack + ~1 tick of timer misalignment; switches are free,
+D10), so they keep
 1 − 3.6 ÷ 18 = 80% of their DPS on phase 2, taken as 50% of Xarth's HP (the user: 50-60%). The freeze is taken as
 guaranteed.

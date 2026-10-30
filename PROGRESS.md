@@ -3,6 +3,21 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 40 review fixes (FA, 2026-10-30)
+
+Re-review of fe44b44c + bf9b67cb: FAIL on one Medium display finding; times confirmed.
+- (1) Medium: the freezer switch is scored WORN over the loadout the freezer wears on Xarth (the kit's choice on the
+  row; `freezerSwitch(…, base)`, a two-handed weapon drops the shield). fa (Inquisitor's + Obligator): Kodai + top +
+  ward is only 64 (ward with Kodai, Ferocious gloves −16 kept), so the switch is now **Kodai wand + Ancestral robe top +
+  Confliction gauntlets = 75 worn** (3 items, 4 free slots). faNotOwned: top + bottom + gauntlets 76 (was labelled 81).
+  Hand case in Phase40.test.ts. phase37/fa / faNotOwned re-pinned in `variants` only (times unchanged).
+- (2) The box's "≈ +X s" leaves out the damage specs' fixed attack ticks (count × ticks × 0.6 s ÷ multiplier: they
+  don't scale with the blend; ~5.2 s of fa's Xarth row): fa +3.4 → **+3.0 s** (= the pinned 180.61 → 183.63).
+- (3) The 6 ticks per wave are Ice Barrage's 5-tick attack + ~1 tick of timer misalignment (switches are free, D10);
+  value unchanged (variants.ts, DATA_SOURCES, D37, the role line). (4) D37 Not modelled: a freeze lasts 4 ticks;
+  re-freezes within a wave are not counted (one cast per wave).
+- Run: fast suite green (1489 + r27fa re-captured, variants only); `pinHeadlines --full --check` no change; verifyPhase40 OK (screenshot re-taken: Kodai + top + gauntlets, 75 worn, ≈ +3.0 s); tsc, lint clean.
+
 ## Phase 40 rework: freezer barrages then swaps back (FA, numbers, 2026-10-30)
 
 The user's answers on 2bc60f6b (rebased on 39b). docs/BEST_SETUP.md *Required variants*; DATA_SOURCES *Phase 40*; D37.
@@ -13,13 +28,14 @@ The user's answers on 2bc60f6b (rebased on 39b). docs/BEST_SETUP.md *Required va
   phase 2 share; the Xarth row's cost depends on both). The variant is now plain data (`keep`, no evaluator): the
   reviewer's cache findings (shared monsters map, id counter, base player in the id) are moot.
 - **Switch** (display only, the freezer's inventory): the cheapest owned set of the freezer pieces reaching 75 magic
-  attack (`freezerSwitch`): Kodai wand + Ancestral robe top + Elidinis' ward (f) = 88 (no pair reaches 75). fa: +3 items
+  attack (`freezerSwitch`; review fix: worn, see above): Kodai wand + Ancestral robe top + Elidinis' ward (f) = 88. fa: +3 items
   in the kit's 4 free slots. Head: "1 player: freezes corpses (Ice Barrage, ≥75 magic attack: Kodai wand + Ancestral
   robe top + Elidinis' ward (f)), then back to DPS". Team line bracketed "(5 × a + 1 × b) ÷ 6 = c …; ≈ +X s (same spec
   plan)" (review findings 4-5).
 - **Headlines** (`pinHeadlines --full`; vs 2bc60f6b → vs pre-40): fa 21:29.1 → **21:17.1** (21:14.1 before phase 40;
-  Xarth 195.57 → 183.63, 180.61 before: the hand factor 0.5 + 0.5 ÷ (1 − 0.2/6) = 1.0172 → 183.72 at the same spec
-  plan; the plan respends a little). faNotOwned 24:30.9 → **24:21.2** (24:17.6 before): back on the Xarth route with
+  Xarth 195.57 → 183.63, 180.61 before: the hand factor 0.5 + 0.5 ÷ (1 − 0.2/6) = 1.0172 applies to the row's
+  seconds except the damage specs' attack ticks (~5.2 s, fixed: they don't scale with the blend): 180.61 + (180.61 −
+  5.2) × 0.0172 = 183.63). faNotOwned 24:30.9 → **24:21.2** (24:17.6 before): back on the Xarth route with
   Ultor and the pre-40 kit (the 3.6 s freezer cost no longer flips it to Dagon'hai). faSolo unchanged.
 - **Pins**: r27fa 1548.9 → 1535.2 (Xarth route again, the pre-40 kit; PHASE37_MEMO r27fa 1136 / 1341 / 27136 / 185),
   Phase27 1535.2, Phase38h3 fa Xarth ZCB per bar 75.9 (74.9 before 40), Phase38h2 faNotOwned HP 3615.4.

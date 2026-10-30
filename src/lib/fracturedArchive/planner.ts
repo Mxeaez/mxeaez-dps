@@ -3413,8 +3413,13 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     const kitIds = new Set<number>([...runCarried, ...runSpecItems.map((it) => it.id), ...heartItems.map((h) => h.id), ...kit.flatMap((c) => equipmentItemIds(c.equipment)), ...raidSupplied]);
     const variants: PlanVariant[] = variantDefs.map((def) => {
       const enc = routeEncounters.find((e) => e.id === def.encounter);
+      const rowsOn = (enc?.phases ?? []).filter((r) => def.rowKeys.includes(r.key));
+      const first = rowsOn.find((r) => r.choice)?.choice as VariantChoice | null | undefined;
+      // review: the switch is scored worn over the loadout the freezer wears there (the kit's choice on the variant's
+      // first row; off the route, the worn loadout)
+      const wornThere = kit.find((c) => c.label === first?.loadout) ?? kit[0];
       const pieces = variantPieces(def, notOwned);
-      const sw = freezerSwitch(def, pieces, (id) => kitIds.has(id));
+      const sw = freezerSwitch(def, pieces, (id) => kitIds.has(id), wornThere ? toPlayerEquipment(wornThere.equipment) : {});
       const switchItems = (sw?.slots ?? []).map((sl) => toPlanItem(pieces[sl]!, sl as Slot));
       const extraItems = switchItems.filter((it) => !kitIds.has(it.id));
       const free = slots.free;
@@ -3426,11 +3431,14 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         if (k > 0) dropped.push({ type: t, count: k });
         short -= k;
       }
-      const rowsOn = (enc?.phases ?? []).filter((r) => def.rowKeys.includes(r.key));
-      const first = rowsOn.find((r) => r.choice)?.choice as VariantChoice | null | undefined;
+      // review: a damage spec's attack ticks (count × ticks × 0.6 s ÷ multiplier) are fixed: they don't scale with the
+      // blend, so only the rest of the row's seconds counts
+      const mult = exactA.dpsMultiplier ?? 1;
       const lost = rowsOn.reduce((t, r) => {
         const c = r.choice as VariantChoice | null;
-        return c?.baseDps && c.baseDps > 0 && Number.isFinite(r.seconds) ? t + r.seconds * (1 - r.dps / c.baseDps) : t;
+        if (!(c?.baseDps && c.baseDps > 0) || !Number.isFinite(r.seconds)) return t;
+        const fixed = (r.damageSpecs ?? []).reduce((x, d) => x + (d.count * d.ticks * 0.6) / Math.max(1e-12, mult), 0);
+        return t + Math.max(0, r.seconds - fixed) * (1 - r.dps / c.baseDps);
       }, 0);
       const names = switchItems.map((it) => it.name).join(' + ');
       return {

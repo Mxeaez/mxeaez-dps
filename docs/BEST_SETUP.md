@@ -1893,7 +1893,7 @@ tooltip says so); the chosen kit is not.
 
 Everyone runs the planner's kit; a raid can force a variation on a few players. The FA's (variants.ts `XARTH_FREEZER`;
 wiki Strategies → Xarth → Phase 2 and Corpse (Xarth), docs/DATA_SOURCES.md *Phase 40*): **1 player: freezes corpses (Ice
-Barrage, ≥75 magic attack: Kodai wand + Ancestral robe top + Elidinis' ward (f)), then back to DPS**, on every route
+Barrage, ≥75 magic attack: Kodai wand + Ancestral robe top + Confliction gauntlets), then back to DPS**, on every route
 with Xarth, party ≥ 2 (party 1: none; other raids: none, round 7).
 
 - **The freezer's DPS** (phase 40 rework, the user's answers): each corpse wave they switch, Ice Barrage the corpses
@@ -1909,9 +1909,11 @@ with Xarth, party ≥ 2 (party 1: none; other raids: none, round 7).
   optimiser, the exact re-times, the own-plan picks and the brute force all time the same team; re-timers rebuild it
   from `PlanResult.variants` (`timeVariantsOfPlan`).
 - **The switch** (display only: the freezer's inventory, not charged to your kit): the cheapest owned set of the
-  freezer pieces (Kodai, Ancestral, ward, Occult, gauntlets, cape, ring, treads) reaching 75 magic attack — the fewest
+  freezer pieces (Kodai, Ancestral, ward, Occult, gauntlets, cape, ring, treads) reaching 75 magic attack worn over the kit's Xarth loadout (review: not the switch's own bonus) — the fewest
   items the kit lacks, then the user's Kodai / top / ward first (`freezerSwitch`); paid from the kit's free slots, then
-  supplies (`VARIANT_DROP_ORDER`). fa: +3 items in 4 free slots.
+  supplies (`VARIANT_DROP_ORDER`). fa (worn over Inquisitor's + Obligator, the Xarth loadout): Kodai + top + gauntlets = 75 worn (Kodai + top + ward is
+  only 64: Obligator is two-handed, so the ward comes with Kodai while the Ferocious gloves stay at −16); +3 items in 4
+  free slots. faNotOwned (Tumeken's shadow, Ancestral): top + bottom + gauntlets = 76, already in the kit.
 - **Plan tab** (`VariantsBox.tsx`): the head line, the spellbook / wave / keep line, the switch, and the team line
   "(5 × a + 1 × b) ÷ 6 = c DPS per player there; ≈ +X s (same spec plan)"; "I'm this player" (saved: `plan.variantMe`)
   shows that kit. Who is the freezer does not change the times.

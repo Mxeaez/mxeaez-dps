@@ -32,7 +32,7 @@ export const variantLines = (v: PlanVariant, partySize: number, encounterLabel: 
   let slots = `${extra === 0 ? 'no extra items (the kit has them)' : `+${plural(extra, 'item')}: ${plural(fromFree, 'free slot')}`}`;
   if (left) slots += `, then leave ${left} behind`;
   if (v.overfull) slots += ' (still does not fit 28 slots)';
-  slots += ` (${v.magicAttack} magic attack; the freezer's inventory, not yours)`;
+  slots += ` (${v.magicAttack} magic attack worn; the freezer's inventory, not yours)`;
   const rest = n - v.headcount;
   const where = `${encounterLabel} ${v.where}`;
   const team = `${where} (${Math.round(v.share * 100)}% of the HP): (${rest} × ${f2(v.baseDps)} + ${v.headcount} × ${f2(v.variantDps)}) ÷ ${n}`
@@ -40,7 +40,7 @@ export const variantLines = (v: PlanVariant, partySize: number, encounterLabel: 
     + `; ≈ +${f1(v.seconds)} s (same spec plan)`;
   return {
     head: `${plural(v.headcount, 'player')}: ${v.label}`,
-    role: `${book} spellbook; one corpse wave every ${f1(v.waveSeconds)} s, ${f1(v.castSeconds)} s each (switch, ${v.spell}, switch back): ${Math.round(v.keep * 100)}% of their DPS on ${where}.`,
+    role: `${book} spellbook; one corpse wave every ${f1(v.waveSeconds)} s, ${f1(v.castSeconds)} s each (${v.spell} + timer misalignment): ${Math.round(v.keep * 100)}% of their DPS on ${where}.`,
     slots,
     team,
     mine: `The kit above + ${v.switchItems.map((it) => it.name).join(' + ') || 'no switch'} (${book} spellbook)`,

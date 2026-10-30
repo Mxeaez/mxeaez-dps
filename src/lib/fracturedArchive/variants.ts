@@ -59,7 +59,7 @@ export const XARTH_FREEZER: RequiredVariantDef = {
   where: 'phase 2',
   spellbook: 'ancients',
   spell: 'Ice Barrage',
-  // the switch (same tick as the cast), Ice Barrage's 5-tick attack delay, the swap back: 6 ticks (estimate)
+  // Ice Barrage's 5-tick attack + ~1 tick of timer misalignment (switches are free, D10): 6 ticks (estimate)
   castSeconds: 6 * TICK,
   // one wave every 30 ticks (estimate; not on the wiki)
   waveSeconds: 30 * TICK,
@@ -107,21 +107,32 @@ export const variantPieces = (
 };
 
 /**
- * Phase 40: the cheapest switch reaching `minMagicAttack` from these pieces: the fewest items the kit doesn't already
- * carry (`inKit`), then the most preferred slots (`prefer`), then the most magic attack. Null when even all of them
- * fall short. Display only (the freezer's own inventory; not charged to your kit).
+ * Phase 40: the cheapest switch reaching `minMagicAttack` from these pieces, scored WORN: the loadout the freezer wears
+ * on the encounter (`base`, the kit's choice there) with the switch's slots replaced (review: the switch's own bonus
+ * overstated it; Inquisitor's + Obligator under Kodai + Ancestral top + ward is only 64). A two-handed weapon drops the
+ * shield; a shield under a kept two-handed weapon is not a switch. Order: the fewest items the kit doesn't already carry
+ * (`inKit`), then the most preferred slots (`prefer`), then the most magic attack. Null when even all of them fall
+ * short. Display only (the freezer's own inventory; not charged to your kit).
  */
 export const freezerSwitch = (
   def: Pick<RequiredVariantDef, 'minMagicAttack' | 'prefer'>,
   pieces: Partial<Record<keyof PlayerEquipment, EquipmentPiece>>,
   inKit: (id: number) => boolean = () => false,
+  base: Partial<Record<keyof PlayerEquipment, EquipmentPiece | null>> = {},
 ): { slots: (keyof PlayerEquipment)[], magic: number } | null => {
   const slots = def.prefer.filter((s) => pieces[s]);
-  const magicOf = (s: keyof PlayerEquipment) => pieces[s]!.offensive?.magic ?? 0;
+  const magicOf = (p: EquipmentPiece | null | undefined) => p?.offensive?.magic ?? 0;
+  const baseSlots = Object.keys(base) as (keyof PlayerEquipment)[];
   let best: { slots: (keyof PlayerEquipment)[], magic: number, extra: number, rank: number } | null = null;
   for (let mask = 1; mask < (1 << slots.length); mask++) {
     const set = slots.filter((_, i) => mask & (1 << i));
-    const magic = set.reduce((t, s) => t + magicOf(s), 0);
+    const worn: Partial<Record<keyof PlayerEquipment, EquipmentPiece | null | undefined>> = { ...base };
+    set.forEach((s) => { worn[s] = pieces[s]; });
+    if (worn.weapon?.isTwoHanded) {
+      if (set.includes('shield')) continue;
+      worn.shield = null;
+    }
+    const magic = Array.from(new Set([...baseSlots, ...set])).reduce((t, s) => t + magicOf(worn[s]), 0);
     if (magic < def.minMagicAttack) continue;
     const extra = set.filter((s) => !inKit(pieces[s]!.id)).length;
     const rank = set.reduce((t, s) => t + slots.indexOf(s), 0) + 100 * set.length;

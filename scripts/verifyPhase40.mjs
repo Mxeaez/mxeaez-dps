@@ -45,11 +45,11 @@ const main = async () => {
   const v = box.locator('[data-testid="plan-variant"][data-id="xarth-freezer"]');
   check(await v.count() === 1, 'one variant: the Xarth freezer');
   const head = (await v.locator('[data-testid="plan-variant-head"]').textContent()) ?? '';
-  check(head === "1 player: freezes corpses (Ice Barrage, ≥75 magic attack: Kodai wand + Ancestral robe top + Elidinis' ward (f)), then back to DPS", `head: ${head}`);
+  check(head === "1 player: freezes corpses (Ice Barrage, ≥75 magic attack: Kodai wand + Ancestral robe top + Confliction gauntlets), then back to DPS", `head: ${head}`);
   const role = (await v.locator('[data-testid="plan-variant-role"]').textContent()) ?? '';
   check(/80% of their DPS on Xarth phase 2/.test(role), `role: ${role}`);
   const slots = (await v.locator('[data-testid="plan-variant-slots"]').textContent()) ?? '';
-  check(slots === "+3 items: 3 free slots (88 magic attack; the freezer's inventory, not yours)", `slots: ${slots}`);
+  check(slots === "+3 items: 3 free slots (75 magic attack worn; the freezer's inventory, not yours)", `slots: ${slots}`);
   const team = (await v.locator('[data-testid="plan-variant-team"]').textContent()) ?? '';
   check(/^Xarth phase 2 \(50% of the HP\): \(5 × \d+\.\d\d \+ 1 × \d+\.\d\d\) ÷ 6 = \d+\.\d\d DPS per player there; ≈ \+\d+\.\d s \(same spec plan\)$/.test(team), `team: ${team}`);
   check(await v.locator('[data-testid="plan-variant-switch"] img').count() === 3, 'switch icons shown (3)');
@@ -57,7 +57,7 @@ const main = async () => {
 
   await v.locator('[data-testid="plan-variant-me"]').check();
   const mine = (await v.locator('[data-testid="plan-variant-mine"]').textContent()) ?? '';
-  check(mine === "Your kit: The kit above + Kodai wand + Ancestral robe top + Elidinis' ward (f) (Ancient spellbook); carry Kodai wand, Ancestral robe top, Elidinis' ward (f).", `ticked: ${mine}`);
+  check(mine === "Your kit: The kit above + Kodai wand + Ancestral robe top + Confliction gauntlets (Ancient spellbook); carry Kodai wand, Ancestral robe top, Confliction gauntlets.", `ticked: ${mine}`);
   await box.scrollIntoViewIfNeeded();
   await page.screenshot({ path: 'docs/screenshots/phase40-variants.png', fullPage: false });
   await page.waitForTimeout(600);

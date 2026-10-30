@@ -13,6 +13,7 @@ import type { PlanResult, PlanVariant } from '@/lib/fracturedArchive/planner';
 import { raidConfig } from '@/lib/raids';
 import { validatePlanInputs } from '@/lib/raids/settings';
 import { phase37Fixture } from '@/tests/utils/phase37';
+import { toPlayerEquipment } from '@/lib/fracturedArchive/planner';
 import { headline } from '@/tests/utils/headlines';
 
 /**
@@ -51,7 +52,7 @@ describe('variantRowDps (hand-computed)', () => {
 });
 
 describe('the freezer\'s DPS (hand-computed)', () => {
-  test('keeps 1 − 6 ticks ÷ 30 ticks = 0.8 of their DPS (switch + Ice Barrage + switch back, one wave per 18 s)', () => {
+  test('keeps 1 − 6 ticks ÷ 30 ticks = 0.8 of their DPS (Ice Barrage 5-tick attack + ~1 tick misalignment, one wave per 18 s)', () => {
     expect(XARTH_FREEZER.castSeconds).toBeCloseTo(3.6, 12);
     expect(XARTH_FREEZER.waveSeconds).toBeCloseTo(18, 12);
     expect(variantKeep(XARTH_FREEZER)).toBeCloseTo(0.8, 12);
@@ -120,6 +121,18 @@ describe('which plans get the variant; the switch', () => {
     expect(sw.slots).toEqual(['weapon', 'body', 'shield']);
     expect(sw.magic).toBe(88);
   });
+  test('scored worn over the fa Xarth loadout (Inquisitor + Obligator): Kodai + top + ward = 64, Kodai + top + gauntlets = 75', () => {
+    const fx = phase37Fixture('fa') as PlanResult;
+    const inq = fx.kit.find((c) => c.label.startsWith('Inquisitor'))!;
+    const base = toPlayerEquipment(inq.equipment);
+    // rest of the loadout: cape 1, neck −6, feet 11, head −5, legs −9 (Obligator 0, two-handed: a ward comes with Kodai)
+    // Kodai 28 + top 35 + ward 25 + 1 − 6 − 16 (Ferocious gloves) + 11 − 5 − 9 = 64 < 75
+    // Kodai 28 + top 35 + gauntlets 20 + 1 − 6 + 11 − 5 − 9 = 75
+    const sw = freezerSwitch(XARTH_FREEZER, variantPieces(XARTH_FREEZER), () => false, base)!;
+    expect(sw).toEqual({ slots: ['weapon', 'body', 'hands'], magic: 75 });
+    const pieces = variantPieces(XARTH_FREEZER);
+    expect(freezerSwitch({ ...XARTH_FREEZER, prefer: ['weapon', 'body', 'shield'] }, { weapon: pieces.weapon, body: pieces.body, shield: pieces.shield }, () => false, base)).toBeNull();
+  });
   test('without Kodai: top 35 + ward 25 + bottom 26 = 86; without anything, null', () => {
     const sw = freezerSwitch(XARTH_FREEZER, variantPieces(XARTH_FREEZER, ['Kodai wand']))!;
     expect(sw.slots).toEqual(['body', 'shield', 'legs']);
@@ -141,25 +154,25 @@ describe('the fa headline (phase37/fa.json)', () => {
     expect(headline('fa').route).toContain('xarth');
     expect(v.onRoute).toBe(true);
     expect(v.headcount).toBe(1);
-    expect(v.label).toBe('freezes corpses (Ice Barrage, ≥75 magic attack: Kodai wand + Ancestral robe top + Elidinis\' ward (f)), then back to DPS');
+    expect(v.label).toBe('freezes corpses (Ice Barrage, ≥75 magic attack: Kodai wand + Ancestral robe top + Confliction gauntlets), then back to DPS');
     expect(headline('fa').kit).toEqual(['Ascension crossbows + diamond (e) (Masori)', 'Twisted bow (Masori)', "Inquisitor's + Obligator"]);
   });
   test('the blend on Xarth is the hand formula of the pinned DPS (freezer at 0.8 × yours, half the HP)', () => {
     expect(v.variantDps).toBeCloseTo(0.8 * v.baseDps, 9);
     expect(v.teamDps).toBeCloseTo(variantRowDps(v.baseDps, v.variantDps, 6, 1, 0.5), 9);
   });
-  test('the switch: 3 items the kit lacks, in its 4 free slots (display only)', () => {
-    expect(v.switchItems.map((it) => it.name)).toEqual(['Kodai wand', 'Ancestral robe top', "Elidinis' ward (f)"]);
-    expect(v.magicAttack).toBe(88);
+  test('the switch worn over Inquisitor + Obligator (Xarth): 3 items the kit lacks, 75 worn, in its 4 free slots (display only)', () => {
+    expect(v.switchItems.map((it) => it.name)).toEqual(['Kodai wand', 'Ancestral robe top', 'Confliction gauntlets']);
+    expect(v.magicAttack).toBe(75);
     expect(v.extraItems.length).toBe(3);
     expect(v.freeSlots).toBe(4);
     expect(v.droppedSupplies).toEqual([]);
   });
   test('the Plan tab lines', () => {
     const l = variantLines(v, 6, 'Xarth');
-    expect(l.head).toBe('1 player: freezes corpses (Ice Barrage, ≥75 magic attack: Kodai wand + Ancestral robe top + Elidinis\' ward (f)), then back to DPS');
-    expect(l.slots).toBe('+3 items: 3 free slots (88 magic attack; the freezer\'s inventory, not yours)');
-    expect(l.role).toBe('Ancient spellbook; one corpse wave every 18.0 s, 3.6 s each (switch, Ice Barrage, switch back): 80% of their DPS on Xarth phase 2.');
+    expect(l.head).toBe('1 player: freezes corpses (Ice Barrage, ≥75 magic attack: Kodai wand + Ancestral robe top + Confliction gauntlets), then back to DPS');
+    expect(l.slots).toBe('+3 items: 3 free slots (75 magic attack worn; the freezer\'s inventory, not yours)');
+    expect(l.role).toBe('Ancient spellbook; one corpse wave every 18.0 s, 3.6 s each (Ice Barrage + timer misalignment): 80% of their DPS on Xarth phase 2.');
     expect(l.team).toMatch(/^Xarth phase 2 \(50% of the HP\): \(5 × \d+\.\d\d \+ 1 × \d+\.\d\d\) ÷ 6 = \d+\.\d\d DPS per player there; ≈ \+\d+\.\d s \(same spec plan\)$/);
   });
 });
@@ -193,7 +206,7 @@ describe('variantLines (hand-made variant)', () => {
   test('12 and 9.6 at party 6: (5 × 12 + 9.6) ÷ 6 = 11.60', () => {
     const l = variantLines(v, 6, 'Xarth');
     expect(l.team).toBe('Xarth phase 2 (50% of the HP): (5 × 12.00 + 1 × 9.60) ÷ 6 = 11.60 DPS per player there; ≈ +3.7 s (same spec plan)');
-    expect(l.slots).toBe('+1 item: 0 free slots, then leave 1 Saradomin brew behind (28 magic attack; the freezer\'s inventory, not yours)');
+    expect(l.slots).toBe('+1 item: 0 free slots, then leave 1 Saradomin brew behind (28 magic attack worn; the freezer\'s inventory, not yours)');
     expect(l.head).toBe('1 player: L');
   });
 });

@@ -776,7 +776,7 @@
  "variants": [
   {
    "id": "xarth-freezer",
-   "label": "freezes corpses (Ice Barrage, ≥75 magic attack: Kodai wand + Ancestral robe top + Elidinis' ward (f)), then back to DPS",
+   "label": "freezes corpses (Ice Barrage, ≥75 magic attack: Kodai wand + Ancestral robe top + Confliction gauntlets), then back to DPS",
    "onRoute": true,
    "headcount": 1,
    "encounter": "xarth",
@@ -801,17 +801,29 @@
      "slot": "body"
     },
     {
-     "id": 27251,
-     "name": "Elidinis' ward (f)",
+     "id": 31106,
+     "name": "Confliction gauntlets",
      "version": "",
-     "slot": "shield"
+     "slot": "hands"
     }
    ],
-   "magicAttack": 88,
+   "magicAttack": 75,
    "minMagicAttack": 75,
-   "extraItems": [],
+   "extraItems": [
+    {
+     "id": 31106,
+     "name": "Confliction gauntlets",
+     "version": "",
+     "slot": "hands"
+    }
+   ],
    "freeSlots": 0,
-   "droppedSupplies": [],
+   "droppedSupplies": [
+    {
+     "type": "brew",
+     "count": 1
+    }
+   ],
    "overfull": false,
    "baseDps": 12.10495851373083,
    "variantDps": 9.683966810984664,

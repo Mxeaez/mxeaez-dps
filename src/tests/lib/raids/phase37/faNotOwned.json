@@ -1126,7 +1126,7 @@
      "slot": "hands"
     }
    ],
-   "magicAttack": 81,
+   "magicAttack": 76,
    "minMagicAttack": 75,
    "extraItems": [],
    "freeSlots": 0,
@@ -1135,7 +1135,7 @@
    "baseDps": 12.10495851373083,
    "variantDps": 9.683966810984664,
    "teamDps": 11.89978972536251,
-   "seconds": 3.6145730151958015
+   "seconds": 3.5637255575686826
   }
  ],
  "unusedCarried": [],
