@@ -224,6 +224,12 @@ export const plannedEncounters = (name: HeadlineName): string[] => Object.keys(h
 export const headlineWithEncounter = (encounter: string): HeadlineName | null => headlineNames()
   .find((n) => plannedEncounters(n).includes(encounter)) ?? null;
 
+/**
+ * JSON with numbers to 9 significant digits: the events' averaged HP differs in its last bits between Node versions
+ * (CI's Node 22 vs the Node 24 that pinned the fixture), the events themselves don't.
+ */
+const floatsJson = (v: unknown): string => JSON.stringify(v, (_, x) => (typeof x === 'number' ? Number(x.toPrecision(9)) : x));
+
 export const drainOutcome = (name: HeadlineName, encounter: string, retimed?: Retime): DrainOutcome => {
   const r = retimed ?? retimeHeadline(name);
   const e = encounterOf(r, encounter);
@@ -338,7 +344,7 @@ export const drainOutcome = (name: HeadlineName, encounter: string, retimed?: Re
     wall,
     surge: !!sp?.surge,
     events,
-    eventsMatch: JSON.stringify(sp?.events ?? null) === JSON.stringify(fxEvents),
+    eventsMatch: floatsJson(sp?.events ?? null) === floatsJson(fxEvents),
     phases,
     pools,
   };
