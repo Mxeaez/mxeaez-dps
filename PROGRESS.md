@@ -3,6 +3,50 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 38h-2 review fixes (FA, 2026-10-29)
+
+Review of 87f51141 = FAIL; fixes (docs/BEST_SETUP.md *Spec bars valued in boss HP (phase 38h-2, FA)* updated).
+
+- **Stale carriers** (HIGH): the carriers were taken on an earlier kit; the item steps re-optimised it and the guards
+  re-took them only when there were too many (faNotOwned: an Ayak carrier with 0 mages). The planner now takes them again
+  on the final kit (`headcountOf`, Eye of Ayak capped at its mages), re-times, keeps the faster; a kit never keeps more
+  Ayak carriers than mages (test on the pinned plans). Timing every finalist with re-taken carriers was tried: 3× slower,
+  the same headlines; dropped.
+- **Kit carriers over the planned route** (user decision): `kitCarriers` values the bosses of the route the plan takes
+  with the kit (its fastest route under the plan's current specs), not every route's.
+- **Values averaged over the outcomes** (user decision): every option is worth Σ P(Defence d) × H × (1 − DPS without ÷
+  DPS at d) (`drainOutcomeStates`, `PhaseQuery.defence`, bestSetup.ts `monsterAtDefence`), the planner's carrier value
+  too; the exclusion of partial drains ranked at the floor below the threshold is gone (they now count at their chances).
+- Damage specs on a row worth at most the row's damage (specBudget.ts). ROADMAP round 7: re-check ToA's Liquid adrenaline
+  (window guard removed).
+- **Headlines** (`pinHeadlines --full`, vs 87f51141): **fa 21:41.7 → 21:41.0** (−0.7 s, Bork + Smorks 190.43 → 189.75:
+  Bork Elder maul ×3, the Smorks Tonalztics ×6 + Elder maul ×1, was 4 / 6 + 0; Ocellus unchanged). **faSolo 23:04.4 →
+  22:53.4** (−11.0 s): with the real chances a single Tonalztics spec on Moia, Xarth and Ocellus P1 (was 2) and the energy
+  to damage specs; the kit brings Burning claws too (free slots 3 → 2): Ezekiel 210.43 → 211.61 (Burning claws ×2 for the
+  Zaryte crossbow), Moia 71.13 → 65.32 (a ZCB spec, the surge dose here), Xarth 182.78 → 181.62 (Burning claws), Ocellus
+  739.40 → 734.19 (a ZCB spec on P1, the dose here). **faNotOwned 24:53.7 → 24:48.4** (−5.3 s): another kit (Tumeken's
+  shadow + a Twisted bow switch + Scythe; a mage, so 4 Tonalztics + 1 Eye of Ayak are valid and taken again on it), route
+  Bork + Smorks instead of Ezekiel, Zaryte crossbow only (AG 191.91, Bork + Smorks 217.50, Moia 65.97, Xarth 209.70,
+  Ocellus 803.29). The review's alternative (the 87f51141 kit, Twisted bow + Scythe with 2 Elder maul + 3 Tonalztics,
+  24:42.0) is 6.4 s faster in seconds; the planner reaches this kit under the new values and keeps the carriers its HP
+  value picks (open: the planner does not re-search kits after re-taking carriers). r27fa 1545.8 → 1531.5 (memo 1116 /
+  1320 / 19132 / 185); Phase27 ring pin 1545.8 → 1531.5; CrossRaid preset kit Ocellus 833.8 → 820.8; memo counters of
+  fa / faSolo / faNotOwned within PHASE37_MEMO.
+- **Tests** (Phase38h2.test.ts): per FA boss (Team, Solo) each event's HP recomputed by enumerating upstream's spec calc
+  over the outcomes in the plan's order and the DPS at each Defence; HP pins (presets kit; AG Team 381.7, the Smorks 246.9,
+  Xarth 192.7, Ocellus P1 / P2 / P3 414.9 / 195.4 / 718.2, Solo AG 338.5, Solo Ocellus P3 495.9); an exhaustive joint
+  check on Ocellus (Team: every P1 × P2 × P3 option, the DP placing the damage specs and the dose: none beats the plan);
+  Eye of Ayak carriers ≤ mages on the pinned plans; the close call moved to the Smorks (party 1, Elder maul + ZCB, 64 HP).
+  Updated strings (comments): Phase33, 34, 35b, 37c, 38g.
+- Speed (Node, alone, same session, machine under load): fa 35.0 s (38h-1 code) → 64.8 s (1.85×; was 1.4× before the
+  fixes): the DPS at every Defence outcome.
+- Run: fast suite 1416 passed / 196 skipped; FA slow (`CrossRaid Phase2 Phase3`) once: 5 out of date (Phase34 / 35b strings:
+  the Smorks Tonalztics ×6 + Elder maul Def 7, Xarth Elder maul ×2 → Tonalztics; Phase32 user plan 26:07.5 → 26:28.0;
+  Phase29 Solo with the phase 29 pinned list now 1388.56, 1.1% above the faSolo headline: pinned to its own value;
+  Phase31's CPU guard 205 → 300 s, 208.8 s measured under load), updated and those tests re-run green; retime probe gap 0
+  (fa, faSolo, faNotOwned); drainOutcome AG / Bork + Smorks / Ocellus (fa, faSolo, faNotOwned): spec plan = the plan's;
+  tsc, lint clean.
+
 ## Phase 38h-2 - spec bars valued in boss HP (FA, 2026-10-29)
 
 Numbers phase (ROADMAP 38h-2; docs/BEST_SETUP.md *Spec bars valued in boss HP (phase 38h-2, FA)*).
@@ -31,10 +75,10 @@ Numbers phase (ROADMAP 38h-2; docs/BEST_SETUP.md *Spec bars valued in boss HP (p
   HP than P2's last Tonalztics spec). **faSolo 23:39.1 → 23:04.4** (−34.7 s, all Ocellus 774.09 → 739.40): P2 no drain
   (its 1 Tonalztics spec was worth little: Def 250 → 223 for a fixed 120 s), P3 2 Tonalztics specs (Def 176, was 1, Def
   213), a Crimson kisten spec on P3 and the Zaryte crossbow on the last quadrant; the kit now brings Crimson kisten (free
-  slots 4 → 3). **faNotOwned 24:40.2 → 24:53.7** (+13.5 s, Ocellus 783.89 → 797.40): kit carriers by HP 2 Elder maul + 3
-  Tonalztics → 4 Tonalztics + 1 Eye of Ayak (summed over the raid the Ayak's magic defence drain and the 4th Tonalztics
-  carrier are worth more HP than the 2 mauls); Ocellus P2 Tonalztics ×3 + Ayak ×2 (Def 115, magic def 58) instead of the
-  mauls. r27fa re-pinned (1562.5 → 1545.8 s; memo 1113 / 1251 / 21007 / 155, within PHASE37_MEMO; fa / faSolo / faNotOwned
+  slots 4 → 3). **faNotOwned 24:40.2 → 24:53.7** (+13.5 s, Ocellus 783.89 → 797.40): carriers 2 Elder maul + 3 Tonalztics
+  → 4 Tonalztics + 1 Eye of Ayak. *Corrected by the review*: the Ayak carrier was worth 0 HP on the final kit (no mage);
+  the carriers had been taken on an earlier kit with a mage and the item steps changed the kit without re-taking them (on
+  the final kit 2 Elder maul + 3 Tonalztics were worth more and 11.8 s faster). Fixed in the review fixes below. r27fa re-pinned (1562.5 → 1545.8 s; memo 1113 / 1251 / 21007 / 155, within PHASE37_MEMO; fa / faSolo / faNotOwned
   counters measured within ±20%, unchanged). Phase27 ring pin 1564.4 → 1545.8; CrossRaid preset-kit pins Bork + Smorks
   230.2 → 221.2, Ocellus 844.7 → 833.8. ToA / CoX / ToB frozen (their pins not re-run).
 - **Tests**: Phase38h2.test.ts (drainHpValue by hand incl. the P2 → P3 carry; interleaved Smorks and the two-weapon

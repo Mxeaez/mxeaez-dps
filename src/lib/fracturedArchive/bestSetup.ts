@@ -467,6 +467,28 @@ export const monsterForSpecCounts = (
   return withInputs(m, { defenceReductions: JSON.parse(key) as DefenceReductions });
 };
 
+/**
+ * Phase 38h-2 (review): the monster at one Defence outcome of a drain (`def`, after raid scaling and phases) and an Eye
+ * of Ayak drain (`ayak`, magic defence): the undrained monster with a flat drain of the difference (BGS-style, as the
+ * calculator applies it) — the drain values average the DPS over the outcomes (encounterBudget.ts).
+ */
+export const monsterAtDefence = (
+  target: BestSetupTarget,
+  phase: string | undefined,
+  assumptions: BestSetupAssumptions,
+  undrainedDef: number,
+  def: number,
+  ayak: number,
+): Monster => {
+  const m = monsterForSpecCounts(target, phase, 'none', assumptions, {});
+  if (def >= undrainedDef && !(ayak > 0)) return m;
+  return withInputs(m, {
+    defenceReductions: {
+      ...INITIAL_MONSTER_INPUTS.defenceReductions, bgs: Math.max(0, undrainedDef - def), ayak: Math.max(0, ayak),
+    },
+  });
+};
+
 // --- players -------------------------------------------------------------------------------------------------------
 
 export const NON_CANDIDATE_STANCES = ['Defensive', 'Defensive Autocast', 'Manual Cast'];

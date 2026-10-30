@@ -10,7 +10,7 @@ import {
 } from '@/lib/fracturedArchive/specs';
 import {
   ayakOutcome, ayakSpecsToThreshold, DEFAULT_FLOOR_THRESHOLD, DEFENCE_DRAIN_ORDER, DefenceDrainWeapon,
-  defenceOutcome, DrainCap, kitDrainPlan, MAX_FLOOR_SPECS,
+  defenceOutcome, DrainCap, kitDrainPlan, MAX_FLOOR_SPECS, orderedDistribution,
 } from '@/lib/fracturedArchive/teamSpecs';
 import {
   bestDamageVariant, DAMAGE_SPEC_WEAPONS, DamageSpecProfile, DamageSpecWeapon, netSpecDamage, specSecondsSaved,
@@ -262,7 +262,7 @@ export const assignedKit = (
   outcomeOnly = false,
 ): RaidKit => {
   const withSpecs = (q: PhaseQuery): PhaseQuery => {
-    if (q.drain === 'none') return q;
+    if (q.drain === 'none' || q.defence) return q;
     let e = q.rowKey !== undefined ? rowEvent.get(q.rowKey) : undefined;
     if (e === undefined) e = npcEvent.get(targetNpc(q.targetKey));
     return { ...q, specs: { counts: (e !== undefined ? assign[e] : undefined) ?? {} }, ...(outcomeOnly ? { outcomeOnly } : {}) };
@@ -459,6 +459,22 @@ const phaseWantedCounts = (
 /** Phase 38h-2: total specs of a count set. */
 const countsSum = (c: SpecCounts | undefined): number => Object.values(c ?? {}).reduce((t: number, n) => t + (n ?? 0), 0);
 
+/**
+ * Phase 38h-2 (review): the outcomes of a drain on one phase: each Defence the specs can leave (sent in the order that
+ * lands most often, each at the Defence the earlier ones leave: teamSpecs.ts `orderedDistribution`) with its chance, and
+ * the Eye of Ayak drain (its ranked drain: magic def 0 at the threshold, else the expected drain). No specs: the
+ * undrained Defence.
+ */
+export const drainOutcomeStates = (m: DrainModel, counts: SpecCounts, threshold = DEFAULT_FLOOR_THRESHOLD): { p: number, def: number, ayak: number }[] => {
+  const att = attemptsFromCounts(m, counts);
+  const def = att.filter((w): w is DefenceDrainWeapon => w !== 'ayak');
+  const n = att.length - def.length;
+  const ayak = n > 0 && m.canHit.ayak && m.magicDef > 0 ? ayakOutcome(m, n, threshold).rankedDrain : 0;
+  if (!def.length || m.def <= m.floor) return [{ p: 1, def: m.def, ayak }];
+  const steps = defenceOutcome(m, def, threshold).steps ?? [];
+  return orderedDistribution(m, steps).filter((x) => x.p > 0).map((x) => ({ p: x.p, def: x.def, ayak }));
+};
+
 const OPTIONS_MEMO_MAX = 20000;
 /** Phase 38h-2: ids of drain models by content (the option memo's key; kits build equal models as new objects). */
 const MODEL_IDS = new WeakMap<DrainModel, number>();
@@ -521,15 +537,10 @@ export const eventOptions = (
       caps = caps.flatMap((c) => Array.from({ length: capOf(w) + 1 }, (_, n) => ({ ...c, [w]: n })));
     });
   }
-  // the drained state of every phase (ranked Defence, magic defence drained): equal = the same monsters
+  // the drain's outcomes on every phase (Defence distribution, magic defence drained): equal = the same value
   const live = models.filter((m): m is DrainModel => !!m);
-  const stateOf = (c: SpecCounts) => live.map((m) => {
-    const att = attemptsFromCounts(m, c);
-    const def = att.filter((w): w is DefenceDrainWeapon => w !== 'ayak');
-    const o = def.length && m.def > m.floor ? defenceOutcome(m, def, threshold) : null;
-    const ayak = att.length - def.length;
-    return `${o ? o.rankedDef : m.def}/${ayak ? ayakOutcome(m, ayak, threshold).rankedDrain : 0}${o && o.rankedDef <= m.floor && o.pFloor < threshold - 1e-12 ? '!' : ''}`;
-  }).join('#');
+  const stateOf = (c: SpecCounts) => live.map((m) => drainOutcomeStates(m, c, threshold)
+    .map((x) => `${x.def}:${x.ayak}:${x.p.toFixed(12)}`).join(',')).join('#');
   const ayakMax = wanted.ayak ?? 0;
   const byState = new Map<string, SpecCounts[]>();
   const seen = new Set<string>();
@@ -579,7 +590,7 @@ export const eventOptions = (
     .every((w) => (a[w] ?? 0) <= (b[w] ?? 0));
   const rest: SpecCounts[] = [];
   byState.forEach((xs, s) => {
-    if (s === none || s.includes('!')) return;
+    if (s === none) return;
     xs.forEach((c, i) => {
       if (!xs.some((o, j) => j !== i && fewer(o, c) && (countsKey(o) !== countsKey(c)))) rest.push(c);
     });
@@ -830,6 +841,26 @@ export const budgetedEncounter = (
     });
     return outcomes;
   };
+  // phase 38h-2 (review): an option's HP value averaged over the drain's outcomes (`drainOutcomeStates`): per row of the
+  // event, Σ P(Defence) × damage × (1 − DPS without ÷ DPS at that Defence) (= H × g ÷ (1 + g) per outcome); a fixed-length
+  // row (Ocellus P2) the extra damage it deals at the expected DPS × its carry-over (what comes off P3)
+  const expectedValue = (noneRows: PhaseTime[], ei: number, c: SpecCounts): number => noneRows.reduce((t, r0) => {
+    const ev = rowEventMap.get(r0.key) ?? npcEvent.get(targetNpc(r0.targetKey));
+    if (ev !== ei || targetNoDrains(r0.targetKey) || !(r0.damage > 0) || !(r0.dps > 0)) return t;
+    const m = kit.drainModel!({ ...noneQuery(r0) });
+    if (!m) return t;
+    let dps = 0;
+    let gain = 0;
+    drainOutcomeStates(m, c, threshold).forEach((x) => {
+      const d = x.def >= m.def && !(x.ayak > 0) ? r0.dps : (kit.best({
+        ...noneQuery(r0), drain: ctx.drain, defence: { undrainedDef: m.def, def: x.def, ayak: x.ayak },
+      })?.dps ?? 0);
+      dps += x.p * d;
+      if (d > 0) gain += x.p * (1 - r0.dps / d);
+    });
+    if (r0.fixedWall) return t + (dps / r0.dps - 1) * r0.damage * (r0.carryOver ?? 0);
+    return t + r0.damage * gain;
+  }, 0);
   // phase 38h-2: each option's HP value (`drainHpValue`: the pass with the event at the option vs at none, the other
   // events at their line plans) and its rows (seconds, damage specs at the option's Defence); no clock involved
   const base = plans.map((pl) => pl.options[1] ?? {});
@@ -838,7 +869,9 @@ export const budgetedEncounter = (
     const none = at({});
     return pl.options.map((c, oi) => {
       const pass = oi === 0 ? none : at(c);
-      return { value: oi === 0 ? 0 : drainHpValue(none.rows, pass.rows), rows: outcomesOf(pass.rows, pass.queryOf, ei) };
+      let value = 0;
+      if (oi > 0) value = kit.drainModel ? expectedValue(none.rows, ei, c) : drainHpValue(none.rows, pass.rows);
+      return { value, rows: outcomesOf(pass.rows, pass.queryOf, ei) };
     });
   });
   // phase 38h-2: no option pruning (`prunedOptions`): an option's HP grows with its specs, so dominance almost never

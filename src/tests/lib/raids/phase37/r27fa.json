@@ -477,13 +477,13 @@
    "slot": "ring"
   }
  ],
- "comparison": "a79ed78ca2a8d7f2602445bc93314f5168aa56a73aaae0d58c44c9c8257505a2",
+ "comparison": "00cf418201fa0953e66d89f4644fcc25c030b78ef44511cd7d36fb3093fe2847",
  "planned": 1,
  "rejected": [
   {
    "label": "Twisted bow (Masori)",
    "kind": "addition",
-   "deltaSeconds": 22.59357007911717,
+   "deltaSeconds": 21.05858258018793,
    "deltaSlots": 1,
    "reason": "needs 1 more slot, 0 free",
    "weapons": [
@@ -493,7 +493,7 @@
   {
    "label": "Tumeken's shadow (Ancestral)",
    "kind": "addition",
-   "deltaSeconds": 22.524104681375547,
+   "deltaSeconds": 19.45906052870896,
    "deltaSlots": 7,
    "reason": "needs 7 more slots, 0 free",
    "weapons": [
@@ -503,7 +503,7 @@
   {
    "label": "Tumeken's shadow switch +6 on Twisted bow (Masori)",
    "kind": "addition",
-   "deltaSeconds": 9.374922299597984,
+   "deltaSeconds": 6.309878146931396,
    "deltaSlots": 6,
    "reason": "needs 6 more slots, 0 free",
    "weapons": [
@@ -515,7 +515,7 @@
   {
    "label": "melee + ranged + magic: Scythe of Vitur / Twisted bow switch +6 on Scythe of Vitur / Tumeken's shadow (Ancestral)",
    "kind": "alternative",
-   "deltaSeconds": 22.524104681375547,
+   "deltaSeconds": 19.45906052870896,
    "deltaSlots": 7,
    "reason": "does not fit (35 of 28 slots)",
    "weapons": [
@@ -527,9 +527,9 @@
   {
    "label": "melee + magic: Tumeken's shadow (Ancestral) / Scythe of Vitur / Scythe of Vitur #4",
    "kind": "alternative",
-   "deltaSeconds": -57.10051918440172,
+   "deltaSeconds": -76.07941478079988,
    "deltaSlots": 0,
-   "reason": "57.1 s slower",
+   "reason": "76.1 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Scythe of Vitur",
@@ -539,9 +539,9 @@
   {
    "label": "ranged + magic: Tumeken's shadow (Ancestral) / Twisted bow (Masori)",
    "kind": "alternative",
-   "deltaSeconds": -95.83873002941232,
+   "deltaSeconds": -113.83882732567304,
    "deltaSlots": -1,
-   "reason": "95.8 s slower",
+   "reason": "113.8 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Twisted bow"
@@ -550,9 +550,9 @@
   {
    "label": "magic: Tumeken's shadow (Ancestral)",
    "kind": "alternative",
-   "deltaSeconds": -606.439647512181,
+   "deltaSeconds": -620.6871039617238,
    "deltaSlots": -10,
-   "reason": "606.4 s slower",
+   "reason": "620.7 s slower",
    "weapons": [
     "Tumeken's shadow"
    ]
@@ -609,18 +609,18 @@
      "weapon": "elderMaul",
      "carriers": 2,
      "drivers": [
-      "Ocellus (19.9 s)"
+      "Ocellus (7.5 s)"
      ],
-     "lastSaved": 19.930208442604
+     "lastSaved": 7.51941914780673
     },
     {
      "weapon": "tonalztics",
      "carriers": 2,
      "drivers": [
-      "Ocellus (9.9 s)",
+      "Ocellus (24.1 s)",
       "Archive Guardian (3.5 s)"
      ],
-     "lastSaved": 13.346703001617016
+     "lastSaved": 27.59415945115984
     }
    ],
    "perTarget": [
@@ -815,11 +815,11 @@
  "droppedPinned": [],
  "ownershipNotices": [],
  "searchRows": "c1637eec5d8e13464259fb40d3df838022d57cdd1fea553a5308c82dbb2a873f",
- "objectiveSeconds": 1545.7756969271052,
+ "objectiveSeconds": 1531.5282404775623,
  "fightSeconds": null,
  "plannedRoute": {
   "id": "archive-guardian>ezekiel>moia>xarth>ocellus",
-  "seconds": 1545.7756969271052,
+  "seconds": 1531.5282404775623,
   "surgeDoses": null,
   "encounters": [
    {
@@ -832,7 +832,7 @@
       "counts": {
        "tonalztics": 4
       },
-      "hp": 411.60504988207134
+      "hp": 411.09030025926785
      }
     ],
     "damage": {},
@@ -846,9 +846,10 @@
       "npc": "Ezekiel",
       "firstRowKey": "ezekiel",
       "counts": {
-       "elderMaul": 3
+       "tonalztics": 3,
+       "elderMaul": 1
       },
-      "hp": 328.7566255827328
+      "hp": 327.4574262785888
      }
     ],
     "damage": {},
@@ -864,7 +865,7 @@
       "counts": {
        "tonalztics": 2
       },
-      "hp": 109.53701363097196
+      "hp": 108.99934407473785
      }
     ],
     "damage": {},
@@ -878,9 +879,10 @@
       "npc": "Xarth",
       "firstRowKey": "xarth",
       "counts": {
-       "tonalztics": 2
+       "elderMaul": 2,
+       "tonalztics": 1
       },
-      "hp": 320.9959797691613
+      "hp": 319.98589129198564
      }
     ],
     "damage": {},
@@ -888,7 +890,7 @@
    },
    {
     "id": "ocellus",
-    "seconds": 819.3119263499352,
+    "seconds": 805.0644699003924,
     "events": [
      {
       "npc": "Ocellus",
@@ -896,27 +898,27 @@
       "counts": {
        "tonalztics": 2
       },
-      "hp": 434.03059568251956
+      "hp": 431.59336438075894
      },
      {
       "npc": "Ocellus",
       "reset": "P1",
       "firstRowKey": "ocellus-p2",
       "counts": {
-       "elderMaul": 2,
-       "tonalztics": 2
+       "elderMaul": 3,
+       "tonalztics": 1
       },
-      "hp": 261.3766816931893
+      "hp": 249.57917571948533
      },
      {
       "npc": "Ocellus",
       "reset": "P2",
       "firstRowKey": "ocellus-p3",
       "counts": {
-       "elderMaul": 2,
-       "tonalztics": 2
+       "tonalztics": 3,
+       "elderMaul": 1
       },
-      "hp": 1069.6815189979452
+      "hp": 1099.7494480124597
      }
     ],
     "damage": {},

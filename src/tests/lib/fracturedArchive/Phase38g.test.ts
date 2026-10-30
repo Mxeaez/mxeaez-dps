@@ -219,10 +219,10 @@ describe('Solo: your bar pays the drains first; the line says when it can\'t pay
     };
     const kit = createKitEvaluator(fa.presets.map((p) => presetKitLoadout(generateEmptyPlayer(), p, a)), a);
     const e = encounterTime('bork-smorks', kit, raidTimeAssumptionsFrom(a, 'solo', fa.defaultTimeSettings, fa.time));
-    // phase 38h-2 (in HP): the bar's 2 specs go where each is worth most: 1 on Bork (107 HP) and 1 on the Smorks (101 HP)
-    // beat 2 on Bork (the second takes Bork from Def 195 only to 180, worth less than the Smorks' first)
-    expect(e.specPlan!.events.map((x) => x.counts)).toEqual([{ elderMaul: 1 }, { elderMaul: 1 }]);
-    expect(e.specPlan!.events[0].hp).toBeGreaterThan(e.specPlan!.events[1].hp!);
+    // phase 38h-2 (in HP, averaged over the outcomes): the bar's specs go where each is worth most: 1 on Bork (82 HP),
+    // 2 on the Smorks (101 HP; the regen pays the second)
+    expect(e.specPlan!.events.map((x) => x.counts)).toEqual([{ elderMaul: 1 }, { elderMaul: 2 }]);
+    expect(e.specPlan!.events[1].hp).toBeGreaterThan(e.specPlan!.events[0].hp!);
     const facts = e.phases[0].choice!.drainLine!.facts!;
     expect(facts.paid).toBe(1);
     expect(facts.specs).toBe(4);

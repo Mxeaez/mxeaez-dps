@@ -192,7 +192,9 @@ const simulateOnce = (p: AllocationProblem, opts: number[], choice: Record<strin
     if (state.me) state.me[0] = state.me[0] - spent + (late ? SURGE_DOSE_ENERGY : 0);
     // phase 38b: the Death Charge restore at the row's end, after the cap (capped again)
     for (const g of Object.keys(state)) state[g] = state[g].map((e) => Math.min(SPEC_MAX_ENERGY, Math.min(SPEC_MAX_ENERGY, e) + (row.restore ?? 0))).sort((x, y) => y - x);
-    const dmg = o.damageSpecs.reduce((t, c) => t + (choice[r][c.weapon] ?? 0) * c.net, 0);
+    const dmg0 = o.damageSpecs.reduce((t, c) => t + (choice[r][c.weapon] ?? 0) * c.net, 0);
+    // review 38h-2: at most the row's damage
+    const dmg = o.damage > 0 ? Math.min(o.damage, dmg0) : dmg0;
     w += dmg;
     hp += dmg;
   }

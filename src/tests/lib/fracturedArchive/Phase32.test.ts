@@ -443,7 +443,9 @@ const USER_PLAN_NOT_OWNED = ['Obligator', "Zorya's tome", 'Rondache', "Inquisito
 // phase 38f: 25:58.7 now (the pin followed the model through 38a-38e)
 // phase 38g (one fixed drain set per event, carriers by headcount): 25:58.7 → 27:16.5
 // phase 38h-2 (bars valued in boss HP: specs where they are worth most, carriers by HP): 27:16.5 → 26:07.5
-const USER_PLAN: [string, number] = ['26:07.5', 1567.53];
+// phase 38h-2 review fixes (values averaged over the outcomes, carriers on the planned route and re-taken on the final
+// kit): 26:07.5 → 26:28.0
+const USER_PLAN: [string, number] = ['26:28.0', 1587.98];
 
 (process.env.RUN_SLOW_TESTS ? describe : describe.skip)('the user\'s plan (slow)', () => {
   test('no blessing; the freed slot buys Onyx bolts for the void switch (−1.1 s); slots = the exhaustive count', () => {

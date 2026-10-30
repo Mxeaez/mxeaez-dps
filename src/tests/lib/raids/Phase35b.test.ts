@@ -76,14 +76,14 @@ describe('FA (presets kit, 2 Elder maul + 2 Tonalztics carriers)', () => {
     expect(s.events.map((e) => e.phaseKey)).toEqual(['bork-8', 'smorks']);
     expect(s.events[0].parts[0].line).toBe(bork.phases.find((p) => p.key === 'bork-8')!.choice!.drainLine);
     expect(s.events[1].parts[0].line).toBe(bork.phases.find((p) => p.key === 'smorks')!.choice!.drainLine);
-    // phase 38h-2 (bars in boss HP): the 4 maul specs go where each is worth most: 1 on Bork (Def 195), 3 on the Smorks
-    // with the Tonalztics (Def 9; was 4 on Bork → Def 180, the Smorks Def 82)
-    expect(s.events.map((e) => e.parts[0].line.defAfter)).toEqual([195, 9]);
-    expect(s.text).toBe('Bork: 1 Elder maul carrier (1 spec) → Def 195 · Smorks: 2 Elder maul carriers (3 specs) + 2 Tonalztics carriers (4 specs) → Def 9');
+    // phase 38h-2 (bars in boss HP, averaged over the outcomes): the 4 maul specs split 2 / 2 between Bork (Def 195) and
+    // the Smorks with the Tonalztics (Def 22; was 4 on Bork → Def 180, the Smorks Def 82)
+    expect(s.events.map((e) => e.parts[0].line.defAfter)).toEqual([195, 22]);
+    expect(s.text).toBe('Bork: 1 Elder maul carrier (2 specs) → Def 195 · Smorks: 1 Elder maul carrier (2 specs) + 2 Tonalztics carriers (4 specs) → Def 22');
     const row = rows[0];
     expect(row.specs.map((g) => g.label)).toEqual(['Bork', 'Smorks']);
-    expect(row.specs.map((g) => g.result)).toEqual(['→ Def 195', '→ Def 9']);
-    expect(row.specsText).toBe('Bork: Elder maul 1 spec → Def 195 · Smorks: Elder maul 3 specs + Tonalztics 3 hits → Def 9');
+    expect(row.specs.map((g) => g.result)).toEqual(['→ Def 195', '→ Def 22']);
+    expect(row.specsText).toBe('Bork: Elder maul 1 spec → Def 195 · Smorks: Elder maul 2 specs + Tonalztics 4 hits → Def 22');
   });
 
   test('Bork + Smorks: the Wear cell names the loadouts per NPC when they differ (default carriers: Shadow on armour 14)', () => {
@@ -111,12 +111,12 @@ describe('FA (presets kit, 2 Elder maul + 2 Tonalztics carriers)', () => {
 
   test('Dagon\'hai trio: one event; Ocellus: one NPC, three events (phase 38c: P1, the Blade, P3 quadrants 1-3)', () => {
     expect(summaryOf(dagon).events).toHaveLength(1);
-    expect(rows[2].specsText).toBe('Tonalztics 3 hits → Def 0');
+    // phase 38h-2: the maul specs left after Bork + Smorks go to the trio (surer than Tonalztics ×3)
+    expect(rows[2].specsText).toBe('Elder maul 3 specs + Tonalztics 1 hit → Def 0');
     expect(rows[2].wear).toHaveLength(1);
     const s = summaryOf(ocellus);
     expect(s.events.map((ev) => [ev.reset, ev.parts.map((p) => p.label)])).toEqual([
-      // phase 38h-2: the last quadrant (Deflect Melee: no Elder maul) has its own part once P3's specs include a maul
-      [undefined, ['P1 at a corner']], ['P1', ['P2 The Blade']], ['P2', ['P3 quadrants 1-3', 'P3 last quadrant, Deflect Melee']],
+      [undefined, ['P1 at a corner']], ['P1', ['P2 The Blade']], ['P2', ['P3 quadrants 1-3']],
     ]);
     expect(rows[3].wear).toEqual([{ loadouts: rows[3].loadouts }]);
   });
@@ -298,6 +298,7 @@ describe('toy: two NPCs and a reset', () => {
     const row = briefingRows(planned.encounters, 'team').find((x) => x.id === 'bork-smorks')!;
     // phase 38g: Bork its 2 Elder maul carriers at 95%; the Smorks (no team reaches floor 0) what the bars still pay
     // phase 38h-1: the Smorks' 6 specs at the Defence the earlier ones leave (ranked Def 36 → 13)
-    expect(row.specsText).toBe('Bork: Elder maul 2 specs → Def 180 · Smorks: Tonalztics 9 hits → Def 13');
+    // phase 38h-2 review fixes: the Smorks also get the third maul spec (Tonalztics ×6 + Elder maul, Def 7)
+    expect(row.specsText).toBe('Bork: Elder maul 2 specs → Def 180 · Smorks: Elder maul 1 spec + Tonalztics 10 hits → Def 7');
   });
 });

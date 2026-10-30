@@ -271,11 +271,11 @@
  "kitMarginal": [
   {
    "slots": 1,
-   "seconds": 9.127662006368155
+   "seconds": 9.12766200636861
   },
   {
    "slots": 1,
-   "seconds": 52.9514763020768
+   "seconds": 51.74363341077378
   },
   {
    "slots": 8,
@@ -286,15 +286,15 @@
   "total": 28,
   "supplies": 12,
   "nonItem": 1,
-  "carriedItems": 23,
+  "carriedItems": 24,
   "wornItems": 10,
   "minLoadoutItems": 10,
   "keptAmmo": 0,
-  "inventoryItems": 13,
+  "inventoryItems": 14,
   "swapReserve": 0,
   "quiverAmmo": 1,
-  "used": 25,
-  "free": 3,
+  "used": 26,
+  "free": 2,
   "overfull": false
  },
  "inventory": [
@@ -460,10 +460,20 @@
   },
   {
    "kind": "spec",
-   "label": "Crimson kisten",
+   "label": "Zaryte crossbow",
    "item": {
-    "id": 33631,
-    "name": "Crimson kisten",
+    "id": 26374,
+    "name": "Zaryte crossbow",
+    "version": "",
+    "slot": "weapon"
+   }
+  },
+  {
+   "kind": "spec",
+   "label": "Burning claws",
+   "item": {
+    "id": 29577,
+    "name": "Burning claws",
     "version": "",
     "slot": "weapon",
     "twoHanded": true
@@ -471,12 +481,13 @@
   },
   {
    "kind": "spec",
-   "label": "Zaryte crossbow",
+   "label": "Crimson kisten",
    "item": {
-    "id": 26374,
-    "name": "Zaryte crossbow",
+    "id": 33631,
+    "name": "Crimson kisten",
     "version": "",
-    "slot": "weapon"
+    "slot": "weapon",
+    "twoHanded": true
    }
   },
   {
@@ -500,10 +511,6 @@
   {
    "kind": "free",
    "label": "Free slot"
-  },
-  {
-   "kind": "free",
-   "label": "Free slot"
   }
  ],
  "specItems": [
@@ -514,17 +521,24 @@
    "slot": "weapon"
   },
   {
-   "id": 33631,
-   "name": "Crimson kisten",
+   "id": 26374,
+   "name": "Zaryte crossbow",
+   "version": "",
+   "slot": "weapon"
+  },
+  {
+   "id": 29577,
+   "name": "Burning claws",
    "version": "",
    "slot": "weapon",
    "twoHanded": true
   },
   {
-   "id": 26374,
-   "name": "Zaryte crossbow",
+   "id": 33631,
+   "name": "Crimson kisten",
    "version": "",
-   "slot": "weapon"
+   "slot": "weapon",
+   "twoHanded": true
   },
   {
    "id": -9101,
@@ -534,43 +548,41 @@
   }
  ],
  "pinnedItems": [],
- "comparison": "a0a8e2ab2eef740402a70adb2cfb942b37174f24ccdf3bedbb3294b28a1b2145",
+ "comparison": "b94542e7db3abd199f39879f16e51b0ef23cc8384751a4956ae0e2fb459809dd",
  "planned": 1,
  "rejected": [],
  "alternatives": [
   {
-   "label": "melee + ranged + magic: Tumeken's shadow (Ancestral) / Inquisitor's + Obligator / Harmonised Nightmare staff / Harmonised Nightmare staff #3 / Twisted bow (Masori)",
+   "label": "melee + ranged + magic: Tumeken's shadow (Ancestral) / Inquisitor's + Obligator / Harmonised Nightmare staff / Twisted bow (Masori)",
    "kind": "alternative",
-   "deltaSeconds": -9.127662006368155,
-   "deltaSlots": 11,
+   "deltaSeconds": -9.12766200636861,
+   "deltaSlots": 10,
    "reason": "does not fit (36 of 28 slots)",
    "weapons": [
     "Tumeken's shadow",
     "Obligator",
     "Harmonised Nightmare staff",
-    "Harmonised Nightmare staff",
     "Twisted bow"
    ]
   },
   {
-   "label": "melee + magic: Tumeken's shadow (Ancestral) / Inquisitor's + Obligator / Harmonised Nightmare staff / Harmonised Nightmare staff #3",
+   "label": "melee + magic: Tumeken's shadow (Ancestral) / Inquisitor's + Obligator / Harmonised Nightmare staff",
    "kind": "alternative",
-   "deltaSeconds": -82.1069980696875,
-   "deltaSlots": 3,
-   "reason": "82.1 s slower",
+   "deltaSeconds": -87.84288410214049,
+   "deltaSlots": 2,
+   "reason": "87.8 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Obligator",
-    "Harmonised Nightmare staff",
     "Harmonised Nightmare staff"
    ]
   },
   {
    "label": "ranged + magic: Tumeken's shadow (Ancestral) / Twisted bow (Masori) / Ascension crossbows + diamond (e) (Masori) / Ascension crossbows + onyx (e) (Masori)",
    "kind": "alternative",
-   "deltaSeconds": -361.561305734122,
+   "deltaSeconds": -362.75732335144767,
    "deltaSlots": 1,
-   "reason": "361.6 s slower",
+   "reason": "362.8 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Twisted bow",
@@ -581,9 +593,9 @@
   {
    "label": "magic: Tumeken's shadow (Ancestral) / Harmonised Nightmare staff / Harmonised Nightmare staff #3",
    "kind": "alternative",
-   "deltaSeconds": -843.455598921797,
+   "deltaSeconds": -838.8259380304312,
    "deltaSlots": -5,
-   "reason": "843.5 s slower",
+   "reason": "838.8 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Harmonised Nightmare staff",
@@ -636,33 +648,40 @@
   "bring": [
    "tonalztics"
   ],
-  "text": "Bring: Tonalztics, Crimson kisten, Zaryte crossbow, Surge potion",
+  "text": "Bring: Tonalztics, Zaryte crossbow, Burning claws, Crimson kisten, Surge potion",
   "damage": [
-   "crimsonKisten",
-   "zcb"
+   "zcb",
+   "burningClaws",
+   "crimsonKisten"
   ],
   "surgePotions": 1,
   "surgeAt": [
    "Archive Guardian",
-   "Ezekiel",
-   "Xarth"
+   "Moia",
+   "Ocellus"
   ],
   "items": [
    {
-    "item": "Crimson kisten",
-    "saved": 9.057492395499366,
-    "slots": 1,
-    "how": "a free slot"
-   },
-   {
     "item": "Zaryte crossbow",
-    "saved": 8.138701888166679,
+    "saved": 12.177052434408097,
     "slots": 1,
     "how": "a free slot"
    },
    {
     "item": "Surge potion(4)",
-    "saved": 5.7799320226204145,
+    "saved": 15.787685914198164,
+    "slots": 1,
+    "how": "a free slot"
+   },
+   {
+    "item": "Burning claws",
+    "saved": 4.620157208627916,
+    "slots": 1,
+    "how": "a free slot"
+   },
+   {
+    "item": "Crimson kisten",
+    "saved": 1.411606462630516,
     "slots": 1,
     "how": "a free slot"
    }
@@ -672,13 +691,13 @@
     {
      "weapon": "elderMaul",
      "chosen": false,
-     "deltaSeconds": -1.43633778417734,
+     "deltaSeconds": 0.5691885555897898,
      "deltaSlots": 1
     },
     {
      "weapon": "dwh",
      "chosen": false,
-     "deltaSeconds": -3.185591593616664,
+     "deltaSeconds": 0.5691885555897898,
      "deltaSlots": 1
     },
     {
@@ -701,12 +720,12 @@
     }
    ],
    "bestRejected": {
-    "weapon": "bgs",
+    "weapon": "elderMaul",
     "chosen": false,
-    "deltaSeconds": 0,
+    "deltaSeconds": 0.5691885555897898,
     "deltaSlots": 1
    },
-   "signatures": 16,
+   "signatures": 14,
    "pruned": 0,
    "bestWithout": [
     {
@@ -715,10 +734,10 @@
       "elderMaul",
       "ayak"
      ],
-     "seconds": 1466.9421661260913
+     "seconds": 1480.2891017309519
     }
    ],
-   "evaluated": 18,
+   "evaluated": 16,
    "screenedWith": [
     "tonalztics"
    ],
@@ -732,12 +751,12 @@
   "screened": [
    {
     "ring": "Ultor ring",
-    "seconds": 1384.418481554921,
+    "seconds": 1373.3981058413428,
     "full": true
    },
    {
     "ring": "Bellator ring",
-    "seconds": 1435.611942030253,
+    "seconds": 1423.8823060942757,
     "full": true
    },
    {
@@ -790,7 +809,7 @@
  "droppedPinned": [],
  "ownershipNotices": [],
  "searchRows": "43121b00564935b34d856de46f3af342b419824074d28eede47ee372e0044d0f",
- "objectiveSeconds": 1384.418481554921,
+ "objectiveSeconds": 1373.3981058413428,
  "fightSeconds": {
   "archive-guardian": 230,
   "ezekiel": 229,
@@ -803,11 +822,11 @@
  },
  "plannedRoute": {
   "id": "archive-guardian>ezekiel>moia>xarth>ocellus",
-  "seconds": 1384.418481554921,
+  "seconds": 1373.3981058413428,
   "surgeDoses": [
    "archive-guardian",
-   "ezekiel",
-   "xarth"
+   "moia",
+   "ocellus"
   ],
   "encounters": [
    {
@@ -820,7 +839,7 @@
       "counts": {
        "tonalztics": 2
       },
-      "hp": 316.7979942843524
+      "hp": 307.92540004347313
      }
     ],
     "damage": {
@@ -832,7 +851,7 @@
    },
    {
     "id": "ezekiel",
-    "seconds": 210.4344486260819,
+    "seconds": 211.6056110879632,
     "events": [
      {
       "npc": "Ezekiel",
@@ -840,63 +859,68 @@
       "counts": {
        "tonalztics": 2
       },
-      "hp": 199.94345033727723
+      "hp": 180.6108068206902
      }
     ],
     "damage": {
      "ezekiel": {
-      "zcb": 1
+      "burningClaws": 2
      }
     },
-    "surge": true
+    "surge": false
    },
    {
     "id": "moia",
-    "seconds": 71.12776647536128,
+    "seconds": 65.3150638052674,
     "events": [
      {
       "npc": "Moia",
       "firstRowKey": "moia",
       "counts": {
-       "tonalztics": 2
+       "tonalztics": 1
       },
-      "hp": 109.53701363097196
-     }
-    ],
-    "damage": {},
-    "surge": false
-   },
-   {
-    "id": "xarth",
-    "seconds": 182.78395343900075,
-    "events": [
-     {
-      "npc": "Xarth",
-      "firstRowKey": "xarth",
-      "counts": {
-       "tonalztics": 2
-      },
-      "hp": 201.3503619946323
+      "hp": 95.74439648685201
      }
     ],
     "damage": {
-     "xarth": {
+     "moia": {
       "zcb": 1
      }
     },
     "surge": true
    },
    {
+    "id": "xarth",
+    "seconds": 181.61583763619933,
+    "events": [
+     {
+      "npc": "Xarth",
+      "firstRowKey": "xarth",
+      "counts": {
+       "tonalztics": 1
+      },
+      "hp": 171.000694540365
+     }
+    ],
+    "damage": {
+     "xarth": {
+      "zcb": 1,
+      "burningClaws": 1
+     }
+    },
+    "surge": false
+   },
+   {
     "id": "ocellus",
-    "seconds": 739.4004398693409,
+    "seconds": 734.1897201667767,
     "events": [
      {
       "npc": "Ocellus",
       "firstRowKey": "ocellus-p1",
       "counts": {
-       "tonalztics": 2
+       "tonalztics": 1
       },
-      "hp": 404.12308625132573
+      "hp": 347.89836762194966
      },
      {
       "npc": "Ocellus",
@@ -911,10 +935,13 @@
       "counts": {
        "tonalztics": 2
       },
-      "hp": 646.4431936996781
+      "hp": 605.5962744890674
      }
     ],
     "damage": {
+     "ocellus-p1": {
+      "zcb": 1
+     },
      "ocellus-p3": {
       "crimsonKisten": 1
      },
@@ -922,7 +949,7 @@
       "zcb": 1
      }
     },
-    "surge": false
+    "surge": true
    }
   ]
  }

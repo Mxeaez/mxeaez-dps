@@ -194,10 +194,10 @@ const PINNED_ENCOUNTER_SECONDS: Record<string, Record<string, number>> = {
   // CoX encounters are not won by the Twisted bow preset in this kit).
   // Phase 38c: Ocellus 776.5 → 832 (P2, the Blade, in the plan at 120 s; the Defence resets at P2 and P3: three drain
   // events); fix round 832 → 823.8 (P2 lasts 120 s on the spec budget's wall clock: more regen before P3).
-  // Phase 38h-2 (bars in boss HP): Bork + Smorks 230.2 → 221.2 (the maul bars go 1 spec to Bork, 3 to the Smorks, where
-  // they are worth more), Ocellus 844.7 → 833.8.
+  // Phase 38h-2 (bars in boss HP): Bork + Smorks 230.2 → 221.2 (the maul bars split between Bork and the Smorks, where
+  // they are worth more), Ocellus 844.7 → 833.8; review fix (values averaged over the drain's outcomes) Ocellus → 820.8.
   'fractured-archive': {
-    'archive-guardian': 191.8, 'bork-smorks': 221.2, moia: 68.9, dagonhai: 233.8, ocellus: 833.8,
+    'archive-guardian': 191.8, 'bork-smorks': 221.2, moia: 68.9, dagonhai: 233.8, ocellus: 820.8,
   },
   // Phase 35 (no specs on adds): ToA Kephri 153.8 → 155.5, Akkha 160.9 → 161.6; CoX Vasa 20.1 → 22.9, Vespula 23.3 →
   // 24.1, Mystics 44.8 → 52.4, Shamans 32.1 → 37.5, Muttadiles 23.9 → 24.

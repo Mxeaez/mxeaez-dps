@@ -13,7 +13,7 @@ import {
   presetSpells,
   presetStyles,
   styleLabel,
-  monsterForSpecCounts, specCountsDrainKey,
+  monsterAtDefence, monsterForSpecCounts, specCountsDrainKey,
 } from '@/lib/fracturedArchive/bestSetup';
 import {
   BestSetupAssumptions, DEFAULT_ASSUMPTIONS, PresetDef, StyleGroup,
@@ -199,6 +199,11 @@ export interface PhaseQuery {
    * at it (`RaidKit.specDamage`: the monster's current hp, capped at its full hp). Undefined = full hp.
    */
   hpLeft?: number;
+  /**
+   * Phase 38h-2 (review): one Defence outcome of a drain instead of the drain state: the undrained monster at Defence
+   * `def` (of `undrainedDef`, the drain model's) with `ayak` magic defence drained (bestSetup.ts `monsterAtDefence`).
+   */
+  defence?: { undrainedDef: number, def: number, ayak: number };
 }
 
 /** The kit's best answer for a phase. */
@@ -1065,6 +1070,19 @@ export const createKitEvaluator = (loadouts: KitLoadout[], assumptions: BestSetu
   const { monsters, evals } = cache ?? kitEvaluatorCache();
   let count = 0;
   const monsterFor = (q: PhaseQuery) => {
+    if (q.defence) {
+      // phase 38h-2: one Defence outcome (the drain values' expected DPS)
+      const dk = `${phaseKey(q.targetKey, q.phase)}|def:${q.defence.undrainedDef}/${q.defence.def}/${q.defence.ayak}`;
+      let dm = monsters.get(dk);
+      if (!dm) {
+        dm = {
+          monster: monsterAtDefence(findTarget(q.targetKey), q.phase, assumptions, q.defence.undrainedDef, q.defence.def, q.defence.ayak),
+          drain: { id: 'none' } as DrainState,
+        };
+        monsters.set(dk, dm);
+      }
+      return dm;
+    }
     // phase 36: a query with the encounter budget's spec counts gets exactly those specs
     let specs = q.drain !== 'none' && q.specs ? specCountsKey(q.specs.counts) : '';
     if (specs && q.outcomeOnly) specs = `dk:${specCountsDrainKey(findTarget(q.targetKey), q.phase, q.drain, assumptions, q.specs!.counts)}`;
@@ -1086,7 +1104,8 @@ export const createKitEvaluator = (loadouts: KitLoadout[], assumptions: BestSetu
   return {
     specDamage: (q, w) => damageSpecProfile(atHpLeft(monsterFor(q).monster, q.hpLeft), w, targetA(q)),
     specHits: (q) => specHitsOf(monsterFor({ ...q, drain: 'none', specs: undefined }).monster, assumptions),
-    drainKey: (q) => specCountsDrainKey(findTarget(q.targetKey), q.phase, q.drain, assumptions, q.specs?.counts ?? {}),
+    drainKey: (q) => (q.defence ? `def:${q.defence.undrainedDef}/${q.defence.def}/${q.defence.ayak}`
+      : specCountsDrainKey(findTarget(q.targetKey), q.phase, q.drain, assumptions, q.specs?.counts ?? {})),
     drainModel: (q) => drainModelOf(findTarget(q.targetKey), q.phase, assumptions),
     evaluations: () => count,
     best: (q) => {

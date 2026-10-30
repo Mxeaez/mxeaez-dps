@@ -115,29 +115,29 @@ describe('raid briefing rows (FA, presets kit): the phase 33 encounter lines are
     expect(rows.map((r) => `${r.id} | ${r.specsText}`)).toEqual([
       // phase 38g: each event its fewest carriers at 95% within the kit (AG: 2 Tonalztics; Ezekiel: 2 Elder maul)
       'archive-guardian | Tonalztics 4 hits → Def 156',
-      'ezekiel | Elder maul 2 specs → Def 78',
+      // phase 38h-2 (HP averaged over the outcomes): the surer mixes where the bars allow
+      'ezekiel | Elder maul 1 spec + Tonalztics 3 hits → Def 78',
       // phase 35b: one line per NPC (was Bork's line only); phase 36: one spec budget for both NPCs (was 100% each):
       // phase 38g: 2 Elder maul carriers on Bork (96%); their bars are spent, so the Smorks get the Tonalztics
       // phase 38h-2 (bars in boss HP): 1 maul spec on Bork, 3 on the Smorks, where they are worth more
-      'bork-smorks | Bork: Elder maul 1 spec → Def 195 · Smorks: Elder maul 3 specs + Tonalztics 3 hits → Def 9',
+      'bork-smorks | Bork: Elder maul 1 spec → Def 195 · Smorks: Elder maul 2 specs + Tonalztics 4 hits → Def 22',
       'moia | Tonalztics 2 hits → Def 117',
       'dreadnoth | Tonalztics 5 hits → Def 0',
-      'dagonhai | Tonalztics 3 hits → Def 0',
-      'xarth | Tonalztics 2 hits → Def 102',
+      'dagonhai | Elder maul 3 specs + Tonalztics 1 hit → Def 0',
+      'xarth | Elder maul 2 specs + Tonalztics 2 hits → Def 102',
       // phase 38c: three events (the Defence resets at P2 and P3), P3's specs on quadrants 1-3
       // fix round (P2's 120 s on the budget clock: more regen, so the P1 / P2 split changed)
       // phase 38g: P2 (no team reaches its floor 0) gets every carrier the bars pay, P3 the Tonalztics left
-      // phase 38h-2: P2 and P3 split the maul and Tonalztics bars (2 + 2 specs each); P3's last quadrant (Deflect Melee,
-      // no maul) gets its own part
-      'ocellus | start: Tonalztics 2 hits → Def 129 · after P1: Elder maul 2 specs + Tonalztics 3 hits → Def 25 · after P2, P3 quadrants 1-3: Elder maul 2 specs + Tonalztics 3 hits → Def 150 · after P2, P3 last quadrant, Deflect Melee: Tonalztics 2 hits → Def 176',
+      // phase 38h-2: P2 gets the maul bars, P3 the Tonalztics
+      'ocellus | start: Tonalztics 2 hits → Def 129 · after P1: Elder maul 3 specs → Def 69 · after P2: Tonalztics 3 hits → Def 150',
     ]);
     // the tooltip is phase 33's line, unchanged (phase 35b: Bork + Smorks one line per NPC)
-    expect(rows.find((r) => r.id === 'bork-smorks')!.drainText).toBe('Bork: 1 Elder maul carrier (1 spec) → Def 195 · Smorks: 2 Elder maul carriers (3 specs) + 2 Tonalztics carriers (4 specs) → Def 9');
+    expect(rows.find((r) => r.id === 'bork-smorks')!.drainText).toBe('Bork: 1 Elder maul carrier (2 specs) → Def 195 · Smorks: 1 Elder maul carrier (2 specs) + 2 Tonalztics carriers (4 specs) → Def 22');
     expect(rows.find((r) => r.id === 'archive-guardian')!.drainText).toBe('Start of fight: 2 Tonalztics carriers (4 specs) → Def 156 · 99%');
     // phase 38c: three events (the Defence resets at P2 and P3)
     // phase 38h-1: each spec at the Defence the earlier ones leave (Bork 96% → 97%, AG 98% → 99%, Xarth 97% → 98%); Ocellus P2 pays the
     // line's Elder maul ×4 → Tonalztics ×2 (was 3 mauls + 2 Tonalztics hits → Def 15)
-    expect(rows.find((r) => r.id === 'ocellus')!.drainText).toBe('Start of fight: 1 Tonalztics carrier (2 specs) → Def 129 · 99% · After P1 (Defence restored), again: 1 Elder maul carrier (2 specs) + 1 Tonalztics carrier (2 specs) → Def 25 · After P2 (Defence restored), again: P3 quadrants 1-3: 1 Elder maul carrier (2 specs) + 1 Tonalztics carrier (2 specs) → Def 150 · 97% · P3 last quadrant, Deflect Melee: 1 Tonalztics carrier (2 specs) → Def 176');
+    expect(rows.find((r) => r.id === 'ocellus')!.drainText).toBe('Start of fight: 1 Tonalztics carrier (2 specs) → Def 129 · 99% · After P1 (Defence restored), again: 2 Elder maul carriers (4 specs) → Def 69 · After P2 (Defence restored), again: 2 Tonalztics carriers (4 specs) → Def 150 · 91%');
     // carriers are not repeated in the short form
     rows.forEach((r) => expect(r.specsText).not.toMatch(/carrier/));
     expect(rows.find((r) => r.id === 'ocellus')!.loadouts).toEqual(["Inquisitor's + Obligator", 'Twisted bow (Masori)']);
@@ -305,18 +305,20 @@ describe('render: icons next to every item name', () => {
       // phase 38h-1: the Smorks' 6 specs at the drained rolls (ranked Def 36 → 13); Ocellus P3 gets the 4 Tonalztics specs P2 no
       // longer pays (3 landed hits → Def 150)
       'Archive Guardian | Tonalztics 4 hits → Def 156',
-      'Bork + Smorks | Bork: Elder maul 2 specs → Def 180 · Smorks: Tonalztics 9 hits → Def 13',
+      // phase 38h-2 review fixes (HP averaged over the outcomes): Bork Elder maul ×3, the Smorks Tonalztics ×6 + Elder maul;
+      // Xarth Elder maul ×2 → Tonalztics (99%)
+      'Bork + Smorks | Bork: Elder maul 2 specs → Def 180 · Smorks: Elder maul 1 spec + Tonalztics 10 hits → Def 7',
       'Moia | Tonalztics 2 hits → Def 117',
-      'Xarth | Tonalztics 2 hits → Def 102',
+      'Xarth | Elder maul 2 specs + Tonalztics 2 hits → Def 102',
       // phase 38h-2: P2 pays 1 Tonalztics spec (59%, ranked Def 15), P3 the 5th Tonalztics spec, worth more there
       'Ocellus | start: Tonalztics 2 hits → Def 129 · after P1: Elder maul 4 specs + Tonalztics 2 hits → Def 15 · after P2: Tonalztics 3 hits → Def 150',
     ]);
     // "Per-phase details": phase 33's encounter lines (before the phase 34 layout)
     expect(rows.map((x) => x.drainText)).toEqual([
       'Start of fight: 2 Tonalztics carriers (4 specs) → Def 156 · 99%',
-      'Bork: 2 Elder maul carriers (4 specs) → Def 180 · 97% · Smorks: 3 Tonalztics carriers (6 specs) → Def 13',
+      'Bork: 2 Elder maul carriers (3 specs) → Def 180 · 90% · Smorks: 1 Elder maul carrier (1 spec) + 3 Tonalztics carriers (6 specs) → Def 7',
       'Start of fight: 1 Tonalztics carrier (2 specs) → Def 117 · 99%',
-      'Start of fight: 1 Tonalztics carrier (2 specs) → Def 102 · 98%',
+      'Start of fight: 1 Elder maul carrier (2 specs) + 1 Tonalztics carrier (1 spec) → Def 102 · 99%',
       'Start of fight: 1 Tonalztics carrier (2 specs) → Def 129 · 99% · After P1 (Defence restored), again: 2 Elder maul carriers (4 specs) + 1 Tonalztics carrier (1 spec) → Def 15 · After P2 (Defence restored), again: 3 Tonalztics carriers (5 specs) → Def 150 · 97%',
     ]);
     expect(rows.map((x) => x.loadouts)).toEqual([

@@ -1,7 +1,11 @@
 import { describe, expect, test } from '@jest/globals';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { Monster } from '@/types/Monster';
 import { generateEmptyPlayer } from '@/state';
-import { buildTargetMonster, findTarget, SpecCounts } from '@/lib/fracturedArchive/bestSetup';
+import {
+  attemptsFromCounts, buildTargetMonster, findTarget, SpecCounts,
+} from '@/lib/fracturedArchive/bestSetup';
 import {
   assignedKit, budgetedEncounter, drainEventsOf, drainHpValue, eventWantedCounts,
 } from '@/lib/fracturedArchive/encounterBudget';
@@ -31,10 +35,10 @@ import { raidConfig } from '@/lib/raids';
 const A: BestSetupAssumptions = raidConfig('fractured-archive').defaultAssumptions;
 
 type Boss = { monster: Monster, a: BestSetupAssumptions, m: DrainModel };
-const boss = (key: string, phase?: string): Boss => {
+const boss = (key: string, phase?: string, base: BestSetupAssumptions = A): Boss => {
   const t = findTarget(key);
-  const monster = buildTargetMonster(t, phase, 'none', A).monster;
-  const a = assumptionsForTarget(t, A);
+  const monster = buildTargetMonster(t, phase, 'none', base).monster;
+  const a = assumptionsForTarget(t, base);
   return { monster, a, m: drainModel(monster, a) };
 };
 const atDef = (b: Boss, d: number): Monster => ({
@@ -181,10 +185,26 @@ const SOLO_A: BestSetupAssumptions = {
   damageSpecs: ['zcb'],
 };
 
+/** Independent enumeration: the Defence distribution after `seq`, every spec at the Defence then (upstream's spec calc). */
+const distribution = (b: Boss, seq: DefenceDrainWeapon[]): Map<number, number> => {
+  let states = new Map<number, number>([[b.m.def, 1]]);
+  seq.forEach((w) => {
+    const next = new Map<number, number>();
+    states.forEach((p, d) => exact(b, w, d).forEach((o) => {
+      if (o.p <= 0) return;
+      const nd = drop(d, b.m.floor, w, o, b.m.magicLevel);
+      next.set(nd, (next.get(nd) ?? 0) + p * o.p);
+    }));
+    states = next;
+  });
+  return states;
+};
+
 /**
- * The HP value written out: per row of the pass, damage × (1 − DPS without ÷ DPS with) (= H × g ÷ (1 + g), H the row's
- * damage, g = DPS with ÷ DPS without − 1), a fixed-length row nothing itself, a row whose damage the drain shrinks (P3
- * after P2) the damage it no longer has to deal. The other events at the line's plan (the budget's baseline).
+ * The HP value written out, averaged over the drain's outcomes: per row of the event, Σ P(Defence d) × H × (1 − DPS
+ * without ÷ DPS at d) (H = the row's damage, the other events at the line's plan); a fixed-length row (Ocellus P2) the
+ * extra damage at the expected DPS × its carry-over. The outcomes by enumerating upstream's spec calc in the plan's send
+ * order; the DPS at d = the kit's best on the monster with Defence d.
  */
 const valueByHand = (id: string, a: BestSetupAssumptions, drain: 'team' | 'solo', ei: number, counts: SpecCounts): number => {
   const ta = raidTimeAssumptionsFrom(a, drain, FA.defaultTimeSettings, FA.time);
@@ -202,18 +222,40 @@ const valueByHand = (id: string, a: BestSetupAssumptions, drain: 'team' | 'solo'
   const rowEv = new Map(first.map((r, i) => [r.key, rowEvent[i]]));
   const npcEv = new Map<string, number>();
   events.forEach((e, i) => { if (!npcEv.has(e.npc)) npcEv.set(e.npc, i); });
-  const pass = (c: SpecCounts) => FA.time.encounterPass(id, assignedKit(kit, rowEv, npcEv, line.map((l, j) => (j === ei ? c : l))), ta, drain, fight);
-  const without = pass({});
-  const withIt = new Map(pass(counts).map((r) => [r.key, r]));
+  const without = FA.time.encounterPass(id, assignedKit(kit, rowEv, npcEv, line.map((l, j) => (j === ei ? {} : l))), ta, drain, fight);
   return without.reduce((t, r0) => {
-    const r1 = withIt.get(r0.key)!;
-    if (r0.fixedWall) return t;
-    return t + r0.damage - r1.damage * (r0.dps / r1.dps);
+    const ev = rowEv.get(r0.key) ?? npcEv.get(findTarget(r0.targetKey).npc ?? findTarget(r0.targetKey).name);
+    if (ev !== ei || findTarget(r0.targetKey).noDrains || !(r0.damage > 0)) return t;
+    const b = boss(r0.targetKey, r0.phase, a);
+    const att = attemptsFromCounts(b.m, counts).filter((w): w is DefenceDrainWeapon => w !== 'ayak');
+    if (!att.length || b.m.def <= b.m.floor) return t;
+    const seq = seqOf(defenceOutcome(b.m, att).steps!);
+    let dps = 0;
+    let gain = 0;
+    distribution(b, seq).forEach((p, d) => {
+      const dd = d === b.m.def ? r0.dps : kit.best({
+        targetKey: r0.targetKey, phase: r0.phase, drain, fightSeconds: fight, defence: { undrainedDef: b.m.def, def: d, ayak: 0 },
+      })!.dps;
+      dps += p * dd;
+      gain += p * (1 - r0.dps / dd);
+    });
+    return t + (r0.fixedWall ? (dps / r0.dps - 1) * r0.damage * (r0.carryOver ?? 0) : r0.damage * gain);
   }, 0);
 };
 
+/** HP values pinned (0.1 HP; the presets kit above): moved only by a numbers change, each explained in PROGRESS. */
+const HP_PINS: Record<string, number> = {
+  'team|archive-guardian|0': 381.7,
+  'team|bork-smorks|1': 246.9,
+  'team|xarth|0': 192.7,
+  'team|ocellus|0': 414.9,
+  'team|ocellus|1': 195.4,
+  'team|ocellus|2': 718.2,
+  'solo|archive-guardian|0': 338.5,
+  'solo|ocellus|2': 495.9,
+};
 const ENCOUNTERS = ['archive-guardian', 'bork-smorks', 'ezekiel', 'moia', 'xarth', 'dagonhai', 'ocellus'];
-describe.each([['team', TEAM_A], ['solo', SOLO_A]] as ['team' | 'solo', BestSetupAssumptions][])('per FA boss (%s): each event\'s HP value = H × g ÷ (1 + g) by hand', (drain, a) => {
+describe.each([['team', TEAM_A], ['solo', SOLO_A]] as ['team' | 'solo', BestSetupAssumptions][])('per FA boss (%s): each event\'s HP value = Σ P(d) × H × g ÷ (1 + g) by hand', (drain, a) => {
   test.each(ENCOUNTERS)('%s', (id) => {
     const e = encounterTime(id, kitFor(a), raidTimeAssumptionsFrom(a, drain, FA.defaultTimeSettings, FA.time));
     const evs = e.specPlan!.events;
@@ -227,30 +269,29 @@ describe.each([['team', TEAM_A], ['solo', SOLO_A]] as ['team' | 'solo', BestSetu
       }
       expect(ev.hp!).toBeGreaterThan(0);
       expect(ev.hp!).toBeCloseTo(valueByHand(id, a, drain, ei, ev.counts), 6);
+      const pin = HP_PINS[`${drain}|${id}|${ei}`];
+      if (pin !== undefined) expect(Math.round(ev.hp! * 10) / 10).toBe(pin);
     });
-    // the plan's HP = its drains + its damage specs' net (each spec at the Defence its drains leave)
-    const dmg = e.phases.reduce((t, r) => t + (r.damageSpecs ?? []).reduce((x, d) => x + d.count * d.net, 0), 0);
-    expect(e.specPlan!.hp!).toBeCloseTo(evs.reduce((t, ev) => t + (ev.hp ?? 0), 0) + dmg, 6);
-    // Team: only your bar has damage specs, the carriers' bars only drains (no close calls); Solo: a close call is a
-    // drain your bar pays
+    // Team: only your bar has damage specs, the carriers' bars only drains (no close calls)
     if (drain === 'team') expect(evs.some((ev) => ev.closeCall)).toBe(false);
-  }, 60000);
+  }, 120000);
 });
 
 describe('a close call (Solo): the damage specs a drain\'s energy buys are within 10% of it, the drain kept', () => {
-  test('Ocellus P2, party 4, Elder maul + Zaryte crossbow on one bar: 1 maul spec (54 HP) vs the Zaryte crossbow instead', () => {
+  test('The Smorks, party 1, Elder maul + Zaryte crossbow on one bar: 1 maul spec (64 HP) vs the Zaryte crossbow instead', () => {
     const a: BestSetupAssumptions = {
-      ...A, partySize: 4, mySpecs: { ...A.mySpecs, elderMaul: true }, damageSpecs: ['zcb'],
+      ...A, partySize: 1, mySpecs: { ...A.mySpecs, elderMaul: true }, damageSpecs: ['zcb'],
     };
     const ta = raidTimeAssumptionsFrom(a, 'solo', FA.defaultTimeSettings, FA.time);
     const kit = kitFor(a);
-    const pass = (k: Parameters<typeof FA.time.encounterPass>[1], d: 'none' | 'team' | 'solo', f: number) => FA.time.encounterPass('ocellus', k, ta, d, f);
+    const pass = (k: Parameters<typeof FA.time.encounterPass>[1], d: 'none' | 'team' | 'solo', f: number) => FA.time.encounterPass('bork-smorks', k, ta, d, f);
     const first = pass(kit, 'none', ta.fallbackFightSeconds);
     let problem: AllocationProblem | undefined;
     const r = budgetedEncounter(kit, ta, ta.specBudget!, {
       drain: 'solo', pass, first, fightSeconds: drainFightSecondsOf(first.reduce((t, x) => t + x.seconds, 0), ta), clock0: 0, surge: false, onProblem: (p) => { problem = p; },
     });
     const p2 = r.plan.events[1];
+    expect(p2.npc).toBe('Smorks');
     expect(p2.counts).toEqual({ elderMaul: 1 });
     expect(p2.closeCall).toBe(true);
     // by the rule: the best plan without this drain, minus the rest of the chosen plan = what its energy buys instead
@@ -260,4 +301,48 @@ describe('a close call (Solo): the damage specs a drain\'s energy buys are withi
     expect(instead).toBeGreaterThanOrEqual(0.9 * p2.hp! - 1e-9);
     expect(instead).toBeLessThanOrEqual(1.1 * p2.hp! + 1e-9);
   }, 60000);
+});
+
+describe('Ocellus (Team): the chosen drains are the HP maximum over every drain combination (exhaustive)', () => {
+  test('every option of P1 × P2 × P3, the DP placing your damage specs and the dose for each: none beats the plan', () => {
+    const ta = raidTimeAssumptionsFrom(TEAM_A, 'team', FA.defaultTimeSettings, FA.time);
+    const kit = kitFor(TEAM_A);
+    const pass = (k: Parameters<typeof FA.time.encounterPass>[1], d: 'none' | 'team' | 'solo', f: number) => FA.time.encounterPass('ocellus', k, ta, d, f);
+    const first = pass(kit, 'none', ta.fallbackFightSeconds);
+    let problem: AllocationProblem | undefined;
+    const r = budgetedEncounter(kit, ta, ta.specBudget!, {
+      drain: 'team', pass, first, fightSeconds: drainFightSecondsOf(first.reduce((t, x) => t + x.seconds, 0), ta), clock0: 0, surge: true, onProblem: (p) => { problem = p; },
+    });
+    const p = problem!;
+    // the objective: drains × 1.1 + damage specs (specBudget.ts); per combination its drains fixed, the rest by the DP
+    const weighted = (opts: number[]) => {
+      const fixed = allocateBudget({ ...p, events: p.events.map((e, j) => ({ ...e, options: [e.options[opts[j]]] })), rowOutcome: (i, o) => p.rowOutcome(i, o === 0 ? opts[p.rows[i].event] : o) });
+      const v = opts.reduce((t, oi, j) => t + (p.events[j].options[oi].value ?? 0), 0);
+      return Number.isFinite(fixed.hp) ? fixed.hp + 0.1 * v : -Infinity;
+    };
+    let best = -Infinity;
+    let combos = 0;
+    const walk = (j: number, opts: number[]) => {
+      if (j === p.events.length) {
+        combos += 1;
+        best = Math.max(best, weighted(opts));
+        return;
+      }
+      p.events[j].options.forEach((_, oi) => walk(j + 1, [...opts, oi]));
+    };
+    walk(0, []);
+    expect(combos).toBeGreaterThan(50);
+    const chosen = r.plan.events.map((ev, j) => p.events[j].options.findIndex((o) => JSON.stringify(o.counts) === JSON.stringify(ev.counts)));
+    expect(chosen.every((x) => x >= 0)).toBe(true);
+    expect(weighted(chosen)).toBeGreaterThanOrEqual(best - 1e-6);
+  }, 300000);
+});
+
+describe('Eye of Ayak carriers never exceed the mages (review 38h-2)', () => {
+  test.each(['fa', 'faSolo', 'faNotOwned'])('%s headline plan', (name) => {
+    const f = JSON.parse(readFileSync(join(__dirname, '..', 'raids', 'phase37', `${name}.json`), 'utf8'));
+    const team = f.specs?.team as { mages: number, carriers?: { ayak?: number } } | undefined;
+    if (name !== 'faSolo') expect(team?.carriers).toBeDefined();
+    if (team?.carriers) expect(team.carriers.ayak ?? 0).toBeLessThanOrEqual(team.mages);
+  });
 });

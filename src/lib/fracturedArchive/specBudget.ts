@@ -398,7 +398,9 @@ export const allocateBudget = (p: AllocationProblem): AllocationResult => {
             after[gid] = list.map((e) => restored(e, row)).sort((x, y) => y - x);
           });
           const secs = rowSecondsAfter(o, d);
-          const dmgHp = o.damageSpecs.reduce((t, c) => t + (d[c.weapon] ?? 0) * c.net, 0);
+          // review 38h-2: damage specs can't take more than the row's damage off it
+          const dmgSum = o.damageSpecs.reduce((t, c) => t + (d[c.weapon] ?? 0) * c.net, 0);
+          const dmgHp = o.damage > 0 ? Math.min(o.damage, dmgSum) : dmgSum;
           const nxt = solve(i + 1, after, ch, dose && !drink);
           const cand: Val = {
             w: drainValue * keep + dmgHp + (nxt?.v.w ?? 0),

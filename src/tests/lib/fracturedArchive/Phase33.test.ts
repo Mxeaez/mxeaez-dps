@@ -219,10 +219,10 @@ describe('encounter line = the first phase\'s line (FA, presets kit)', () => {
     // phase 36: one spec budget for Bork and the Smorks: different specs on each (without NPC names: two parts)
     expect(s.parts.map((x) => x.phaseKey)).toEqual(['bork-8', 'smorks']);
     expect(s.parts[0].line).toBe(e.phases[0].choice!.drainLine);
-    // phase 38h-2 (bars in boss HP): 1 maul spec on Bork, 3 on the Smorks with the Tonalztics, where they are worth more
-    // (was Bork's 2 Elder maul carriers → Def 180, the Smorks the Tonalztics only → Def 82)
+    // phase 38h-2 (bars in boss HP, averaged over the outcomes): the maul bars split, 2 specs on Bork, 2 on the Smorks
+    // with the Tonalztics (was Bork's 2 Elder maul carriers → Def 180, the Smorks the Tonalztics only → Def 82)
     expect(s.parts[0].line.defAfter).toBe(195);
-    expect(s.text).toBe('Bork, armour 8: 1 Elder maul carrier (1 spec) → Def 195 · The Smorks: 2 Elder maul carriers (3 specs) + 2 Tonalztics carriers (4 specs) → Def 9');
+    expect(s.text).toBe('Bork, armour 8: 1 Elder maul carrier (2 specs) → Def 195 · The Smorks: 1 Elder maul carrier (2 specs) + 2 Tonalztics carriers (4 specs) → Def 22');
   });
 
   test('with a stun uptime the stunned row joins Bork\'s line (six rows)', () => {
@@ -249,20 +249,20 @@ describe('encounter line = the first phase\'s line (FA, presets kit)', () => {
     expect(s.events!.map((ev) => [ev.reset, ev.phaseKey, ev.parts.map((p) => p.label)])).toEqual([
       [undefined, 'ocellus-p1', ['P1 at a corner']],
       ['P1', 'ocellus-p2', ['P2 The Blade']],
-      ['P2', 'ocellus-p3', ['P3 quadrants 1-3', 'P3 last quadrant, Deflect Melee']],
+      ['P2', 'ocellus-p3', ['P3 quadrants 1-3']],
     ]);
     // phase 38g: each event its fewest carriers at 95% within the kit (P1 1 Tonalztics; P2 no team reaches the floor 0, so every carrier: the
     // Tonalztics bars pay 2 more specs; P3 2 Elder maul, but their bars are spent in P2: the Tonalztics left)
     // phase 38h-1: each spec at the Defence the earlier ones leave (Bork 96% → 97%, AG 98% → 99%, Xarth 97% → 98%); Ocellus P2 pays the
     // line's Elder maul ×4 → Tonalztics ×2 (was 3 mauls + 2 Tonalztics hits → Def 15)
-    // phase 38h-2 (bars in boss HP): P2 and P3 split the maul and Tonalztics bars (2 + 2 specs each) where they are worth
-    // most; P3's quadrants 1-3 take the mauls, the last quadrant (Deflect Melee) only the Tonalztics: its own part
-    expect(s.text).toBe('Start of fight: 1 Tonalztics carrier (2 specs) → Def 129 · 99% · After P1 (Defence restored), again: 1 Elder maul carrier (2 specs) + 1 Tonalztics carrier (2 specs) → Def 25 · After P2 (Defence restored), again: P3 quadrants 1-3: 1 Elder maul carrier (2 specs) + 1 Tonalztics carrier (2 specs) → Def 150 · 97% · P3 last quadrant, Deflect Melee: 1 Tonalztics carrier (2 specs) → Def 176');
+    // phase 38h-2 (bars in boss HP): P2 takes the maul bars (Def 69), P3 the Tonalztics
+    expect(s.text).toBe('Start of fight: 1 Tonalztics carrier (2 specs) → Def 129 · 99% · After P1 (Defence restored), again: 2 Elder maul carriers (4 specs) → Def 69 · After P2 (Defence restored), again: 2 Tonalztics carriers (4 specs) → Def 150 · 91%');
   });
 
   test('single-phase encounters: the line is that phase\'s (Xarth)', () => {
     const e = encounter(TEAM, 'team', 'xarth');
-    expect(summary(e, 'team').text).toBe('Start of fight: 1 Tonalztics carrier (2 specs) → Def 102 · 98%');
+    // phase 38h-2 (HP averaged over the outcomes): Elder maul ×2 → Tonalztics (99%) is worth a little more than Tonalztics ×2
+    expect(summary(e, 'team').text).toBe('Start of fight: 1 Elder maul carrier (2 specs) + 1 Tonalztics carrier (1 spec) → Def 102 · 99%');
   });
 
   test('Solo (party 1, Tonalztics): "Start: 3 Tonalztics specs → Def 267" on Bork, the AG flying shield\'s 86%', () => {

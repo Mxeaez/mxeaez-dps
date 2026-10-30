@@ -331,7 +331,7 @@ Carried from the round 6 list (items not scheduled above):
 
 **Other raids catch-up** (from the 2026-10-28 FA-only decision): show the tabs again and turn their tests back on (38f-2 flags), re-pin their fixtures once, then apply 38g-2 / 38h / 38j to ToA, CoX and ToB with a
 full review each; Crystal / Dragon halberd specs (Bloat) and the "spare top-up specs" clean-up (old 39); ToB variants
-(Maiden freezer, nylo ranged set: old 40); the old 38g-2 Olm-claw and ToA Wardens Ayak cases as tests; 38d if wanted.
+(Maiden freezer, nylo ranged set: old 40); the old 38g-2 Olm-claw and ToA Wardens Ayak cases as tests; 38d if wanted. Phase 38h-2 removed the Liquid adrenaline window guard (ToA only: a row's specs now cost what its start says, half inside the window; a row running past the window used to pay full cost for the specs only its later regen funds): re-check the ToA adrenaline tests and pins then.
 
 From the user's own ToA / CoX / ToB spec routine (2026-10-25; the model's per-boss numbers agree with the routine where
 the model covers it, and miss the rest):

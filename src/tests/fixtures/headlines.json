@@ -4,8 +4,8 @@
   "fa": {
    "raid": "fractured-archive",
    "label": "Fractured Archive (Team defaults)",
-   "total": "21:41.7",
-   "seconds": 1301.678746202194,
+   "total": "21:41.0",
+   "seconds": 1301.0040849381658,
    "route": "archive-guardian>bork-smorks>moia>xarth>ocellus",
    "ring": "Ultor ring",
    "kit": [
@@ -36,7 +36,7 @@
    ],
    "encounters": {
     "archive-guardian": 173.49,
-    "bork-smorks": 190.43,
+    "bork-smorks": 189.75,
     "moia": 65.32,
     "xarth": 180.61,
     "ocellus": 691.84
@@ -164,8 +164,8 @@
   "faSolo": {
    "raid": "fractured-archive",
    "label": "Fractured Archive Solo (party 1)",
-   "total": "23:04.4",
-   "seconds": 1384.418481554921,
+   "total": "22:53.4",
+   "seconds": 1373.3981058413428,
    "route": "archive-guardian>ezekiel>moia>xarth>ocellus",
    "ring": "Ultor ring",
    "kit": [
@@ -173,41 +173,43 @@
     "Twisted bow (Masori)",
     "Inquisitor's + Obligator"
    ],
-   "freeSlots": 3,
+   "freeSlots": 2,
    "carriers": null,
-   "bring": "Bring: Tonalztics, Crimson kisten, Zaryte crossbow, Surge potion",
+   "bring": "Bring: Tonalztics, Zaryte crossbow, Burning claws, Crimson kisten, Surge potion",
    "items": [
     "Tonalztics of Ralos",
-    "Crimson kisten",
     "Zaryte crossbow",
+    "Burning claws",
+    "Crimson kisten",
     "Surge potion(4)"
    ],
    "yourShare": null,
    "surgeAt": [
     "Archive Guardian",
-    "Ezekiel",
-    "Xarth"
+    "Moia",
+    "Ocellus"
    ],
    "encounters": {
     "archive-guardian": 180.67,
-    "ezekiel": 210.43,
-    "moia": 71.13,
-    "xarth": 182.78,
-    "ocellus": 739.4
+    "ezekiel": 211.61,
+    "moia": 65.32,
+    "xarth": 181.62,
+    "ocellus": 734.19
    }
   },
   "faNotOwned": {
    "raid": "fractured-archive",
    "label": "Fractured Archive without Obligator / Ascension crossbows",
-   "total": "24:53.7",
-   "seconds": 1493.7200975363153,
-   "route": "archive-guardian>ezekiel>moia>xarth>ocellus",
+   "total": "24:48.4",
+   "seconds": 1488.377179887893,
+   "route": "archive-guardian>bork-smorks>moia>xarth>ocellus",
    "ring": "Ultor ring",
    "kit": [
-    "Twisted bow (Masori)",
+    "Twisted bow switch +5 on Tumeken's shadow (Ancestral)",
+    "Tumeken's shadow (Ancestral)",
     "Inquisitor's + Scythe (slash)"
    ],
-   "freeSlots": 4,
+   "freeSlots": 0,
    "carriers": {
     "elderMaul": 0,
     "dwh": 0,
@@ -215,25 +217,18 @@
     "tonalztics": 4,
     "ayak": 1
    },
-   "bring": "Bring: Crimson kisten, Zaryte crossbow, Burning claws, Surge potion",
+   "bring": "Bring: Zaryte crossbow",
    "items": [
-    "Crimson kisten",
-    "Zaryte crossbow",
-    "Burning claws",
-    "Surge potion(4)"
+    "Zaryte crossbow"
    ],
    "yourShare": null,
-   "surgeAt": [
-    "Archive Guardian",
-    "Xarth",
-    "Ocellus"
-   ],
+   "surgeAt": [],
    "encounters": {
-    "archive-guardian": 186.44,
-    "ezekiel": 237.73,
-    "moia": 65.32,
-    "xarth": 206.83,
-    "ocellus": 797.4
+    "archive-guardian": 191.91,
+    "bork-smorks": 217.5,
+    "moia": 65.97,
+    "xarth": 209.7,
+    "ocellus": 803.29
    }
   }
  }

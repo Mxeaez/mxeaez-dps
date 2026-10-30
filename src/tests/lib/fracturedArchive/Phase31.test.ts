@@ -432,7 +432,9 @@ slowDescribe('FA defaults (slow)', () => {
     // phase 37: bit-identical to the phase 36 planner's plan; memo counters near the recorded ones; a catastrophe-only
     // CPU budget (5× its 41 s alone; src/tests/utils/phase37.ts, CrossRaid's PHASE37_FIXTURE)
     expect(memoWithin(r, 'faSolo')).toBe(true);
-    expect(cpu).toBeLessThan(205);
+    // phase 38h-2 review fixes: the drain values average the DPS over every Defence outcome (~1.9× the planning time):
+    // 205 → 300 s
+    expect(cpu).toBeLessThan(300);
     expect(r.specs.bring).toEqual(['tonalztics']);
     expect(Math.abs(total(r) - SOLO_HEADLINE[1])).toBeLessThanOrEqual(SOLO_HEADLINE[1] * 0.01);
     expect(headlineGear(headlineOf('faSolo', r))).toEqual(headlineGear(headline('faSolo')));

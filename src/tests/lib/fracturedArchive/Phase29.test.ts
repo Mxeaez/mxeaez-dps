@@ -611,7 +611,8 @@ slowDescribe('FA defaults (slow)', () => {
     // brute force re-timed by the model since: 1330.53 → 1334.22
     // phase 38f: the pin followed the model (38a-38e: 1388.56 s); gear exact, the time within 1%
     // phase 38g (your bar pays the drains first): 1388.56 → the faSolo headline
-    expect(withinPct(total(r), headline('faSolo').seconds, 1)).toBe(true);
+    // phase 38h-2 review fixes: this phase 29 pinned list now plans 1.1% above the faSolo headline (22:53.4): pinned 1388.56
+    expect(withinPct(total(r), 1388.56, 1)).toBe(true);
     expect(r.ring.ring).toBe('Ultor ring');
     // the ring screens timed the chosen subset (no second round needed here, or it converged)
     expect(r.specs.solo!.screenedWith).toEqual(r.specs.bring);

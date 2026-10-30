@@ -15,6 +15,7 @@ import {
   presetStyles,
   resolveItem,
   resolvePresetEquipment,
+  monsterAtDefence,
   monsterForSpecCounts,
   SpecCounts,
   specCountsDrainKey,
@@ -57,7 +58,7 @@ import { scaleMonster } from '@/lib/MonsterScaling';
 import {
   atHpLeft, DAMAGE_SPEC_WEAPON_IDS, DAMAGE_SPEC_WEAPONS, damageSpecItemName, damageSpecLabel, damageSpecProfile, DamageSpecWeapon,
 } from '@/lib/fracturedArchive/damageSpecs';
-import { EncounterAlloc, encounterWallSeconds } from '@/lib/fracturedArchive/encounterBudget';
+import { drainOutcomeStates, EncounterAlloc, encounterWallSeconds } from '@/lib/fracturedArchive/encounterBudget';
 import { createKitMemo } from '@/lib/fracturedArchive/kitMemo';
 import { dosesAllowed, SURGE_DOSES_PER_POTION } from '@/lib/fracturedArchive/specBudget';
 import { assumptionsForTarget } from '@/lib/raids/toa/supplies';
@@ -1773,8 +1774,20 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     // phase 37: the same lookup by the counts themselves (skips the drain key, the replays' hot path)
     const allocByCounts = new Map<string, { monster: ReturnType<typeof monstersAt>[number], tag: string }>();
     const allocMonster = (q: PhaseQuery) => {
-      const counts = q.drain === 'none' ? {} : (q.specs?.counts ?? {});
       const pk = phaseKey(q.targetKey, q.phase);
+      if (q.defence) {
+        // phase 38h-2: one Defence outcome of a drain (the drain values' expected DPS)
+        const dk = `${pk}|def:${q.defence.undrainedDef}/${q.defence.def}/${q.defence.ayak}`;
+        let dv = allocByCounts.get(dk);
+        if (!dv) {
+          const m = monsterAtDefence(findTarget(q.targetKey), q.phase, ringA, q.defence.undrainedDef, q.defence.def, q.defence.ayak);
+          const sc = scaleMonster(m);
+          dv = { monster: m, tag: `${pk}#${JSON.stringify([sc.skills, sc.defensive, m.inputs.phase ?? ''])}` };
+          allocByCounts.set(dk, dv);
+        }
+        return dv;
+      }
+      const counts = q.drain === 'none' ? {} : (q.specs?.counts ?? {});
       const ck = `${pk}|${specCountsKey(counts)}`;
       const known = allocByCounts.get(ck);
       if (known) return known;
@@ -1808,6 +1821,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     const budgetKitParts: Pick<RaidKit, 'specDamage' | 'specHits' | 'drainKey' | 'drainModel'> = {
       drainModel: (q) => drainModelOf(findTarget(q.targetKey), q.phase, ringA),
       drainKey: (q) => {
+        if (q.defence) return `def:${q.defence.undrainedDef}/${q.defence.def}/${q.defence.ayak}`;
         // phase 37: memoised by the counts (specCountsDrainKey builds a JSON key per call)
         const k = `${phaseKey(q.targetKey, q.phase)}|${q.drain}|${specCountsKey(q.specs?.counts)}`;
         let dk = drainKeyMemo.get(k);
@@ -2276,22 +2290,43 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       let v = 0;
       (rows.get(key) ?? []).forEach((r) => {
         if (!(r.damage > 0) || !(r.dps > 0)) return;
-        const d1 = kit.best({
-          targetKey: r.targetKey, phase: r.phase, drain, fightSeconds: fallbackFight, rowKey: r.key, specs: { counts },
-        })?.dps ?? 0;
-        if (!(d1 > 0)) return;
-        v += r.fixedWall ? r.damage * (d1 / r.dps - 1) * (r.carryOver ?? 0) : r.damage * (1 - r.dps / d1);
+        const q: PhaseQuery = {
+          targetKey: r.targetKey, phase: r.phase, drain, fightSeconds: fallbackFight, rowKey: r.key,
+        };
+        const model = kit.drainModel?.({ ...q, drain: 'none' });
+        if (!model) return;
+        // review 38h-2: averaged over the drain's Defence outcomes (as the spec budget values its options)
+        let meanDps = 0;
+        let gain = 0;
+        drainOutcomeStates(model, counts, assumptions.floorThreshold).forEach((x) => {
+          const d = x.def >= model.def && !(x.ayak > 0) ? r.dps
+            : (kit.best({ ...q, defence: { undrainedDef: model.def, def: x.def, ayak: x.ayak } })?.dps ?? 0);
+          meanDps += x.p * d;
+          if (d > 0) gain += x.p * (1 - r.dps / d);
+        });
+        v += r.fixedWall ? r.damage * (meanDps / r.dps - 1) * (r.carryOver ?? 0) : r.damage * gain;
       });
       valueMemo.set(vk, v);
       return v;
     };
     const headcountMemo = new Map<string, CarrierCounts>();
-    const headcountOf = (m: number[], totalCarriers: number): CarrierCounts => {
+    // review 38h-2 (user decision): the bosses of the route the plan takes with this kit (the fastest route of the kit
+    // under the plan's current specs, as the plan's route is chosen), not every route's (alternatives would add up)
+    const routeTargets = (m: number[], a: BestSetupAssumptions): { key: string, targets: RoleTarget[] } => {
+      const cmp = dpCmp(m, a);
+      const route = cmp.fastest >= 0 ? cmp.routes[cmp.fastest] : null;
+      const ids = new Set<string>(route ? route.encounters.map((e) => e.id) : Array.from(byEncounter.keys()));
+      const keys = new Set<string>();
+      ids.forEach((id) => (byEncounter.get(id) ?? []).forEach((t) => keys.add(phaseKey(t.targetKey, t.phase))));
+      return { key: Array.from(ids).sort().join('>'), targets: allRoleTargets().filter((t) => keys.has(t.key)) };
+    };
+    const headcountOf = (m: number[], totalCarriers: number, a: BestSetupAssumptions = assumptions): CarrierCounts => {
       const mages = magesOf(m);
-      const k = `${totalCarriers}|${mages}|${[...m].sort((x, y) => x - y).join(',')}`;
+      const rt = routeTargets(m, a);
+      const k = `${totalCarriers}|${mages}|${[...m].sort((x, y) => x - y).join(',')}|${rt.key}`;
       let c = headcountMemo.get(k);
       if (!c) {
-        c = kitCarriers(allRoleTargets(), {
+        c = kitCarriers(rt.targets, {
           partySize: Math.max(1, totalCarriers),
           mages,
           threshold: assumptions.floorThreshold,
@@ -2490,7 +2525,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         if (drain !== 'team' || !autoCarriers || !((a.damageSpecs ?? []).length || (a.surgePotions ?? 0) > 0)) return a;
         const c: CarrierCounts = { ...NO_CARRIERS, ...a.team.carriers };
         if (Object.values(c).reduce((t, v) => t + v, 0) <= teamParty - 1) return a;
-        return { ...a, team: { ...a.team, carriers: headcountOf(m, teamParty - 1) } };
+        return { ...a, team: { ...a.team, carriers: headcountOf(m, teamParty - 1, a) } };
       };
       // phase 38e: the item steps as a small beam (specChoice.ts itemBeam: the best ITEM_BEAM_WIDTH by net saving for
       // ITEM_BEAM_DEPTH steps, then greedy; the fastest state wins), each step ranked by what it really gives: with a
@@ -2881,6 +2916,34 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       }
     }
     if (screen) return { seconds: exactSeconds(comparison), ms: Date.now() - tRing };
+    // review 38h-2 (Team, auto carriers): the carriers were taken on an earlier kit (the item steps re-optimise it):
+    // take them again on the final kit (by its HP value; Eye of Ayak capped at its mages), re-time, keep the faster; a
+    // kit with more Eye of Ayak carriers than mages is never kept as it is (timing every finalist this way was tried:
+    // 3× slower, the same headlines)
+    if (drain === 'team' && autoCarriers && budgetOn) {
+      const cur = teamCarriers();
+      const mages = magesOf(chosen.members);
+      const bars = Math.max(1, Math.max(1, Math.floor(assumptions.partySize)) - (damageBring.length || surgePotions ? 1 : 0));
+      const key = (c: CarrierCounts) => JSON.stringify(c);
+      const retaken = headcountOf(chosen.members, bars);
+      const options = [retaken, ...(cur.ayak > mages ? [{ ...cur, ayak: mages }] : [])].filter((c) => key(c) !== key(cur));
+      let bestS = cur.ayak <= mages ? exactSeconds(comparison) : Infinity;
+      options.forEach((c) => {
+        const a2: BestSetupAssumptions = { ...assumptions, team: { ...assumptions.team, carriers: { ...c } } };
+        const ea = raidTimeAssumptionsFrom(a2, drain, settings, tuning.model);
+        const ev = createKitEvaluator(kitLoadoutsOf(chosen.members), a2, kitEvaluatorCache());
+        const cmp = compareRoutes(ev, ea, routes);
+        exactEvaluations += ev.evaluations();
+        if (exactSeconds(cmp) < bestS - EPS) {
+          bestS = exactSeconds(cmp);
+          assumptions = a2;
+          exactA = ea;
+          evaluator = ev;
+          comparison = cmp;
+          runA = fixedFor(assumptions, chosen.members);
+        }
+      });
+    }
     const { members } = chosen;
     hooks.onKitSpace?.({
       candidates,

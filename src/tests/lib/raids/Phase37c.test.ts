@@ -48,12 +48,14 @@ describe('drain outcome: one encounter of a headline, for hand-checking', () => 
     const d = drainOutcome('fa', 'xarth');
     expect(d.eventsMatch).toBe(true);
     // phase 38g: the fewest carriers at 95% within the kit's (2 Elder maul + 3 Tonalztics): 1 Tonalztics carrier, 2 specs
-    expect(d.events).toEqual([{ npc: 'Xarth', firstRowKey: 'xarth', counts: { tonalztics: 2 } }]);
+    // phase 38h-2 (HP averaged over the outcomes): Elder maul ×2 → Tonalztics (99%) is worth a little more than the
+    // line's Tonalztics ×2 (98%); the carriers' bars have no other use
+    expect(d.events).toEqual([{ npc: 'Xarth', firstRowKey: 'xarth', counts: { elderMaul: 2, tonalztics: 1 } }]);
     const [x] = d.phases;
     // Xarth at party 6 (the r32 review's independent drain probe): Def 170, floor 102, 50% energy per spec
-    expect([x.def, x.floor, x.energy]).toEqual([170, 102, { tonalztics: 50 }]);
+    expect([x.def, x.floor, x.energy]).toEqual([170, 102, { elderMaul: 50, tonalztics: 50 }]);
     expect(x.pFloor!).toBeGreaterThanOrEqual(0.95);
-    expect(x.pFloor!).toBeLessThan(0.98);
+    expect(x.pFloor!).toBeLessThan(0.995);
     expect(x.rankedDef).toBe(102);
     // wall clock = DPS seconds ÷ party 6; one +10% tick at 30 s
     expect(d.wall).toBeCloseTo(d.seconds / 6, 9);
@@ -61,8 +63,9 @@ describe('drain outcome: one encounter of a headline, for hand-checking', () => 
     const pool = Object.fromEntries(d.pools.map((g) => [g.group, g]));
     // phase 38g: 2 maul bars: 200 + 2 × 10 − 0 = 220; 3 Tonalztics bars: 300 + 3 × 10 − 2 × 50 = 230; yours (a surge dose
     // here, Crimson kisten): 100 + 10 + 25 − (ZCB 75 + kisten 50) = 10; Xarth's death (Death Charge, party 6) adds
-    // 15 ÷ 6 = 2.5% per bar at the end: 225, 237.5, 12.5
-    expect([pool.elderMaul.balance, pool.tonalztics.balance, pool.me.balance]).toEqual([225, 237.5, 12.5]);
+    // 15 ÷ 6 = 2.5% per bar at the end: 225, 237.5, 12.5. Phase 38h-2: Elder maul ×2 + Tonalztics ×1: 220 − 100 + 5 = 125,
+    // 330 − 50 + 7.5 = 287.5
+    expect([pool.elderMaul.balance, pool.tonalztics.balance, pool.me.balance]).toEqual([125, 287.5, 12.5]);
     expect(pool.me.end).toEqual([12.5]);
   }, 60000);
 
