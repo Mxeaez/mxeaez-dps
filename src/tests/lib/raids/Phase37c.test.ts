@@ -47,6 +47,8 @@ describe('drain outcome: one encounter of a headline, for hand-checking', () => 
   test('FA Xarth (Team): 1 Tonalztics carrier (2 specs, 97%), Def 170 → floor 102, the pools balance', () => {
     expect(headlineWithEncounter('xarth')).toBe('fa');
     const d = drainOutcome('fa', 'xarth');
+    // the events first: on a mismatch the failure shows the re-time's events (CI's Node 22 vs local Node 24)
+    expect(d.events).toEqual([{ npc: 'Xarth', firstRowKey: 'xarth', counts: { elderMaul: 2, tonalztics: 1 } }]);
     expect(d.eventsMatch).toBe(true);
     // phase 38g: the fewest carriers at 95% within the kit's (2 Elder maul + 3 Tonalztics): 1 Tonalztics carrier, 2 specs
     // phase 38h-2 (HP averaged over the outcomes): Elder maul ×2 → Tonalztics (99%) is worth a little more than the
