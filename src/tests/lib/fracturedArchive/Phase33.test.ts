@@ -18,7 +18,9 @@ import {
   AUTO_AYAK_SPECS, mySpecsForSubset, subsetOfMySpecs, withPlanSpecs,
 } from '@/lib/fracturedArchive/specChoice';
 import { SPEC_WEAPONS } from '@/lib/fracturedArchive/specs';
-import { FRACTURED_ARCHIVE_RAID, RAIDS, raidConfig } from '@/lib/raids';
+import {
+  FRACTURED_ARCHIVE_RAID, RAIDS, raidConfig, TimeSettings,
+} from '@/lib/raids';
 import { slowDescribe, slowTest } from '@/tests/utils/slow';
 
 // Phase 33: "Specs I bring" defaults to none and follows the plan in "Planner decides" mode (withPlanSpecs); the Plan
@@ -200,9 +202,11 @@ describe('encounter line = the first phase\'s line (FA, presets kit)', () => {
     },
   };
   const SOLO: BestSetupAssumptions = withPlanSpecs({ ...DEFAULT_ASSUMPTIONS, partySize: 1 }, ['tonalztics'], false);
-  const encounter = (a: BestSetupAssumptions, drain: 'team' | 'solo', id: string): EncounterTime => {
+  // phase 40b: the Bork tests of the multi-row lines use the 'evenly' kill order (four armour rows); stun-swap below
+  const EVENLY: TimeSettings = { ...FA.defaultTimeSettings, borkKillOrder: 'evenly' };
+  const encounter = (a: BestSetupAssumptions, drain: 'team' | 'solo', id: string, settings: TimeSettings = EVENLY): EncounterTime => {
     const kit = createKitEvaluator(PRESETS.map((p) => presetKitLoadout(generateEmptyPlayer(), p, a)), a);
-    return encounterTime(id, kit, raidTimeAssumptionsFrom(a, drain, FA.defaultTimeSettings, FA.time));
+    return encounterTime(id, kit, raidTimeAssumptionsFrom(a, drain, settings, FA.time));
   };
   const summary = (e: EncounterTime, drain: 'team' | 'solo') => encounterDrainSummary(
     e.phases.map((p) => ({
@@ -225,12 +229,17 @@ describe('encounter line = the first phase\'s line (FA, presets kit)', () => {
     expect(s.text).toBe('Bork, armour 8: 1 Elder maul carrier (2 specs) → Def 195 · The Smorks: 1 Elder maul carrier (2 specs) + 2 Tonalztics carriers (4 specs) → Def 22');
   });
 
-  test('with a stun uptime the stunned row joins Bork\'s line (six rows)', () => {
-    const kit = createKitEvaluator(PRESETS.map((p) => presetKitLoadout(generateEmptyPlayer(), p, TEAM)), TEAM);
-    const e = encounterTime('bork-smorks', kit, raidTimeAssumptionsFrom(TEAM, 'team', { ...FA.defaultTimeSettings, borkStunUptime: 0.2 }, FA.time));
-    expect(e.phases.map((p) => p.key)).toEqual(['bork-8', 'bork-10', 'bork-12', 'bork-14', 'bork-stunned', 'smorks']);
-    const s = summary(e, 'team');
-    expect(s.parts.map((p) => p.phaseKey)).toEqual(['bork-8', 'smorks']);
+  test('phase 40b, stun-swap (default): the stunned row starts the Bork line; with short stuns armour 14 joins it', () => {
+    const e = encounter(TEAM, 'team', 'bork-smorks', FA.defaultTimeSettings);
+    expect(e.phases.map((p) => p.key)).toEqual(['bork-stunned', 'smorks']);
+    const short = encounter(TEAM, 'team', 'bork-smorks', { ...FA.defaultTimeSettings, borkStunTicks: 2 });
+    expect(short.phases.map((p) => p.key)).toEqual(['bork-stunned', 'bork-14', 'smorks']);
+    // stunned Bork: every melee hit lands, so drains don't speed up the kit's melee there: every spec on the Smorks (even
+    // with 2-tick stuns, most of Bork at armour 14, the bars are worth more on the Smorks)
+    const line = 'Start of fight: 2 Elder maul carriers (4 specs) + 2 Tonalztics carriers (4 specs) → Def 3';
+    expect(summary(e, 'team').parts.map((p) => p.phaseKey)).toEqual(['smorks']);
+    expect(summary(e, 'team').text).toBe(line);
+    expect(summary(short, 'team').text).toBe(line);
   });
 
   test('Archive Guardian (Team): the flying shield first (Tonalztics only); phase 38g: grounded needs no maul (4 Tonalztics specs reach its floor at 99%)', () => {

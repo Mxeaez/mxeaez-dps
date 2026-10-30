@@ -1101,3 +1101,25 @@ wave the freezer loses 6 ticks (3.6 s: Ice Barrage's 5-tick attack + ~1 tick of 
 D10), so they keep
 1 − 3.6 ÷ 18 = 80% of their DPS on phase 2, taken as 50% of Xarth's HP (the user: 50-60%). The freeze is taken as
 guaranteed.
+
+## Phase 40b — Bork + Smorks stun-swap (2026-10-30)
+
+Sources: the user (2026-10-30, a product decision and in-game facts); https://oldschool.runescape.wiki/w/Bork and
+The_Fractured_Archive/Strategies (*Bork and the Smorks*, re-read for the stun wording: a heavy cannonball "dazes him for a
+short time", **no duration**). The user: the team hits Bork only while he is stunned (flat armour 0, every melee hit
+lands) and the Smorks between stuns; the Smorks are kept alive until Bork dies (their heavy cannonballs cause the
+stuns), so both die at about the same time; **~4 stuns per kill**, the whole room takes **2:00-2:30**.
+
+Stun length (**unverified**, UNVERIFIED A6 / D3): 1500 hp ÷ (4 stuns × 6 players × 15.68 DPS) = 3.99 s per stun, where
+15.68 is the phase 40 fa headline kit's DPS on stunned Bork (Inquisitor's + Obligator, guaranteed melee hits; the team at
+your DPS, as the wall clock assumes), rounded up to whole ticks: **7 ticks = 4.2 s**. Sanity check against the room:
+4 × 4.2 = 16.8 s of stun and the Smorks' 600 hp in ~13 s of team DPS are ~30 s of hitting in a 120-150 s room, i.e. a stun
+every ~30-37 s with the rest spent waiting for cannonballs, moving and keeping the Smorks alive; consistent with the
+user's "4 stuns, both die together". Inputs (Advanced → Time model): "Bork kill order" (Stun-swap / Killed evenly),
+"Bork stuns per kill" (4), "Bork stun length" (7 ticks); they replace "Bork stun uptime".
+
+Model (raidTime.ts `borkStunRows`): Bork's hp dealt stunned = min(1500, stuns × ticks × 0.6 s × party size × the kit's
+stunned DPS); the rest at **armour 14** — by the last stun the team has been hitting the Smorks between every stun, so
+they have taken most of their damage and are kept alive at ≤ 25% hp (the "25-0%" step, A7). Rows: Bork stunned, Bork
+armour 14 (only when the stuns can't cover him), the Smorks 600. Killed evenly (the old model, an option): four quarters
+at armour 8 / 10 / 12 / 14, no stun.

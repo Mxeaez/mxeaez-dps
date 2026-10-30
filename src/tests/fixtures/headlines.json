@@ -4,21 +4,21 @@
   "fa": {
    "raid": "fractured-archive",
    "label": "Fractured Archive (Team defaults)",
-   "total": "21:17.1",
-   "seconds": 1277.1420060175856,
+   "total": "20:18.9",
+   "seconds": 1218.887600189203,
    "route": "archive-guardian>bork-smorks>moia>xarth>ocellus",
    "ring": "Ultor ring",
    "kit": [
     "Ascension crossbows + diamond (e) (Masori)",
-    "Twisted bow (Masori)",
-    "Inquisitor's + Obligator"
+    "Inquisitor's + Obligator",
+    "Twisted bow (Masori)"
    ],
    "freeSlots": 4,
    "carriers": {
-    "elderMaul": 2,
+    "elderMaul": 1,
     "dwh": 0,
     "bgs": 0,
-    "tonalztics": 3,
+    "tonalztics": 4,
     "ayak": 0
    },
    "bring": "Bring: Zaryte crossbow, Crimson kisten, Surge potion",
@@ -34,10 +34,10 @@
    ],
    "encounters": {
     "archive-guardian": 169.5,
-    "bork-smorks": 186.19,
+    "bork-smorks": 128.98,
     "moia": 59.5,
     "xarth": 183.63,
-    "ocellus": 678.32
+    "ocellus": 677.28
    }
   },
   "toa": {
@@ -162,14 +162,14 @@
   "faSolo": {
    "raid": "fractured-archive",
    "label": "Fractured Archive Solo (party 1)",
-   "total": "22:08.7",
-   "seconds": 1328.7460572904083,
-   "route": "archive-guardian>ezekiel>moia>xarth>ocellus",
+   "total": "22:06.1",
+   "seconds": 1326.0594408620466,
+   "route": "archive-guardian>bork-smorks>moia>xarth>ocellus",
    "ring": "Lightbearer",
    "kit": [
     "Ascension crossbows + diamond (e) (Masori)",
-    "Twisted bow (Masori)",
-    "Inquisitor's + Obligator + Torva full helm"
+    "Inquisitor's + Obligator + Torva full helm",
+    "Twisted bow (Masori)"
    ],
    "freeSlots": 2,
    "carriers": null,
@@ -184,13 +184,12 @@
    "yourShare": null,
    "surgeAt": [
     "Archive Guardian",
-    "Ezekiel",
     "Xarth",
     "Ocellus"
    ],
    "encounters": {
     "archive-guardian": 175.15,
-    "ezekiel": 216.71,
+    "bork-smorks": 214.02,
     "moia": 42.06,
     "xarth": 179.2,
     "ocellus": 715.62
@@ -199,16 +198,17 @@
   "faNotOwned": {
    "raid": "fractured-archive",
    "label": "Fractured Archive without Obligator / Ascension crossbows",
-   "total": "24:21.2",
-   "seconds": 1461.1863920932879,
+   "total": "22:43.2",
+   "seconds": 1363.2117164134788,
    "route": "archive-guardian>bork-smorks>moia>xarth>ocellus",
    "ring": "Ultor ring",
    "kit": [
-    "Twisted bow switch +5 on Tumeken's shadow (Ancestral)",
-    "Tumeken's shadow (Ancestral)",
-    "Inquisitor's + Scythe (slash)"
+    "Twisted bow (Masori)",
+    "Torva + Scythe (slash)",
+    "Inquisitor's + Scythe (slash)",
+    "Zaryte crossbow + Ruby dragon bolts (e)"
    ],
-   "freeSlots": 0,
+   "freeSlots": 1,
    "carriers": {
     "elderMaul": 1,
     "dwh": 0,
@@ -216,18 +216,23 @@
     "tonalztics": 4,
     "ayak": 0
    },
-   "bring": "Bring: Zaryte crossbow",
+   "bring": "Bring: Zaryte crossbow, Crimson kisten, Surge potion",
    "items": [
-    "Zaryte crossbow"
+    "Zaryte crossbow",
+    "Crimson kisten",
+    "Surge potion(4)"
    ],
    "yourShare": null,
-   "surgeAt": [],
+   "surgeAt": [
+    "Archive Guardian",
+    "Ocellus"
+   ],
    "encounters": {
-    "archive-guardian": 191.91,
-    "bork-smorks": 214.78,
-    "moia": 60.07,
-    "xarth": 213.26,
-    "ocellus": 781.17
+    "archive-guardian": 182.85,
+    "bork-smorks": 142.46,
+    "moia": 59.5,
+    "xarth": 210.31,
+    "ocellus": 768.09
    }
   }
  }

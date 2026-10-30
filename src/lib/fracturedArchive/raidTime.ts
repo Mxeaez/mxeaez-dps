@@ -84,8 +84,16 @@ export type RaidTimeSettings = {
   agShieldPartySize: number;
   /** Share of AG's 550 hp dealt while it is grounded; the rest at the Flying version's DPS. */
   agGroundedFraction: number;
-  /** Fraction of Bork's damage dealt while he is stunned (heavy cannonball); 0–1. */
-  borkStunUptime: number;
+  /**
+   * Phase 40b: how Bork + the Smorks are killed. 'stun-swap' (default, the user): Bork is hit only while a heavy
+   * cannonball has him stunned (armour 0, every melee hit lands), the Smorks between stuns; 'evenly' (the old model): Bork's
+   * hp in four quarters at armour 8 / 10 / 12 / 14, no stun.
+   */
+  borkKillOrder: BorkKillOrder;
+  /** Phase 40b: stuns per kill (stun-swap). */
+  borkStunsPerKill: number;
+  /** Phase 40b: length of one stun in game ticks (0.6 s; stun-swap). */
+  borkStunTicks: number;
   /** Fraction of Ocellus P1's hp dealt while he walks to a corner (Protect from Melee); 0–1. */
   ocellusWalkingFraction: number;
   /** Length of Ocellus P2 (The Blade) in seconds; 0 = P2 ignored. */
@@ -95,6 +103,8 @@ export type RaidTimeSettings = {
   /** Fraction of P3's remaining hp dealt in the last quadrant (at the worse Deflect option for the kit); 0–1. */
   ocellusLastQuadrantFraction: number;
 };
+
+export type BorkKillOrder = 'stun-swap' | 'evenly';
 
 export const RAID_TIME_DEFAULTS: RaidTimeSettings = {
   // Strategies → Archive Guardian: charging the inert guardians does "596 damage to 1490 health shield in 6-scale"
@@ -106,8 +116,13 @@ export const RAID_TIME_DEFAULTS: RaidTimeSettings = {
   // Strategies: "After reaching 30% health, the Guardian immediately begins flying ... no longer possess a shield", so
   // at most 70% of the 550 hp is dealt while grounded; we assume all of it is, and the last 30% at Flying DPS.
   agGroundedFraction: 0.7,
-  // The stun duration is unpublished (UNVERIFIED A6): 0 = no stun time by default.
-  borkStunUptime: 0,
+  // Phase 40b (the user, 2026-10-30): the team hits Bork only while he is stunned, the Smorks between stuns (kept alive:
+  // their heavy cannonballs cause the stuns), ~4 stuns per kill. The stun length is unpublished (UNVERIFIED A6): 7 ticks
+  // = 4.2 s, estimated from 1500 hp ÷ (4 stuns × 6 players × 15.68 stunned DPS, the phase 40 fa kit) = 3.99 s, rounded
+  // up to whole ticks (docs/DATA_SOURCES.md *Phase 40b*).
+  borkKillOrder: 'stun-swap',
+  borkStunsPerKill: 4,
+  borkStunTicks: 7,
   // Strategies: "While walking to a quadrant, he will have Protect from Melee active"; share unknown, 0 by default.
   ocellusWalkingFraction: 0,
   // P2 is time-limited (three quadrant cycles, Strategies → Phase 2); its length is unpublished. Phase 38c: 120 s by
@@ -309,6 +324,44 @@ const pctText = (f: number): string => `${Math.round(f * 1000) / 10}%`;
 
 const BORK_QUARTERS = BORK_FLAT_ARMOUR_BY_PHASE.filter(([p]) => p !== BORK_STUNNED_PHASE);
 
+const smorksRow = (damage: number): PlannedPhase => ({
+  key: 'smorks', label: 'The Smorks', targetKey: 'smorks', damage,
+});
+
+/**
+ * Phase 40b: Bork's armour once the stuns run out (stun-swap): the team has been hitting the Smorks between every stun,
+ * so by the last stun they have taken most of their damage (kept alive at ≤ 25% hp): armour 14.
+ */
+export const BORK_FALLBACK_PHASE = BORK_QUARTERS[BORK_QUARTERS.length - 1][0];
+
+/** Phase 40b: wall seconds of stun per kill (stuns × ticks × 0.6 s). */
+export const borkStunWallSeconds = (settings: RaidTimeSettings): number => (
+  Math.max(0, settings.borkStunsPerKill) * Math.max(0, settings.borkStunTicks) * 0.6);
+
+/**
+ * Phase 40b, stun-swap: Bork's hp dealt while stunned is capped by the stun time — stuns × length × party size × the
+ * kit's stunned DPS (every player at your DPS, the same team as the wall clock: seconds × multiplier ÷ party size);
+ * the rest (when the stuns can't cover his hp) at armour 14 (`BORK_FALLBACK_PHASE`), before the Smorks die.
+ */
+export const borkStunRows = (bork: number, stunnedDps: number, settings: RaidTimeSettings, partySize: number): PlannedPhase[] => {
+  const cap = borkStunWallSeconds(settings) * Math.max(1, partySize) * Math.max(0, stunnedDps);
+  const stunned = Math.min(bork, cap);
+  const stuns = Math.max(0, settings.borkStunsPerKill);
+  const rows: PlannedPhase[] = [{
+    key: 'bork-stunned',
+    label: `Bork, stunned (${stuns} × ${Math.max(0, settings.borkStunTicks)} ticks${stunned < bork ? `: ${pctText(stunned / bork)} of hp` : ''})`,
+    targetKey: 'bork',
+    phase: BORK_STUNNED_PHASE,
+    damage: stunned,
+  }];
+  if (bork - stunned > 0) {
+    rows.push({
+      key: 'bork-14', label: `Bork, armour 14 after the stuns (${pctText((bork - stunned) / bork)} of hp)`, targetKey: 'bork', phase: BORK_FALLBACK_PHASE, damage: bork - stunned,
+    });
+  }
+  return rows;
+};
+
 /** The fixed-damage phases of an encounter (Ocellus P2 / P3 depend on DPS and are built in `evalEncounter`). */
 export const encounterPlan = (id: FaEncounterId, settings: RaidTimeSettings, partySize: number): PlannedPhase[] => {
   const hp = (t: string, p?: string) => targetHp(t, p, partySize);
@@ -330,18 +383,15 @@ export const encounterPlan = (id: FaEncounterId, settings: RaidTimeSettings, par
       ];
     }
     case 'bork-smorks': {
+      // phase 40b: stun-swap (default) — Bork's rows depend on the kit's stunned DPS (`borkStunRows`, in the pass); only
+      // the Smorks are fixed here
+      if (settings.borkKillOrder !== 'evenly') return [smorksRow(hp('smorks'))];
       // Killed evenly: as the Smorks lose hp alongside, Bork's armour steps 8 → 10 → 12 → 14, one quarter of his hp each
       const bork = hp('bork');
-      const stun = Math.min(1, Math.max(0, settings.borkStunUptime));
       const rows: PlannedPhase[] = BORK_QUARTERS.map(([phase, armour]) => ({
-        key: `bork-${armour}`, label: `Bork, armour ${armour} (¼ of hp${stun ? `, ${pctText(1 - stun)} unstunned` : ''})`, targetKey: 'bork', phase, damage: (bork / 4) * (1 - stun),
+        key: `bork-${armour}`, label: `Bork, armour ${armour} (¼ of hp)`, targetKey: 'bork', phase, damage: bork / 4,
       }));
-      rows.push({
-        key: 'bork-stunned', label: `Bork, stunned (${pctText(stun)} of hp)`, targetKey: 'bork', phase: BORK_STUNNED_PHASE, damage: bork * stun,
-      });
-      rows.push({
-        key: 'smorks', label: 'The Smorks', targetKey: 'smorks', damage: hp('smorks'),
-      });
+      rows.push(smorksRow(hp('smorks')));
       return rows;
     }
     case 'dagonhai':
@@ -627,6 +677,16 @@ const evalEncounterPass = (
   const rows = encounterPlan(id as FaEncounterId, settings, a.partySize)
     .filter((p) => p.damage > 0)
     .map((p) => phaseTime(p, kit, drain, fightSeconds, mult));
+  if (id === 'bork-smorks' && settings.borkKillOrder !== 'evenly') {
+    // phase 40b: stun-swap — the stunned rows come first (Bork dies before the Smorks)
+    const stunned = kit.best({
+      targetKey: 'bork', phase: BORK_STUNNED_PHASE, drain, fightSeconds, rowKey: 'bork-stunned',
+    });
+    const bork = borkStunRows(targetHp('bork', undefined, a.partySize), stunned?.dps ?? 0, settings, a.partySize)
+      .filter((p) => p.damage > 0)
+      .map((p) => phaseTime(p, kit, drain, fightSeconds, mult));
+    return [...bork, ...rows];
+  }
   if (id !== 'ocellus') return rows;
 
   // P2 (The Blade): a fixed duration; the damage dealt in it × carry-over comes off P3's hp
@@ -681,6 +741,10 @@ export const requiredPhaseTargets = (settings: RaidTimeSettings, partySize = 6):
   const ids = Array.from(new Set(ROUTE_SLOTS.flatMap((s) => s.options))) as FaEncounterId[];
   const out = ids.flatMap((id) => encounterPlan(id, settings, partySize).filter((p) => p.damage > 0)
     .map((p) => ({ targetKey: p.targetKey, phase: p.phase })));
+  if (settings.borkKillOrder !== 'evenly') {
+    // phase 40b: stun-swap — stunned Bork, and armour 14 for the hp the stuns can't cover (kit-dependent)
+    out.push({ targetKey: 'bork', phase: BORK_STUNNED_PHASE }, { targetKey: 'bork', phase: BORK_FALLBACK_PHASE });
+  }
   if (settings.ocellusP2Seconds > 0) out.push({ targetKey: 'ocellus-p2', phase: undefined });
   if (settings.ocellusLastQuadrantFraction < 1) out.push({ targetKey: 'ocellus-p3', phase: OCELLUS_P3_PHASES[0] });
   if (settings.ocellusLastQuadrantFraction > 0) {

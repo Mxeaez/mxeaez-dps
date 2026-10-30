@@ -147,17 +147,37 @@ describe('Raid time: encounters (toy kit, hand-computed)', () => {
     expect(e2.seconds).toBeCloseTo(1000 / 8 + 275 / 11 + 275 / 8, 9);
   });
 
-  test('Bork + Smorks killed evenly: four quarters at armour 8/10/12/14 + Smorks 600', () => {
+  // phase 40b: stun-swap (default) — Bork hit only while stunned, capped by stuns × ticks × 0.6 s × party × stunned DPS
+  test('Bork + Smorks stun-swap (default): 4 stuns × 7 ticks cover Bork at 15 stunned DPS, party 6', () => {
     const e = encounterTime('bork-smorks', kit, assume());
-    expect(e.phases.map((p) => p.damage)).toEqual([375, 375, 375, 375, 600]);
-    expect(e.seconds).toBeCloseTo(375 / 10 + 375 / 9 + 375 / 8 + 375 / 6 + 600 / 12, 9);
+    // cap = 4 × 7 × 0.6 s × 6 players × 15 = 1512 ≥ 1500: all of Bork stunned, then the Smorks
+    expect(e.phases.map((p) => [p.key, p.phase, p.damage])).toEqual([
+      ['bork-stunned', BORK_STUNNED_PHASE, 1500], ['smorks', undefined, 600],
+    ]);
+    expect(e.seconds).toBeCloseTo(1500 / 15 + 600 / 12, 9); // 100 + 50 = 150
   });
 
-  test('Bork stun uptime moves that share of Bork\'s damage to the Stunned option', () => {
-    const e = encounterTime('bork-smorks', kit, assume({ borkStunUptime: 0.2 }));
-    expect(e.phases.map((p) => p.damage)).toEqual([300, 300, 300, 300, 300, 600]);
-    expect(e.phases[4].phase).toBe(BORK_STUNNED_PHASE);
-    expect(e.seconds).toBeCloseTo(300 / 10 + 300 / 9 + 300 / 8 + 300 / 6 + 300 / 15 + 600 / 12, 9);
+  test('Bork + Smorks stun-swap: hp not covered by the stuns is fought at armour 14', () => {
+    // 5 ticks: cap = 4 × 3 s × 6 × 15 = 1080; 420 left at armour 14 (6 DPS)
+    const e = encounterTime('bork-smorks', kit, assume({ borkStunTicks: 5 }));
+    expect(e.phases.map((p) => [p.key, p.phase])).toEqual([
+      ['bork-stunned', BORK_STUNNED_PHASE], ['bork-14', BORK_PHASES[3]], ['smorks', undefined],
+    ]);
+    expect(e.phases[0].damage).toBeCloseTo(1080, 9);
+    expect(e.phases[1].damage).toBeCloseTo(420, 9);
+    expect(e.seconds).toBeCloseTo(1080 / 15 + 420 / 6 + 600 / 12, 9); // 72 + 70 + 50 = 192
+    // party 2: cap = 4 × 4.2 s × 2 × 15 = 504 → 504 / 15 + 996 / 6 + 50 = 249.6
+    expect(encounterTime('bork-smorks', kit, assume({}, 'none', 2)).seconds).toBeCloseTo(33.6 + 166 + 50, 9);
+    // 3 stuns: cap = 3 × 4.2 × 6 × 15 = 1134 → 75.6 + 366 / 6 + 50 = 186.6
+    expect(encounterTime('bork-smorks', kit, assume({ borkStunsPerKill: 3 })).seconds).toBeCloseTo(75.6 + 61 + 50, 9);
+    // no stuns: all of Bork at armour 14
+    expect(encounterTime('bork-smorks', kit, assume({ borkStunsPerKill: 0 })).phases.map((p) => p.key)).toEqual(['bork-14', 'smorks']);
+  });
+
+  test('Bork + Smorks killed evenly (option): four quarters at armour 8/10/12/14 + Smorks 600', () => {
+    const e = encounterTime('bork-smorks', kit, assume({ borkKillOrder: 'evenly' }));
+    expect(e.phases.map((p) => p.damage)).toEqual([375, 375, 375, 375, 600]);
+    expect(e.seconds).toBeCloseTo(375 / 10 + 375 / 9 + 375 / 8 + 375 / 6 + 600 / 12, 9);
   });
 
   test('Ocellus defaults: P1 2500 at a corner, P3 75% at quadrants 1-3, 25% at the worse Deflect', () => {
@@ -221,22 +241,29 @@ describe('Raid time: drains and routes', () => {
     }
     const min = Math.min(...cmp.routes.map((r) => r.seconds));
     expect(cmp.routes[cmp.fastest].seconds).toBe(min);
-    // with this kit: Bork+Smorks 238.2 < Ezekiel 300, Dreadnoth 150 < Moia 157, Xarth 200 < Dagon'hai 320.7
+    // with this kit: Bork+Smorks 150 (stun-swap) < Ezekiel 300, Dreadnoth 150 < Moia 157, Xarth 200 < Dagon'hai 320.7
     expect(cmp.routes[cmp.fastest].route.encounters).toEqual(['archive-guardian', 'bork-smorks', 'dreadnoth', 'xarth', 'ocellus']);
     // raidTime for one route = the same number
     expect(raidTime(cmp.routes[3].route, kit, a).seconds).toBeCloseTo(cmp.routes[3].seconds, 9);
   });
 
   test('monotonic: a strictly better loadout never increases any route time', () => {
-    const a = assume({ borkStunUptime: 0.3, ocellusP2Seconds: 20, ocellusWalkingFraction: 0.1 });
-    const base = compareRoutes(toyKit(), a);
-    for (const key of Object.keys(BASE_DPS)) {
-      const better = compareRoutes(toyKit({ ...BASE_DPS, [key]: BASE_DPS[key] * 1.5 }), a);
-      better.routes.forEach((r, i) => expect(r.seconds).toBeLessThanOrEqual(base.routes[i].seconds + 1e-9));
-      // and it strictly helps some route (P2 is a fixed duration but carries more to P3); Deflect Ranged is not the
-      // binding deflect for this kit (7 < 9), so improving it changes nothing
-      if (key !== phaseKey('ocellus-p3', OCELLUS_P3_DEFLECT_RANGED_PHASE)) expect(better.routes.some((r, i) => r.seconds < base.routes[i].seconds - 1e-9)).toBe(true);
-    }
+    // phase 40b: both Bork kill orders; stun-swap with 5-tick stuns (stunned + armour 14 rows)
+    const evenly = [phaseKey('bork', BORK_STUNNED_PHASE)];
+    const stunSwap = BORK_PHASES.slice(0, 3).map((p) => phaseKey('bork', p));
+    [{ s: { borkKillOrder: 'evenly' as const }, idle: evenly }, { s: { borkStunTicks: 5 }, idle: stunSwap }].forEach(({ s, idle }) => {
+      const a = assume({ ...s, ocellusP2Seconds: 20, ocellusWalkingFraction: 0.1 });
+      const base = compareRoutes(toyKit(), a);
+      for (const key of Object.keys(BASE_DPS)) {
+        const better = compareRoutes(toyKit({ ...BASE_DPS, [key]: BASE_DPS[key] * 1.5 }), a);
+        better.routes.forEach((r, i) => expect(r.seconds).toBeLessThanOrEqual(base.routes[i].seconds + 1e-9));
+        // and it strictly helps some route (P2 is a fixed duration but carries more to P3); Deflect Ranged is not the
+        // binding deflect for this kit (7 < 9), so improving it changes nothing; Bork's rows the order doesn't use
+        if (key !== phaseKey('ocellus-p3', OCELLUS_P3_DEFLECT_RANGED_PHASE) && !idle.includes(key)) {
+          expect(better.routes.some((r, i) => r.seconds < base.routes[i].seconds - 1e-9)).toBe(true);
+        }
+      }
+    });
   });
 
   test('party-size hook: the hp table scales every figure, the AG shield relative to 6', () => {
@@ -258,13 +285,16 @@ describe('Raid time: drains and routes', () => {
     const d = keys({});
     expect(d).toContain(phaseKey('ag-flying'));
     expect(d).toContain(phaseKey('ocellus-p3', OCELLUS_P3_DEFLECT_RANGED_PHASE));
-    expect(d).not.toContain(phaseKey('bork', BORK_STUNNED_PHASE));
+    // phase 40b: stun-swap (default) — stunned Bork + armour 14 (the fallback), not armour 8-12
+    expect(d).toEqual(expect.arrayContaining([phaseKey('bork', BORK_STUNNED_PHASE), phaseKey('bork', BORK_PHASES[3]), phaseKey('smorks')]));
+    expect(d).not.toContain(phaseKey('bork', BORK_PHASES[0]));
+    const evenly = keys({ borkKillOrder: 'evenly' });
+    expect(evenly).toContain(phaseKey('bork', BORK_PHASES[0]));
+    expect(evenly).not.toContain(phaseKey('bork', BORK_STUNNED_PHASE));
     // phase 38c: P2 (the Blade) is in the plan by default (120 s)
     expect(d).toContain(phaseKey('ocellus-p2'));
     expect(keys({ ocellusP2Seconds: 0 })).not.toContain(phaseKey('ocellus-p2'));
-    expect(keys({ borkStunUptime: 0.1, ocellusP2Seconds: 10 })).toEqual(expect.arrayContaining([
-      phaseKey('bork', BORK_STUNNED_PHASE), phaseKey('ocellus-p2'),
-    ]));
+    expect(keys({ ocellusP2Seconds: 10 })).toContain(phaseKey('ocellus-p2'));
   });
 });
 

@@ -69,8 +69,9 @@ describe('drain outcome: one encounter of a headline, for hand-checking', () => 
     // 330 − 50 + 7.5 = 287.5. Phase 38h-3 (bring rule: Zaryte crossbow only, no surge potion): yours 100 + 10 − 75 + 2.5 = 37.5;
     // phase 38h-3b: the filler, Burning claws (35%), takes 35 of those 37.5: 2.5. Phase 38j (4 ticks): maul bars 200 + 80
     // + 5 − 100 = 185; Tonalztics 300 + 120 + 7.5 − 50 = 377.5; yours 100 + 40 + 2.5 − ZCB 75 = 67.5, the filler is now
-    // Crimson kisten (50%): 17.5
-    expect([pool.elderMaul.balance, pool.tonalztics.balance, pool.me.balance]).toEqual([185, 377.5, 17.5]);
+    // Crimson kisten (50%): 17.5. Phase 40b (the plan's carriers 1 Elder maul + 4 Tonalztics): maul 100 + 40 + 2.5 − 100
+    // = 42.5; Tonalztics 400 + 160 + 10 − 50 = 520
+    expect([pool.elderMaul.balance, pool.tonalztics.balance, pool.me.balance]).toEqual([42.5, 520, 17.5]);
     expect(pool.me.end).toEqual([17.5]);
   }, 60000);
 

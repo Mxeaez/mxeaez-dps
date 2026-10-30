@@ -446,7 +446,8 @@ const USER_PLAN_NOT_OWNED = ['Obligator', "Zorya's tome", 'Rondache', "Inquisito
 // phase 38h-2 review fixes (values averaged over the outcomes, carriers on the planned route and re-taken on the final
 // kit): 26:07.5 → 26:28.0
 // phase 38j (the measured room times' regen: more damage specs per encounter): 26:28.0 → 25:42.2
-const USER_PLAN: [string, number] = ['25:42.2', 1542.2];
+// phase 40b (stun-swap Bork, party 4: 4 stuns × 4.2 s × 4 players cover most of Bork): 25:42.2 → 24:59.9
+const USER_PLAN: [string, number] = ['24:59.9', 1499.9];
 
 (process.env.RUN_SLOW_TESTS ? describe : describe.skip)('the user\'s plan (slow)', () => {
   test('no blessing; the freed slot buys Onyx bolts for the void switch (−1.1 s); slots = the exhaustive count', () => {

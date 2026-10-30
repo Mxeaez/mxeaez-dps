@@ -90,94 +90,6 @@
    "key": "ranged|27235,28951,33639,34696,34681,27238,0,27241,26235,31097,28307"
   },
   {
-   "label": "Twisted bow (Masori)",
-   "kind": "preset",
-   "group": "ranged",
-   "equipment": {
-    "head": {
-     "id": 27235,
-     "name": "Masori mask (f)",
-     "version": "",
-     "slot": "head"
-    },
-    "body": {
-     "id": 27238,
-     "name": "Masori body (f)",
-     "version": "",
-     "slot": "body"
-    },
-    "legs": {
-     "id": 27241,
-     "name": "Masori chaps (f)",
-     "version": "",
-     "slot": "legs"
-    },
-    "cape": {
-     "id": 28951,
-     "name": "Dizana's quiver",
-     "version": "Charged",
-     "slot": "cape"
-    },
-    "neck": {
-     "id": 33639,
-     "name": "Necklace of rupture",
-     "version": "",
-     "slot": "neck"
-    },
-    "hands": {
-     "id": 26235,
-     "name": "Zaryte vambraces",
-     "version": "",
-     "slot": "hands"
-    },
-    "feet": {
-     "id": 31097,
-     "name": "Avernic treads (max)",
-     "version": "",
-     "slot": "feet"
-    },
-    "ring": {
-     "id": 28307,
-     "name": "Ultor ring",
-     "version": "",
-     "slot": "ring"
-    },
-    "weapon": {
-     "id": 20997,
-     "name": "Twisted bow",
-     "version": "",
-     "slot": "weapon",
-     "twoHanded": true
-    },
-    "ammo": {
-     "id": 33595,
-     "name": "Seeking dragon arrow",
-     "version": "",
-     "slot": "ammo"
-    }
-   },
-   "options": [
-    {
-     "style": {
-      "name": "Accurate",
-      "type": "ranged",
-      "stance": "Accurate"
-     },
-     "spell": null
-    },
-    {
-     "style": {
-      "name": "Rapid",
-      "type": "ranged",
-      "stance": "Rapid"
-     },
-     "spell": null
-    }
-   ],
-   "source": "preset",
-   "key": "ranged|27235,28951,33639,33595,20997,27238,0,27241,26235,31097,28307"
-  },
-  {
    "label": "Inquisitor's + Obligator",
    "kind": "preset",
    "group": "melee",
@@ -266,20 +178,108 @@
    ],
    "source": "preset",
    "key": "melee|24419,21295,29801,0,34715,24420,0,24421,22981,31097,28307"
+  },
+  {
+   "label": "Twisted bow (Masori)",
+   "kind": "preset",
+   "group": "ranged",
+   "equipment": {
+    "head": {
+     "id": 27235,
+     "name": "Masori mask (f)",
+     "version": "",
+     "slot": "head"
+    },
+    "body": {
+     "id": 27238,
+     "name": "Masori body (f)",
+     "version": "",
+     "slot": "body"
+    },
+    "legs": {
+     "id": 27241,
+     "name": "Masori chaps (f)",
+     "version": "",
+     "slot": "legs"
+    },
+    "cape": {
+     "id": 28951,
+     "name": "Dizana's quiver",
+     "version": "Charged",
+     "slot": "cape"
+    },
+    "neck": {
+     "id": 33639,
+     "name": "Necklace of rupture",
+     "version": "",
+     "slot": "neck"
+    },
+    "hands": {
+     "id": 26235,
+     "name": "Zaryte vambraces",
+     "version": "",
+     "slot": "hands"
+    },
+    "feet": {
+     "id": 31097,
+     "name": "Avernic treads (max)",
+     "version": "",
+     "slot": "feet"
+    },
+    "ring": {
+     "id": 28307,
+     "name": "Ultor ring",
+     "version": "",
+     "slot": "ring"
+    },
+    "weapon": {
+     "id": 20997,
+     "name": "Twisted bow",
+     "version": "",
+     "slot": "weapon",
+     "twoHanded": true
+    },
+    "ammo": {
+     "id": 33595,
+     "name": "Seeking dragon arrow",
+     "version": "",
+     "slot": "ammo"
+    }
+   },
+   "options": [
+    {
+     "style": {
+      "name": "Accurate",
+      "type": "ranged",
+      "stance": "Accurate"
+     },
+     "spell": null
+    },
+    {
+     "style": {
+      "name": "Rapid",
+      "type": "ranged",
+      "stance": "Rapid"
+     },
+     "spell": null
+    }
+   ],
+   "source": "preset",
+   "key": "ranged|27235,28951,33639,33595,20997,27238,0,27241,26235,31097,28307"
   }
  ],
  "kitMarginal": [
   {
    "slots": 1,
-   "seconds": 7.569729262153487
-  },
-  {
-   "slots": 1,
-   "seconds": 41.61546422906417
+   "seconds": 7.5697292621537144
   },
   {
    "slots": 8,
    "seconds": "Infinity"
+  },
+  {
+   "slots": 1,
+   "seconds": 41.50522692244522
   }
  ],
  "slots": {
@@ -522,16 +522,16 @@
   }
  ],
  "pinnedItems": [],
- "comparison": "252d660b7399fef7b33455af9e13cdc8a8a80cf3b1f2b7357a40a2635f8ab9cd",
+ "comparison": "50b4ea6aca370cb2507727584b0f62ffa38115e87d611d654da021a9b8c26492",
  "planned": 5,
  "rejected": [],
  "alternatives": [
   {
    "label": "melee + magic: Tumeken's shadow (Ancestral) / Inquisitor's + Obligator / Harmonised Nightmare staff / Harmonised Nightmare staff #4",
    "kind": "alternative",
-   "deltaSeconds": -86.73904358212167,
+   "deltaSeconds": -86.5898634819157,
    "deltaSlots": 3,
-   "reason": "86.7 s slower",
+   "reason": "86.6 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Obligator",
@@ -542,9 +542,9 @@
   {
    "label": "ranged + magic: Tumeken's shadow (Ancestral) / Twisted bow (Masori) / Ascension crossbows + diamond (e) (Masori) / Ascension crossbows + Diamond ascension bolts (e)",
    "kind": "alternative",
-   "deltaSeconds": -302.39378373577256,
+   "deltaSeconds": -332.71228638465664,
    "deltaSlots": 4,
-   "reason": "302.4 s slower",
+   "reason": "332.7 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Twisted bow",
@@ -555,9 +555,9 @@
   {
    "label": "magic: Tumeken's shadow (Ancestral) / Harmonised Nightmare staff / Harmonised Nightmare staff #4",
    "kind": "alternative",
-   "deltaSeconds": -881.2589766764295,
+   "deltaSeconds": -933.5034219774079,
    "deltaSlots": -5,
-   "reason": "881.3 s slower",
+   "reason": "933.5 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Harmonised Nightmare staff",
@@ -621,19 +621,19 @@
   "items": [
    {
     "item": "Zaryte crossbow",
-    "hp": 618.7446516127716,
+    "hp": 606.3537568892689,
     "slots": 1,
     "how": "a free slot"
    },
    {
     "item": "Surge potion(4)",
-    "hp": 125.04778554686027,
+    "hp": 125.04778554685981,
     "slots": 1,
     "how": "a free slot"
    },
    {
     "item": "Crimson kisten",
-    "hp": 17.92251243004739,
+    "hp": 17.922512430047846,
     "slots": 1,
     "how": "filler (leftover energy; a free slot)"
    }
@@ -647,10 +647,7 @@
    "firstOn": [
     "ag-flying|",
     "ag-grounded|",
-    "bork|Smorks 100-76% HP (armour 8)",
-    "bork|Smorks 75-51% HP (armour 10)",
-    "bork|Smorks 50-26% HP (armour 12)",
-    "bork|Smorks 25-0% HP (armour 14)",
+    "bork|Stunned (armour 0)",
     "smorks|",
     "moia|",
     "xarth|",
@@ -683,58 +680,25 @@
      }
     },
     {
-     "key": "bork|Smorks 100-76% HP (armour 8)",
-     "label": "Bork, armour 8 (¼ of hp)",
+     "key": "bork|Stunned (armour 0)",
+     "label": "Bork, stunned (4 × 7 ticks)",
      "gains": {
-      "voidwaker": 53.485288424996035,
-      "dragonClaws": 4.340236664363346,
-      "burningClaws": -7.989265755913258,
-      "zcb": 85.9130986599228,
-      "crimsonKisten": 54.013454299501845
-     }
-    },
-    {
-     "key": "bork|Smorks 75-51% HP (armour 10)",
-     "label": "Bork, armour 10 (¼ of hp)",
-     "gains": {
-      "voidwaker": 56.07128396638365,
-      "dragonClaws": -1.2536778348756101,
-      "burningClaws": -12.8328465392606,
-      "zcb": 85.55812059854789,
-      "crimsonKisten": 52.60953055973236
-     }
-    },
-    {
-     "key": "bork|Smorks 50-26% HP (armour 12)",
-     "label": "Bork, armour 12 (¼ of hp)",
-     "gains": {
-      "voidwaker": 58.65570469060009,
-      "dragonClaws": -5.610435179288643,
-      "burningClaws": -16.607876954372266,
-      "zcb": 85.20183018953037,
-      "crimsonKisten": 51.204032002791735
-     }
-    },
-    {
-     "key": "bork|Smorks 25-0% HP (armour 14)",
-     "label": "Bork, armour 14 (¼ of hp)",
-     "gains": {
-      "voidwaker": 61.23658851173228,
-      "dragonClaws": -9.058329784952207,
-      "burningClaws": -19.31715998112399,
-      "zcb": 84.84259236127596,
-      "crimsonKisten": 49.794996542766846
+      "voidwaker": 32.75214462614235,
+      "dragonClaws": 60.75214462614232,
+      "burningClaws": 45.29592089448906,
+      "zcb": 69.87108658745443,
+      "crimsonKisten": 61.75214462614232
      }
     },
     {
      "key": "smorks|",
      "label": "The Smorks",
      "gains": {
-      "voidwaker": 39.06180489874849,
-      "dragonClaws": 49.56095301724275,
-      "burningClaws": 36.01652244653547,
-      "zcb": 85.05553271408043,
-      "crimsonKisten": 60.403681420341634
+      "voidwaker": 37.702084026289285,
+      "dragonClaws": 48.88379360923227,
+      "burningClaws": 34.60540183826325,
+      "zcb": 84.57635182187741,
+      "crimsonKisten": 60.64706983977292
      }
     },
     {
@@ -774,11 +738,11 @@
      "key": "ocellus-p3|Quadrants 1-3",
      "label": "P3 quadrants 1-3 (75%)",
      "gains": {
-      "voidwaker": 46.29031012284959,
+      "voidwaker": 46.29031012284958,
       "dragonClaws": 49.40541371585023,
       "burningClaws": 40.99735149800793,
-      "zcb": 62.25232296978229,
-      "crimsonKisten": 59.77860060467708
+      "zcb": 62.252322969782284,
+      "crimsonKisten": 59.77860060467709
      }
     },
     {
@@ -809,21 +773,20 @@
    "rows": [
     {
      "weapon": "tonalztics",
-     "carriers": 3,
+     "carriers": 4,
      "drivers": [
-      "Bork + Smorks (4.4 s)",
-      "Ocellus (4.0 s)"
+      "Ocellus (1.8 s)",
+      "Bork + Smorks (0.1 s)"
      ],
-     "lastSaved": 8.448390974210952
+     "lastSaved": 1.8864194247162231
     },
     {
      "weapon": "elderMaul",
-     "carriers": 2,
+     "carriers": 1,
      "drivers": [
-      "Bork + Smorks (4.0 s)",
-      "Ocellus (0.7 s)"
+      "Ocellus (6.5 s)"
      ],
-     "lastSaved": 4.699469060798265
+     "lastSaved": 6.483018058213929
     }
    ],
    "perTarget": [
@@ -849,33 +812,23 @@
      "ayak": 0
     },
     {
-     "key": "bork|Smorks 100-76% HP (armour 8)",
-     "label": "Bork (Smorks 100-76% HP (armour 8))",
-     "group": "Bork",
+     "key": "smorks|",
+     "label": "The Smorks",
+     "group": "The Smorks",
      "carriers": {
-      "elderMaul": 2
+      "tonalztics": 4
      },
-     "pFloor": 0.9741742124241974,
+     "pFloor": 0.9621838239138669,
      "ayak": 0
     },
     {
-     "key": "bork|Smorks 75-51% HP (armour 10)",
-     "label": "Bork (Smorks 75-51% HP (armour 10))",
+     "key": "bork|Stunned (armour 0)",
+     "label": "Bork (Stunned (armour 0))",
      "group": "Bork",
      "carriers": {
-      "elderMaul": 2
+      "elderMaul": 1
      },
-     "pFloor": 0.9741742124241974,
-     "ayak": 0
-    },
-    {
-     "key": "bork|Smorks 50-26% HP (armour 12)",
-     "label": "Bork (Smorks 50-26% HP (armour 12))",
-     "group": "Bork",
-     "carriers": {
-      "elderMaul": 2
-     },
-     "pFloor": 0.9741742124241974,
+     "pFloor": 0.9999999999999971,
      "ayak": 0
     },
     {
@@ -886,16 +839,6 @@
       "elderMaul": 2
      },
      "pFloor": 0.9741742124241974,
-     "ayak": 0
-    },
-    {
-     "key": "smorks|",
-     "label": "The Smorks",
-     "group": "The Smorks",
-     "carriers": {
-      "tonalztics": 4
-     },
-     "pFloor": 0.9621838239138669,
      "ayak": 0
     },
     {
@@ -971,12 +914,12 @@
      "ayak": 0
     }
    ],
-   "text": "6-man: 3 Tonalztics, 2 Elder maul",
+   "text": "6-man: 4 Tonalztics, 1 Elder maul",
    "carriers": {
-    "elderMaul": 2,
+    "elderMaul": 1,
     "dwh": 0,
     "bgs": 0,
-    "tonalztics": 3,
+    "tonalztics": 4,
     "ayak": 0
    },
    "mode": "auto"
@@ -984,12 +927,12 @@
   "share": {
    "weapon": null,
    "carry": false,
-   "reason": "your spec energy goes to your Zaryte crossbow specs / Crimson kisten specs / surge doses — let a teammate carry Tonalztics (most needed: 3 carriers)",
+   "reason": "your spec energy goes to your Zaryte crossbow specs / Crimson kisten specs / surge doses — let a teammate carry Tonalztics (most needed: 4 carriers)",
    "manual": false
   },
   "notes": [
    "Surge potion(4) (second): adds no HP the bars pay",
-   "Your spec bar goes to Zaryte crossbow / Crimson kisten / surge doses: 5 carriers (party − 1); the bars pay 3351 HP on the route vs 2589 HP if you carry a drain weapon instead."
+   "Your spec bar goes to Zaryte crossbow / Crimson kisten / surge doses: 4 carriers (party − 1); the bars pay 3049 HP on the route vs 2299 HP if you carry a drain weapon instead."
   ]
  },
  "ring": {
@@ -998,35 +941,33 @@
   "screened": [
    {
     "ring": "Ultor ring",
-    "seconds": 1277.1420060175856,
+    "seconds": 1218.887600189203,
     "full": true
    },
    {
     "ring": "Bellator ring",
-    "seconds": 1328.1784774648036,
-    "full": true
-   },
-   {
-    "ring": "Venator ring",
-    "seconds": 1339.2752736501834,
-    "full": true
-   },
-   {
-    "ring": "Ring of shadows",
-    "seconds": 1343.2792247833509,
+    "seconds": 1260.4298312015635,
     "full": true
    },
    {
     "ring": "Lightbearer",
-    "seconds": 1446.2410649712472,
-    "full": false,
-    "atLeast": 0
+    "seconds": 1264.5416658208364,
+    "full": true
+   },
+   {
+    "ring": "Venator ring",
+    "seconds": 1272.602875174734,
+    "full": true
+   },
+   {
+    "ring": "Ring of shadows",
+    "seconds": 1274.407016959447,
+    "full": true
    },
    {
     "ring": "Magus ring",
-    "seconds": 1446.2410649712472,
-    "full": false,
-    "atLeast": 0
+    "seconds": 1291.8353136919168,
+    "full": true
    }
   ]
  },
@@ -1040,14 +981,12 @@
   "ocellus-p2|": 15.550595502974533,
   "ocellus-p3|Quadrants 1-3": 12.856185391073009,
   "ocellus-p3|Last quadrant: Deflect Melee": 8.166997701078248,
-  "ocellus-p3|Last quadrant: Deflect Ranged": 12.856185391073009,
+  "ocellus-p3|Last quadrant: Deflect Ranged": 11.082554084919341,
   "xarth|": 13.91696785949811,
   "dreadnoth|": 15.559086291142291,
-  "bork|Smorks 100-76% HP (armour 8)": 10.523898244792498,
-  "bork|Smorks 75-51% HP (armour 10)": 9.985149173670079,
-  "bork|Smorks 50-26% HP (armour 12)": 9.446728189458323,
-  "bork|Smorks 25-0% HP (armour 14)": 8.90904406005578,
-  "smorks|": 14.645399161189738
+  "smorks|": 14.645399161189738,
+  "bork|Stunned (armour 0)": 15.67663653622035,
+  "bork|Smorks 25-0% HP (armour 14)": 8.185248854748151
  },
  "variants": [
   {
@@ -1118,12 +1057,12 @@
  "excluded": [],
  "droppedPinned": [],
  "ownershipNotices": [],
- "searchRows": "29977aeaca168973ef66b19c6049e6f403f8b1c3c4eb7bfc8a80437a4e182844",
- "objectiveSeconds": 1277.1420060175856,
+ "searchRows": "2c49c5549ebaed6716df64e56364e4472dd54416d3bbd9c6a6edca0e39687c37",
+ "objectiveSeconds": 1225.370618247417,
  "fightSeconds": null,
  "plannedRoute": {
   "id": "archive-guardian>bork-smorks>moia>xarth>ocellus",
-  "seconds": 1277.1420060175856,
+  "seconds": 1218.887600189203,
   "surgeDoses": [
    "archive-guardian",
    "ocellus"
@@ -1151,28 +1090,25 @@
    },
    {
     "id": "bork-smorks",
-    "seconds": 186.1894764566934,
+    "seconds": 128.9783149135408,
     "events": [
      {
       "npc": "Bork",
-      "firstRowKey": "bork-8",
-      "counts": {
-       "elderMaul": 3
-      },
-      "hp": 220.04877247312814
+      "firstRowKey": "bork-stunned",
+      "counts": {}
      },
      {
       "npc": "Smorks",
       "firstRowKey": "smorks",
       "counts": {
-       "tonalztics": 6,
-       "elderMaul": 1
+       "tonalztics": 7,
+       "elderMaul": 2
       },
-      "hp": 285.6433247071142
+      "hp": 291.2109693997728
      }
     ],
     "damage": {
-     "bork-8": {
+     "bork-stunned": {
       "zcb": 1
      },
      "smorks": {
@@ -1225,7 +1161,7 @@
    },
    {
     "id": "ocellus",
-    "seconds": 678.3247087358795,
+    "seconds": 677.2814644506498,
     "events": [
      {
       "npc": "Ocellus",
@@ -1240,10 +1176,10 @@
       "reset": "P1",
       "firstRowKey": "ocellus-p2",
       "counts": {
-       "elderMaul": 4,
-       "tonalztics": 1
+       "elderMaul": 2,
+       "tonalztics": 3
       },
-      "hp": 199.86871574421716
+      "hp": 202.20197029288894
      },
      {
       "npc": "Ocellus",

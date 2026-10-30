@@ -182,22 +182,25 @@ describe('Search / Summary name the filler of the Plan (review 38h-3b)', () => {
 // leftover, Search names the same one (the old rule named Burning claws there); elsewhere Search is per boss / phase and
 // may name a weapon the route doesn't bring (pinned below).
 // [row, Search's first weapon, Search's leftover]. fa: the Plan's leftover (Crimson kisten, Xarth / Ocellus) = Search's;
-// Bork 10-14: Voidwaker (more HP per spec there; the route brings no Voidwaker). faSolo Ocellus P3 Q1-3: kisten ranks
+// Bork 10-14 (before phase 40b) / faSolo Bork armour 14 + Smorks: Voidwaker (more HP per spec there; the route brings
+// no Voidwaker). faSolo Ocellus P3 Q1-3: kisten ranks
 // first per bar on that phase alone (within 1.2× of ZCB, 38h-3), the route brings ZCB first. No leftover: the phases kisten
 // can't hit (AG flying / shield, Moia, the Deflect Melee quadrant).
 const SEARCH_LINES: Record<string, [string, string, string | null][]> = {
   fa: [
     ['ag-shield', 'Zaryte crossbow', null], ['ag-grounded', 'Zaryte crossbow', 'Crimson kisten'],
-    ['ag-flying', 'Zaryte crossbow', null], ['bork-8', 'Zaryte crossbow', 'Crimson kisten'],
-    ['bork-10', 'Zaryte crossbow', 'Voidwaker'], ['bork-12', 'Zaryte crossbow', 'Voidwaker'],
-    ['bork-14', 'Zaryte crossbow', 'Voidwaker'], ['smorks', 'Zaryte crossbow', 'Crimson kisten'],
+    // phase 40b (stun-swap): Bork's one stunned row (was armour 8: kisten, 10-14: Voidwaker)
+    ['ag-flying', 'Zaryte crossbow', null], ['bork-stunned', 'Zaryte crossbow', 'Crimson kisten'],
+    ['smorks', 'Zaryte crossbow', 'Crimson kisten'],
     ['moia', 'Zaryte crossbow', null], ['xarth', 'Zaryte crossbow', 'Crimson kisten'],
     ['ocellus-p1', 'Zaryte crossbow', 'Crimson kisten'], ['ocellus-p3', 'Zaryte crossbow', 'Crimson kisten'],
     ['ocellus-p3-last', 'Zaryte crossbow', null],
   ],
   faSolo: [
     ['ag-shield', 'Zaryte crossbow', null], ['ag-grounded', 'Zaryte crossbow', 'Crimson kisten'],
-    ['ag-flying', 'Zaryte crossbow', null], ['ezekiel', 'Zaryte crossbow', 'Crimson kisten'],
+    // phase 40b: the Bork route (was Ezekiel: kisten); party 1: the armour 14 remainder and the Smorks name Voidwaker
+    ['ag-flying', 'Zaryte crossbow', null], ['bork-stunned', 'Zaryte crossbow', 'Crimson kisten'],
+    ['bork-14', 'Zaryte crossbow', 'Voidwaker'], ['smorks', 'Zaryte crossbow', 'Voidwaker'],
     ['moia', 'Zaryte crossbow', null], ['xarth', 'Zaryte crossbow', 'Crimson kisten'],
     ['ocellus-p1', 'Zaryte crossbow', 'Crimson kisten'], ['ocellus-p3', 'Crimson kisten', 'Burning claws'],
     ['ocellus-p3-last', 'Zaryte crossbow', null],

@@ -25,7 +25,17 @@ export const FRACTURED_ARCHIVE_RAID: RaidConfig = {
       key: 'agGroundedFraction', label: 'AG grounded', kind: 'percent', title: 'Share of AG\'s 550 hp dealt while grounded; the rest at Flying DPS (it flies permanently below 30%)',
     },
     {
-      key: 'borkStunUptime', label: 'Bork stun uptime', kind: 'percent', title: 'Share of Bork\'s damage dealt while he is stunned (heavy cannonball); the rest is split over armour 8/10/12/14. Stun length unpublished',
+      key: 'borkKillOrder',
+      label: 'Bork kill order',
+      kind: 'select',
+      title: 'Stun-swap (default): Bork is hit only while a heavy cannonball has him stunned (armour 0, every melee hit lands), the Smorks between stuns (kept alive until Bork dies: their cannonballs cause the stuns); Bork hp the stuns can\'t cover is fought at armour 14. Killed evenly: Bork\'s hp in four quarters at armour 8 / 10 / 12 / 14, no stun',
+      options: [{ value: 'stun-swap', label: 'Stun-swap' }, { value: 'evenly', label: 'Killed evenly' }],
+    },
+    {
+      key: 'borkStunsPerKill', label: 'Bork stuns per kill', kind: 'number', title: 'Heavy-cannonball stuns per Bork kill (stun-swap; the user: ~4)', max: 20,
+    },
+    {
+      key: 'borkStunTicks', label: 'Bork stun length', kind: 'number', unit: 'ticks', title: 'Length of one stun in game ticks (0.6 s). Unpublished: 7 ticks estimated from 1500 hp over 4 stuns at a 6-player team\'s stunned melee DPS (unverified)', max: 50,
     },
     {
       key: 'ocellusWalkingFraction', label: 'Ocellus P1 walking', kind: 'percent', title: 'Share of P1\'s hp dealt while he walks to a corner (Protect from Melee)',

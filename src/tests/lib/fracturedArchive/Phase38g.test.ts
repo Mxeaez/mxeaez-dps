@@ -220,7 +220,9 @@ describe('Solo: your bar pays the drains first; the line says when it can\'t pay
     const kit = createKitEvaluator(fa.presets.map((p) => presetKitLoadout(generateEmptyPlayer(), p, a)), a);
     // phase 38j: on the fight-wall clock (no measured room time), where the bar is short; with Bork's room time (471 s
     // solo, 15 ticks) the bar pays far more
-    const e = encounterTime('bork-smorks', kit, { ...raidTimeAssumptionsFrom(a, 'solo', fa.defaultTimeSettings, fa.time), roomSeconds: undefined });
+    // phase 40b: the 'evenly' kill order (Bork's armour rows; the default stun-swap puts no drain on stunned Bork's melee)
+    const evenly = { ...fa.defaultTimeSettings, borkKillOrder: 'evenly' };
+    const e = encounterTime('bork-smorks', kit, { ...raidTimeAssumptionsFrom(a, 'solo', evenly, fa.time), roomSeconds: undefined });
     // phase 38h-2 (in HP, averaged over the outcomes): the bar's specs go where each is worth most: 1 on Bork (82 HP),
     // 2 on the Smorks (101 HP; the regen pays the second)
     expect(e.specPlan!.events.map((x) => x.counts)).toEqual([{ elderMaul: 1 }, { elderMaul: 2 }]);

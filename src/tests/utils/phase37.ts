@@ -99,8 +99,10 @@ export const PHASE37_MEMO: Record<string, MemoCounters> = {
   // 14200 / 175, r27toa 1009 / 1217 / 10261 / 317
   // phase 40 rework (the Xarth freezer keeps 80% of their DPS on phase 2: same kit and route): r27fa was 1221 / 1212 /
   // 18419 / 57
+  // phase 40b (stun-swap Bork; Bork's rows: stunned (+ armour 14) instead of four armour quarters): r27fa was 1136 / 1341
+  // / 27136 / 185
   r27fa: {
-    encounterRuns: 1136, passRuns: 1341, encounterHits: 27136, passHits: 185,
+    encounterRuns: 1215, passRuns: 1415, encounterHits: 26377, passHits: 188,
   },
   r27toa: {
     encounterRuns: 1531, passRuns: 1523, encounterHits: 16802, passHits: 81,
@@ -121,8 +123,10 @@ export const PHASE37_MEMO: Record<string, MemoCounters> = {
   // 497142 / 3847, faSolo 24029 / 18699 / 1166147 / 6425, faNotOwned 20896 / 13664 / 591775 / 9461
   // phase 38j (kits ranked by their own spec plan: every optimiser kit re-scored, those within 1% re-timed exactly): fa
   // was 10698 / 8388 / 462466 / 5554
+  // phase 40b (stun-swap Bork: 6 rings planned in full, was 4; more kits within the own-plan margin): fa was 15282 /
+  // 8578 / 778019 / 10545
   fa: {
-    encounterRuns: 15282, passRuns: 8578, encounterHits: 778019, passHits: 10545,
+    encounterRuns: 24032, passRuns: 15029, encounterHits: 1135823, passHits: 11417,
   },
   // phase 38a (rooms 1-2 before the supplies: other drain states and candidates): was 32784 / 10825 / 544791 / 24576;
   // phase 38b (Liquid adrenaline: more spec options per event, damage specs on the adds' rows): was 39715 / 11721 /
@@ -145,8 +149,9 @@ export const PHASE37_MEMO: Record<string, MemoCounters> = {
   // faSolo was 9706 / 9352 / 640382 / 1292
   // phase 38j (the room times: Solo plans every camp ring in full): faSolo was 23993 / 18648 / 1141713 / 7065
   // phase 38j (own spec plans): faSolo was 25386 / 23603 / 1088304 / 3478
+  // phase 40b (the Bork route): faSolo was 30958 / 26363 / 1430156 / 6290
   faSolo: {
-    encounterRuns: 30958, passRuns: 26363, encounterHits: 1430156, passHits: 6290,
+    encounterRuns: 33780, passRuns: 31211, encounterHits: 1493422, passHits: 4320,
   },
   // phase 38h-1 (2 Elder maul + 3 Tonalztics carriers cover every boss, so you are no longer a carrier: free slots, the
   // item beam re-optimises kits with damage specs / surge): faNotOwned was 9153 / 9086 / 583727 / 227
@@ -154,8 +159,9 @@ export const PHASE37_MEMO: Record<string, MemoCounters> = {
   // faNotOwned was 74977 / 9838 / 1854095 / 66172
   // phase 38j (the room times: every camp ring planned in full): faNotOwned was 29805 / 13946 / 822703 / 18920
   // phase 38j (own spec plans): faNotOwned was 35675 / 12487 / 822877 / 27203
+  // phase 40b (stun-swap Bork, a Scythe kit): faNotOwned was 44516 / 20310 / 1569776 / 27265
   faNotOwned: {
-    encounterRuns: 44516, passRuns: 20310, encounterHits: 1569776, passHits: 27265,
+    encounterRuns: 30027, passRuns: 19280, encounterHits: 1086394, passHits: 15168,
   },
 };
 export const memoCountersWithin = (m: MemoCounters | undefined, want: MemoCounters | undefined): boolean => {

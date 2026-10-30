@@ -155,7 +155,8 @@ describe('the fa headline (phase37/fa.json)', () => {
     expect(v.onRoute).toBe(true);
     expect(v.headcount).toBe(1);
     expect(v.label).toBe('freezes corpses (Ice Barrage, ≥75 magic attack: Kodai wand + Ancestral robe top + Confliction gauntlets), then back to DPS');
-    expect(headline('fa').kit).toEqual(['Ascension crossbows + diamond (e) (Masori)', 'Twisted bow (Masori)', "Inquisitor's + Obligator"]);
+    // phase 40b: the same three loadouts (listed in another order)
+    expect(headline('fa').kit).toEqual(['Ascension crossbows + diamond (e) (Masori)', "Inquisitor's + Obligator", 'Twisted bow (Masori)']);
   });
   test('the blend on Xarth is the hand formula of the pinned DPS (freezer at 0.8 × yours, half the HP)', () => {
     expect(v.variantDps).toBeCloseTo(0.8 * v.baseDps, 9);

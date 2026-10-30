@@ -197,7 +197,8 @@ const PINNED_ENCOUNTER_SECONDS: Record<string, Record<string, number>> = {
   // Phase 38h-2 (bars in boss HP): Bork + Smorks 230.2 → 221.2 (the maul bars split between Bork and the Smorks, where
   // they are worth more), Ocellus 844.7 → 833.8; review fix (values averaged over the drain's outcomes) Ocellus → 820.8.
   'fractured-archive': {
-    'archive-guardian': 191.8, 'bork-smorks': 221.2, moia: 68.9, dagonhai: 233.8, ocellus: 820.8,
+    // phase 40b (stun-swap Bork): bork-smorks 221.2 → 187.3
+    'archive-guardian': 191.8, 'bork-smorks': 187.3, moia: 68.9, dagonhai: 233.8, ocellus: 820.8,
   },
   // Phase 35 (no specs on adds): ToA Kephri 153.8 → 155.5, Akkha 160.9 → 161.6; CoX Vasa 20.1 → 22.9, Vespula 23.3 →
   // 24.1, Mystics 44.8 → 52.4, Shamans 32.1 → 37.5, Muttadiles 23.9 → 24.

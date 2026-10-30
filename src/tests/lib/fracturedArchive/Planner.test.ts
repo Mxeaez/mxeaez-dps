@@ -327,7 +327,8 @@ describe('review fixes', () => {
     expect(r.stats.fightSeconds?.['bork-smorks']).toBeLessThan(90);
     expect(r.stats.retimed).toBeGreaterThan(0);
     const bork = r.comparison!.routes[r.planned].encounters.find((e) => e.id === 'bork-smorks')!;
-    expect(bork.phases.length).toBeGreaterThanOrEqual(5);
+    // phase 40b (stun-swap): stunned, armour 14 (party 1: 4 stuns cover a sixth of Bork) and the Smorks (was 5 rows)
+    expect(bork.phases.map((p) => p.key)).toEqual(['bork-stunned', 'bork-14', 'smorks']);
     for (const ph of bork.phases) {
       const m = r.matrixDps[phaseKey(ph.targetKey, ph.phase)];
       expect(Math.abs(m - ph.dps) / ph.dps).toBeLessThan(0.01);

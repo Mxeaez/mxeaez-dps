@@ -29,7 +29,7 @@ presentation only; the numbers are unchanged except the Solo fight length (below
   Lightbearer" toggle** for all carriers (`withCarrierLightbearer` in presets.ts; the per-weapon flags stay in the data);
   "Use the Defence floor when its chance is ≥ 95%" (was "Floor at P ≥"); "Players assumed at your
   DPS when converting HP to time" (was "Team DPS ×"); "Spec energy goes first to"; the raid's time-model settings (AG
-  shield, Bork stun uptime, …; they were on the Routes tab and now drive the Plan tab).
+  shield, Bork kill order / stuns (phase 40b; was Bork stun uptime), …; they were on the Routes tab and now drive the Plan tab).
 - **No Fight length input.** The Solo spec-energy budget (Search, Summary, the calculator panels) uses the boss /
   phase's **undrained time to kill with the whole party at your DPS**: hp ÷ (party size × best preset DPS), the best of
   the raid's presets against the undrained monster — one untimed pass, like the time model's first pass — rounded and
@@ -1921,6 +1921,24 @@ with Xarth, party ≥ 2 (party 1: none; other raids: none, round 7).
 - Headlines: fa 21:14.1 → 21:17.1 (Xarth 180.61 → 183.63; kit unchanged); faNotOwned 24:17.6 → 24:21.2 (same route and
   ring); faSolo (party 1) unchanged.
 
+
+### Bork + Smorks stun-swap (phase 40b, FA)
+
+The user (2026-10-30): the team hits Bork only while a heavy cannonball has him stunned (flat armour 0, magic resistance
+0, every melee hit lands) and the Smorks between stuns; the Smorks stay alive until Bork dies (they cause the stuns).
+`raidTime.ts` `borkStunRows` (built in the encounter pass, like Ocellus P2, because it depends on the kit):
+- stunned damage = min(Bork hp, `borkStunsPerKill` × `borkStunTicks` × 0.6 s × party size × the kit's DPS on
+  `Stunned (armour 0)`); the team is every player at your DPS, the same as the wall clock (seconds × multiplier ÷ party).
+- the rest, if any, at **armour 14** (`BORK_FALLBACK_PHASE`): after the stuns the Smorks have taken most of their damage.
+- rows: `bork-stunned`, `bork-14` (only with a remainder), `smorks` (Bork dies first: Death Charge on his last row).
+- defaults 4 stuns × 7 ticks (DATA_SOURCES *Phase 40b*: 1500 ÷ (4 × 6 × 15.68) = 3.99 s → 7 ticks; UNVERIFIED A6 / D3).
+- `borkKillOrder: 'evenly'` keeps the old rows (four quarters at armour 8 / 10 / 12 / 14) as an option; the planner
+  searches stunned Bork + armour 14 for stun-swap, the four armour phases for evenly.
+- Drains / damage specs roll per row as before: on stunned Bork a melee drain spec always lands (but drains don't help a
+  melee kit there, so the headline puts no drain on Bork); a damage spec on that row rolls against armour 0.
+
+Hand check (RaidTime.test.ts, toy kit 15 stunned / 6 at armour 14 / 12 Smorks DPS): party 6, 7 ticks: cap 4 × 4.2 × 6 ×
+15 = 1512 ≥ 1500 → 1500 / 15 + 600 / 12 = 150 s; 5 ticks: cap 1080 → 72 + 420 / 6 + 50 = 192 s.
 ## Routes tab (phase 16: raid time model)
 
 **Phase 23: the tab is gone.** Its route table is now part of the Plan tab's results (the *planned* kit timed on every
@@ -1949,7 +1967,7 @@ damage is infinite (shown ∞; e.g. a melee-only kit on the AG shield). Settings
 | Encounter | Phases (damage → DPS of) |
 |---|---|
 | Archive Guardian | flying shield `agShieldHp` 1490 (wiki "1490 health shield in 6-scale", scaled by the party-size table relative to 6) → Flying; 550 × `agGroundedFraction` 70% → Grounded; the remaining 30% → Flying (it flies permanently below 30%). The guardian charges that do ~40% of the shield are not counted (pessimistic) |
-| Bork + Smorks | killed evenly: Bork's 1500 in four quarters at armour 8 / 10 / 12 / 14 (each × (1 − `borkStunUptime`)), + 1500 × `borkStunUptime` (default 0) at Stunned; Smorks 600 |
+| Bork + Smorks | phase 40b, stun-swap (default, `borkKillOrder`): Bork at Stunned, min(1500, `borkStunsPerKill` 4 × `borkStunTicks` 7 × 0.6 s × party × the kit's stunned DPS); the rest at armour 14; Smorks 600. Killed evenly (option): Bork's 1500 in four quarters at armour 8 / 10 / 12 / 14; Smorks 600 |
 | Ezekiel / Moia / Dreadnoth / Xarth | 3000 / 785 / 2100 (jellies ignored) / 2600 |
 | Dagon'hai trio | `dagonhaiEncounterDamage(640)` = 3207 at Shielded |
 | Ocellus | P1 2500 × (1 − `ocellusWalkingFraction`, default 0) at a corner, the rest at Walking; P2 lasts `ocellusP2Seconds` (default 120 s: phase 38c, D5 / D35) and the damage dealt to the Blade in that time × `ocellusP2CarryOver` 50% comes off P3's 5250; P3 remainder × (1 − `ocellusLastQuadrantFraction` 25%) at Quadrants 1-3, the rest at the Deflect option that is worse for the kit (= the one blocking the kit's best style; for a magic-best kit, where magic is never deflected in our model, the lower of the two) |

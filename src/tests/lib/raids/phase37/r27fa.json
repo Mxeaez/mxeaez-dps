@@ -2,7 +2,7 @@
  "cancelled": false,
  "kit": [
   {
-   "label": "Twisted bow switch +6 on Scythe of Vitur",
+   "label": "Twisted bow switch +6 on Scythe of Vitur #4",
    "kind": "partial",
    "group": "ranged",
    "equipment": {
@@ -86,8 +86,8 @@
      "spell": null
     }
    ],
-   "source": "Scythe of Vitur → Twisted bow (Masori): Masori body (f), Necklace of rupture, Zaryte vambraces, Masori chaps (f), Dizana's quiver, Masori mask (f)",
-   "base": "Scythe of Vitur",
+   "source": "Scythe of Vitur #4 → Twisted bow (Masori): Masori body (f), Necklace of rupture, Zaryte vambraces, Masori chaps (f), Dizana's quiver, Masori mask (f)",
+   "base": "Scythe of Vitur #4",
    "partner": "Twisted bow (Masori)",
    "pieces": [
     "body",
@@ -100,7 +100,7 @@
    "key": "ranged|27235,28951,33639,33595,20997,27238,0,27241,26235,31097,28307"
   },
   {
-   "label": "Scythe of Vitur",
+   "label": "Scythe of Vitur #4",
    "kind": "search",
    "group": "melee",
    "equipment": {
@@ -112,9 +112,9 @@
      "twoHanded": true
     },
     "head": {
-     "id": 24419,
-     "name": "Inquisitor's great helm",
-     "version": "",
+     "id": 26382,
+     "name": "Torva full helm",
+     "version": "Restored",
      "slot": "head"
     },
     "body": {
@@ -170,8 +170,8 @@
      "spell": null
     }
    ],
-   "source": "search: Archive Guardian (Grounded)",
-   "key": "melee|24419,21295,29801,0,22325,24420,0,24421,22981,31097,28307"
+   "source": "search: Ocellus P2 (The Blade)",
+   "key": "melee|26382,21295,29801,0,22325,24420,0,24421,22981,31097,28307"
   }
  ],
  "kitMarginal": [
@@ -262,11 +262,11 @@
   },
   {
    "kind": "switch",
-   "label": "Inquisitor's great helm",
+   "label": "Torva full helm",
    "item": {
-    "id": 24419,
-    "name": "Inquisitor's great helm",
-    "version": "",
+    "id": 26382,
+    "name": "Torva full helm",
+    "version": "Restored",
     "slot": "head"
    },
    "group": "melee"
@@ -477,13 +477,13 @@
    "slot": "ring"
   }
  ],
- "comparison": "6364488470652e76c003f73d44d96eb722768b5671aa5309d9be2f7a5258056b",
- "planned": 1,
+ "comparison": "c614d8e13212fe913fdd92fff3da18cb2b8d447de791756c8a107c1fcfbef785",
+ "planned": 5,
  "rejected": [
   {
    "label": "Twisted bow (Masori)",
    "kind": "addition",
-   "deltaSeconds": 21.05858258018816,
+   "deltaSeconds": 21.051284559727947,
    "deltaSlots": 1,
    "reason": "needs 1 more slot, 0 free",
    "weapons": [
@@ -491,21 +491,21 @@
    ]
   },
   {
-   "label": "Tumeken's shadow (Ancestral)",
+   "label": "Scythe of Vitur",
    "kind": "addition",
-   "deltaSeconds": 19.45906052870896,
-   "deltaSlots": 7,
-   "reason": "needs 7 more slots, 0 free",
+   "deltaSeconds": 4.671483145091543,
+   "deltaSlots": 1,
+   "reason": "needs 1 more slot, 0 free",
    "weapons": [
-    "Tumeken's shadow"
+    "Scythe of Vitur"
    ]
   },
   {
-   "label": "Tumeken's shadow switch +6 on Twisted bow (Masori)",
+   "label": "Tumeken's shadow (Ancestral)",
    "kind": "addition",
-   "deltaSeconds": 6.309878146931624,
-   "deltaSlots": 6,
-   "reason": "needs 6 more slots, 0 free",
+   "deltaSeconds": 4.397058174183485,
+   "deltaSlots": 7,
+   "reason": "needs 7 more slots, 0 free",
    "weapons": [
     "Tumeken's shadow"
    ]
@@ -513,23 +513,23 @@
  ],
  "alternatives": [
   {
-   "label": "melee + ranged + magic: Scythe of Vitur / Twisted bow switch +6 on Scythe of Vitur / Tumeken's shadow (Ancestral)",
+   "label": "melee + ranged + magic: Twisted bow switch +6 on Scythe of Vitur #4 / Scythe of Vitur #4 / Tumeken's shadow switch +2 on Scythe of Vitur #4",
    "kind": "alternative",
-   "deltaSeconds": 19.45906052870896,
-   "deltaSlots": 7,
-   "reason": "does not fit (35 of 28 slots)",
+   "deltaSeconds": 2.944469236450459,
+   "deltaSlots": 2,
+   "reason": "does not fit (30 of 28 slots)",
    "weapons": [
-    "Scythe of Vitur",
     "Twisted bow",
+    "Scythe of Vitur",
     "Tumeken's shadow"
    ]
   },
   {
-   "label": "melee + magic: Tumeken's shadow (Ancestral) / Scythe of Vitur / Scythe of Vitur #4",
+   "label": "melee + magic: Tumeken's shadow (Ancestral) / Scythe of Vitur #4 + Oathplate chest / Scythe of Vitur #4",
    "kind": "alternative",
-   "deltaSeconds": -76.07941478079988,
+   "deltaSeconds": -86.328557685536,
    "deltaSlots": 0,
-   "reason": "76.1 s slower",
+   "reason": "86.3 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Scythe of Vitur",
@@ -539,9 +539,9 @@
   {
    "label": "ranged + magic: Tumeken's shadow (Ancestral) / Twisted bow (Masori)",
    "kind": "alternative",
-   "deltaSeconds": -110.13558570315536,
+   "deltaSeconds": -185.67756819687202,
    "deltaSlots": -1,
-   "reason": "110.1 s slower",
+   "reason": "185.7 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Twisted bow"
@@ -550,9 +550,9 @@
   {
    "label": "magic: Tumeken's shadow (Ancestral)",
    "kind": "alternative",
-   "deltaSeconds": -616.9838623392061,
+   "deltaSeconds": -694.5620572473742,
    "deltaSlots": -10,
-   "reason": "617.0 s slower",
+   "reason": "694.6 s slower",
    "weapons": [
     "Tumeken's shadow"
    ]
@@ -609,18 +609,20 @@
      "weapon": "elderMaul",
      "carriers": 2,
      "drivers": [
-      "Ocellus (7.5 s)"
+      "Ocellus (13.5 s)",
+      "Bork + Smorks (4.6 s)"
      ],
-     "lastSaved": 7.51941914780673
+     "lastSaved": 18.182789557674596
     },
     {
      "weapon": "tonalztics",
      "carriers": 2,
      "drivers": [
-      "Ocellus (19.6 s)",
-      "Archive Guardian (3.5 s)"
+      "Ocellus (19.9 s)",
+      "Archive Guardian (3.5 s)",
+      "Bork + Smorks (3.3 s)"
      ],
-     "lastSaved": 23.08891051997125
+     "lastSaved": 26.681514440528417
     }
    ],
    "perTarget": [
@@ -646,13 +648,33 @@
      "ayak": 0
     },
     {
-     "key": "ezekiel|",
-     "label": "Ezekiel",
-     "group": "Ezekiel",
+     "key": "smorks|",
+     "label": "The Smorks",
+     "group": "The Smorks",
+     "carriers": {
+      "tonalztics": 4
+     },
+     "pFloor": 0.9621838239138669,
+     "ayak": 0
+    },
+    {
+     "key": "bork|Stunned (armour 0)",
+     "label": "Bork (Stunned (armour 0))",
+     "group": "Bork",
+     "carriers": {
+      "elderMaul": 1
+     },
+     "pFloor": 0.9999999999999971,
+     "ayak": 0
+    },
+    {
+     "key": "bork|Smorks 25-0% HP (armour 14)",
+     "label": "Bork (Smorks 25-0% HP (armour 14))",
+     "group": "Bork",
      "carriers": {
       "elderMaul": 2
      },
-     "pFloor": 0.9697725266208251,
+     "pFloor": 0.9741742124241974,
      "ayak": 0
     },
     {
@@ -756,22 +778,20 @@
  },
  "matrixDps": {
   "ag-flying|": 10.266475799397792,
-  "ag-grounded|": 10.918167094150943,
-  "ezekiel|": 12.29098335926022,
+  "ag-grounded|": 10.810935076934847,
+  "ezekiel|": 12.287379021460543,
   "moia|": 11.036477579707563,
   "dagonhai|Shielded (shield gauge)": 13.385111772491891,
   "ocellus-p1|At a corner": 10.577438056830585,
-  "ocellus-p2|": 14.370223088405137,
-  "ocellus-p3|Quadrants 1-3": 10.634027878616607,
+  "ocellus-p2|": 14.523571136411118,
+  "ocellus-p3|Quadrants 1-3": 10.505347479497281,
   "ocellus-p3|Last quadrant: Deflect Melee": 8.166997701078248,
-  "ocellus-p3|Last quadrant: Deflect Ranged": 10.634027878616607,
-  "xarth|": 12.10495851373083,
-  "dreadnoth|": 14.381996812805731,
-  "bork|Smorks 100-76% HP (armour 8)": 5.800728269766345,
-  "bork|Smorks 75-51% HP (armour 10)": 4.982725196524473,
-  "bork|Smorks 50-26% HP (armour 12)": 4.293303945552894,
-  "bork|Smorks 25-0% HP (armour 14)": 3.7141469946846084,
-  "smorks|": 12.02360719241481
+  "ocellus-p3|Last quadrant: Deflect Ranged": 10.505347479497281,
+  "xarth|": 12.087312003248655,
+  "dreadnoth|": 14.536233605918198,
+  "smorks|": 12.142633783848733,
+  "bork|Stunned (armour 0)": 14.711538461538462,
+  "bork|Smorks 25-0% HP (armour 14)": 3.7269948278517195
  },
  "variants": [
   {
@@ -825,10 +845,10 @@
     }
    ],
    "overfull": false,
-   "baseDps": 12.10495851373083,
-   "variantDps": 9.683966810984664,
-   "teamDps": 11.89978972536251,
-   "seconds": 3.7032416225175946
+   "baseDps": 12.087312003248655,
+   "variantDps": 9.669849602598925,
+   "teamDps": 11.882442308278339,
+   "seconds": 3.708648059622239
   }
  ],
  "unusedCarried": [
@@ -872,17 +892,17 @@
  "excluded": [],
  "droppedPinned": [],
  "ownershipNotices": [],
- "searchRows": "c1637eec5d8e13464259fb40d3df838022d57cdd1fea553a5308c82dbb2a873f",
- "objectiveSeconds": 1535.23148210008,
+ "searchRows": "5e85acdfbb9d366108d7cfd2952fc62153d1eec49c163a4fd74499f7c3c02d39",
+ "objectiveSeconds": 1451.6379419233701,
  "fightSeconds": null,
  "plannedRoute": {
-  "id": "archive-guardian>ezekiel>moia>xarth>ocellus",
-  "seconds": 1535.23148210008,
+  "id": "archive-guardian>bork-smorks>moia>xarth>ocellus",
+  "seconds": 1451.6379419233701,
   "surgeDoses": null,
   "encounters": [
    {
     "id": "archive-guardian",
-    "seconds": 196.46662463133654,
+    "seconds": 196.81638629783592,
     "events": [
      {
       "npc": "Archive Guardian",
@@ -890,24 +910,29 @@
       "counts": {
        "tonalztics": 4
       },
-      "hp": 411.09030025926785
+      "hp": 417.8626823879908
      }
     ],
     "damage": {},
     "surge": false
    },
    {
-    "id": "ezekiel",
-    "seconds": 244.08136536445252,
+    "id": "bork-smorks",
+    "seconds": 156.54915342951327,
     "events": [
      {
-      "npc": "Ezekiel",
-      "firstRowKey": "ezekiel",
+      "npc": "Bork",
+      "firstRowKey": "bork-stunned",
+      "counts": {}
+     },
+     {
+      "npc": "Smorks",
+      "firstRowKey": "smorks",
       "counts": {
-       "tonalztics": 3,
-       "elderMaul": 1
+       "elderMaul": 4,
+       "tonalztics": 4
       },
-      "hp": 327.4574262785888
+      "hp": 295.7863079034422
      }
     ],
     "damage": {},
@@ -931,7 +956,7 @@
    },
    {
     "id": "xarth",
-    "seconds": 218.49125572853723,
+    "seconds": 218.81023551771125,
     "events": [
      {
       "npc": "Xarth",
@@ -940,7 +965,7 @@
        "elderMaul": 2,
        "tonalztics": 1
       },
-      "hp": 319.98589129198535
+      "hp": 344.6487307257794
      }
     ],
     "damage": {},
@@ -948,7 +973,7 @@
    },
    {
     "id": "ocellus",
-    "seconds": 805.0644699003924,
+    "seconds": 808.3344002029485,
     "events": [
      {
       "npc": "Ocellus",
@@ -966,7 +991,7 @@
        "elderMaul": 3,
        "tonalztics": 1
       },
-      "hp": 249.57917571948533
+      "hp": 268.4187768138203
      },
      {
       "npc": "Ocellus",
@@ -976,7 +1001,7 @@
        "tonalztics": 3,
        "elderMaul": 1
       },
-      "hp": 1099.7494480124597
+      "hp": 1163.649399527243
      }
     ],
     "damage": {},

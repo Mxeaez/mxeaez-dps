@@ -3,6 +3,49 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 40b: Bork + Smorks stun-swap kill order (FA, numbers, 2026-10-30)
+
+ROADMAP 40b. docs/BEST_SETUP.md *Bork + Smorks stun-swap*; DATA_SOURCES *Phase 40b*; UNVERIFIED A6 / D3.
+- **Model** (user decision): Bork is hit only while stunned (armour 0, magic resistance 0, every melee hit lands), the
+  Smorks between stuns (kept alive: they cause the stuns). `borkStunRows`: stunned damage = min(1500, stuns × ticks ×
+  0.6 s × party × the kit's stunned DPS); the rest at **armour 14** (by the last stun the Smorks have taken most of their
+  damage, ≤ 25% hp); then the Smorks 600. Built in the encounter pass (kit-dependent, like Ocellus P2). "Killed evenly"
+  (four quarters at armour 8-14) stays as a non-default option; it reproduces the old fa total 21:17.1 (verifyPhase40b).
+- **Stun length** (unverified): 1500 ÷ (4 stuns × 6 players × 15.68 DPS, the phase 40 fa kit on stunned Bork) = 3.99 s
+  → **7 ticks (4.2 s)**. Sanity: 16.8 s of stun + ~13 s on the Smorks ≈ 30 s of hitting in the 120-150 s room (a stun
+  every ~30-37 s). Advanced inputs "Bork kill order", "Bork stuns per kill" (4), "Bork stun length" (7 ticks) replace
+  "Bork stun uptime" (old saved value dropped by `validateTime`).
+- **Specs** roll per row as before: stunned Bork rolls melee specs at 100% and damage specs at armour 0; with a melee
+  kit the drains are worth nothing there, so fa puts no drain on Bork (all bars on the Smorks).
+- **Headlines** (`pinHeadlines --full`): fa 21:17.1 → **20:18.9** (Bork + Smorks 186.19 → 128.98: Bork 1500 at the
+  stunned 15.68 DPS instead of 8.9-7.6 at armour 8-14; Ocellus 678.32 → 677.28: carriers 2 maul + 3 Tonalztics → 1 + 4,
+  the bars' new split); same three loadouts. faSolo 22:08.7 → **22:06.1**: the Bork route now beats Ezekiel (party 1:
+  4 stuns cover 16.8% of Bork, the rest at armour 14: 214.02 vs Ezekiel 216.71). faNotOwned 24:21.2 → **22:43.2**: a new
+  kit (Twisted bow, Torva + Scythe, Inquisitor's + Scythe, Zaryte crossbow + ruby bolts; Crimson kisten + Surge),
+  Bork 214.78 → 142.46 (Scythe on stunned Bork 14.71; 17 hp left at armour 14), AG 191.91 → 182.85, Xarth 213.26 →
+  210.31, Ocellus 781.17 → 768.09.
+- **Gear**: fa Bork stunned and Smorks: Inquisitor's + Obligator (thrust); faNotOwned Bork stunned Torva + Scythe,
+  armour 14 remainder Zaryte crossbow + ruby, Smorks Torva + Scythe.
+- **Pins**: CrossRaid FA bork-smorks 221.2 → 187.3; Phase27 FA switch 1535.2 → 1451.6; r27fa re-captured (PHASE37_MEMO
+  r27fa 1215 / 1415 / 26377 / 188); Phase37c Xarth pools 42.5 / 520 / 17.5 (1 maul + 4 Tonalztics bars); Phase38h2
+  faNotOwned carriers HP 3742.8; Phase32 the user's plan 25:42.2 → 24:59.9; Phase38h3 Solo slot check
+  1061.5 / 436.9; Phase29 slow (auto carriers 2 + 3 → 1 + 4), Phase34 / 35b slow (Bork: no specs, Smorks Def 0;
+  Ocellus P2 1 maul carrier); Phase38h3 / 38h3b per-phase rows (Bork stunned); Phase33 / 34 / 35b / 38g Bork-line
+  tests use 'evenly' where they test the armour rows, defaults elsewhere; Phase29: the HP walk no longer fits every
+  phase's 95% team (Ocellus P2 / armour 14 short with 1 maul): the test now checks no weapon exceeds the largest need.
+- Tests: RaidTime (toy kit by hand: 150 / 192 / 249.6 / 186.6 s), Phase40b (fa undrained 1500 ÷ 15.6766 + 600 ÷
+  7.5258 = 175.41 s; faNotOwned 100.80 + 17.08 ÷ 5.3178 + 600 ÷ 7.2068 = 187.27 s; settings; rows). verifyPhase40b +
+  screenshot phase40b-bork-stun.png.
+- Not modelled (D3): idle time between stuns; damage specs on the stunned row don't raise the stun cap; a later armour
+  14 row's drained Defence is rolled at its own accuracy (the engine's per-row rule), not at the stun's 100%.
+- **Planning time** (same machine, 3 at once, HEAD vs 40b back to back): fa 60.8 → 96.8-106.8 s, faSolo 71.1 → 67.8 s,
+  faNotOwned 85.3 → 142-155 s (fa alone 45 → 83-93 s): **over the 1.3× budget**. Not per-query cost: the camp-one
+  ring guard now plans all 6 rings in full for fa (was 4: Lightbearer / Magus are within the guard with Bork cheaper),
+  and more kits fall within the own-plan margin (`ownPlanPick` exact re-times 20 → 47 s of fa's CPU). In the page the
+  ring runs go to helper workers in parallel. Headline memo pins re-measured (PHASE37_MEMO fa / faSolo / faNotOwned).
+- Run: fast suite green (1498); FA slow suites (CrossRaid Phase2 Phase3 Phase40) green (424) except the two headline CPU caps while ~30 slow files ran at once (fa 340 s > 200, faNotOwned 527 s > 400); run alone, CrossRaidHeadlines + CrossRaidHeadlinesCox pass (182 s / 329 s files); `pinHeadlines --full --check` no change; verifyAll 40b 40 38j
+  OK (phase40b screenshot taken); tsc, lint clean.
+
 ## Phase 40 review fixes (FA, 2026-10-30)
 
 Re-review of fe44b44c + bf9b67cb: FAIL on one Medium display finding; times confirmed.

@@ -291,10 +291,11 @@ describe('ring policy', () => {
    * 1564.4, ToA 905.5 → 918.2, CoX 452.7 → 469.8, ToB 457.3 → 461.7. Phase 38h-2 (bars valued in boss HP, specs where
    * they are worth most; ToA / CoX / ToB frozen): FA 1564.4 → 1545.8; review fix (values averaged over the drain's
    * outcomes, carriers on the planned route): 1545.8 → 1531.5. Phase 40 rework (the Xarth freezer keeps 80% of their DPS
-   * on Xarth's phase 2; same kit and route): 1531.5 → 1535.2.
+   * on Xarth's phase 2; same kit and route): 1531.5 → 1535.2. Phase 40b (stun-swap Bork: hit only while stunned, armour
+   * 14 for what the stuns can't cover): 1535.2 → 1451.6.
    */
   test.each(rowsFor(faRows([
-    { id: 'fractured-archive', seconds: 1535.2 },
+    { id: 'fractured-archive', seconds: 1451.6 },
     { id: 'toa', seconds: 918.2 },
     { id: 'cox', seconds: 469.8 },
     { id: 'tob', seconds: 461.7 },

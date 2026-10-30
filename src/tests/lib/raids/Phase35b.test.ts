@@ -38,11 +38,14 @@ const TEAM: BestSetupAssumptions = {
   },
 };
 
+// phase 40b: the FA encounters with the 'evenly' Bork kill order (Bork's armour rows get specs: two named events); the
+// default stun-swap leaves stunned Bork without drains (every melee hit lands)
 const encountersOf = (raidId: RaidId, ids: string[], a?: BestSetupAssumptions): EncounterTime[] => {
   const R = raidConfig(raidId);
   const as = a ?? R.defaultAssumptions;
   const kit = createKitEvaluator(R.presets.map((p) => presetKitLoadout(generateEmptyPlayer(), p, as)), as);
-  return ids.map((id) => encounterTime(id, kit, raidTimeAssumptionsFrom(as, 'team', R.defaultTimeSettings, R.time)));
+  const settings = raidId === 'fractured-archive' ? { ...R.defaultTimeSettings, borkKillOrder: 'evenly' } : R.defaultTimeSettings;
+  return ids.map((id) => encounterTime(id, kit, raidTimeAssumptionsFrom(as, 'team', settings, R.time)));
 };
 const summaryOf = (e: EncounterTime) => encounterDrainSummary(e.phases.map((p) => ({
   key: p.key, label: p.label, drainLine: p.choice?.drainLine, drainReset: p.drainReset, npc: phaseNpc(p.targetKey),
@@ -299,6 +302,7 @@ describe('toy: two NPCs and a reset', () => {
     // phase 38g: Bork its 2 Elder maul carriers at 95%; the Smorks (no team reaches floor 0) what the bars still pay
     // phase 38h-1: the Smorks' 6 specs at the Defence the earlier ones leave (ranked Def 36 → 13)
     // phase 38h-2 review fixes: the Smorks also get the third maul spec (Tonalztics ×6 + Elder maul, Def 7)
-    expect(row.specsText).toBe('Bork: Elder maul 2 specs → Def 180 · Smorks: Elder maul 1 spec + Tonalztics 10 hits → Def 7');
+    // phase 40b (stun-swap): stunned Bork takes no drain (every melee hit lands); the Smorks get both maul specs
+    expect(row.specsText).toBe('Bork: no specs · Smorks: Elder maul 2 specs + Tonalztics 10 hits → Def 0');
   });
 });

@@ -152,11 +152,10 @@ const ZCB_PER_BAR: Record<string, Record<string, [number, string | null]>> = {
   fa: {
     'ag-flying|': [90.9, null],
     'ag-grounded|': [82.0, 'crimsonKisten'],
-    'bork|Smorks 100-76% HP (armour 8)': [85.9, 'crimsonKisten'],
-    'bork|Smorks 75-51% HP (armour 10)': [85.6, 'voidwaker'],
-    'bork|Smorks 50-26% HP (armour 12)': [85.2, 'voidwaker'],
-    'bork|Smorks 25-0% HP (armour 14)': [84.8, 'voidwaker'],
-    'smorks|': [85.1, 'crimsonKisten'],
+    // phase 40b (stun-swap): Bork only stunned (was armour 8 / 10 / 12 / 14: 85.9 / 85.6 / 85.2 / 84.8; ZCB per bar is
+    // lower there: the kit's stunned melee hits harder, so each spec saves less time); Smorks 85.1 → 84.6
+    'bork|Stunned (armour 0)': [69.9, 'crimsonKisten'],
+    'smorks|': [84.6, 'crimsonKisten'],
     'moia|': [85.5, null],
     'xarth|': [75.9, 'crimsonKisten'],
     'ocellus-p1|At a corner': [86.5, 'crimsonKisten'],
@@ -166,7 +165,10 @@ const ZCB_PER_BAR: Record<string, Record<string, [number, string | null]>> = {
   faSolo: {
     'ag-flying|': [90.9, null],
     'ag-grounded|': [86.0, 'crimsonKisten'],
-    'ezekiel|': [71.4, 'crimsonKisten'],
+    // phase 40b: the Bork route (was Ezekiel 71.4 / crimsonKisten); party 1: most of Bork at armour 14 (4 stuns × 4.2 s)
+    'bork|Stunned (armour 0)': [79.1, 'crimsonKisten'],
+    'bork|Smorks 25-0% HP (armour 14)': [88.8, 'voidwaker'],
+    'smorks|': [92.5, 'voidwaker'],
     'moia|': [85.5, null],
     'xarth|': [79.2, 'crimsonKisten'],
     'ocellus-p1|At a corner': [90.6, 'crimsonKisten'],
@@ -195,7 +197,7 @@ describe.each([
       expect(best).toBeLessThan(BRING_SECOND_FACTOR * p.gains.zcb!);
       if (rankedAt(p, ALL)[0] === 'zcb') firsts += 1;
     });
-    expect(firsts).toBe(name === 'fa' ? 12 : 7);
+    expect(firsts).toBe(9); // phase 40b: fa 12 → 9 (Bork 4 rows → 1), faSolo 7 → 9 (Bork's 3 rows for Ezekiel)
     expect(bringRule(phases, ALL).bring).toEqual(['zcb']);
     const { fx } = routeOf(name);
     // phase 38h-3b: a filler comes along (leftover energy), outside the bring rule; phase 38j: Crimson kisten (50%), not
@@ -291,9 +293,9 @@ describe('Solo drain weapons against a kit slot (review fix 2)', () => {
     });
     // as measured (0.1 HP): Elder maul adds 0 HP (Tonalztics / Eye of Ayak cover its drains) vs 148.9: left at home;
     // Tonalztics 1045.0 vs 194.0 and Eye of Ayak 420.4 vs 339.8: kept. Phase 38j (the room times' regen): Tonalztics adds
-    // 1061.4, Eye of Ayak 436.8
+    // 1061.4, Eye of Ayak 436.8. Phase 40b (stun-swap Bork): 1061.5 / 436.9
     const hp = Object.fromEntries(checked.map((d) => [d.weapon, [Math.round(d.slot!.adds * 10) / 10, Math.round(d.slot!.costs * 10) / 10]]));
-    expect(hp).toEqual({ elderMaul: [0, 148.9], tonalztics: [1061.4, 194], ayak: [436.8, 339.8] });
+    expect(hp).toEqual({ elderMaul: [0, 148.9], tonalztics: [1061.5, 194], ayak: [436.9, 339.8] });
     expect(r.specs.bring).toEqual(['tonalztics', 'ayak']);
   }, 900000);
 });
