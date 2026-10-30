@@ -3,6 +3,21 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 40c-2: Ranged / Magic prayer dropdowns (FA, numbers, 2026-10-30)
+
+ROADMAP 40c-2 (user, after 40c). DATA_SOURCES *Phase 40c*; BEST_SETUP *Assumptions*.
+- **Inputs**: the 40c checkboxes became two icon lists (`IconSelect`, like the potions): **Ranged prayer** Rigour /
+  Deadeye / Eagle Eye and **Magic prayer** Augury / Mystic Vigour / Mystic Might (Deadeye / Mystic Vigour: Royal
+  Titans scrolls, which override Eagle Eye / Mystic Might in game). `BestSetupAssumptions.rangedPrayer` / `magicPrayer`
+  (`RANGED_PRAYERS` / `MAGIC_PRAYERS` in presets.ts), default Rigour / Augury. `prayerFor` returns them.
+- **Saved settings**: a prayer not in the style's list → the default; 40c settings with `rigourUnlocked` /
+  `auguryUnlocked: false` → Eagle Eye / Mystic Might.
+- **Data**: Deadeye +18% / +18%, Mystic Vigour +18%, +3% magic damage: upstream `PrayerMap` matches the wiki.
+- **Headlines** (`pinHeadlines --full`): **no change**.
+- **Tests**: `Phase40c.test.ts` rewritten (11): Tbow Rigour > Deadeye > Eagle Eye, Shadow Augury > Mystic Vigour >
+  Mystic Might, specs, Search key, settings round-trip / fallback / 40c migration. `verifyPhase40c.mjs` updated
+  (options, footer "Piety / Deadeye / Mystic Might", Summary changes, kept after reload); screenshot updated.
+
 ## Phase 40c: Rigour / Augury unlocked checkboxes (FA, numbers, 2026-10-30)
 
 ROADMAP 40c. DATA_SOURCES *Phase 40c*; BEST_SETUP *Assumptions*. Built in the main session (new workflow: only the

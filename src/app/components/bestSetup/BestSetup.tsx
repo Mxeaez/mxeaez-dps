@@ -14,7 +14,7 @@ import {
   targetPhases,
 } from '@/lib/fracturedArchive/bestSetup';
 import {
-  BestSetupAssumptions, ItemRef, MySpecs, StyleGroup, TeamSpecAssumptions, withPlanCarriers,
+  BestSetupAssumptions, ItemRef, MAGIC_PRAYERS, MySpecs, RANGED_PRAYERS, StyleGroup, TeamSpecAssumptions, withPlanCarriers,
 } from '@/lib/fracturedArchive/presets';
 import { scaleMonster } from '@/lib/MonsterScaling';
 import {
@@ -70,8 +70,10 @@ import {
 
 /** Phase 34: a potion as an icon-select option. */
 const potionOption = (p: Potion): IconOption<Potion> => ({ value: p, label: PotionMap[p].name, src: PotionMap[p].image.src });
+/** Phase 40c-2: a prayer as an icon-select option. */
+const prayerOption = (p: Prayer): IconOption<Prayer> => ({ value: p, label: PrayerMap[p].name, src: PrayerMap[p].image.src });
 
-/** The prayers the setups pray (Zeal / Rigour / Augury follow the assumptions box, phase 40c). */
+/** The prayers the setups pray (Zeal and the Ranged / Magic prayer follow the assumptions box, phase 40c-2). */
 const groupPrayers = (a: BestSetupAssumptions): string => (['melee', 'ranged', 'magic'] as StyleGroup[])
   .map((g) => PrayerMap[prayerFor(g, a)].name).join(' / ');
 
@@ -274,7 +276,7 @@ const AssumptionsBox: React.FC<{
       <div className="flex items-center gap-2">
         <span
           className="font-bold text-sm"
-          title={`All skills 99 · ${raid.raidOnlyAssumptions ? 'Piety (or Zeal) / Rigour (or Eagle Eye) / Augury (or Mystic Might)' : 'Piety / Rigour / Augury'} by style. ${raid.raidOnlyAssumptions ? 'Items per preset: src/lib/fracturedArchive/presets.ts' : raid.presetsNote}`}
+          title={`All skills 99 · ${raid.raidOnlyAssumptions ? 'Piety (or Zeal) / the Ranged and Magic prayer chosen' : 'Piety / Rigour / Augury'} by style. ${raid.raidOnlyAssumptions ? 'Items per preset: src/lib/fracturedArchive/presets.ts' : raid.presetsNote}`}
         >
           Assumptions
         </span>
@@ -313,20 +315,25 @@ const AssumptionsBox: React.FC<{
             Zeal instead of Piety
           </label>
         )}
-        {raid.raidOnlyAssumptions && (
-          <label htmlFor="bs-rigour" className="flex items-center gap-1" title="Ranged setups pray Rigour; untick if you haven't unlocked it (they pray Eagle Eye)">
-            <input id="bs-rigour" type="checkbox" checked={value.rigourUnlocked} onChange={(e) => set({ rigourUnlocked: e.target.checked })} />
-            <ItemIcon name="Rigour" src={PrayerMap[Prayer.RIGOUR].image.src} size={18} />
-            Rigour unlocked
-          </label>
-        )}
-        {raid.raidOnlyAssumptions && (
-          <label htmlFor="bs-augury" className="flex items-center gap-1" title="Magic setups pray Augury; untick if you haven't unlocked it (they pray Mystic Might)">
-            <input id="bs-augury" type="checkbox" checked={value.auguryUnlocked} onChange={(e) => set({ auguryUnlocked: e.target.checked })} />
-            <ItemIcon name="Augury" src={PrayerMap[Prayer.AUGURY].image.src} size={18} />
-            Augury unlocked
-          </label>
-        )}
+        {raid.raidOnlyAssumptions && ([
+          ['ranged', 'Ranged prayer', RANGED_PRAYERS, 'rangedPrayer'],
+          ['magic', 'Magic prayer', MAGIC_PRAYERS, 'magicPrayer'],
+        ] as const).map(([g, label, choices, key]) => {
+          const title = `Prayer every ${g} setup prays: the best one you have unlocked (Deadeye / Mystic Vigour: Royal Titans prayer scrolls)`;
+          return (
+            <span key={g} className="flex items-center gap-1" title={title}>
+              <label htmlFor={`bs-prayer-${g}`}>{label}</label>
+              <IconSelect
+                id={`bs-prayer-${g}`}
+                testId={`bs-prayer-${g}`}
+                value={value[key]}
+                primary={choices.map(prayerOption)}
+                title={title}
+                onChange={(p) => set({ [key]: p })}
+              />
+            </span>
+          );
+        })}
       </div>
       <div className="flex flex-wrap gap-x-2 gap-y-2 items-center" data-testid="my-specs" data-mode={specMode}>
         <span className="font-semibold" title="The drain weapons you bring yourself: the Solo drain state (Search, Summary) uses only these, within your own spec energy. Planner decides: filled from the last plan's &quot;Bring&quot; (Solo: the weapons it picked; Team: your share). Set manually: the weapons you tick here (the Plan tab's &quot;Spec weapons: Specs I bring&quot;)">Specs I bring:</span>

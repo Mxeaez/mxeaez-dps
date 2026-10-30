@@ -1,6 +1,9 @@
 import Potion from '@/enums/Potion';
+import { Prayer } from '@/enums/Prayer';
 import { DRAIN_STATES, DrainStateId } from '@/lib/fracturedArchive/bestSetup';
-import { BestSetupAssumptions, MySpecs, TeamSpecAssumptions } from '@/lib/fracturedArchive/presets';
+import {
+  BestSetupAssumptions, MAGIC_PRAYERS, MySpecs, RANGED_PRAYERS, TeamSpecAssumptions,
+} from '@/lib/fracturedArchive/presets';
 import {
   COMFORT_SUPPLY_TYPES, DEFAULT_RING_POLICY, DEFAULT_SPEC_MODE, equipmentById, heartById, heartByPotion, planItemByName,
   RING_POLICIES, RingPolicy, SPEC_MODES, SpecMode, SupplyCounts,
@@ -28,7 +31,7 @@ import { Spellbook, SPELLBOOKS } from '@/lib/raids/types';
  * Restoring validates every field on its own (`validateRaidSettings`): unknown keys are ignored, a value of the wrong
  * type or out of range falls back to that input's default, and a missing part keeps its defaults. The assumptions
  * restored are the Assumptions box's inputs only (party size and the raid inputs, potions / heart, Zeal, fragments,
- * Rigour / Augury unlocked (phase 40c), Specs I bring + Lightbearer + energy priority, team carriers + mode +
+ * Ranged / Magic prayer (phase 40c-2), Specs I bring + Lightbearer + energy priority, team carriers + mode +
  * Lightbearer, floor threshold, players at your DPS); what the planner sets for its own runs (fight length, damage
  * specs, surge potions, ...) is not.
  */
@@ -162,6 +165,12 @@ export const validateAssumptions = (raid: RaidConfig, raw: unknown): BestSetupAs
   const manual = field(team, 'manual');
   if (typeof manual === 'boolean') teamOut.manual = manual;
   else if (d.team.manual !== undefined) teamOut.manual = d.team.manual;
+  // phase 40c-2: a prayer choice; settings from 40c had a "… unlocked" flag instead (false = the lowest prayer)
+  const prayerOf = (k: string, choices: Prayer[], legacyFlag: string, legacy: Prayer, dv: Prayer): Prayer => {
+    const v = field(raw, k);
+    if (v !== undefined) return oneOf(v, choices, dv);
+    return field(raw, legacyFlag) === false ? legacy : dv;
+  };
   const potionOf = (g: keyof BestSetupAssumptions['potions']) => {
     const v = field(potions, g);
     return isPotion(v) ? v : d.potions[g];
@@ -170,8 +179,8 @@ export const validateAssumptions = (raid: RaidConfig, raw: unknown): BestSetupAs
     ...d,
     potions: { melee: potionOf('melee'), ranged: potionOf('ranged'), magic: potionOf('magic') },
     useZeal: bool(field(raw, 'useZeal'), d.useZeal),
-    rigourUnlocked: bool(field(raw, 'rigourUnlocked'), d.rigourUnlocked),
-    auguryUnlocked: bool(field(raw, 'auguryUnlocked'), d.auguryUnlocked),
+    rangedPrayer: prayerOf('rangedPrayer', RANGED_PRAYERS, 'rigourUnlocked', Prayer.EAGLE_EYE, d.rangedPrayer),
+    magicPrayer: prayerOf('magicPrayer', MAGIC_PRAYERS, 'auguryUnlocked', Prayer.MYSTIC_MIGHT, d.magicPrayer),
     elementalFragments: bool(field(raw, 'elementalFragments'), d.elementalFragments),
     mySpecs,
     team: teamOut,

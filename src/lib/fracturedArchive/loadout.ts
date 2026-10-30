@@ -46,11 +46,11 @@ export const resolvePresetEquipment = (preset: PresetDef): Partial<PlayerEquipme
   Object.entries(preset.equipment).map(([slot, ref]) => [slot, resolveItem(ref as ItemRef)]),
 );
 
-/** The prayer a style group prays: Zeal instead of Piety, and (phase 40c) Eagle Eye / Mystic Might when locked. */
+/** The prayer a style group prays: Zeal instead of Piety, and (phase 40c-2) the Ranged / Magic prayer choice. */
 export const prayerFor = (group: StyleGroup, assumptions: BestSetupAssumptions): Prayer => {
   if (group === 'melee') return assumptions.useZeal ? Prayer.ZEAL : Prayer.PIETY;
-  if (group === 'ranged') return assumptions.rigourUnlocked === false ? Prayer.EAGLE_EYE : Prayer.RIGOUR;
-  return assumptions.auguryUnlocked === false ? Prayer.MYSTIC_MIGHT : Prayer.AUGURY;
+  if (group === 'ranged') return assumptions.rangedPrayer ?? Prayer.RIGOUR;
+  return assumptions.magicPrayer ?? Prayer.AUGURY;
 };
 
 const ALL_ELEMENTS: Spellement[] = ['air', 'water', 'earth', 'fire'];

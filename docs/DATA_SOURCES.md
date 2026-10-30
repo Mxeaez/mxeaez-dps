@@ -1154,6 +1154,7 @@ https://oldschool.runescape.wiki/w/The_Fractured_Archive (Rewards). User request
 - Fallbacks (wiki, match upstream `PrayerMap`): Eagle Eye +15% ranged attack / +15% ranged strength; Mystic Might +15%
   magic attack / defence, +2% magic damage. Rigour +20% / +23%; Augury +25%, +4% magic damage. Rigour / Augury come
   from the CoX prayer scrolls.
-- Not modelled: Deadeye (+18% / +18%) and Mystic Vigour (+18%, +3% magic damage), from the Royal Titans' prayer scrolls,
-  "permanently override Eagle Eye and Mystic Might when unlocked" (wiki). A player without Rigour / Augury but with
-  those scrolls prays them, not Eagle Eye / Mystic Might; the user asked for Eagle Eye / Mystic Might (open question).
+- Deadeye (+18% / +18%) and Mystic Vigour (+18%, +3% magic damage), from the Royal Titans' prayer scrolls,
+  "permanently override Eagle Eye and Mystic Might when unlocked" (wiki); upstream `PrayerMap` matches. Phase 40c-2
+  (user, 2026-10-30): the checkboxes became a choice of three per style (Rigour / Deadeye / Eagle Eye, Augury /
+  Mystic Vigour / Mystic Might).

@@ -1,5 +1,6 @@
 import { PlayerEquipment } from '@/types/Player';
 import Potion from '@/enums/Potion';
+import { Prayer } from '@/enums/Prayer';
 import {
   CoxInputs, RaidId, Spellbook, ToaInputs, TobInputs,
 } from '@/lib/raids/types';
@@ -15,8 +16,8 @@ import type { DamageSpecWeapon } from '@/lib/fracturedArchive/damageSpecs';
  *   picked automatically (see `ITEM_VERSION_PREFERENCE` in bestSetup.ts); to force one, write `['Name', 'Version']`.
  *   `src/tests/lib/fracturedArchive/Presets.test.ts` fails if a name doesn't exist, so run `yarn test` after editing.
  * - Leave a slot out to keep it empty. Two-handed weapons must not have a `shield`.
- * - `group` picks the potion and prayer from the assumptions box (melee: Piety or Zeal; ranged: Rigour or
- *   Eagle Eye; magic: Augury or Mystic Might, phase 40c).
+ * - `group` picks the potion and prayer from the assumptions box (melee: Piety or Zeal; ranged / magic: the
+ *   Ranged / Magic prayer choice, phase 40c-2).
  * - `styles`: combat style names to try (as in the calculator's style list, e.g. 'Chop', 'Jab', 'Rapid'); every style
  *   with that name is tried and the best one per boss is shown. Leave it out to try every non-defensive style.
  * - `spells`: for autocasting presets, spell names to try (the best one per boss is shown).
@@ -199,10 +200,10 @@ export interface BestSetupAssumptions {
   potions: Record<StyleGroup, Potion>;
   /** Melee presets use Zeal (Fractured Archive prayer) instead of Piety. */
   useZeal: boolean;
-  /** Phase 40c: Rigour is unlocked (ranged setups pray it); false = Eagle Eye. */
-  rigourUnlocked: boolean;
-  /** Phase 40c: Augury is unlocked (magic setups pray it); false = Mystic Might. */
-  auguryUnlocked: boolean;
+  /** Phase 40c-2: the prayer ranged setups pray (one of {@link RANGED_PRAYERS}; Rigour unless not unlocked). */
+  rangedPrayer: Prayer;
+  /** Phase 40c-2: the prayer magic setups pray (one of {@link MAGIC_PRAYERS}). */
+  magicPrayer: Prayer;
   /** Magic presets have all four elemental fragments unlocked (+2 base max hit for elemental spells). */
   elementalFragments: boolean;
   /**
@@ -304,6 +305,10 @@ export interface TeamSpecAssumptions {
   lightbearer: { elderMaul: boolean, dwh: boolean, bgs: boolean, tonalztics: boolean, ayak: boolean };
 }
 
+/** Phase 40c-2: the Ranged / Magic prayer choices, best first (Deadeye / Mystic Vigour: Royal Titans scrolls). */
+export const RANGED_PRAYERS: Prayer[] = [Prayer.RIGOUR, Prayer.DEADEYE, Prayer.EAGLE_EYE];
+export const MAGIC_PRAYERS: Prayer[] = [Prayer.AUGURY, Prayer.MYSTIC_VIGOUR, Prayer.MYSTIC_MIGHT];
+
 export const DEFAULT_ASSUMPTIONS: BestSetupAssumptions = {
   potions: {
     melee: Potion.SUPER_COMBAT,
@@ -311,8 +316,8 @@ export const DEFAULT_ASSUMPTIONS: BestSetupAssumptions = {
     magic: Potion.SATURATED_HEART,
   },
   useZeal: false,
-  rigourUnlocked: true,
-  auguryUnlocked: true,
+  rangedPrayer: Prayer.RIGOUR,
+  magicPrayer: Prayer.AUGURY,
   elementalFragments: true,
   partySize: 6,
   // phase 33: nothing is brought unless the user picks it (in "Planner decides" mode the chips mirror the last plan)
