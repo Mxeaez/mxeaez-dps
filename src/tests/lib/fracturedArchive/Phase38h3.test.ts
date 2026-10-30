@@ -192,7 +192,9 @@ describe.each([
     expect(firsts).toBe(name === 'fa' ? 12 : 7);
     expect(bringRule(phases, ALL).bring).toEqual(['zcb']);
     const { fx } = routeOf(name);
-    expect(fx.specs.damage).toEqual(['zcb']);
+    // phase 38h-3b: Burning claws comes along as the filler (leftover energy), outside the bring rule
+    expect(fx.specs.damage).toEqual(['zcb', 'burningClaws']);
+    expect(fx.specs.filler).toBe('burningClaws');
     expect(fx.specs.bringRule).toMatchObject({ first: 'zcb', second: null, bring: ['zcb'] });
     // the plan's stored decision is the rule on its own stored gains
     expect(bringRule(fx.specs.bringRule!.gains, ALL)).toEqual(fx.specs.bringRule);
@@ -206,10 +208,13 @@ describe.each([
     viaKit.forEach((p, i) => ALL.forEach((w) => expect([p.key, w, p.gains[w]! - ind[i].gains[w]!]).toEqual([p.key, w, expect.closeTo(0, 6)])));
   }, 120000);
 
-  test('the briefing: "Then: 1. Zaryte crossbow (per bar)" on every encounter of the route', () => {
+  test('the briefing: "Then: 1. Zaryte crossbow (per bar)" on every encounter of the route (38h-3b: + the filler where specced)', () => {
     const { fx } = routeOf(name);
     expect(Object.keys(fx.specs.then ?? {})).toEqual(Object.keys(headline(name).encounters));
-    Object.values(fx.specs.then ?? {}).forEach((t) => expect(t).toBe('Then: 1. Zaryte crossbow (per bar)'));
+    // phase 38h-3b: "· leftover: Burning claws" on the encounters where the plan makes a Burning claws spec
+    const fills = name === 'fa' ? ['archive-guardian', 'bork-smorks', 'xarth', 'ocellus'] : ['ezekiel', 'xarth', 'ocellus'];
+    Object.entries(fx.specs.then ?? {}).forEach(([id, t]) => expect([id, t]).toEqual([id,
+      `Then: 1. Zaryte crossbow (per bar)${fills.includes(id) ? ' · leftover: Burning claws' : ''}`]));
   }, 120000);
 });
 

@@ -243,6 +243,11 @@ export interface BestSetupAssumptions {
    * Undefined = none (the Plan tab's planner fills it).
    */
   damageSpecs?: DamageSpecWeapon[];
+  /**
+   * Phase 38h-3b: those of `damageSpecs` spent only from energy the others leave (the filler weapon: the spec budget
+   * maximises the other specs' HP first). Undefined = none.
+   */
+  damageFiller?: DamageSpecWeapon[];
   /** Phase 36: Surge potions you carry (4 doses each; the time model places the doses). Undefined = 0. */
   surgePotions?: number;
   /**

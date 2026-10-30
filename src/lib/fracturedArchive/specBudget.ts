@@ -112,6 +112,11 @@ export interface DamageChoice {
   cost: number;
   /** Net damage of one spec on this row (> 0; rows list only the useful weapons): its value in HP (phase 38h-2). */
   net: number;
+  /**
+   * Phase 38h-3b: a filler weapon, spent only from energy nothing else uses (the DP maximises the HP of the drains and
+   * the other damage specs first, then the filler's HP; `hp` counts both).
+   */
+  filler?: boolean;
 }
 
 export interface RowOutcome {
@@ -312,14 +317,16 @@ export const allocateBudget = (p: AllocationProblem): AllocationResult => {
     if (!outcomeMemo.has(k)) outcomeMemo.set(k, p.rowOutcome(row, opt));
     return outcomeMemo.get(k)!;
   };
-  // phase 38h-2: the objective is boss HP (`w` = drains × (1 + DRAIN_CLOSE_CALL) + damage specs' net), then the
-  // earlier options (`pref`), then fewer specs; `hp` (unweighted) and `seconds` are reported along
+  // phase 38h-2: the objective is boss HP (`w` = drains × (1 + DRAIN_CLOSE_CALL) + damage specs' net), then (phase
+  // 38h-3b) the filler weapons' net (`fw`: energy left after the rest), then the earlier options (`pref`), then fewer
+  // specs; `hp` (unweighted, filler included) and `seconds` are reported along
   type Val = {
-    w: number, hp: number, pref: number, seconds: number, specs: number, decision: RowDecision, after: PoolState, next: string | null,
+    w: number, fw: number, hp: number, pref: number, seconds: number, specs: number, decision: RowDecision, after: PoolState, next: string | null,
   };
   const memo = new Map<string, Val>();
   const better = (a: Val, b: Val | null) => !b
-    || a.w > b.w + EPS || (Math.abs(a.w - b.w) <= EPS && (a.pref < b.pref || (a.pref === b.pref && a.specs < b.specs)));
+    || a.w > b.w + EPS || (Math.abs(a.w - b.w) <= EPS && (a.fw > b.fw + EPS || (Math.abs(a.fw - b.fw) <= EPS
+      && (a.pref < b.pref || (a.pref === b.pref && a.specs < b.specs)))));
   const keep = 1 + DRAIN_CLOSE_CALL;
 
   const solve = (i: number, state: PoolState, chosen: number[], pending: boolean): { key: string, v: Val } | null => {
@@ -398,13 +405,18 @@ export const allocateBudget = (p: AllocationProblem): AllocationResult => {
             after[gid] = list.map((e) => restored(e, row)).sort((x, y) => y - x);
           });
           const secs = rowSecondsAfter(o, d);
-          // review 38h-2: damage specs can't take more than the row's damage off it
-          const dmgSum = o.damageSpecs.reduce((t, c) => t + (d[c.weapon] ?? 0) * c.net, 0);
-          const dmgHp = o.damage > 0 ? Math.min(o.damage, dmgSum) : dmgSum;
+          // review 38h-2: damage specs can't take more than the row's damage off it (38h-3b: the filler's share is
+          // what it adds above the other weapons')
+          const sumOf = (filler: boolean) => o.damageSpecs.reduce((t, c) => (!!c.filler === filler ? t + (d[c.weapon] ?? 0) * c.net : t), 0);
+          const cap = (x: number) => (o.damage > 0 ? Math.min(o.damage, x) : x);
+          const mainSum = sumOf(false);
+          const mainHp = cap(mainSum);
+          const fillHp = cap(mainSum + sumOf(true)) - mainHp;
           const nxt = solve(i + 1, after, ch, dose && !drink);
           const cand: Val = {
-            w: drainValue * keep + dmgHp + (nxt?.v.w ?? 0),
-            hp: drainValue + dmgHp + (nxt?.v.hp ?? 0),
+            w: drainValue * keep + mainHp + (nxt?.v.w ?? 0),
+            fw: fillHp + (nxt?.v.fw ?? 0),
+            hp: drainValue + mainHp + fillHp + (nxt?.v.hp ?? 0),
             pref: pref + (nxt?.v.pref ?? 0),
             seconds: secs + (nxt?.v.seconds ?? 0),
             specs: drainSpecs + countSpecs(d) + (nxt?.v.specs ?? 0),
@@ -423,7 +435,7 @@ export const allocateBudget = (p: AllocationProblem): AllocationResult => {
     // always has one: every option 0)
     if (!best) {
       best = {
-        w: -Infinity, hp: -Infinity, pref: Infinity, seconds: Infinity, specs: Infinity, decision: { started: [], damage: {}, seconds: Infinity }, after: state, next: null,
+        w: -Infinity, fw: -Infinity, hp: -Infinity, pref: Infinity, seconds: Infinity, specs: Infinity, decision: { started: [], damage: {}, seconds: Infinity }, after: state, next: null,
       };
     }
     memo.set(key, best);

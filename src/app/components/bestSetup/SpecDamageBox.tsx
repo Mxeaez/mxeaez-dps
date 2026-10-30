@@ -4,7 +4,7 @@ import React, { useMemo } from 'react';
 import { buildTargetMonster, DrainStateId, findTarget } from '@/lib/fracturedArchive/bestSetup';
 import { BestSetupAssumptions } from '@/lib/fracturedArchive/presets';
 import { damageSpecRanking, gainPerFullBar } from '@/lib/fracturedArchive/damageSpecs';
-import { thenText } from '@/lib/fracturedArchive/bringRule';
+import { thenWithLeftover } from '@/lib/fracturedArchive/bringRule';
 import { itemImageByName } from '@/lib/fracturedArchive/loadoutIcons';
 import { ItemIcon } from '@/app/components/bestSetup/ItemIcons';
 
@@ -34,13 +34,13 @@ const SpecDamageBox: React.FC<{
       .map((r, i) => ({ ...r, perEnergy: gainPerFullBar(r), i }))
       .sort((a, b) => (Number(b.canHit) - Number(a.canHit)) || (b.perEnergy - a.perEnergy) || (a.i - b.i));
   }, [targetKey, phase, drain, assumptions, dps, mult]);
-  const then = useMemo(() => thenText({ gains: Object.fromEntries(rows.map((r) => [r.weapon, r.perEnergy])) }, rows.map((r) => r.weapon)), [rows]);
+  const then = useMemo(() => thenWithLeftover({ gains: Object.fromEntries(rows.map((r) => [r.weapon, r.perEnergy])) }, rows.map((r) => r.weapon)), [rows]);
   return (
     <details className="text-xs border border-body-400 dark:border-dark-200 rounded p-2" data-testid="spec-damage-box" open>
       <summary className="cursor-pointer font-semibold" title={`Damage special attacks on this boss with these drains: average damage per spec, minus what your best loadout here (${dps.toFixed(3)} DPS) deals in the spec's ticks, and the seconds one spec saves (gain ÷ (${mult} × DPS)); best gain per 100% energy first`}>
         Specs (damage)
       </summary>
-      {/* phase 38h-3: the per-boss order of the briefing, "Then: 1. Voidwaker 2. Zaryte crossbow (per bar)" */}
+      {/* phase 38h-3: the per-boss order of the briefing, "Then: 1. Voidwaker 2. Zaryte crossbow (per bar)"; 38h-3b: "· leftover: …" */}
       {then && <div className="mt-1" data-testid="drain-facts-then" data-text={then}>{then}</div>}
       {/* phase 37: six columns are wider than a phone: the table scrolls sideways inside the box */}
       <div className="overflow-x-auto">

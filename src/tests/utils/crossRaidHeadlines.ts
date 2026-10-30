@@ -103,7 +103,13 @@ export const recomputed = (raid: RaidConfig, res: PlanResult): number => {
   // phase 29 review: the Team drains use the planner's carriers
   const planA0 = res.specs.team?.carriers ? { ...ringA, team: { ...ringA.team, carriers: res.specs.team.carriers } } : ringA;
   // phase 36: and your damage spec weapons / Surge potions (the spec budget spends your energy on them)
-  const planA = { ...planA0, damageSpecs: res.specs.damage ?? [], surgePotions: res.specs.surgePotions ?? 0 };
+  const planA = {
+    ...planA0,
+    damageSpecs: res.specs.damage ?? [],
+    surgePotions: res.specs.surgePotions ?? 0,
+    // phase 38h-3b: the filler (spent from leftover energy only)
+    ...(res.specs.filler ? { damageFiller: [res.specs.filler] } : {}),
+  };
   const base = generateEmptyPlayer();
   const loadouts: KitLoadout[] = res.kit.map((c) => {
     const eq = toPlayerEquipment(c.equipment);

@@ -189,6 +189,35 @@ export const routeSpecGains = (
   };
 };
 
+/** Phase 38h-3b: "Then: 1. Zaryte crossbow (per bar) · leftover: Crimson kisten" (`then` null: "Then: leftover: …"). */
+export const withLeftover = (then: string | null, filler: DamageSpecWeapon | null | undefined): string | null => {
+  if (!filler) return then;
+  const tail = `leftover: ${DAMAGE_SPEC_WEAPONS[filler].label}`;
+  return then ? `${then} · ${tail}` : `Then: ${tail}`;
+};
+
+/**
+ * Phase 38h-3b (Search / Summary, no plan): the filler for the energy the first-ranked weapon leaves, the best of the
+ * others (most HP per bar) that costs less than the first (energy too little for another of its specs); null: none.
+ */
+export const leftoverWeapon = (p: Pick<PhaseSpecGains, 'gains'>, weapons: DamageSpecWeapon[]): DamageSpecWeapon | null => {
+  const ranked = rankedAt({ key: '', label: '', gains: p.gains }, weapons);
+  if (!ranked.length) return null;
+  const firstCost = DAMAGE_SPEC_WEAPONS[ranked[0]].energy;
+  return ranked.slice(1).find((w) => DAMAGE_SPEC_WEAPONS[w].energy < firstCost) ?? null;
+};
+
+/**
+ * Phase 38h-3b: the Search / Summary "Then": the top two (per bar) and the leftover weapon ({@link leftoverWeapon});
+ * when the leftover weapon is the second, "Then: 1. A (per bar) · leftover: B".
+ */
+export const thenWithLeftover = (p: Pick<PhaseSpecGains, 'gains'>, weapons: DamageSpecWeapon[]): string | null => {
+  const filler = leftoverWeapon(p, weapons);
+  if (!filler) return thenText(p, weapons, 2);
+  const second = rankedAt({ key: '', label: '', gains: p.gains }, weapons)[1];
+  return withLeftover(thenText(p, weapons, second === filler ? 1 : 2), filler);
+};
+
 /**
  * Search / Summary: "Then: …" on a monster as the calculator holds it (drains included) for a loadout of `dps`, every
  * damage spec weapon (`damageSpecRanking`, HP per full bar); null when none gains.
@@ -196,7 +225,8 @@ export const routeSpecGains = (
 export const damageThenText = (monster: Monster, assumptions: BestSetupAssumptions, dps: number, max = 2): string | null => {
   const gains: PhaseSpecGains['gains'] = {};
   damageSpecRanking(monster, assumptions, dps, 1).forEach((r) => { gains[r.weapon] = gainPerFullBar(r); });
-  return thenText({ gains }, DAMAGE_SPEC_WEAPON_IDS, max);
+  // phase 38h-3b: with the leftover weapon (max 2 only)
+  return max === 2 ? thenWithLeftover({ gains }, DAMAGE_SPEC_WEAPON_IDS) : thenText({ gains }, DAMAGE_SPEC_WEAPON_IDS, max);
 };
 
 /**

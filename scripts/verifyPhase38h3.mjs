@@ -34,7 +34,8 @@ const waitPlan = async (page) => {
   await page.locator('[data-testid="plan-result"]').waitFor({ timeout: 900000 });
 };
 const thenOf = async (loc) => loc.locator('[data-testid="drain-facts-then"]').evaluateAll((els) => els.map((e) => e.getAttribute('data-text')));
-const THEN = /^Then: 1\. [A-Z][A-Za-z ]+(?: 2\. [A-Z][A-Za-z ]+)? \(per bar\)$/;
+// phase 38h-3b: optionally "· leftover: <weapon>" (the filler)
+const THEN = /^Then: 1\. [A-Z][A-Za-z ]+(?: 2\. [A-Z][A-Za-z ]+)? \(per bar\)(?: · leftover: [A-Z][A-Za-z ]+)?$/;
 
 const main = async () => {
   const t0 = Date.now();
@@ -79,7 +80,7 @@ const main = async () => {
     then: e.querySelector('[data-testid="drain-facts-then"]')?.getAttribute('data-text') ?? null,
   })));
   const withDamage = rows.filter((r) => r.damage);
-  check(withDamage.length > 0 && withDamage.every((r) => r.then === 'Then: 1. Zaryte crossbow (per bar)'), `Plan: every briefing row with damage specs says "Then: 1. Zaryte crossbow (per bar)" (${withDamage.length} rows)`);
+  check(withDamage.length > 0 && withDamage.every((r) => (r.then ?? '').startsWith('Then: 1. Zaryte crossbow (per bar)')), `Plan: every briefing row with damage specs says "Then: 1. Zaryte crossbow (per bar)" (38h-3b: + leftover) (${withDamage.length} rows)`);
   await page.locator('[data-testid="plan-briefing"]').scrollIntoViewIfNeeded();
   await page.mouse.move(0, 0);
   await page.screenshot({ path: 'docs/screenshots/phase38h3-plan.png', fullPage: false });

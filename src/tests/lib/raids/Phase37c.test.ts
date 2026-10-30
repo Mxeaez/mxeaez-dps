@@ -64,9 +64,10 @@ describe('drain outcome: one encounter of a headline, for hand-checking', () => 
     // phase 38g: 2 maul bars: 200 + 2 × 10 − 0 = 220; 3 Tonalztics bars: 300 + 3 × 10 − 2 × 50 = 230; yours (a surge dose
     // here, Crimson kisten): 100 + 10 + 25 − (ZCB 75 + kisten 50) = 10; Xarth's death (Death Charge, party 6) adds
     // 15 ÷ 6 = 2.5% per bar at the end: 225, 237.5, 12.5. Phase 38h-2: Elder maul ×2 + Tonalztics ×1: 220 − 100 + 5 = 125,
-    // 330 − 50 + 7.5 = 287.5. Phase 38h-3 (bring rule: Zaryte crossbow only, no surge potion): yours 100 + 10 − 75 + 2.5 = 37.5
-    expect([pool.elderMaul.balance, pool.tonalztics.balance, pool.me.balance]).toEqual([125, 287.5, 37.5]);
-    expect(pool.me.end).toEqual([37.5]);
+    // 330 − 50 + 7.5 = 287.5. Phase 38h-3 (bring rule: Zaryte crossbow only, no surge potion): yours 100 + 10 − 75 + 2.5 = 37.5;
+    // phase 38h-3b: the filler, Burning claws (35%), takes 35 of those 37.5: 2.5
+    expect([pool.elderMaul.balance, pool.tonalztics.balance, pool.me.balance]).toEqual([125, 287.5, 2.5]);
+    expect(pool.me.end).toEqual([2.5]);
   }, 60000);
 
   test('FA Solo Archive Guardian: 2 Tonalztics + ZCB + the surge dose from one bar', () => {

@@ -1813,6 +1813,31 @@ kisten is first (59.3 vs 58.7, 1.01×, below 1.2×). So every FA headline brings
 **Result** (`pinHeadlines --full`; PROGRESS phase 38h-3 has every moved total): fa 21:41.0 → 21:47.8, faSolo 22:53.4 →
 22:57.2, faNotOwned 24:43.4 unchanged. Times only estimate (user: gear over time): the choices are by the rule and HP.
 
+### Filler spec weapon for leftover energy (phase 38h-3b, FA)
+
+User decision A (2026-10-29). Since 38h-3 every bar goes to the first-ranked damage weapon (FA: Zaryte crossbow, 75%),
+leaving 22-40% per encounter. HP only, no seconds:
+
+- **Spend** (specBudget.ts): a weapon flagged `filler` (`DamageChoice.filler`, from `BestSetupAssumptions.damageFiller` →
+  `SpecBudgetConfig.filler`) is the DP's second objective: the plan maximises drains × 1.1 + the other damage specs' HP
+  first, then the filler's HP (`fw`), then the old tie-breaks. So the filler only uses energy nothing else would: it never
+  displaces a main spec or a drain (Jest: one row at 120%: free DP 3 Burning claws = 165 HP, filler DP ZCB + claws =
+  155 HP). `hp` counts both. No filler: the DP is unchanged (bit-identical).
+- **Bring** (planner items block, after the bring rule's weapons and the surge rule): each owned damage weapon not
+  brought is tried as the filler on the kit's planned route; the one adding the most HP (`routeHp` with − without) is
+  brought when that is > 0 and a slot is free, or ≥ `kitHpCost` of the kit change when a slot is taken from the kit (kit
+  re-optimised, as for the bring rule's weapons). "Leftover energy (+ surge) covers its cost" is what makes the HP > 0.
+  Then the surge rule runs again (a dose can now buy a filler spec). At most one filler.
+- **Briefing**: Plan, per encounter where the plan makes a filler spec: "Then: 1. Zaryte crossbow (per bar) · leftover:
+  Burning claws" (`withLeftover`). Search / Summary (no route): the leftover weapon is the best per bar of those cheaper
+  than the first (`leftoverWeapon`: energy below the first's cost can only go to a cheaper one); "Then: 1. A (per bar) ·
+  leftover: B" when it is the second, else "1. A 2. B (per bar) · leftover: C". Search can name a different weapon than
+  the plan (FA Xarth: Crimson kisten, 50%, best per bar; the plan's leftover of 22-40% fits Burning claws, 35%).
+
+**Result**: fa 21:47.8 → 21:43.3 (Burning claws + one Surge potion; claws on AG, Bork + Smorks, Xarth, Ocellus), faSolo
+22:57.2 → 22:53.9 (Burning claws on Ezekiel, Xarth, Ocellus), faNotOwned 24:43.4 unchanged (no free slot: claws add 40 HP,
+the kit change costs 788 HP). The ZCB specs per encounter are unchanged (Phase38h3b.test.ts).
+
 ## Routes tab (phase 16: raid time model)
 
 **Phase 23: the tab is gone.** Its route table is now part of the Plan tab's results (the *planned* kit timed on every

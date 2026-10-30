@@ -58,6 +58,8 @@ export interface SpecBudgetConfig {
   lightbearer: boolean;
   /** Damage spec weapons you carry (your pool; Team: you are not a carrier then). */
   damage: DamageSpecWeapon[];
+  /** Phase 38h-3b: those of `damage` spent only from energy left after the others (the filler; allocateBudget). */
+  filler?: DamageSpecWeapon[];
   /** Surge potions you carry (4 doses each). */
   surgePotions: number;
   /** Energy carries from one encounter to the next ({@link CARRY_SPEC_ENERGY}). */
@@ -312,6 +314,7 @@ const damageChoices = (
   weapons: DamageSpecWeapon[],
   hits: Record<string, boolean>,
   mult: number,
+  filler: DamageSpecWeapon[] = [],
 ): (DamageChoice & PhaseDamageSpecs)[] => {
   if (!kit.specDamage || !weapons.length || !damageLimited(r, mult)) return [];
   const out: (DamageChoice & PhaseDamageSpecs)[] = [];
@@ -334,6 +337,7 @@ const damageChoices = (
       expected: v.expected,
       ticks: v.ticks,
       saved: specSecondsSaved(net, r.dps, mult),
+      ...(filler.includes(w) ? { filler: true } : {}),
     });
   });
   return out;
@@ -645,7 +649,7 @@ const withDamage = (
   const counts = damage[r.key];
   if (!counts || !Object.values(counts).some((n) => (n ?? 0) > 0)) return r;
   const hits = kit.specHits ? kit.specHits(queryOf(r)) : ALL_TRUE;
-  const choices = damageChoices(kit, queryOf(r), r, cfg.damage, hits, mult);
+  const choices = damageChoices(kit, queryOf(r), r, cfg.damage, hits, mult, cfg.filler);
   const used = choices.filter((c) => (counts[c.weapon] ?? 0) > 0).map((c) => ({ ...c, count: counts[c.weapon]! }));
   if (!used.length) return r;
   const o: RowOutcome = { seconds: r.seconds, damage: r.damage, damageSpecs: used };
@@ -836,7 +840,7 @@ export const budgetedEncounter = (
       }
       if (rowEvent[idx] !== only) return;
       const prev = outcomes.get(idx);
-      const damageSpecs = extra ? [] : damageChoices(kit, queryOf(r), r, cfg.damage, hitsOf[idx], mult);
+      const damageSpecs = extra ? [] : damageChoices(kit, queryOf(r), r, cfg.damage, hitsOf[idx], mult, cfg.filler);
       outcomes.set(idx, prev
         ? { seconds: prev.seconds + r.seconds, damage: prev.damage, damageSpecs: prev.damageSpecs }
         : { seconds: r.seconds, damage: r.damage, damageSpecs });

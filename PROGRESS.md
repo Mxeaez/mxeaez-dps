@@ -3,6 +3,42 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 38h-3b: filler spec weapon for leftover energy (FA, 2026-10-30)
+
+ROADMAP row 38h-3b (user decision A). docs/BEST_SETUP.md *Filler spec weapon for leftover energy (phase 38h-3b, FA)*.
+
+- **Spend**: `DamageChoice.filler` (from `BestSetupAssumptions.damageFiller` → `SpecBudgetConfig.filler`) is the
+  allocateBudget DP's second objective (`fw`): drains × 1.1 + the main damage specs first, then the filler's HP, so it
+  only takes energy nothing else uses. Without a filler the DP is unchanged.
+- **Bring** (planner items block): after the bring rule's weapons and the surge rule, each owned damage weapon not
+  brought is tried as the filler on the planned route; the one adding the most HP is brought (free slot: > 0 HP; a slot
+  from the kit: ≥ `kitHpCost`); then the surge rule runs again. HP only, no seconds.
+- **Briefing**: Plan "Then: 1. Zaryte crossbow (per bar) · leftover: Burning claws" on the encounters where the plan
+  specs it (`withLeftover`); Search Specs box / Summary: `thenWithLeftover` (the best per bar of the weapons cheaper than
+  the first; FA Xarth Team shows Crimson kisten, while the plan picks Burning claws because 22-40% leftover fits 35%, not 50%).
+- **Headlines** (`pinHeadlines --full`): **fa 21:47.8 → 21:43.3** (−4.5 s): Bring ZCB → ZCB + Burning claws + Surge
+  potion (claws +29 HP, the dose +31 HP now that it can buy a claws spec); claws on AG Grounded, Smorks, Xarth, Ocellus
+  P1; AG 175.78 → 174.77, Bork + Smorks 190.63 → 189.75, Xarth 182.78 → 181.62, Ocellus 693.30 → 691.84; free slots 6 → 4;
+  kit, ring, route, carriers unchanged. **faSolo 22:57.2 → 22:53.9** (−3.3 s): + Burning claws (+46 HP) on Ezekiel,
+  Xarth, Ocellus P3; Ezekiel 211.89 → 210.65, Xarth 182.78 → 181.62, Ocellus 736.58 → 735.60; free slots 3 → 2.
+  **faNotOwned 24:43.4** unchanged (no free slot: claws add 40 HP, the kit change costs 788 HP; a new note). ZCB
+  specs per encounter unchanged in all three. Recovers 4.5 of the 6.8 s (FA) and 3.3 of the 3.8 s (Solo) 38h-3 cost: the
+  rest was kisten specs and the free mix of the old DP, which the "leftover only" rule does not allow.
+- **Hand checks**: Xarth fa: 100 + 1 tick 10 + Death Charge 2.5 − ZCB 75 = 37.5 ≥ 35, so claws, 2.5% at the end
+  (Phase37c updated: 37.5 → 2.5); faSolo: 100 + 60 + 15 − Tonalztics 50 − ZCB 75 = 50 ≥ 35, 15% at the end.
+- **Tests**: Phase38h3b (DP one row at 120%: free 3 claws 165 HP vs filler ZCB + claws 155 HP; 100%: 25% left, no claws;
+  + surge: claws; a filler never displaces a drain; text helpers; the headlines' ZCB counts equal those without the
+  filler; Xarth pools by hand). Phase38h3 (damage / filler / Then strings), Phase37c (Xarth pool). Test utils
+  (`finalAssumptions`, `recomputed`) carry `damageFiller`. Verify: verifyPhase38h3 accepts "· leftover"; new
+  verifyPhase38h3b.mjs + docs/screenshots/phase38h3b-plan.png.
+- **Planning time** (`pinHeadlines --check`, 3 at once, HEAD vs this): fa 41.8 → 34.7 s, faSolo 38.0 → 32.2 s, faNotOwned
+  71.1 → 67.0 s (noise; the filler costs ≤ 4 route evaluations, faNotOwned one extra kit optimisation).
+- **Memo pins** (PHASE37_MEMO) re-measured: fa 10698 / 8388 / 462466 / 5554, faSolo 23993 / 18648 / 1141713 / 7065,
+  faNotOwned 20896 → 29805 encounter runs (+43%: the kit re-optimised for the claws, then rejected) / 13946 / 822703 / 18920.
+- Run: fast suite green; FA slow suite once (360 passed, 2 failed: Phase34's pinned strings (bring line, share reason,
+  alternatives) and the faNotOwned memo pin, both updated, then Phase34 / CrossRaidHeadlines / Phase31 re-run green);
+  retime gap 0 (all three FA); verifyAll 38h3 38h3b OK; tsc, lint clean.
+
 ## Phase 38h-4: Soulflame horn (FA, display only, 2026-10-29)
 
 ROADMAP row 38h-4. Wiki read first (docs/DATA_SOURCES.md *Soulflame horn*): Entice costs 25% energy per other player and makes

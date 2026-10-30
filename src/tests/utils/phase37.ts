@@ -115,8 +115,10 @@ export const PHASE37_MEMO: Record<string, MemoCounters> = {
   // cox 73944 / 35416 / 1961276 / 62818, faNotOwned 26777 / 19128 / 776583 / 19830
   // phase 38h-3 (the bring rule instead of the item beam; Solo: no subset search): fa was 10616 / 9091 / 448944 / 2377,
   // faSolo 84288 / 39263 / 3156808 / 46445, faNotOwned 82985 / 13958 / 2177152 / 75431
+  // phase 38h-3b (the filler weapon: one route per candidate, faNotOwned a kit re-optimised for it): fa was 10638 / 8309 /
+  // 497142 / 3847, faSolo 24029 / 18699 / 1166147 / 6425, faNotOwned 20896 / 13664 / 591775 / 9461
   fa: {
-    encounterRuns: 10638, passRuns: 8309, encounterHits: 497142, passHits: 3847,
+    encounterRuns: 10698, passRuns: 8388, encounterHits: 462466, passHits: 5554,
   },
   // phase 38a (rooms 1-2 before the supplies: other drain states and candidates): was 32784 / 10825 / 544791 / 24576;
   // phase 38b (Liquid adrenaline: more spec options per event, damage specs on the adds' rows): was 39715 / 11721 /
@@ -138,14 +140,14 @@ export const PHASE37_MEMO: Record<string, MemoCounters> = {
   // phase 38h-3 review fix 2 (each Solo drain weapon checked against a kit slot: one optimiser run without it):
   // faSolo was 9706 / 9352 / 640382 / 1292
   faSolo: {
-    encounterRuns: 24029, passRuns: 18699, encounterHits: 1166147, passHits: 6425,
+    encounterRuns: 23993, passRuns: 18648, encounterHits: 1141713, passHits: 7065,
   },
   // phase 38h-1 (2 Elder maul + 3 Tonalztics carriers cover every boss, so you are no longer a carrier: free slots, the
   // item beam re-optimises kits with damage specs / surge): faNotOwned was 9153 / 9086 / 583727 / 227
   // phase 38h-2 review fixes (the final carrier choice by the budgeted plans' HP: one route pass per carrier set):
   // faNotOwned was 74977 / 9838 / 1854095 / 66172
   faNotOwned: {
-    encounterRuns: 20896, passRuns: 13664, encounterHits: 591775, passHits: 9461,
+    encounterRuns: 29805, passRuns: 13946, encounterHits: 822703, passHits: 18920,
   },
 };
 export const memoCountersWithin = (m: MemoCounters | undefined, want: MemoCounters | undefined): boolean => {

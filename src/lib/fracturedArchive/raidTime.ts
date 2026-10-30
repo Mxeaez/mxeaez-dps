@@ -512,6 +512,9 @@ export const specBudgetFrom = (best: BestSetupAssumptions, drain: DrainStateId):
   const common = {
     lightbearer: !!m.lightbearer,
     damage: (best.damageSpecs ?? []).filter((w) => DAMAGE_SPEC_WEAPON_IDS.includes(w)),
+    // phase 38h-3b: the filler (spent from leftover energy only); the key only when there is one (pins unchanged)
+    ...((best.damageFiller ?? []).some((w) => (best.damageSpecs ?? []).includes(w))
+      ? { filler: (best.damageFiller ?? []).filter((w) => (best.damageSpecs ?? []).includes(w)) } : {}),
     surgePotions: Math.max(0, Math.floor(best.surgePotions ?? 0)),
     carry: CARRY_SPEC_ENERGY,
     // phase 38b: Death Charge on the Arceuus spellbook (each player as likely to land a kill), Liquid adrenaline (ToA)

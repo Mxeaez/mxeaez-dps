@@ -90,7 +90,7 @@ import {
 } from '@/lib/fracturedArchive/specChoice';
 import { FA_PLAN_DEFAULTS } from '@/lib/raids/planDefaults';
 import {
-  BringDecision, bringRule, kitHpCostOf, routeSpecGains, thenText,
+  BringDecision, bringRule, kitHpCostOf, routeSpecGains, thenText, withLeftover,
 } from '@/lib/fracturedArchive/bringRule';
 import {
   filterPresets, isOwned, normaliseNotOwned, unownedBase,
@@ -632,8 +632,13 @@ export interface PlanSpecs {
    * bosses / phases each is brought for.
    */
   bringRule?: BringDecision;
-  /** Phase 38h-3: per encounter of the planned route, "Then: 1. Voidwaker 2. Zaryte crossbow (per bar)" (brought ones). */
+  /**
+   * Phase 38h-3: per encounter of the planned route, "Then: 1. Voidwaker 2. Zaryte crossbow (per bar)" (brought ones);
+   * 38h-3b: "· leftover: Crimson kisten" where the plan specs the filler there.
+   */
   then?: Record<string, string>;
+  /** Phase 38h-3b: the filler weapon (in `damage`): spent only from the energy the others leave. */
+  filler?: DamageSpecWeapon;
 }
 
 /** Phase 36: one step of the planner's damage-spec / surge items (phase 38h-3: in HP, no seconds). */
@@ -2179,7 +2184,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     });
     const dpMemo = new Map<string, RouteComparison>();
     const dpCmp = (members: number[], a: BestSetupAssumptions): RouteComparison => {
-      const k = JSON.stringify([[...members].sort((x, y) => x - y), a.mySpecs, a.team, a.damageSpecs ?? [], a.surgePotions ?? 0]);
+      const k = JSON.stringify([[...members].sort((x, y) => x - y), a.mySpecs, a.team, a.damageSpecs ?? [], a.surgePotions ?? 0, ...(a.damageFiller?.length ? [a.damageFiller] : [])]);
       let cmp = dpMemo.get(k);
       if (!cmp) {
         if (cancelled()) throw new PlanCancelled();
@@ -2231,7 +2236,10 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     };
     // phase 36: a carrier set's route time on a kit = the spec budget's DP with exactly these carriers
     const teamCmp = (c: CarrierCounts, members: number[]) => dpCmp(members, {
-      ...teamData(c).a, damageSpecs: assumptions.damageSpecs, surgePotions: assumptions.surgePotions,
+      ...teamData(c).a,
+      damageSpecs: assumptions.damageSpecs,
+      surgePotions: assumptions.surgePotions,
+      ...(assumptions.damageFiller ? { damageFiller: assumptions.damageFiller } : {}),
     });
     let carrierSteps: CarrierStep[] | undefined;
     // review 2: Eye of Ayak carriers capped at the mages in the party (only mages gain from its drain; the time model
@@ -2582,9 +2590,14 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     if (autoSpecs && budgetOn && !screen) {
       const ownedDamage = DAMAGE_SPEC_WEAPON_IDS.filter((w) => isOwned(damageSpecItemName(w), notOwned));
       const damageId = (w: DamageSpecWeapon) => planItemByName(DAMAGE_SPEC_WEAPONS[w].item).id;
-      const withItems = (a: BestSetupAssumptions, dmg: DamageSpecWeapon[], surge: number): BestSetupAssumptions => ({
-        ...a, damageSpecs: [...dmg], surgePotions: surge,
-      });
+      // phase 38h-3b: `filler` (default: a's) kept only for weapons still in `dmg`; no key when there is none
+      const withItems = (a: BestSetupAssumptions, dmg: DamageSpecWeapon[], surge: number, filler?: DamageSpecWeapon[]): BestSetupAssumptions => {
+        const { damageFiller, ...rest } = a;
+        const f = (filler ?? damageFiller ?? []).filter((w) => dmg.includes(w));
+        return {
+          ...rest, damageSpecs: [...dmg], surgePotions: surge, ...(f.length ? { damageFiller: f } : {}),
+        };
+      };
       // phase 36 review: Team (auto carriers) — with items your bar is yours, so the carriers must fit in party − 1.
       // Phase 38g: by headcount for a party − 1 (was: the carrier whose removal cost least on this kit made way)
       const teamParty = Math.max(1, Math.floor(assumptions.partySize));
@@ -2654,27 +2667,85 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         else itemNotes.push(`${label}: no free slot; it adds ${adds.toFixed(0)} HP, the kit without a slot for it costs ${costs.toFixed(0)} HP`);
       });
       // Surge potions: while one adds HP the bars pay and a slot is free (never a slot from the kit)
-      for (let n = cur.surge; n < maxPotionsOn(cur.opt.best.members, withItems(cur.a, cur.damage, cur.surge)); n++) {
+      let surgeNote: string | null = null;
+      const addSurge = () => {
+        surgeNote = null;
+        for (let n = cur.surge; n < maxPotionsOn(cur.opt.best.members, withItems(cur.a, cur.damage, cur.surge)); n++) {
+          const m = cur.opt.best.members;
+          if (total - cur.opt.best.used < 1) {
+            surgeNote = `${SURGE_ITEMS[n].name}: no free slot`;
+            break;
+          }
+          const before = hpNow();
+          const a2 = fitBars(withItems(cur.a, cur.damage, n + 1), m);
+          const gain = routeHp(m, a2) - before;
+          if (!(gain > 1e-9)) {
+            surgeNote = `${SURGE_ITEMS[n].name}: adds no HP the bars pay`;
+            break;
+          }
+          const withId = pinItem(cur.carried, SURGE_ITEMS[n].id);
+          cur = {
+            opt: rescoreWith(cur.opt, withId), a: a2, carried: withId, damage: cur.damage, surge: n + 1,
+          };
+          itemSteps.push({
+            item: SURGE_ITEMS[n].name, hp: gain, slots: 1, how: 'a free slot',
+          });
+        }
+      };
+      addSurge();
+      // phase 38h-3b: a filler weapon for the energy the brought weapons leave (no seconds): each owned damage weapon not
+      // brought, spent only after the others (the spec budget's second objective: `damageFiller`); the one adding the
+      // most HP on the planned route is brought when that HP is above 0 and a slot is free, or at least the HP the kit
+      // change costs (kitHpCost) when one is taken from the kit; then the surge rule again (its dose may now buy a spec)
+      const fillerOf = cur.damage.length ? ownedDamage.filter((w) => !cur.damage.includes(w)) : [];
+      if (fillerOf.length) {
         const m = cur.opt.best.members;
-        if (total - cur.opt.best.used < 1) {
-          itemNotes.push(`${SURGE_ITEMS[n].name}: no free slot`);
-          break;
-        }
-        const before = hpNow();
-        const a2 = fitBars(withItems(cur.a, cur.damage, n + 1), m);
-        const gain = routeHp(m, a2) - before;
-        if (!(gain > 1e-9)) {
-          itemNotes.push(`${SURGE_ITEMS[n].name}: adds no HP the bars pay`);
-          break;
-        }
-        const withId = pinItem(cur.carried, SURGE_ITEMS[n].id);
-        cur = {
-          opt: rescoreWith(cur.opt, withId), a: a2, carried: withId, damage: cur.damage, surge: n + 1,
-        };
-        itemSteps.push({
-          item: SURGE_ITEMS[n].name, hp: gain, slots: 1, how: 'a free slot',
+        const aNow = withItems(cur.a, cur.damage, cur.surge);
+        const route = plannedRouteOf(dpCmp(m, aNow));
+        const base = routeHp(m, aNow, route);
+        let pick: { w: DamageSpecWeapon, adds: number } | null = null;
+        fillerOf.forEach((w) => {
+          const f = [...(aNow.damageFiller ?? []), w];
+          const adds = routeHp(m, fitBars(withItems(cur.a, [...cur.damage, w], cur.surge, f), m), route) - base;
+          if (adds > 1e-9 && (!pick || adds > pick.adds + 1e-9)) pick = { w, adds };
         });
+        const chosen = pick as { w: DamageSpecWeapon, adds: number } | null;
+        if (!chosen) itemNotes.push('Filler: no other damage weapon adds HP with the energy left');
+        else {
+          const { w } = chosen;
+          const id = damageId(w);
+          const { label } = DAMAGE_SPEC_WEAPONS[w];
+          const f = [...(aNow.damageFiller ?? []), w];
+          const before = hpNow();
+          const a2 = fitBars(withItems(cur.a, [...cur.damage, w], cur.surge, f), m);
+          const slots = inKitOf(id, m, cur.carried) ? 0 : 1;
+          const withId = pinItem(cur.carried, id);
+          const take = (o: KitOptimum, how: string) => {
+            cur = {
+              opt: o, a: a2, carried: withId, damage: [...cur.damage, w], surge: cur.surge,
+            };
+            itemSteps.push({
+              item: label, hp: hpNow() - before, slots, how,
+            });
+          };
+          if (slots === 0 || total - cur.opt.best.used >= slots) {
+            take(rescoreWith(cur.opt, withId), `filler (leftover energy; ${slots ? 'a free slot' : 'carried anyway'})`);
+          } else {
+            const ta = fixedFor(a2, m);
+            const opt2 = optimiseFor(dps, withId, seedsFor(dps, seedCount, ta), `spec items: ${label} (filler)`, ta);
+            if (opt2.best.used > total) itemNotes.push(`${label} (filler): no kit leaves a slot for it`);
+            else {
+              const m2 = opt2.best.members;
+              const adds = routeHp(m2, fitBars(withItems(cur.a, [...cur.damage, w], cur.surge, f), m2), route) - routeHp(m2, aNow, route);
+              const costs = kitHpCost(m, m2, aNow, route);
+              if (adds >= costs - 1e-9) take(opt2, `filler (leftover energy; a slot from the kit, re-optimised; +${adds.toFixed(0)} HP vs the kit's ${costs.toFixed(0)} HP)`);
+              else itemNotes.push(`${label} (filler): no free slot; it adds ${adds.toFixed(0)} HP, the kit without a slot for it costs ${costs.toFixed(0)} HP`);
+            }
+          }
+          if (cur.damage.includes(w)) addSurge();
+        }
       }
+      if (surgeNote) itemNotes.push(surgeNote);
       // a damage weapon the plan never specs on its route is left at home (0 HP)
       const used0 = routeSpecCounts(dpCmp(cur.opt.best.members, withItems(cur.a, cur.damage, cur.surge)));
       cur.damage.filter((w) => !((used0[w] ?? 0) > 0)).forEach((w) => {
@@ -2738,7 +2809,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
           specSteps = undefined;
           if (Object.values(specCarriers).reduce((t, v) => t + v, 0) > party - 1) {
             specCarriers = headcountOf(m, party - 1);
-            specA = withItems(teamData(specCarriers).a, damageBring, surgePotions);
+            specA = withItems(teamData(specCarriers).a, damageBring, surgePotions, assumptions.damageFiller);
           }
         }
         const route = plannedRouteOf(dpCmp(m, specA));
@@ -3149,12 +3220,16 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       : { ...x, chosen: false, specs: 0 }));
     // phase 38h-3: the per-boss "Then:" of the briefing, the brought damage weapons by HP per bar on each encounter
     let thenByEncounter: Record<string, string> | undefined;
+    // phase 38h-3b: the filler after the others ("· leftover: …" on the encounters where the plan specs it)
+    const filler = (assumptions.damageFiller ?? []).find((w) => damageBring.includes(w));
+    const mainBring = damageBring.filter((w) => w !== filler);
     if (damageBring.length && plannedRoute) {
-      const g = routeSpecGains(evaluator, plannedRoute.encounters, damageBring, { drain, fightSeconds: fallbackFight }).byEncounter;
+      const g = routeSpecGains(evaluator, plannedRoute.encounters, mainBring, { drain, fightSeconds: fallbackFight }).byEncounter;
       thenByEncounter = {};
-      Object.entries(g).forEach(([id, x]) => {
-        const t = thenText(x, damageBring);
-        if (t) thenByEncounter![id] = t;
+      plannedRoute.encounters.forEach((e) => {
+        const fills = !!filler && e.phases.some((r) => (r.damageSpecs ?? []).some((d) => d.weapon === filler && d.count > 0));
+        const t = withLeftover(g[e.id] ? thenText(g[e.id], mainBring) : null, fills ? filler : null);
+        if (t) thenByEncounter![e.id] = t;
       });
     }
     const specs: PlanSpecs = {
@@ -3168,6 +3243,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       ...(soloChoice ? { solo: { perWeapon: soloFinal(soloChoice) } } : {}),
       ...(bringDecision && damageBring.length ? { bringRule: bringDecision } : {}),
       ...(thenByEncounter ? { then: thenByEncounter } : {}),
+      ...(filler ? { filler } : {}),
       ...(roles ? { team: roles } : {}),
       ...(share ? { share } : {}),
       notes,

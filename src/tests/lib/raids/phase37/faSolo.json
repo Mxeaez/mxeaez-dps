@@ -271,7 +271,7 @@
  "kitMarginal": [
   {
    "slots": 1,
-   "seconds": 9.127662006368382
+   "seconds": 9.12766200636861
   },
   {
    "slots": 1,
@@ -286,15 +286,15 @@
   "total": 28,
   "supplies": 12,
   "nonItem": 1,
-  "carriedItems": 23,
+  "carriedItems": 24,
   "wornItems": 10,
   "minLoadoutItems": 10,
   "keptAmmo": 0,
-  "inventoryItems": 13,
+  "inventoryItems": 14,
   "swapReserve": 0,
   "quiverAmmo": 1,
-  "used": 25,
-  "free": 3,
+  "used": 26,
+  "free": 2,
   "overfull": false
  },
  "inventory": [
@@ -481,6 +481,17 @@
   },
   {
    "kind": "spec",
+   "label": "Burning claws",
+   "item": {
+    "id": 29577,
+    "name": "Burning claws",
+    "version": "",
+    "slot": "weapon",
+    "twoHanded": true
+   }
+  },
+  {
+   "kind": "spec",
    "label": "Surge potion(4)",
    "item": {
     "id": -9101,
@@ -492,10 +503,6 @@
   {
    "kind": "non-item",
    "label": "Rune pouch"
-  },
-  {
-   "kind": "free",
-   "label": "Free slot"
   },
   {
    "kind": "free",
@@ -527,6 +534,13 @@
    "slot": "weapon"
   },
   {
+   "id": 29577,
+   "name": "Burning claws",
+   "version": "",
+   "slot": "weapon",
+   "twoHanded": true
+  },
+  {
    "id": -9101,
    "name": "Surge potion(4)",
    "version": "",
@@ -534,43 +548,41 @@
   }
  ],
  "pinnedItems": [],
- "comparison": "d7f9ca31f6cd99c38589ef133d7d260289b2aa03e01a9572127d464589c9788e",
+ "comparison": "9e8861726ad2f8ef786197938ed08b51599984887fbb6cae7e7340711e08dbc7",
  "planned": 1,
  "rejected": [],
  "alternatives": [
   {
-   "label": "melee + ranged + magic: Tumeken's shadow (Ancestral) / Inquisitor's + Obligator / Harmonised Nightmare staff / Harmonised Nightmare staff #3 / Twisted bow (Masori)",
+   "label": "melee + ranged + magic: Tumeken's shadow (Ancestral) / Inquisitor's + Obligator / Harmonised Nightmare staff / Twisted bow (Masori)",
    "kind": "alternative",
-   "deltaSeconds": -9.127662006368382,
-   "deltaSlots": 11,
+   "deltaSeconds": -9.12766200636861,
+   "deltaSlots": 10,
    "reason": "does not fit (36 of 28 slots)",
    "weapons": [
     "Tumeken's shadow",
     "Obligator",
     "Harmonised Nightmare staff",
-    "Harmonised Nightmare staff",
     "Twisted bow"
    ]
   },
   {
-   "label": "melee + magic: Tumeken's shadow (Ancestral) / Inquisitor's + Obligator / Harmonised Nightmare staff / Harmonised Nightmare staff #3",
+   "label": "melee + magic: Tumeken's shadow (Ancestral) / Inquisitor's + Obligator / Harmonised Nightmare staff",
    "kind": "alternative",
-   "deltaSeconds": -81.10681597425219,
-   "deltaSlots": 3,
-   "reason": "81.1 s slower",
+   "deltaSeconds": -87.84288410214049,
+   "deltaSlots": 2,
+   "reason": "87.8 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Obligator",
-    "Harmonised Nightmare staff",
     "Harmonised Nightmare staff"
    ]
   },
   {
    "label": "ranged + magic: Tumeken's shadow (Ancestral) / Twisted bow (Masori) / Ascension crossbows + diamond (e) (Masori) / Ascension crossbows + onyx (e) (Masori)",
    "kind": "alternative",
-   "deltaSeconds": -366.5453533764903,
+   "deltaSeconds": -368.57461225643124,
    "deltaSlots": 1,
-   "reason": "366.5 s slower",
+   "reason": "368.6 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Twisted bow",
@@ -581,9 +593,9 @@
   {
    "label": "magic: Tumeken's shadow (Ancestral) / Harmonised Nightmare staff / Harmonised Nightmare staff #3",
    "kind": "alternative",
-   "deltaSeconds": -840.641262187753,
+   "deltaSeconds": -841.2921957607432,
    "deltaSlots": -5,
-   "reason": "840.6 s slower",
+   "reason": "841.3 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Harmonised Nightmare staff",
@@ -637,9 +649,10 @@
    "elderMaul",
    "tonalztics"
   ],
-  "text": "Bring: Elder maul, Tonalztics, Zaryte crossbow, Surge potion",
+  "text": "Bring: Elder maul, Tonalztics, Zaryte crossbow, Burning claws, Surge potion",
   "damage": [
-   "zcb"
+   "zcb",
+   "burningClaws"
   ],
   "surgePotions": 1,
   "surgeAt": [
@@ -659,6 +672,12 @@
     "hp": 123.21329955717329,
     "slots": 1,
     "how": "a free slot"
+   },
+   {
+    "item": "Burning claws",
+    "hp": 45.69823306005492,
+    "slots": 1,
+    "how": "filler (leftover energy; a free slot)"
    }
   ],
   "solo": {
@@ -809,11 +828,12 @@
   },
   "then": {
    "archive-guardian": "Then: 1. Zaryte crossbow (per bar)",
-   "ezekiel": "Then: 1. Zaryte crossbow (per bar)",
+   "ezekiel": "Then: 1. Zaryte crossbow (per bar) · leftover: Burning claws",
    "moia": "Then: 1. Zaryte crossbow (per bar)",
-   "xarth": "Then: 1. Zaryte crossbow (per bar)",
-   "ocellus": "Then: 1. Zaryte crossbow (per bar)"
+   "xarth": "Then: 1. Zaryte crossbow (per bar) · leftover: Burning claws",
+   "ocellus": "Then: 1. Zaryte crossbow (per bar) · leftover: Burning claws"
   },
+  "filler": "burningClaws",
   "notes": [
    "Surge potion(4) (second): adds no HP the bars pay"
   ]
@@ -824,12 +844,12 @@
   "screened": [
    {
     "ring": "Ultor ring",
-    "seconds": 1377.2491849735156,
+    "seconds": 1373.8584218200626,
     "full": true
    },
    {
     "ring": "Bellator ring",
-    "seconds": 1423.5564108037174,
+    "seconds": 1419.4093932062697,
     "full": true
    },
    {
@@ -882,7 +902,7 @@
  "droppedPinned": [],
  "ownershipNotices": [],
  "searchRows": "43121b00564935b34d856de46f3af342b419824074d28eede47ee372e0044d0f",
- "objectiveSeconds": 1377.2491849735156,
+ "objectiveSeconds": 1373.8584218200626,
  "fightSeconds": {
   "archive-guardian": 230,
   "ezekiel": 229,
@@ -895,7 +915,7 @@
  },
  "plannedRoute": {
   "id": "archive-guardian>ezekiel>moia>xarth>ocellus",
-  "seconds": 1377.2491849735156,
+  "seconds": 1373.8584218200626,
   "surgeDoses": [
    "archive-guardian",
    "moia",
@@ -924,7 +944,7 @@
    },
    {
     "id": "ezekiel",
-    "seconds": 211.89458084573945,
+    "seconds": 210.65432060405266,
     "events": [
      {
       "npc": "Ezekiel",
@@ -937,7 +957,8 @@
     ],
     "damage": {
      "ezekiel": {
-      "zcb": 1
+      "zcb": 1,
+      "burningClaws": 1
      }
     },
     "surge": false
@@ -964,7 +985,7 @@
    },
    {
     "id": "xarth",
-    "seconds": 182.78395343900075,
+    "seconds": 181.61583763619933,
     "events": [
      {
       "npc": "Xarth",
@@ -977,14 +998,15 @@
     ],
     "damage": {
      "xarth": {
-      "zcb": 1
+      "zcb": 1,
+      "burningClaws": 1
      }
     },
     "surge": false
    },
    {
     "id": "ocellus",
-    "seconds": 736.5837137383719,
+    "seconds": 735.6013266294073,
     "events": [
      {
       "npc": "Ocellus",
@@ -1013,6 +1035,9 @@
     "damage": {
      "ocellus-p1": {
       "zcb": 1
+     },
+     "ocellus-p3": {
+      "burningClaws": 1
      },
      "ocellus-p3-last": {
       "zcb": 1

@@ -56,7 +56,13 @@ export const finalAssumptions = (name: HeadlineName, r: Pick<PlanResult, 'ring' 
     a = { ...a, mySpecs: mySpecsForSubset(r.specs.bring, a.mySpecs) };
   }
   if (r.specs.team?.carriers) a = { ...a, team: { ...a.team, carriers: { ...r.specs.team.carriers } } };
-  return { ...a, damageSpecs: r.specs.damage ?? [], surgePotions: r.specs.surgePotions ?? 0 };
+  return {
+    ...a,
+    damageSpecs: r.specs.damage ?? [],
+    surgePotions: r.specs.surgePotions ?? 0,
+    // phase 38h-3b: the filler (spent from leftover energy only)
+    ...(r.specs.filler ? { damageFiller: [r.specs.filler] } : {}),
+  };
 };
 
 /** The kit of a plan as the evaluator's loadouts (the planner's `kitLoadoutsOf`). */
