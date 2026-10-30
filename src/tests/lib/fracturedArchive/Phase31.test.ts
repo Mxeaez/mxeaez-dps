@@ -32,6 +32,7 @@ import {
   SupplyCounts,
 } from '@/lib/fracturedArchive/planner';
 import { cpuSeconds, memoWithin } from '@/tests/utils/phase37';
+import { SPEC_WEAPONS } from '@/lib/fracturedArchive/specs';
 import {
   BestSetupAssumptions, PresetDef, PRESETS, StyleGroup,
 } from '@/lib/fracturedArchive/presets';
@@ -401,7 +402,8 @@ slowDescribe('FA defaults (slow)', () => {
     expect(headlineGear(headlineOf('faSolo', r))).toEqual(headlineGear(headline('faSolo')));
     expect(headlineTimeProblems(headlineOf('faSolo', r), headline('faSolo'))).toEqual([]);
     // phase 38h-3: a weapon not brought makes no spec in the plan with every owned one
-    r.specs.solo!.perWeapon.forEach((d) => expect(d.chosen).toBe(d.specs > 0));
+    // a brought weapon was specced by the reference plan; one left at home was not, or a note says why (no slot)
+    r.specs.solo!.perWeapon.forEach((d) => expect(d.chosen ? d.refSpecs > 0 : (d.refSpecs === 0 || r.specs.notes.some((n) => n.startsWith(SPEC_WEAPONS[d.weapon].label)))).toBe(true));
     // the slot count = the exhaustive count of the returned kit (heart and spec weapons carried)
     const carried = [...r.specItems.map((x) => x.id), ...(r.potions.some((p) => p.type === 'heart') ? [SATURATED] : [])];
     expect(r.slots!.used).toBe(r.slots!.supplies + r.slots!.nonItem + exhaustive(kitItems(r), carried, true));

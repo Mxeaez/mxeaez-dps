@@ -164,9 +164,9 @@ const main = async () => {
   check(/^Bring: /.test(soloBring), `Solo: "${soloBring}" (total ${soloTotal}, ${((Date.now() - ts) / 1000).toFixed(1)} s)`);
   // phase 38h-3 (no seconds): each owned drain weapon with its specs in the plan with every owned one; brought ⇔ specced
   const weapons = await page.locator('[data-testid="plan-spec-weapons"] li').evaluateAll((els) => els.map((e) => ({
-    id: e.getAttribute('data-testid'), specs: Number(e.getAttribute('data-specs')), text: e.textContent.trim(),
+    id: e.getAttribute('data-testid'), specs: Number(e.getAttribute('data-ref-specs')), text: e.textContent.trim(),
   })));
-  check(weapons.length > 0 && weapons.every((w) => (w.id === 'plan-spec-weapon') === (w.specs > 0)), `each drain weapon: ${weapons.map((w) => w.text).join('; ')}`);
+  check(weapons.length > 0 && weapons.every((w) => (w.id !== 'plan-spec-weapon' || w.specs > 0)), `each drain weapon: ${weapons.map((w) => w.text).join('; ')}`);
   check(soloBring === headlineOf('faSolo').bring && headlineClose(soloTotal, 'faSolo'), `Solo: the faSolo headline (${soloBring}, ${soloTotal})`);
   check(await page.locator('[data-testid="plan-team-roles"]').count() === 0, 'Solo: no team briefing');
   const specItems = await page.locator('[data-testid="inventory-cell"][data-kind="spec"]').count();

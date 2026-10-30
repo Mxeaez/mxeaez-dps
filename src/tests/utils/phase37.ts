@@ -135,8 +135,10 @@ export const PHASE37_MEMO: Record<string, MemoCounters> = {
   },
   // phase 38c (Ocellus: P2 in the plan, three drain events): faSolo was 91778 / 38942 / 3464758 / 56722, faNotOwned
   // 58528 / 10474 / 1579384 / 59896
+  // phase 38h-3 review fix 2 (each Solo drain weapon checked against a kit slot: one optimiser run without it):
+  // faSolo was 9706 / 9352 / 640382 / 1292
   faSolo: {
-    encounterRuns: 9706, passRuns: 9352, encounterHits: 640382, passHits: 1292,
+    encounterRuns: 24029, passRuns: 18699, encounterHits: 1166147, passHits: 6425,
   },
   // phase 38h-1 (2 Elder maul + 3 Tonalztics carriers cover every boss, so you are no longer a carrier: free slots, the
   // item beam re-optimises kits with damage specs / surge): faNotOwned was 9153 / 9086 / 583727 / 227

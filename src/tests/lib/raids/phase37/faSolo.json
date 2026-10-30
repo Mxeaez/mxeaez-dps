@@ -666,27 +666,32 @@
     {
      "weapon": "elderMaul",
      "chosen": true,
-     "specs": 2
+     "specs": 1,
+     "refSpecs": 2
     },
     {
      "weapon": "dwh",
      "chosen": false,
-     "specs": 0
+     "specs": 0,
+     "refSpecs": 0
     },
     {
      "weapon": "bgs",
      "chosen": false,
-     "specs": 0
+     "specs": 0,
+     "refSpecs": 0
     },
     {
      "weapon": "tonalztics",
      "chosen": true,
-     "specs": 10
+     "specs": 7,
+     "refSpecs": 10
     },
     {
      "weapon": "ayak",
      "chosen": false,
-     "specs": 0
+     "specs": 0,
+     "refSpecs": 0
     }
    ],
    "screenedWith": [

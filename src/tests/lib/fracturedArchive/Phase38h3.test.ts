@@ -1,19 +1,22 @@
 import { describe, expect, test } from '@jest/globals';
 import { buildTargetMonster, DrainStateId, findTarget } from '@/lib/fracturedArchive/bestSetup';
 import {
-  BRING_SECOND_FACTOR, bringRule, damageSpecRow, mergeGains, PhaseSpecGains, profileGain, rankedAt, routeSpecGains,
-  thenText,
+  BRING_SECOND_FACTOR, bringRule, damageSpecRow, kitHpCostOf, mergeGains, PhaseSpecGains, profileGain, rankedAt,
+  routeSpecGains, thenText,
 } from '@/lib/fracturedArchive/bringRule';
 import {
   bestDamageVariant, DAMAGE_SPEC_WEAPON_IDS, DAMAGE_SPEC_WEAPONS, damageSpecProfile, DamageSpecWeapon,
 } from '@/lib/fracturedArchive/damageSpecs';
-import { PlanResult } from '@/lib/fracturedArchive/planner';
+import { DEFAULT_SPEC_MODE, plan, PlanResult } from '@/lib/fracturedArchive/planner';
 import { pickCarriersByHp } from '@/lib/fracturedArchive/specChoice';
 import { createKitEvaluator } from '@/lib/fracturedArchive/raidTime';
 import { assumptionsForTarget } from '@/lib/raids/toa/supplies';
 import { finalAssumptions, kitLoadouts, retimeHeadline } from '@/tests/utils/probes';
 import { headline, HeadlineName } from '@/tests/utils/headlines';
 import { phase37Fixture } from '@/tests/utils/phase37';
+import { planInputsFor, planTuningFor } from '@/tests/utils/crossRaid';
+import { raidConfig } from '@/lib/raids';
+import { slowTest } from '@/tests/utils/slow';
 
 // Phase 38h-3: the bring rule (the damage spec ranked first, in HP per full bar, on the most bosses / phases; a second
 // only where the first can't hit or another deals ≥ 1.2× per bar), no seconds in spec choices (Solo drain weapons =
@@ -81,6 +84,22 @@ describe('bring rule (toys, by hand)', () => {
     // hp left 30: 30 − 30 = 0
     expect(profileGain(p, 10, 30)).toBe(0);
     expect(profileGain({ ...p, canHit: false }, 10)).toBe(0);
+  });
+});
+
+describe('kitHpCostOf: the HP a kit change costs (review fix 1, by hand)', () => {
+  test('1000 damage at DPS 10 → 9.5 costs 50 HP; a fixed-length row with carry-over 0.4, 20 HP; a faster row is negative', () => {
+    // 1000 × (1 − 9.5 ÷ 10) = 50
+    expect(kitHpCostOf([{ key: 'a', damage: 1000, dps: 10 }], [{ key: 'a', dps: 9.5 }])).toBeCloseTo(50, 9);
+    // the same drop on Ocellus P2 (fixed length): 50 × 0.4 = 20
+    expect(kitHpCostOf([{
+      key: 'p2', damage: 1000, dps: 10, fixedWall: true, carryOver: 0.4,
+    }], [{ key: 'p2', dps: 9.5 }])).toBeCloseTo(20, 9);
+    // 10 → 11: 1000 × (1 − 1.1) = −100; summed with the first row: 50 − 100 = −50
+    expect(kitHpCostOf([{ key: 'b', damage: 1000, dps: 10 }], [{ key: 'b', dps: 11 }])).toBeCloseTo(-100, 9);
+    expect(kitHpCostOf([{ key: 'a', damage: 1000, dps: 10 }, { key: 'b', damage: 1000, dps: 10 }], [{ key: 'a', dps: 9.5 }, { key: 'b', dps: 11 }])).toBeCloseTo(-50, 9);
+    // a row missing from the new pass, or with no DPS in the old, counts 0
+    expect(kitHpCostOf([{ key: 'a', damage: 1000, dps: 10 }, { key: 'c', damage: 500, dps: 0 }], [{ key: 'c', dps: 5 }])).toBe(0);
   });
 });
 
@@ -195,14 +214,26 @@ describe.each([
 });
 
 describe('no seconds in the spec choices (the headline plans)', () => {
-  test('Solo: each owned drain weapon brought ⇔ the plan with every owned one specs it (Elder maul 2, Tonalztics 10)', () => {
+  test('Solo: brought ⇔ the plan with every owned one specs it (Elder maul 2, Tonalztics 10); the final plan makes 1 / 7', () => {
     const fx = phase37Fixture('faSolo') as PlanResult;
+    // review fix 3: `specs` = the final plan's route (the damage specs and the surge dose take energy), `refSpecs` = the
+    // reference plan that chose them; free slots there, so no slot check
     expect(fx.specs.solo!.perWeapon).toEqual([
-      { weapon: 'elderMaul', chosen: true, specs: 2 },
-      { weapon: 'dwh', chosen: false, specs: 0 },
-      { weapon: 'bgs', chosen: false, specs: 0 },
-      { weapon: 'tonalztics', chosen: true, specs: 10 },
-      { weapon: 'ayak', chosen: false, specs: 0 },
+      {
+        weapon: 'elderMaul', chosen: true, specs: 1, refSpecs: 2,
+      },
+      {
+        weapon: 'dwh', chosen: false, specs: 0, refSpecs: 0,
+      },
+      {
+        weapon: 'bgs', chosen: false, specs: 0, refSpecs: 0,
+      },
+      {
+        weapon: 'tonalztics', chosen: true, specs: 7, refSpecs: 10,
+      },
+      {
+        weapon: 'ayak', chosen: false, specs: 0, refSpecs: 0,
+      },
     ]);
     expect(fx.specs.bring).toEqual(['elderMaul', 'tonalztics']);
     // the spec items are valued in HP, not seconds
@@ -223,4 +254,31 @@ describe('no seconds in the spec choices (the headline plans)', () => {
       expect(Object.values(fx.specs.team!.carriers!).reduce((t, v) => t + v, 0)).toBe(5);
     });
   });
+});
+
+describe('Solo drain weapons against a kit slot (review fix 2)', () => {
+  // a reduced Solo plan with an inventory full of supplies: a drain weapon needs a slot from the kit, so it is kept only
+  // when the HP it adds on the route is at least the HP the kit change costs (kitHpCostOf, both kits without it)
+  slowTest('every slot-checked weapon: kept ⇔ adds ≥ costs; one left at home says so in the notes', () => {
+    const fa = raidConfig('fractured-archive');
+    const base = planInputsFor(fa, true);
+    const r = plan({
+      ...base,
+      drain: 'solo',
+      specMode: DEFAULT_SPEC_MODE,
+      assumptions: { ...fa.defaultAssumptions, partySize: 1 },
+      nonItemSlots: 12,
+    }, planTuningFor(fa, true));
+    const checked = r.specs.solo!.perWeapon.filter((d) => d.slot);
+    expect(checked.length).toBeGreaterThan(0);
+    checked.forEach((d) => {
+      expect([d.weapon, d.chosen]).toEqual([d.weapon, d.slot!.adds >= d.slot!.costs - 1e-9]);
+      if (!d.chosen) expect(r.specs.notes.some((n) => n.includes('no free slot') && n.includes(`${d.slot!.adds.toFixed(0)} HP`))).toBe(true);
+    });
+    // as measured (0.1 HP): Elder maul adds 0 HP (Tonalztics / Eye of Ayak cover its drains) vs 148.9: left at home;
+    // Tonalztics 1045.0 vs 194.0 and Eye of Ayak 420.4 vs 339.8: kept
+    const hp = Object.fromEntries(checked.map((d) => [d.weapon, [Math.round(d.slot!.adds * 10) / 10, Math.round(d.slot!.costs * 10) / 10]]));
+    expect(hp).toEqual({ elderMaul: [0, 148.9], tonalztics: [1045, 194], ayak: [420.4, 339.8] });
+    expect(r.specs.bring).toEqual(['tonalztics', 'ayak']);
+  }, 900000);
 });

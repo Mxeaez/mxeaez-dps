@@ -1783,20 +1783,28 @@ specs once the damage specs / doses are in.
 
 **Solo drain weapons** (replaces `searchSpecSubsets`: every subset timed, 1 s a slot): the plan with every owned drain
 weapon on the reference kit (the bootstrap kit carrying all of them), the spec budget valuing every bar in HP (38h-2);
-the weapons it specs on the planned route are brought (`PlanSpecs.solo.perWeapon`: weapon, chosen, specs). The ring
-screens reuse that set (`screenSubset`).
+the weapons it specs on the planned route are brought (`PlanSpecs.solo.perWeapon`: `refSpecs` = that plan's specs,
+`specs` = the final plan's on its route, e.g. faSolo Elder maul 2 → 1, Tonalztics 10 → 7, the damage specs and the dose
+taking energy). Review fix: one that needs a slot from the kit (the kit without it has none free) is kept only when the
+HP it adds on the route is at least `kitHpCost` of the kit change (both kits without it; `slot` records adds / costs; the
+worst goes first). The ring screens reuse that set (`screenSubset`). With the spec budget off (legacy, other raids) Solo
+brings every owned drain weapon (round 7).
 
 **You carry or you spec** (Team; replaces the faster of the two): "you spec, carriers ≤ party − 1, the items" against
 "you carry, no items" by the HP the bars pay on the planned route, `pickCarriersByHp` (within 10% the set leaving you out
 wins). The spec items (`PlanItemStep.hp`) report the HP each adds, not seconds. Removed: `searchSpecSubsets`,
 `weaponDeltaText`, `bestWithoutText`, `pickSpecItem`, `itemBeam`, `itemStepNet` (38e's beam and swaps). Kept (not a spec
-choice of this row): `assignMe`'s slot value in seconds for your share when you carry (no items).
+choice of this row) at first; review fix: `assignMe` (your share when you carry, no items) in HP too: the drain HP the
+weapon's last carrier's bar pays on the route vs `kitHpCost` of the slot it takes (`share.slotHp`; carried when adds ≥
+costs); `SHARE_MAX_SLOT_SECONDS` is gone.
 
 **Briefing per boss**: after the drain line, "· Then: 1. Zaryte crossbow (per bar)" (`thenText`: the weapons that gain,
 best HP per bar first, at most two). Plan: the brought weapons per encounter (`PlanSpecs.then`). Search: the Specs box's
 order (every damage weapon). Summary: each cell's top loadout (`GearSearchResult.then`, computed on first read).
 
-**Per FA boss** (ZCB HP per bar on the headline plans; best other weapon): Team AG Flying 90.9 (melee can't hit),
+**Per FA boss** (ZCB HP per bar on the headline plans; best other weapon; the planner's own decision reads these on the
+state before the items, Team with you carrying (6 carriers), while the final plan has 5 and your bar on ZCB, so its stored
+gains differ a little from the final plan's, Solo Ezekiel 68.4 vs 67.1; the order is the same): Team AG Flying 90.9 (melee can't hit),
 Grounded 82.0 (Crimson kisten 60.0), Bork 85.9-84.8 (Crimson kisten / Voidwaker 54-61), Smorks 85.1 (kisten 60.4), Moia
 85.5 (melee can't hit), Xarth 74.9 (kisten 60.6), Ocellus P1 86.5 (kisten 59.4), P3 Q1-3 62.3 (kisten 59.8, the closest:
 0.96×), P3 Deflect Melee 81.0. Solo: the same order; Ezekiel 67.1 (kisten 60.7); P3 Q1-3 is the one phase where Crimson

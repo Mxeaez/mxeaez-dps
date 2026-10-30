@@ -89,7 +89,7 @@ import {
 } from '@/lib/fracturedArchive/specChoice';
 import { FA_PLAN_DEFAULTS } from '@/lib/raids/planDefaults';
 import {
-  BringDecision, bringRule, routeSpecGains, thenText,
+  BringDecision, bringRule, kitHpCostOf, routeSpecGains, thenText,
 } from '@/lib/fracturedArchive/bringRule';
 import {
   filterPresets, isOwned, normaliseNotOwned, unownedBase,
@@ -587,8 +587,15 @@ const SUBSET_SCREEN_SEEDS = 2;
 export interface SoloWeaponChoice {
   weapon: PlannerWeapon;
   chosen: boolean;
-  /** Its specs on the reference kit's planned route (the spec budget with every owned drain weapon). */
+  /** Phase 38h-3 review: its specs on the final plan's route (0 when left at home). */
   specs: number;
+  /** Its specs in the reference plan (the reference kit, every owned drain weapon) that chose it. */
+  refSpecs: number;
+  /**
+   * Review: it needed a slot from the kit (the kit without it had none free): the HP it adds on the route vs the HP the
+   * kit change costs (kept when adds ≥ costs; its last check).
+   */
+  slot?: { adds: number, costs: number };
 }
 
 export interface PlanSpecs {
@@ -608,7 +615,7 @@ export interface PlanSpecs {
   /** Team: the team briefing for the planned route and party size. */
   team?: TeamRoles;
   /** Team: your share (planner decides: "assign me"; Specs I bring: manual). */
-  share?: ShareDecision & { manual: boolean, slotValueSeconds?: number };
+  share?: ShareDecision & { manual: boolean, slotHp?: { adds: number, costs: number } };
   /** e.g. the Ayak hint (carried but no magic loadout uses it / no mages in the party). */
   notes: string[];
   /** Phase 36: your damage spec weapons (planner decides; their items are in `specItems`). */
@@ -2197,12 +2204,13 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       ? { ...budgetA(a), fixedAlloc: allocOf(dpCmp(members, a)) }
       : legacyA);
 
-    // phase 29: the spec weapons. Solo (planner decides): every subset of the owned spec weapons with the kit
-    // (specChoice.ts searchSpecSubsets). Team: the carriers (planner decides: greedy on the route time, review fix), then
-    // the briefing and your share ("assign me"). Phase 36: each timed with the spec budget (one per encounter).
+    // phase 29: the spec weapons. Solo (planner decides; phase 38h-3): the drain weapons the plan with every owned one
+    // specs, each priced against a kit slot in HP. Team: the carriers (planner decides: by headcount, phase 38g; the final
+    // set by the HP the bars pay, 38h-2), then the briefing and your share ("assign me", in HP since 38h-3).
     let runCarried = carried;
     let runSpecItems = specItems;
     let soloChoice: SoloWeaponChoice[] | undefined;
+    const soloNotes: string[] = [];
     let opt: KitOptimum;
     const specId = (w: PlannerWeapon) => planItemByName(SPEC_WEAPONS[w].item).id;
     const magesOf = (m: number[]) => inputs.magesInParty ?? (m.some((i) => candidates[i].group === 'magic') ? 1 : 0);
@@ -2363,24 +2371,14 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       const r = cmp.fastest >= 0 ? cmp.routes[cmp.fastest] : null;
       return r ? r.encounters.reduce((t, e) => t + (e.specPlan?.hp ?? 0), 0) : 0;
     };
-    /**
-     * Phase 38h-3: the HP a kit change costs on a route (no seconds): per row of the old kit's pass, its damage H ×
-     * (1 − the new kit's DPS ÷ the old's) (as a drain's value, H × (1 − DPS without ÷ DPS with)); a fixed-length row (Ocellus
-     * P2) its damage × that × its carry-over. Negative where the new kit is faster.
-     */
+    /** Phase 38h-3: the HP a kit change costs on a route (bringRule.ts `kitHpCostOf`), both kits under `a`. */
     const kitHpCost = (mOld: number[], mNew: number[], a: BestSetupAssumptions, on: Route | null): number => {
       if (!on) return 0;
       const rowsOf = (m: number[]) => {
         const c = compareRoutes(matrixKit(m, dps, true), budgetA(a), [on]);
         return c.fastest >= 0 ? c.routes[c.fastest].encounters.flatMap((e) => e.phases) : [];
       };
-      const after = new Map(rowsOf(mNew).map((r) => [r.key, r]));
-      return rowsOf(mOld).reduce((t, r) => {
-        const n = after.get(r.key);
-        if (!n || !(r.dps > 0) || !(r.damage > 0)) return t;
-        const loss = r.damage * (1 - n.dps / r.dps);
-        return t + (r.fixedWall ? loss * (r.carryOver ?? 0) : loss);
-      }, 0);
+      return kitHpCostOf(rowsOf(mOld), rowsOf(mNew));
     };
     const carrierNotes: string[] = [];
     let soloWithSubset: ((sub: PlannerWeapon[]) => BestSetupAssumptions) | undefined;
@@ -2454,7 +2452,38 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       } else if (budgetOn) {
         const used = routeSpecCounts(dpCmp(ref.best.members, withSubset(ownedSpecs)));
         best = ownedSpecs.filter((w) => (used[w] ?? 0) > 0);
-        soloChoice = ownedSpecs.map((w) => ({ weapon: w, chosen: best.includes(w), specs: used[w] ?? 0 }));
+        // review: a drain weapon that needs a slot from the kit (the kit without it has none free) is kept only when the
+        // HP it adds on the route is at least the HP the kit change costs (kitHpCost, both kits without it); the worst
+        // one goes first, then the rest are checked again
+        const slotChecks: Partial<Record<PlannerWeapon, { adds: number, costs: number }>> = {};
+        for (let guard = 0; guard < SPEC_CANDIDATES.length; guard++) {
+          const sub = best;
+          const aWith = withSubset(sub);
+          const mWith = runSub(sub, seedCount).best.members;
+          const route = plannedRouteOf(dpCmp(mWith, aWith));
+          let worst: { w: PlannerWeapon, net: number, adds: number, costs: number } | null = null;
+          sub.filter((w) => !carriedSet.has(specId(w))).forEach((w) => {
+            const fewer = sub.filter((x) => x !== w);
+            const optNo = runSub(fewer, seedCount);
+            if (total - optNo.best.used >= 1) return; // the kit without it leaves a slot for it
+            const aNo = withSubset(fewer);
+            const adds = routeHp(mWith, aWith, route) - routeHp(mWith, aNo, route);
+            const costs = kitHpCost(optNo.best.members, mWith, aNo, route);
+            slotChecks[w] = { adds, costs };
+            if (adds < costs - 1e-9 && (!worst || adds - costs < worst.net)) {
+              worst = {
+                w, net: adds - costs, adds, costs,
+              };
+            }
+          });
+          if (!worst) break;
+          const x = worst as { w: PlannerWeapon, net: number, adds: number, costs: number };
+          best = sub.filter((y) => y !== x.w);
+          soloNotes.push(`${SPEC_WEAPONS[x.w].label}: no free slot; it adds ${x.adds.toFixed(0)} HP, the kit without a slot for it costs ${x.costs.toFixed(0)} HP`);
+        }
+        soloChoice = ownedSpecs.map((w) => ({
+          weapon: w, chosen: best.includes(w), specs: used[w] ?? 0, refSpecs: used[w] ?? 0, ...(slotChecks[w] ? { slot: slotChecks[w] } : {}),
+        }));
       }
       if (screen && !fixed) screenSubset = best;
       opt = runSub(best, seedCount);
@@ -2835,16 +2864,25 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         } else {
           const withW = [...runCarried, specId(w)];
           const free = total - opt.best.used;
-          let slotValue: number | undefined;
+          let slotHp: { adds: number, costs: number } | undefined;
           let opt2: KitOptimum | null = null;
           if (free < 1) {
+            // phase 38h-3 (no seconds): the drain HP w's last carrier's bar pays on the route vs the HP the kit loses
+            // with the slot (the kit re-optimised with w carried)
             opt2 = optimiseFor(dps, withW, seeds, `your share: ${SPEC_WEAPONS[w].label}`);
-            slotValue = opt2.best.time === opt.best.time ? 0 : Math.max(0, opt2.best.time - opt.best.time);
+            const m = opt.best.members;
+            const route = plannedRouteOf(dpCmp(m, assumptions));
+            const c = teamCarriers();
+            const fewer = { ...assumptions, team: { ...assumptions.team, carriers: { ...c, [w]: Math.max(0, c[w] - 1) } } };
+            slotHp = {
+              adds: budgetOn ? routeHp(m, assumptions, route) - routeHp(m, fewer, route) : 0,
+              costs: budgetOn ? kitHpCost(m, opt2.best.members, assumptions, route) : Infinity,
+            };
           }
           const d = assignMe({
-            weapon: w, carriers, carriedAnyway: false, freeSlots: free, slotValueSeconds: slotValue,
+            weapon: w, carriers, carriedAnyway: false, freeSlots: free, slotHp,
           });
-          share = { ...d, manual: false, ...(slotValue !== undefined ? { slotValueSeconds: slotValue } : {}) };
+          share = { ...d, manual: false, ...(slotHp ? { slotHp } : {}) };
           if (d.carry) {
             if (opt2) {
               opt = opt2;
@@ -3084,7 +3122,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     // phase 29: the spec weapons of the plan (Team: the briefing on the planned route; the Ayak hint)
     const bring = runSpecItems.map(specWeaponOf).filter((w): w is PlannerWeapon => !!w);
     const roles = drain === 'team' && planned >= 0 ? briefing(members, comparison.routes[planned]) : undefined;
-    const notes: string[] = drain === 'team' ? [...carrierNotes, ...itemNotes] : [...itemNotes];
+    const notes: string[] = drain === 'team' ? [...carrierNotes, ...itemNotes] : [...soloNotes, ...itemNotes];
     if (bring.includes('ayak')) {
       if (drain === 'team' && roles && roles.mages === 0) {
         notes.push('Eye of Ayak is carried but "Mages in party" is 0 (Advanced (plan)): its Magic defence drain helps no one.');
@@ -3098,6 +3136,12 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     if (extras.length) bringLine = bring.length ? `${bringLine}, ${extras.join(', ')}` : `Bring: ${extras.join(', ')}`;
     const plannedRoute = planned >= 0 ? comparison.routes[planned] : null;
     const surgeAt = (plannedRoute?.surgeDoses ?? []).map((id) => plannedRoute!.encounters.find((e) => e.id === id)?.label ?? id);
+    // phase 38h-3 review: the Solo weapons' specs as the final plan makes them on its route (refSpecs: the reference plan
+    // with every owned weapon, which chose them); a weapon left at home keeps its reference count
+    const finalCounts = plannedRoute ? routeSpecCounts({ routes: [plannedRoute], fastest: 0 }) : {};
+    const soloFinal = (xs: SoloWeaponChoice[]): SoloWeaponChoice[] => xs.map((x) => (bring.includes(x.weapon)
+      ? { ...x, chosen: true, specs: finalCounts[x.weapon] ?? 0 }
+      : { ...x, chosen: false, specs: 0 }));
     // phase 38h-3: the per-boss "Then:" of the briefing, the brought damage weapons by HP per bar on each encounter
     let thenByEncounter: Record<string, string> | undefined;
     if (damageBring.length && plannedRoute) {
@@ -3116,7 +3160,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       ...(damageBring.length ? { damage: [...damageBring] } : {}),
       ...(surgePotions ? { surgePotions, surgeAt } : {}),
       ...(itemSteps.length ? { items: itemSteps } : {}),
-      ...(soloChoice ? { solo: { perWeapon: soloChoice } } : {}),
+      ...(soloChoice ? { solo: { perWeapon: soloFinal(soloChoice) } } : {}),
       ...(bringDecision && damageBring.length ? { bringRule: bringDecision } : {}),
       ...(thenByEncounter ? { then: thenByEncounter } : {}),
       ...(roles ? { team: roles } : {}),

@@ -22,12 +22,6 @@ import { DRAIN_CLOSE_CALL } from '@/lib/fracturedArchive/specBudget';
 /** Order of the spec candidates (also the tie order of the "most needed" weapon). */
 export const SPEC_CANDIDATES: PlannerWeapon[] = ['elderMaul', 'dwh', 'bgs', 'tonalztics', 'ayak'];
 
-/**
- * Phase 29: carrying your share is worth it only if the slot it takes costs you less than this much route time (the
- * same rule as the kit's switches, planner.ts `SWITCH_MIN_SECONDS_PER_SLOT`).
- */
-export const SHARE_MAX_SLOT_SECONDS = 1;
-
 /** Tie order for the most-needed weapon (the usual drain weapons first). */
 const ROLE_ORDER: PlannerWeapon[] = ['elderMaul', 'tonalztics', 'dwh', 'bgs', 'ayak'];
 
@@ -415,15 +409,16 @@ export interface ShareDecision {
 /**
  * The "assign me" rule. The Team drain state counts every carrier whoever it is, so carrying a weapon gains *you*
  * nothing; you carry the most-needed weapon only when it costs you nothing worth having: it is carried anyway (pinned),
- * the kit has a free slot, or the slot it takes is worth < {@link SHARE_MAX_SLOT_SECONDS} of route time as gear.
+ * the kit has a free slot, or (phase 38h-3, in HP, no seconds) the drain HP its carrier's bar pays on the route is at
+ * least the HP the kit loses with the slot it takes (`slotHp`: adds ≥ costs; bringRule.ts `kitHpCostOf`).
  */
 export const assignMe = (opts: {
   weapon: PlannerWeapon | null,
   carriers?: number,
   carriedAnyway: boolean,
   freeSlots: number,
-  /** Route time the kit loses with one slot fewer (undefined when not computed: a free slot or carried anyway). */
-  slotValueSeconds?: number,
+  /** Phase 38h-3: the drain HP its carrier's bar pays (adds) vs the HP the kit loses with one slot fewer (costs). */
+  slotHp?: { adds: number, costs: number },
 }): ShareDecision => {
   const { weapon } = opts;
   if (!weapon) return { weapon: null, carry: false, reason: 'the team needs no spec weapons on this route' };
@@ -431,14 +426,14 @@ export const assignMe = (opts: {
   const need = opts.carriers ? ` (most needed: ${opts.carriers} carrier${opts.carriers === 1 ? '' : 's'})` : '';
   if (opts.carriedAnyway) return { weapon, carry: true, reason: `${label}${need}: already in your inventory, no extra slot` };
   if (opts.freeSlots >= 1) return { weapon, carry: true, reason: `${label}${need}: fits in a free slot` };
-  const v = opts.slotValueSeconds ?? Infinity;
-  if (v < SHARE_MAX_SLOT_SECONDS) {
-    return { weapon, carry: true, reason: `${label}${need}: its slot was worth only ${v.toFixed(1)} s of gear` };
+  const hp = opts.slotHp;
+  if (hp && hp.adds >= hp.costs - 1e-9) {
+    return { weapon, carry: true, reason: `${label}${need}: its bar pays ${hp.adds.toFixed(0)} HP, the slot costs the kit ${hp.costs.toFixed(0)} HP` };
   }
   return {
     weapon,
     carry: false,
-    reason: `none: your last slot is worth ${Number.isFinite(v) ? `${v.toFixed(1)} s` : 'more than the route'} as gear — let a teammate carry ${label}${need}`,
+    reason: `none: your last slot is worth ${hp ? `${hp.costs.toFixed(0)} HP` : 'more'} as gear${hp ? ` (its bar pays ${hp.adds.toFixed(0)} HP)` : ''} — let a teammate carry ${label}${need}`,
   };
 };
 

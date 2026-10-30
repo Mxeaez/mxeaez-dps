@@ -442,13 +442,13 @@ const BringBox: React.FC<{ specs: PlanResult['specs'] }> = ({ specs }) => (
 const SpecPlanBody: React.FC<{ specs: PlanResult['specs'] }> = ({ specs }) => (
   <div className="text-xs flex flex-col gap-1">
     {specs.solo && (
-      <ul className="list-disc ml-5" data-testid="plan-spec-weapons" title="Phase 38h-3: the drain weapons you own, each with its specs in the plan that may use all of them (the spec budget values every bar in boss HP); a weapon the plan never specs stays at home">
+      <ul className="list-disc ml-5" data-testid="plan-spec-weapons" title="The drain weapons you own: brought when the plan that may use all of them specs it (the spec budget values every bar in boss HP) and, when it needs a slot from the kit, it adds at least the HP the kit loses; the count is the final plan's specs on the route">
         {specs.solo.perWeapon.map((d) => (
-          <li key={d.weapon} data-testid={d.chosen ? 'plan-spec-weapon' : 'plan-spec-other'} data-weapon={d.weapon} data-specs={d.specs}>
+          <li key={d.weapon} data-testid={d.chosen ? 'plan-spec-weapon' : 'plan-spec-other'} data-weapon={d.weapon} data-specs={d.specs} data-ref-specs={d.refSpecs}>
             <span className="inline-block align-middle mr-0.5"><ItemIcon name={specWeaponLabel(d.weapon)} src={specIcon(d.weapon)} size={16} /></span>
             {d.chosen
               ? `${specWeaponLabel(d.weapon)}: ${d.specs} spec${d.specs === 1 ? '' : 's'} on the route (brought)`
-              : `${specWeaponLabel(d.weapon)}: no spec on the route (left at home)`}
+              : `${specWeaponLabel(d.weapon)}: ${d.refSpecs > 0 ? `left at home (${d.refSpecs} spec${d.refSpecs === 1 ? '' : 's'} with every weapon; see the notes)` : 'no spec on the route (left at home)'}`}
           </li>
         ))}
       </ul>
@@ -461,7 +461,7 @@ const SpecPlanBody: React.FC<{ specs: PlanResult['specs'] }> = ({ specs }) => (
     )}
     {specs.team && (
       <div className="flex flex-col gap-1" data-testid="plan-team-roles">
-        <div className="font-semibold" title={specs.team.mode === 'auto' ? 'The carriers the planner picked: one carrier at a time, the one that saves the most route time with this kit, while it saves ≥ 1 s (at most the party size). The Team drains use exactly these carriers. Eye of Ayak only if someone mages' : 'The carriers set in Advanced (Team carriers: Set manually); the Team drains use them'}>
+        <div className="font-semibold" title={specs.team.mode === 'auto' ? 'The carriers the planner picked: per boss / phase the fewest carriers for the floor at the confidence in Advanced (per weapon the most any boss needs), the final set the one whose spec bars pay the most boss HP on the route (within 10% the one leaving you out); at most the party size. The Team drains use exactly these carriers. Eye of Ayak only if someone mages' : 'The carriers set in Advanced (Team carriers: Set manually); the Team drains use them'}>
           {`Team briefing (${specs.team.text}; ${specs.team.mode === 'auto' ? 'picked by the planner' : 'set manually'})`}
         </div>
         {specs.team.rows.length > 0 ? (

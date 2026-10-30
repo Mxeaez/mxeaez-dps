@@ -18,7 +18,6 @@ import {
   rowsFromCarriers,
   mySpecsForSubset,
   RoleTarget,
-  SHARE_MAX_SLOT_SECONDS,
   teamRoles,
 } from '@/lib/fracturedArchive/specChoice';
 import { drainModel, SPEC_WEAPONS } from '@/lib/fracturedArchive/specs';
@@ -184,19 +183,24 @@ describe('Team roles (team briefing)', () => {
 });
 
 describe('your share ("assign me")', () => {
-  test('carried anyway, a free slot, or a slot worth < 1 s of gear → carry; else a teammate carries it', () => {
-    expect(SHARE_MAX_SLOT_SECONDS).toBe(1);
+  test('carried anyway, a free slot, or (phase 38h-3) a bar paying ≥ the slot HP → carry; else a teammate carries it', () => {
     expect(assignMe({ weapon: null, carriedAnyway: false, freeSlots: 3 })).toMatchObject({ weapon: null, carry: false });
     expect(assignMe({ weapon: 'elderMaul', carriedAnyway: true, freeSlots: 0 }).carry).toBe(true);
     expect(assignMe({ weapon: 'elderMaul', carriedAnyway: false, freeSlots: 1 }).carry).toBe(true);
     expect(assignMe({
-      weapon: 'elderMaul', carriedAnyway: false, freeSlots: 0, slotValueSeconds: 0.4,
+      weapon: 'elderMaul', carriedAnyway: false, freeSlots: 0, slotHp: { adds: 120, costs: 50 },
+    }).carry).toBe(true);
+    // equal HP: carried (≥)
+    expect(assignMe({
+      weapon: 'elderMaul', carriedAnyway: false, freeSlots: 0, slotHp: { adds: 50, costs: 50 },
     }).carry).toBe(true);
     const no = assignMe({
-      weapon: 'tonalztics', carriers: 2, carriedAnyway: false, freeSlots: 0, slotValueSeconds: 3.2,
+      weapon: 'tonalztics', carriers: 2, carriedAnyway: false, freeSlots: 0, slotHp: { adds: 40, costs: 75 },
     });
     expect(no.carry).toBe(false);
-    expect(no.reason).toBe('none: your last slot is worth 3.2 s as gear — let a teammate carry Tonalztics (most needed: 2 carriers)');
+    expect(no.reason).toBe('none: your last slot is worth 75 HP as gear (its bar pays 40 HP) — let a teammate carry Tonalztics (most needed: 2 carriers)');
+    // nothing measured: no carry
+    expect(assignMe({ weapon: 'tonalztics', carriedAnyway: false, freeSlots: 0 }).carry).toBe(false);
   });
 });
 
@@ -479,10 +483,12 @@ slowDescribe('FA defaults (slow)', () => {
     ringPolicy: DEFAULT_RING_POLICY, specMode: 'auto', pinned: phase29Pinned, ...patch,
   }), { model: FA.time });
 
-  test('Solo, party 1, planner decides: Bring Elder maul + Tonalztics (phase 38h-3); the ring and the subset are a fixed point', () => {
+  test('Solo, party 1, planner decides (phase 29 pinned list): Bring Tonalztics, the maul priced against its kit slot; the ring and the subset are a fixed point', () => {
     const r = full({ drain: 'solo', assumptions: { ...FA.defaultAssumptions, partySize: 1 } });
-    // phase 38h-3: Elder maul + Tonalztics (the plan with every owned drain weapon specs both; was Tonalztics alone)
-    expect(r.specs.bring).toEqual(['elderMaul', 'tonalztics']);
+    // phase 38h-3: the plan with every owned drain weapon specs Elder maul and Tonalztics; with this pinned list the maul
+    // needs a slot from the kit and adds less HP than the kit loses (review fix 2), so Tonalztics alone
+    expect(r.specs.bring).toEqual(['tonalztics']);
+    expect(r.specs.notes.some((n) => /^Elder maul: no free slot; it adds \d+ HP, the kit without a slot for it costs \d+ HP$/.test(n))).toBe(true);
     // phase 36 review (damage specs at the hp left; regen on the drained clock): the bound is the reviewer's phase 29
     // brute force re-timed by the model since: 1330.53 → 1334.22
     // phase 38f: the pin followed the model (38a-38e: 1388.56 s); gear exact, the time within 1%
@@ -493,7 +499,8 @@ slowDescribe('FA defaults (slow)', () => {
     // the ring screens timed the chosen subset (no second round needed here, or it converged)
     expect(r.specs.solo!.screenedWith).toEqual(r.specs.bring);
     // phase 38h-3: the brought weapons are those the plan with every owned one specs (no route-time deltas)
-    r.specs.solo!.perWeapon.forEach((d) => expect(d.chosen).toBe(d.specs > 0));
+    // a brought weapon was specced by the reference plan; one left at home was not, or a note says why (no slot)
+    r.specs.solo!.perWeapon.forEach((d) => expect(d.chosen ? d.refSpecs > 0 : (d.refSpecs === 0 || r.specs.notes.some((n) => n.startsWith(SPEC_WEAPONS[d.weapon].label)))).toBe(true));
   }, 900000);
 
   test('Specs I bring {Elder maul, Tonalztics}, Solo party 1: ends on Ultor at 1364.55 (review 2: the guard used to stop at Lightbearer, 1400.17; phase 32: 1382.50 → 1329.96; phase 36: 1364.55)', () => {

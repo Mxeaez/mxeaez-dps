@@ -91,9 +91,9 @@ const main = async () => {
   await page.locator('#bs-party').blur();
   await waitPlan(page);
   const solo = await page.locator('[data-testid="plan-spec-weapons"] li').evaluateAll((els) => els.map((e) => ({
-    id: e.getAttribute('data-testid'), specs: Number(e.getAttribute('data-specs')), text: e.textContent.trim(),
+    id: e.getAttribute('data-testid'), specs: Number(e.getAttribute('data-ref-specs')), text: e.textContent.trim(),
   })));
-  check(solo.length === 5 && solo.every((w) => (w.id === 'plan-spec-weapon') === (w.specs > 0)), `Plan Solo: ${solo.map((w) => w.text).join('; ')}`);
+  check(solo.length === 5 && solo.every((w) => (w.id !== 'plan-spec-weapon' || w.specs > 0)), `Plan Solo: ${solo.map((w) => w.text).join('; ')}`);
   const bring = await page.locator('[data-testid="plan-bring"]').textContent();
   check((bring ?? '').trim() === headlineOf('faSolo').bring, `Plan Solo: "${(bring ?? '').trim()}" = the faSolo headline`);
 

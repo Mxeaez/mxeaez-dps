@@ -198,3 +198,22 @@ export const damageThenText = (monster: Monster, assumptions: BestSetupAssumptio
   damageSpecRanking(monster, assumptions, dps, 1).forEach((r) => { gains[r.weapon] = gainPerFullBar(r); });
   return thenText({ gains }, DAMAGE_SPEC_WEAPON_IDS, max);
 };
+
+/**
+ * Phase 38h-3 (review): the HP a kit change costs on a route, no seconds. Per row of the old kit's pass (by key), its
+ * damage H × (1 − the new kit's DPS ÷ the old's), the drain value's form (H × (1 − DPS without ÷ DPS with)); a
+ * fixed-length row (Ocellus P2) that × its carry-over (the share that comes off a later phase). Negative where the new
+ * kit is faster; rows missing from the new pass, or without damage / DPS in the old, count 0.
+ */
+export const kitHpCostOf = (
+  oldRows: Pick<PhaseTime, 'key' | 'damage' | 'dps' | 'fixedWall' | 'carryOver'>[],
+  newRows: Pick<PhaseTime, 'key' | 'dps'>[],
+): number => {
+  const after = new Map(newRows.map((r) => [r.key, r]));
+  return oldRows.reduce((t, r) => {
+    const n = after.get(r.key);
+    if (!n || !(r.dps > 0) || !(r.damage > 0)) return t;
+    const loss = r.damage * (1 - n.dps / r.dps);
+    return t + (r.fixedWall ? loss * (r.carryOver ?? 0) : loss);
+  }, 0);
+};

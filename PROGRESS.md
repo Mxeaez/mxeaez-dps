@@ -3,6 +3,35 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 38h-3 review fixes (FA, 2026-10-29)
+
+Review of a4c63704: PASS with findings; fixed (the reviewer's A: filler weapon for leftover energy, and B: vote
+counting, wait for the user).
+
+- **1, `kitHpCostOf`** (bringRule.ts, pure; the planner's `kitHpCost` uses it): Jest by hand: 1000 HP at DPS 10 → 9.5
+  costs 50 HP; Ocellus P2 (fixed length, carry-over 0.4) 20 HP; 10 → 11 is −100.
+- **2, Solo drain weapons against a kit slot**: one that needs a slot from the kit (the kit without it has none free)
+  is kept only when the HP it adds on the route (Σ `EncounterSpecPlan.hp` with − without, on the kit with it) is at least
+  `kitHpCost` of the kit change (both kits without it); the worst goes first, notes say why (`perWeapon.slot` = adds /
+  costs). Test (slow): a reduced Solo plan with 12 non-item slots: Elder maul 0 vs 148.9 HP, left at home; Tonalztics
+  1045.0 vs 194.0 and Eye of Ayak 420.4 vs 339.8, kept. faSolo has free slots: unchanged.
+- **3**: `perWeapon.specs` is the final plan's route count, `refSpecs` the reference plan's (faSolo: Elder maul 2 → 1,
+  Tonalztics 10 → 7); the Plan list shows the final count (verify scripts 29 / 38h3 read `data-ref-specs`).
+- **4**: stale comments (planner.ts spec weapons; PlanView's team-briefing tooltip) reworded to headcount / HP.
+- **5**: BEST_SETUP notes the bring-rule gains come from the pre-items state (Team: you carrying, 6 carriers; the final
+  plan has 5), so stored gains differ slightly (Solo Ezekiel 68.4 vs 67.1).
+- **6**: ROADMAP round 7: with the spec budget off, Solo brings every owned drain weapon.
+- **C, `assignMe` in HP** (no seconds): your share without items is carried when the drain HP its last carrier's bar pays on
+  the route ≥ `kitHpCost` of the slot it takes (`share.slotHp`); `SHARE_MAX_SLOT_SECONDS` removed. Tests by hand
+  (120 vs 50 carry, 50 vs 50 carry, 40 vs 75 not, nothing measured not). The headlines never reach it (you damage-spec).
+- **Headlines**: unchanged (fa 21:47.8, faSolo 22:57.2, faNotOwned 24:43.4); phase37/faSolo.json moved only by
+  `specs` / `refSpecs`. PHASE37_MEMO faSolo re-measured (24029 / 18699 / 1166147 / 6425: one optimiser run without each
+  drain weapon); faSolo plans in 23.4 s (17.8 s before this fix; 76.8 s at a0efe7ed). Phase29's phase-29-pinned-list Solo
+  test: Bring Tonalztics (the maul priced against its kit slot).
+- Run: fast suite green; FA slow suite once (344 passed, 2 failed: the faSolo memo pin and the Phase29 pinned-list bring,
+  both updated, then Phase31 and that test re-run green); retime gap 0; bruteForceKits fa tiny gap 0; `pinHeadlines --full
+  --check` no change; verifyAll 29 38h3 OK; tsc, lint clean.
+
 ## Phase 38h-3: bring rule, no seconds left in spec choices (FA, 2026-10-29)
 
 ROADMAP row 38h-3. docs/BEST_SETUP.md *Bring rule, no seconds in spec choices (phase 38h-3, FA)*.
