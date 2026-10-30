@@ -123,7 +123,7 @@ export const recomputed = (raid: RaidConfig, res: PlanResult): number => {
     };
   });
   // phase 40: the plan's required variants (the Xarth freezer), rebuilt from the loadouts it timed
-  const timeA = withTimeVariants(raidTimeAssumptionsFrom(planA, 'team', raid.defaultTimeSettings, raid.time), timeVariantsOfPlan(res.variants, toPlayerEquipment, base, planA));
+  const timeA = withTimeVariants(raidTimeAssumptionsFrom(planA, 'team', raid.defaultTimeSettings, raid.time), timeVariantsOfPlan(res.variants, planA));
   const cmp = compareRoutes(createKitEvaluator(loadouts, planA), timeA);
   return cmp.routes[cmp.fastest].seconds;
 };

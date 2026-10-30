@@ -95,7 +95,7 @@ export interface RaidBase {
 
 /** Phase 38b: what the Arceuus default leaves out per raid (shown with the input; not modelled). */
 export const SPELLBOOK_NOTES: Record<RaidId, string> = {
-  'fractured-archive': 'the Xarth freezer (Plan: Required variants) is on the Ancient spellbook: no Death Charge for that player (not modelled)',
+  'fractured-archive': 'the Xarth freezer (Plan: Required variants) Ice Barrages from the Ancient spellbook: no Death Charge for that player (not modelled)',
   toa: 'no freezes needed',
   cox: 'no freezes needed',
   tob: 'Maiden needs one freezer on the Ancient spellbook (no Death Charge for that player)',

@@ -3,35 +3,26 @@ import type {
 } from '@/lib/fracturedArchive/raidTime';
 
 /**
- * Phase 40 (ROADMAP 40): a required variant in the time model. `headcount` of the `partySize` players run another
- * loadout on `share` of the HP of the rows `rowKeys` (FA: the Xarth freezer casts Ice Barrage on the corpse half of
- * Xarth's HP). Pure: the variant's own kit (`kit`, non-enumerable so memo keys built from the assumptions' JSON hold only
- * `id`) answers the same queries as the main kit.
+ * Phase 40 (ROADMAP 40): a required variant in the time model. `headcount` of the `partySize` players keep only `keep`
+ * of their DPS on `share` of the HP of the rows `rowKeys` (FA: the Xarth freezer swaps to Ice Barrage the corpses each
+ * wave, then back to the kit). Plain data (JSON-safe: part of the memo keys through the assumptions).
  */
 export interface TimeVariant {
-  /** Unique per variant loadout and assumptions (part of the memo keys through the assumptions' JSON). */
   id: string;
   encounter: EncounterId;
   rowKeys: string[];
-  /** Share of the rows' HP dealt while the variant players run the variant (0-1). */
+  /** Share of the rows' HP dealt while the variant runs (0-1). */
   share: number;
   headcount: number;
   partySize: number;
-  /** The variant loadout's kit (non-enumerable; `timeVariant` sets it). */
-  kit: RaidKit;
+  /** Share of their DPS the variant players keep there (0-1). */
+  keep: number;
 }
-
-/** A TimeVariant whose kit is left out of JSON (memo keys) and structured clones of the fields. */
-export const timeVariant = (v: Omit<TimeVariant, 'kit'>, kit: RaidKit): TimeVariant => {
-  const out = { ...v } as TimeVariant;
-  Object.defineProperty(out, 'kit', { value: kit, enumerable: false });
-  return out;
-};
 
 /**
  * Phase 40: the team-average DPS on a variant row, in units of "your DPS" (the time model divides the HP by it × the
  * team-DPS multiplier). Off the variant share every player deals `d`; on it `n − h` players deal `d` and `h` deal `v`,
- * so the team averages d2 = d × (1 − h ÷ n) + v × h ÷ n. The row's seconds are (1 − s) × H ÷ d + s × H ÷ d2, i.e. one
+ * so the team averages d2 = (d × (n − h) + v × h) ÷ n. The row's seconds are (1 − s) × H ÷ d + s × H ÷ d2, i.e. one
  * DPS of 1 ÷ ((1 − s) ÷ d + s ÷ d2) (the harmonic blend). n ≤ h (nobody else) or d ≤ 0: `d` unchanged.
  */
 export const variantRowDps = (d: number, v: number, n: number, h: number, s: number): number => {
@@ -45,22 +36,22 @@ export const variantRowDps = (d: number, v: number, n: number, h: number, s: num
 export interface VariantChoice extends KitChoice {
   /** Your loadout's DPS there (before the blend). */
   baseDps?: number;
-  /** The variant loadout's DPS there. */
+  /** The variant player's DPS there (your DPS × keep). */
   variantDps?: number;
 }
 
 /**
- * Phase 40: `kit` with the variant's rows answered at the blended DPS (`variantRowDps`). Everything that times a row
- * (passes, the spec budget's drain values, damage specs) reads the DPS through `best`, so they all see the team's
- * average. The pass memo is delegated with the inner kit wrapped again (exact: the variant kit is fixed per `v.id`,
- * which is in the assumptions' key).
+ * Phase 40: `kit` with the variant's rows answered at the blended DPS (`variantRowDps`, the variant player at your DPS ×
+ * `keep`). Everything that times a row (passes, the spec budget's drain values, damage specs) reads the DPS through
+ * `best`, so they all see the team's average. The pass memo is delegated with the inner kit wrapped again (exact: the
+ * variant is plain data in the assumptions' key).
  */
 export const variantKit = (kit: RaidKit, v: TimeVariant): RaidKit => {
   const rows = new Set(v.rowKeys);
   const best = (q: PhaseQuery): KitChoice | null => {
     const c = kit.best(q);
     if (!c || !q.rowKey || !rows.has(q.rowKey)) return c;
-    const vd = v.kit.best(q)?.dps ?? 0;
+    const vd = c.dps * v.keep;
     const out: VariantChoice = {
       ...c, dps: variantRowDps(c.dps, vd, v.partySize, v.headcount, v.share), baseDps: c.dps, variantDps: vd,
     };

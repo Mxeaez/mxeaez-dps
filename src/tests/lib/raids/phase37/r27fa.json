@@ -2,10 +2,17 @@
  "cancelled": false,
  "kit": [
   {
-   "label": "Twisted bow (Masori)",
-   "kind": "preset",
+   "label": "Twisted bow switch +6 on Scythe of Vitur",
+   "kind": "partial",
    "group": "ranged",
    "equipment": {
+    "weapon": {
+     "id": 20997,
+     "name": "Twisted bow",
+     "version": "",
+     "slot": "weapon",
+     "twoHanded": true
+    },
     "head": {
      "id": 27235,
      "name": "Masori mask (f)",
@@ -49,17 +56,10 @@
      "slot": "feet"
     },
     "ring": {
-     "id": 28310,
-     "name": "Venator ring",
+     "id": 28307,
+     "name": "Ultor ring",
      "version": "",
      "slot": "ring"
-    },
-    "weapon": {
-     "id": 20997,
-     "name": "Twisted bow",
-     "version": "",
-     "slot": "weapon",
-     "twoHanded": true
     },
     "ammo": {
      "id": 33595,
@@ -86,14 +86,31 @@
      "spell": null
     }
    ],
-   "source": "preset",
-   "key": "ranged|27235,28951,33639,33595,20997,27238,0,27241,26235,31097,28310"
+   "source": "Scythe of Vitur → Twisted bow (Masori): Masori body (f), Necklace of rupture, Zaryte vambraces, Masori chaps (f), Dizana's quiver, Masori mask (f)",
+   "base": "Scythe of Vitur",
+   "partner": "Twisted bow (Masori)",
+   "pieces": [
+    "body",
+    "neck",
+    "hands",
+    "legs",
+    "cape",
+    "head"
+   ],
+   "key": "ranged|27235,28951,33639,33595,20997,27238,0,27241,26235,31097,28307"
   },
   {
-   "label": "Scythe of Vitur switch +6 on Twisted bow (Masori)",
-   "kind": "partial",
+   "label": "Scythe of Vitur",
+   "kind": "search",
    "group": "melee",
    "equipment": {
+    "weapon": {
+     "id": 22325,
+     "name": "Scythe of Vitur",
+     "version": "Charged",
+     "slot": "weapon",
+     "twoHanded": true
+    },
     "head": {
      "id": 24419,
      "name": "Inquisitor's great helm",
@@ -113,9 +130,9 @@
      "slot": "legs"
     },
     "cape": {
-     "id": 28951,
-     "name": "Dizana's quiver",
-     "version": "Charged",
+     "id": 21295,
+     "name": "Infernal cape",
+     "version": "Normal",
      "slot": "cape"
     },
     "neck": {
@@ -141,13 +158,6 @@
      "name": "Ultor ring",
      "version": "",
      "slot": "ring"
-    },
-    "weapon": {
-     "id": 22325,
-     "name": "Scythe of Vitur",
-     "version": "Charged",
-     "slot": "weapon",
-     "twoHanded": true
     }
    },
    "options": [
@@ -160,18 +170,8 @@
      "spell": null
     }
    ],
-   "source": "Twisted bow (Masori) → Scythe of Vitur: Ferocious gloves, Amulet of rancour, Inquisitor's hauberk, Inquisitor's great helm, Inquisitor's plateskirt, Ultor ring",
-   "base": "Twisted bow (Masori)",
-   "partner": "Scythe of Vitur",
-   "pieces": [
-    "hands",
-    "neck",
-    "body",
-    "head",
-    "legs",
-    "ring"
-   ],
-   "key": "melee|24419,28951,29801,0,22325,24420,0,24421,22981,31097,28307"
+   "source": "search: Archive Guardian (Grounded)",
+   "key": "melee|24419,21295,29801,0,22325,24420,0,24421,22981,31097,28307"
   }
  ],
  "kitMarginal": [
@@ -273,6 +273,17 @@
   },
   {
    "kind": "switch",
+   "label": "Infernal cape",
+   "item": {
+    "id": 21295,
+    "name": "Infernal cape",
+    "version": "Normal",
+    "slot": "cape"
+   },
+   "group": "melee"
+  },
+  {
+   "kind": "switch",
    "label": "Amulet of rancour",
    "item": {
     "id": 29801,
@@ -324,17 +335,6 @@
     "name": "Ferocious gloves",
     "version": "",
     "slot": "hands"
-   },
-   "group": "melee"
-  },
-  {
-   "kind": "switch",
-   "label": "Ultor ring",
-   "item": {
-    "id": 28307,
-    "name": "Ultor ring",
-    "version": "",
-    "slot": "ring"
    },
    "group": "melee"
   },
@@ -477,13 +477,23 @@
    "slot": "ring"
   }
  ],
- "comparison": "6bea092e0acaec4a0f1f6468a9cd56dce3a388f6f82c9b5f0043811c2612944b",
- "planned": 0,
+ "comparison": "6364488470652e76c003f73d44d96eb722768b5671aa5309d9be2f7a5258056b",
+ "planned": 1,
  "rejected": [
+  {
+   "label": "Twisted bow (Masori)",
+   "kind": "addition",
+   "deltaSeconds": 21.05858258018816,
+   "deltaSlots": 1,
+   "reason": "needs 1 more slot, 0 free",
+   "weapons": [
+    "Twisted bow"
+   ]
+  },
   {
    "label": "Tumeken's shadow (Ancestral)",
    "kind": "addition",
-   "deltaSeconds": 24.56392568248657,
+   "deltaSeconds": 19.45906052870896,
    "deltaSlots": 7,
    "reason": "needs 7 more slots, 0 free",
    "weapons": [
@@ -491,31 +501,21 @@
    ]
   },
   {
-   "label": "Scythe of Vitur",
+   "label": "Tumeken's shadow switch +6 on Twisted bow (Masori)",
    "kind": "addition",
-   "deltaSeconds": 20.827648965411072,
-   "deltaSlots": 1,
-   "reason": "needs 1 more slot, 0 free",
+   "deltaSeconds": 6.309878146931624,
+   "deltaSlots": 6,
+   "reason": "needs 6 more slots, 0 free",
    "weapons": [
-    "Scythe of Vitur"
-   ]
-  },
-  {
-   "label": "Scythe of Vitur #4",
-   "kind": "addition",
-   "deltaSeconds": 16.79527551532715,
-   "deltaSlots": 2,
-   "reason": "needs 2 more slots, 0 free",
-   "weapons": [
-    "Scythe of Vitur"
+    "Tumeken's shadow"
    ]
   }
  ],
  "alternatives": [
   {
-   "label": "melee + ranged + magic: Scythe of Vitur switch +6 on Twisted bow (Masori) / Twisted bow (Masori) / Tumeken's shadow (Ancestral)",
+   "label": "melee + ranged + magic: Scythe of Vitur / Twisted bow switch +6 on Scythe of Vitur / Tumeken's shadow (Ancestral)",
    "kind": "alternative",
-   "deltaSeconds": 24.56392568248657,
+   "deltaSeconds": 19.45906052870896,
    "deltaSlots": 7,
    "reason": "does not fit (35 of 28 slots)",
    "weapons": [
@@ -527,9 +527,9 @@
   {
    "label": "melee + magic: Tumeken's shadow (Ancestral) / Scythe of Vitur / Scythe of Vitur #4",
    "kind": "alternative",
-   "deltaSeconds": -76.31034839557674,
+   "deltaSeconds": -76.07941478079988,
    "deltaSlots": 0,
-   "reason": "76.3 s slower",
+   "reason": "76.1 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Scythe of Vitur",
@@ -539,9 +539,9 @@
   {
    "label": "ranged + magic: Tumeken's shadow (Ancestral) / Twisted bow (Masori)",
    "kind": "alternative",
-   "deltaSeconds": -96.4635504666137,
+   "deltaSeconds": -110.13558570315536,
    "deltaSlots": -1,
-   "reason": "96.5 s slower",
+   "reason": "110.1 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Twisted bow"
@@ -550,9 +550,9 @@
   {
    "label": "magic: Tumeken's shadow (Ancestral)",
    "kind": "alternative",
-   "deltaSeconds": -603.3118271026644,
+   "deltaSeconds": -616.9838623392061,
    "deltaSlots": -10,
-   "reason": "603.3 s slower",
+   "reason": "617.0 s slower",
    "weapons": [
     "Tumeken's shadow"
    ]
@@ -609,18 +609,18 @@
      "weapon": "elderMaul",
      "carriers": 2,
      "drivers": [
-      "Ocellus (19.2 s)"
+      "Ocellus (7.5 s)"
      ],
-     "lastSaved": 19.21144124296802
+     "lastSaved": 7.51941914780673
     },
     {
      "weapon": "tonalztics",
      "carriers": 2,
      "drivers": [
-      "Ocellus (18.1 s)",
-      "Archive Guardian (3.2 s)"
+      "Ocellus (19.6 s)",
+      "Archive Guardian (3.5 s)"
      ],
-     "lastSaved": 21.348433448536753
+     "lastSaved": 23.08891051997125
     }
    ],
    "perTarget": [
@@ -666,13 +666,13 @@
      "ayak": 0
     },
     {
-     "key": "dagonhai|Shielded (shield gauge)",
-     "label": "Dagon'hai Elder + Monks (Shielded (shield gauge))",
-     "group": "Dagon'hai Elder + Monks",
+     "key": "xarth|",
+     "label": "Xarth",
+     "group": "Xarth",
      "carriers": {
       "tonalztics": 1
      },
-     "pFloor": 0.9740866032811883,
+     "pFloor": 0.9758786564501939,
      "ayak": 0
     },
     {
@@ -755,164 +755,68 @@
   "screened": []
  },
  "matrixDps": {
-  "ag-flying|": 10.621152121936644,
-  "ag-grounded|": 10.709080860377627,
-  "ezekiel|": 11.960431160835043,
-  "moia|": 11.385972275939666,
-  "dagonhai|Shielded (shield gauge)": 13.71880164199571,
-  "ocellus-p1|At a corner": 10.930021799514789,
-  "ocellus-p2|": 14.037699041927691,
-  "ocellus-p3|Quadrants 1-3": 10.305047054762351,
-  "ocellus-p3|Last quadrant: Deflect Melee": 8.535802186983583,
-  "ocellus-p3|Last quadrant: Deflect Ranged": 10.305047054762351,
-  "xarth|": 11.774582732062319,
-  "dreadnoth|": 14.049461600710774,
-  "bork|Smorks 100-76% HP (armour 8)": 5.5291008192376525,
-  "bork|Smorks 75-51% HP (armour 10)": 4.7270925646118735,
-  "bork|Smorks 50-26% HP (armour 12)": 4.054335074425561,
-  "bork|Smorks 25-0% HP (armour 14)": 3.4926751514259777,
-  "smorks|": 11.694882018836998
+  "ag-flying|": 10.266475799397792,
+  "ag-grounded|": 10.918167094150943,
+  "ezekiel|": 12.29098335926022,
+  "moia|": 11.036477579707563,
+  "dagonhai|Shielded (shield gauge)": 13.385111772491891,
+  "ocellus-p1|At a corner": 10.577438056830585,
+  "ocellus-p2|": 14.370223088405137,
+  "ocellus-p3|Quadrants 1-3": 10.634027878616607,
+  "ocellus-p3|Last quadrant: Deflect Melee": 8.166997701078248,
+  "ocellus-p3|Last quadrant: Deflect Ranged": 10.634027878616607,
+  "xarth|": 12.10495851373083,
+  "dreadnoth|": 14.381996812805731,
+  "bork|Smorks 100-76% HP (armour 8)": 5.800728269766345,
+  "bork|Smorks 75-51% HP (armour 10)": 4.982725196524473,
+  "bork|Smorks 50-26% HP (armour 12)": 4.293303945552894,
+  "bork|Smorks 25-0% HP (armour 14)": 3.7141469946846084,
+  "smorks|": 12.02360719241481
  },
  "variants": [
   {
    "id": "xarth-freezer",
-   "label": "+ Ancients (Xarth corpses)",
-   "onRoute": false,
+   "label": "freezes corpses (Ice Barrage, ≥75 magic attack: Kodai wand + Ancestral robe top + Elidinis' ward (f)), then back to DPS",
+   "onRoute": true,
    "headcount": 1,
    "encounter": "xarth",
    "spellbook": "ancients",
-   "role": "Ice Barrage the corpses next to Xarth in phase 2 (Ancient spellbook: no Death Charge for this player, not in the times)",
+   "spell": "Ice Barrage",
    "share": 0.5,
    "where": "phase 2",
-   "loadout": {
-    "key": "variant:xarth-freezer",
-    "label": "Freezer: Kodai + Ice Barrage (Ancestral)",
-    "kind": "preset",
-    "group": "magic",
-    "equipment": {
-     "head": {
-      "id": 21018,
-      "name": "Ancestral hat",
-      "version": "",
-      "slot": "head"
-     },
-     "body": {
-      "id": 21021,
-      "name": "Ancestral robe top",
-      "version": "",
-      "slot": "body"
-     },
-     "legs": {
-      "id": 21024,
-      "name": "Ancestral robe bottom",
-      "version": "",
-      "slot": "legs"
-     },
-     "cape": {
-      "id": 21793,
-      "name": "Imbued Guthix cape",
-      "version": "Normal",
-      "slot": "cape"
-     },
-     "neck": {
-      "id": 12002,
-      "name": "Occult necklace",
-      "version": "",
-      "slot": "neck"
-     },
-     "hands": {
-      "id": 31106,
-      "name": "Confliction gauntlets",
-      "version": "",
-      "slot": "hands"
-     },
-     "feet": {
-      "id": 31097,
-      "name": "Avernic treads (max)",
-      "version": "",
-      "slot": "feet"
-     },
-     "ring": {
-      "id": 28313,
-      "name": "Magus ring",
-      "version": "",
-      "slot": "ring"
-     },
-     "weapon": {
-      "id": 21006,
-      "name": "Kodai wand",
-      "version": "",
-      "slot": "weapon"
-     },
-     "shield": {
-      "id": 27251,
-      "name": "Elidinis' ward (f)",
-      "version": "",
-      "slot": "shield"
-     }
-    },
-    "options": [
-     {
-      "style": {
-       "name": "Spell",
-       "type": "magic",
-       "stance": "Autocast"
-      },
-      "spell": "Ice Barrage"
-     }
-    ],
-    "source": "wiki The Fractured Archive/Strategies → Xarth → Phase 2 (read 2026-10-30): \"A player freezes the incoming corpses\""
-   },
-   "extraItems": [
+   "keep": 0.8,
+   "castSeconds": 3.5999999999999996,
+   "waveSeconds": 18,
+   "switchItems": [
     {
-     "id": 12002,
-     "name": "Occult necklace",
+     "id": 21006,
+     "name": "Kodai wand",
      "version": "",
-     "slot": "neck"
+     "slot": "weapon"
     },
     {
-     "id": 21018,
-     "name": "Ancestral hat",
+     "id": 21021,
+     "name": "Ancestral robe top",
      "version": "",
-     "slot": "head"
+     "slot": "body"
     },
     {
-     "id": 21024,
-     "name": "Ancestral robe bottom",
+     "id": 27251,
+     "name": "Elidinis' ward (f)",
      "version": "",
-     "slot": "legs"
-    },
-    {
-     "id": 21793,
-     "name": "Imbued Guthix cape",
-     "version": "Normal",
-     "slot": "cape"
-    },
-    {
-     "id": 28313,
-     "name": "Magus ring",
-     "version": "",
-     "slot": "ring"
-    },
-    {
-     "id": 31106,
-     "name": "Confliction gauntlets",
-     "version": "",
-     "slot": "hands"
+     "slot": "shield"
     }
    ],
+   "magicAttack": 88,
+   "minMagicAttack": 75,
+   "extraItems": [],
    "freeSlots": 0,
-   "droppedSupplies": [
-    {
-     "type": "brew",
-     "count": 6
-    }
-   ],
+   "droppedSupplies": [],
    "overfull": false,
-   "baseDps": 0,
-   "variantDps": 0,
-   "teamDps": 0,
-   "seconds": 0
+   "baseDps": 12.10495851373083,
+   "variantDps": 9.683966810984664,
+   "teamDps": 11.89978972536251,
+   "seconds": 3.7032416225175946
   }
  ],
  "unusedCarried": [
@@ -957,16 +861,16 @@
  "droppedPinned": [],
  "ownershipNotices": [],
  "searchRows": "c1637eec5d8e13464259fb40d3df838022d57cdd1fea553a5308c82dbb2a873f",
- "objectiveSeconds": 1548.9035173366217,
+ "objectiveSeconds": 1535.23148210008,
  "fightSeconds": null,
  "plannedRoute": {
-  "id": "archive-guardian>ezekiel>moia>dagonhai>ocellus",
-  "seconds": 1548.9035173366217,
+  "id": "archive-guardian>ezekiel>moia>xarth>ocellus",
+  "seconds": 1535.23148210008,
   "surgeDoses": null,
   "encounters": [
    {
     "id": "archive-guardian",
-    "seconds": 191.7719347510222,
+    "seconds": 196.46662463133654,
     "events": [
      {
       "npc": "Archive Guardian",
@@ -974,7 +878,7 @@
       "counts": {
        "tonalztics": 4
       },
-      "hp": 388.6350103777186
+      "hp": 411.09030025926785
      }
     ],
     "damage": {},
@@ -982,7 +886,7 @@
    },
    {
     "id": "ezekiel",
-    "seconds": 250.82707802571798,
+    "seconds": 244.08136536445252,
     "events": [
      {
       "npc": "Ezekiel",
@@ -991,7 +895,7 @@
        "tonalztics": 3,
        "elderMaul": 1
       },
-      "hp": 336.1902090442387
+      "hp": 327.4574262785888
      }
     ],
     "damage": {},
@@ -999,7 +903,7 @@
    },
    {
     "id": "moia",
-    "seconds": 68.94448545767385,
+    "seconds": 71.12776647536128,
     "events": [
      {
       "npc": "Moia",
@@ -1007,24 +911,24 @@
       "counts": {
        "tonalztics": 2
       },
-      "hp": 104.94102682429782
+      "hp": 108.99934407473785
      }
     ],
     "damage": {},
     "surge": false
    },
    {
-    "id": "dagonhai",
-    "seconds": 233.76677378166895,
+    "id": "xarth",
+    "seconds": 218.49125572853723,
     "events": [
      {
-      "npc": "Dagon'hai Elder",
-      "firstRowKey": "dagonhai",
+      "npc": "Xarth",
+      "firstRowKey": "xarth",
       "counts": {
-       "elderMaul": 3,
+       "elderMaul": 2,
        "tonalztics": 1
       },
-      "hp": 357.96685490930855
+      "hp": 319.98589129198535
      }
     ],
     "damage": {},
@@ -1032,7 +936,7 @@
    },
    {
     "id": "ocellus",
-    "seconds": 803.5932453205387,
+    "seconds": 805.0644699003924,
     "events": [
      {
       "npc": "Ocellus",
@@ -1040,7 +944,7 @@
       "counts": {
        "tonalztics": 2
       },
-      "hp": 414.85114299375755
+      "hp": 431.59336438075894
      },
      {
       "npc": "Ocellus",
@@ -1050,7 +954,7 @@
        "elderMaul": 3,
        "tonalztics": 1
       },
-      "hp": 249.34248718153918
+      "hp": 249.57917571948533
      },
      {
       "npc": "Ocellus",
@@ -1060,7 +964,7 @@
        "tonalztics": 3,
        "elderMaul": 1
       },
-      "hp": 1121.4232066452853
+      "hp": 1099.7494480124597
      }
     ],
     "damage": {},

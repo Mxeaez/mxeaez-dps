@@ -1,8 +1,8 @@
 /**
  * Phase 40 UI check (not part of the Jest run): the FA Plan tab's "Required variants" box. The default Team plan (party
- * 6, Xarth route) shows "1 player: + Ancients (Xarth corpses)" with the freezer's switch, its slots and the team DPS on
- * Xarth's phase 2; the total is the fa headline (which counts the freezer); "I'm this player" shows the variant kit and
- * is saved. A route without Xarth (Dagon'hai) shows no variant.
+ * 6, Xarth route) shows "1 player: freezes corpses (Ice Barrage, ≥75 magic attack: …), then back to DPS" with the
+ * switch, its slots and the team DPS on Xarth's phase 2; the total is the fa headline (which counts the freezer); "I'm
+ * this player" shows the variant kit and is saved. A route without Xarth (Dagon'hai) shows no variant.
  *
  * Usage (dev server running): node scripts/verifyPhase40.mjs [baseUrl]
  * Screenshot docs/screenshots/phase40-variants.png.
@@ -44,17 +44,20 @@ const main = async () => {
   check(await box.isVisible(), 'Required variants box shown');
   const v = box.locator('[data-testid="plan-variant"][data-id="xarth-freezer"]');
   check(await v.count() === 1, 'one variant: the Xarth freezer');
-  check((await v.locator('[data-testid="plan-variant-head"]').textContent()) === '1 player: + Ancients (Xarth corpses)', 'head: 1 player: + Ancients (Xarth corpses)');
+  const head = (await v.locator('[data-testid="plan-variant-head"]').textContent()) ?? '';
+  check(head === "1 player: freezes corpses (Ice Barrage, ≥75 magic attack: Kodai wand + Ancestral robe top + Elidinis' ward (f)), then back to DPS", `head: ${head}`);
+  const role = (await v.locator('[data-testid="plan-variant-role"]').textContent()) ?? '';
+  check(/80% of their DPS on Xarth phase 2/.test(role), `role: ${role}`);
   const slots = (await v.locator('[data-testid="plan-variant-slots"]').textContent()) ?? '';
-  check(slots === '+9 items: 4 free slots, then leave 5 Saradomin brew behind', `slots: ${slots}`);
+  check(slots === "+3 items: 3 free slots (88 magic attack; the freezer's inventory, not yours)", `slots: ${slots}`);
   const team = (await v.locator('[data-testid="plan-variant-team"]').textContent()) ?? '';
-  check(/^Xarth phase 2 \(50% of the HP\): 5 × 13\.\d\d \+ 1 × 1\.\d\d \(Ice Barrage\) ÷ 6 = 11\.\d\d DPS per player there; \+\d+\.\d s on the route/.test(team), `team: ${team}`);
-  check(await v.locator('[data-testid="plan-variant-switch"] img').count() >= 8, 'switch icons shown');
+  check(/^Xarth phase 2 \(50% of the HP\): \(5 × \d+\.\d\d \+ 1 × \d+\.\d\d\) ÷ 6 = \d+\.\d\d DPS per player there; ≈ \+\d+\.\d s \(same spec plan\)$/.test(team), `team: ${team}`);
+  check(await v.locator('[data-testid="plan-variant-switch"] img').count() === 3, 'switch icons shown (3)');
   check(await v.locator('[data-testid="plan-variant-mine"]').count() === 0, 'not ticked: no variant kit line');
 
   await v.locator('[data-testid="plan-variant-me"]').check();
   const mine = (await v.locator('[data-testid="plan-variant-mine"]').textContent()) ?? '';
-  check(/^Your kit: The kit above \+ Freezer: Kodai \+ Ice Barrage \(Ancestral\) \(Ancient spellbook\); carry .*Kodai wand.*Saturated heart\.$/.test(mine), `ticked: ${mine.slice(0, 120)}…`);
+  check(mine === "Your kit: The kit above + Kodai wand + Ancestral robe top + Elidinis' ward (f) (Ancient spellbook); carry Kodai wand, Ancestral robe top, Elidinis' ward (f).", `ticked: ${mine}`);
   await box.scrollIntoViewIfNeeded();
   await page.screenshot({ path: 'docs/screenshots/phase40-variants.png', fullPage: false });
   await page.waitForTimeout(600);

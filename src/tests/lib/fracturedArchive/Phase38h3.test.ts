@@ -146,8 +146,8 @@ const independentGains = (name: HeadlineName, drain: DrainStateId) => {
 // 59.3 vs 58.7 (1.01×: first there, but < 1.2×, so no second weapon). ZCB is first on 12 of 12 Team phases, 7 of 8 Solo.
 // Phase 38j: the Solo kit now camps the Lightbearer (+ a Torva full helm switch): lower DPS on some phases, so ZCB per
 // bar rises there (AG grounded 81.9 → 86.0, Ezekiel 67.1 → 71.4, Xarth 74.9 → 79.2, Ocellus P1 86.5 → 90.6, P3 Q1-3
-// 58.7 → 62.8); the ranking is unchanged. Phase 40 (the Xarth freezer: the team averages a lower DPS on Xarth's phase 2,
-// so a ZCB bar saves more there): fa Xarth 74.9 → 79.3; the ranking is unchanged.
+// 58.7 → 62.8); the ranking is unchanged. Phase 40 (the Xarth freezer keeps 80% of their DPS on Xarth's phase 2: a lower
+// team average, so a ZCB bar saves more there): fa Xarth 74.9 → 75.9; the ranking is unchanged.
 const ZCB_PER_BAR: Record<string, Record<string, [number, string | null]>> = {
   fa: {
     'ag-flying|': [90.9, null],
@@ -158,7 +158,7 @@ const ZCB_PER_BAR: Record<string, Record<string, [number, string | null]>> = {
     'bork|Smorks 25-0% HP (armour 14)': [84.8, 'voidwaker'],
     'smorks|': [85.1, 'crimsonKisten'],
     'moia|': [85.5, null],
-    'xarth|': [79.3, 'crimsonKisten'],
+    'xarth|': [75.9, 'crimsonKisten'],
     'ocellus-p1|At a corner': [86.5, 'crimsonKisten'],
     'ocellus-p3|Quadrants 1-3': [62.3, 'crimsonKisten'],
     'ocellus-p3|Last quadrant: Deflect Melee': [81.0, null],

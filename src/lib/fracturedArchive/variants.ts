@@ -1,32 +1,27 @@
-import { EquipmentPiece, Player, PlayerEquipment } from '@/types/Player';
+import { EquipmentPiece, PlayerEquipment } from '@/types/Player';
 import { ANCESTRAL, BestSetupAssumptions, PresetDef } from '@/lib/fracturedArchive/presets';
-import { presetSpells, presetStyles, resolvePresetEquipment } from '@/lib/fracturedArchive/bestSetup';
-import { applyLoadoutToPlayer } from '@/lib/fracturedArchive/loadout';
-import {
-  createKitEvaluator, EncounterId, KitEvaluatorCache, kitEvaluatorCache, KitLoadout, RaidTimeAssumptions,
-} from '@/lib/fracturedArchive/raidTime';
-import { StyleOption } from '@/lib/fracturedArchive/search';
+import { resolvePresetEquipment } from '@/lib/fracturedArchive/bestSetup';
+import { EncounterId, RaidTimeAssumptions } from '@/lib/fracturedArchive/raidTime';
 import { isOwned } from '@/lib/fracturedArchive/ownership';
-import { timeVariant, TimeVariant } from '@/lib/fracturedArchive/variantBlend';
+import { TimeVariant } from '@/lib/fracturedArchive/variantBlend';
 import { RaidId, Spellbook } from '@/lib/raids/types';
 
 /**
  * Phase 40 (ROADMAP 40): the variations a raid forces on a few of its players. Everyone runs the planner's kit; a
- * variant adds a switch for `headcount` players and changes their DPS on the rows it covers (variantBlend.ts).
+ * variant adds a switch for `headcount` players and costs them some of their DPS on the rows it covers (variantBlend.ts).
  *
- * The Fractured Archive's: the Xarth freezer. Wiki, The Fractured Archive/Strategies → Xarth → Phase 2 (read
- * 2026-10-30; docs/DATA_SOURCES.md *Phase 40*): "A player freezes the incoming corpses right before they can heal
- * Xarth, allowing designated teammates to attack him and the corpses with a venator bow", "Corpses can be frozen",
- * "A Venator bow will outperform most non-melee setups for overall damage if corpses are frozen adjacent to Xarth".
- * Modelled (UNVERIFIED D37): one player on the Ancient spellbook casts Ice Barrage at Xarth through phase 2 (its splash
- * freezes the corpses beside him), which is `share` 50% of his HP; that player deals the Ice Barrage loadout's DPS
- * there, everyone else the kit's. Corpse HP, healing and the barrage's damage on the corpses are not modelled.
+ * The Fractured Archive's: the Xarth freezer. Wiki, The Fractured Archive/Strategies → Xarth → Phase 2 and Corpse
+ * (Xarth) (read 2026-10-30; docs/DATA_SOURCES.md *Phase 40*): "A player freezes the incoming corpses right before they
+ * can heal Xarth", "A magic accuracy of 75 guarantees a freeze", "Water spells and ice spells are 1-tick on unfrozen
+ * corpses". Phase 40 rework (the user, 2026-10-30): the freezer switches to a magic switch with ≥ 75 magic attack
+ * (theirs: Kodai + Ancestral top + Elidinis' ward (f)), casts Ice Barrage on the corpses, and swaps back to DPS on
+ * Xarth with the kit; the barrage does no damage to Xarth. So on phase 2 (`share`, 50% of his HP; the user estimates
+ * 50-60%) the freezer deals the kit's DPS × (1 − `castSeconds` ÷ `waveSeconds`). The wave interval is not on the wiki:
+ * an estimate (UNVERIFIED D37). The freeze is taken as guaranteed.
  */
 export interface RequiredVariantDef {
   id: string;
   raid: RaidId;
-  /** "+ Ancients (Xarth corpses)". */
-  label: string;
   headcount: number;
   encounter: EncounterId;
   /** The time model rows (PlannedPhase keys) the variant covers. */
@@ -36,151 +31,130 @@ export interface RequiredVariantDef {
   /** Where on the encounter ("phase 2"). */
   where: string;
   spellbook: Spellbook;
-  /** The variant loadout (owned pieces only; a camped ring replaces its ring). */
+  /** The spell the variant player casts. */
+  spell: string;
+  /** Seconds of the variant player's DPS lost per wave (switch, cast, switch back). */
+  castSeconds: number;
+  /** Seconds between waves. */
+  waveSeconds: number;
+  /** The pieces the switch is taken from (owned only; the cheapest set reaching `minMagicAttack`). */
   preset: PresetDef;
-  /** What the variant player does (the Plan tab). */
-  role: string;
+  /** The switch's magic attack bonus needed (the wiki: 75 guarantees a freeze). */
+  minMagicAttack: number;
+  /** Switch preference (slots, first = preferred on ties): the user's Kodai + Ancestral top + ward first. */
+  prefer: (keyof PlayerEquipment)[];
   source: string;
 }
+
+/** Ticks of 0.6 s. */
+const TICK = 0.6;
 
 export const XARTH_FREEZER: RequiredVariantDef = {
   id: 'xarth-freezer',
   raid: 'fractured-archive',
-  label: '+ Ancients (Xarth corpses)',
   headcount: 1,
   encounter: 'xarth',
   rowKeys: ['xarth'],
   share: 0.5,
   where: 'phase 2',
   spellbook: 'ancients',
+  spell: 'Ice Barrage',
+  // the switch (same tick as the cast), Ice Barrage's 5-tick attack delay, the swap back: 6 ticks (estimate)
+  castSeconds: 6 * TICK,
+  // one wave every 30 ticks (estimate; not on the wiki)
+  waveSeconds: 30 * TICK,
   preset: {
-    name: 'Freezer: Kodai + Ice Barrage (Ancestral)',
+    name: 'Freezer switch',
     group: 'magic',
     equipment: { ...ANCESTRAL, weapon: 'Kodai wand', shield: "Elidinis' ward (f)" },
     styles: ['Spell'],
     spells: ['Ice Barrage'],
   },
-  role: 'Ice Barrage the corpses next to Xarth in phase 2 (Ancient spellbook: no Death Charge for this player, not in the times)',
-  source: 'wiki The Fractured Archive/Strategies → Xarth → Phase 2 (read 2026-10-30): "A player freezes the incoming corpses"',
+  minMagicAttack: 75,
+  prefer: ['weapon', 'body', 'shield', 'legs', 'hands', 'cape', 'neck', 'ring', 'head', 'feet'],
+  source: 'wiki Strategies → Xarth → Phase 2 and Corpse (Xarth) (read 2026-10-30); the user (2026-10-30): barrage the corpses, swap back',
 };
 
 export const REQUIRED_VARIANTS: Partial<Record<RaidId, RequiredVariantDef[]>> = {
   'fractured-archive': [XARTH_FREEZER],
 };
 
+/** Phase 40: the share of the variant player's DPS kept on the variant rows (1 − cast ÷ wave, within 0-1). */
+export const variantKeep = (def: Pick<RequiredVariantDef, 'castSeconds' | 'waveSeconds'>): number => (def.waveSeconds > 0
+  ? Math.min(1, Math.max(0, 1 - def.castSeconds / def.waveSeconds)) : 0);
+
 /** Phase 40: the variants of the assumptions' raid that apply at their party size (someone else must be there). */
 export const requiredVariantsFor = (a: Pick<BestSetupAssumptions, 'raid' | 'partySize'>): RequiredVariantDef[] => (
   REQUIRED_VARIANTS[a.raid ?? 'fractured-archive'] ?? []).filter((v) => Math.floor(a.partySize) > v.headcount);
 
-/**
- * Phase 40: the variant loadout's equipment: the preset's owned pieces (an unowned piece leaves its slot empty), the
- * camped ring in place of its ring. Null when the weapon is not owned or doesn't resolve.
- */
-export const variantEquipment = (
+/** Phase 40: the preset's owned pieces (an unowned piece is left out). */
+export const variantPieces = (
   def: RequiredVariantDef,
   notOwned: string[] = [],
-  ring: EquipmentPiece | null = null,
-): Partial<Record<keyof PlayerEquipment, EquipmentPiece>> | null => {
+): Partial<Record<keyof PlayerEquipment, EquipmentPiece>> => {
   let eq: Partial<Record<keyof PlayerEquipment, EquipmentPiece | null>>;
   try {
     eq = resolvePresetEquipment(def.preset);
   } catch {
-    return null;
+    return {};
   }
   const out: Partial<Record<keyof PlayerEquipment, EquipmentPiece>> = {};
   (Object.keys(eq) as (keyof PlayerEquipment)[]).forEach((slot) => {
     const p = eq[slot];
     if (p && isOwned(p.name, notOwned)) out[slot] = p;
   });
-  if (!out.weapon) return null;
-  if (ring) out.ring = ring;
   return out;
 };
 
-/** Phase 40: the variant loadout's style options (the preset's styles × spells). */
-export const variantOptions = (def: RequiredVariantDef): StyleOption[] => presetStyles(def.preset)
-  .flatMap((style) => presetSpells(def.preset).map((spell) => ({ style, spell })));
-
-/** Phase 40: the variant loadout as a kit loadout (one member: its own kit). */
-export const variantKitLoadout = (
-  def: RequiredVariantDef,
-  base: Player,
-  equipment: Partial<PlayerEquipment>,
-  assumptions: BestSetupAssumptions,
-): KitLoadout => ({
-  id: `variant:${def.id}`,
-  name: def.preset.name,
-  group: def.preset.group,
-  options: variantOptions(def),
-  toPlayer: (monster, o, a) => applyLoadoutToPlayer(base, def.preset.name, def.preset.group, equipment, o.style, o.spell, monster, a ?? assumptions),
-});
-
-const ASSUMPTION_IDS = new Map<string, number>();
-const ASSUMPTION_IDS_MAX = 5000;
-const CACHES = new Map<string, KitEvaluatorCache>();
-
 /**
- * Phase 40: the time variants of `a` (one per def): each with its own kit evaluator, shared per (def, equipment,
- * assumptions JSON without the spec plan's inputs) so the DPS of a variant loadout on a drain state is computed once.
- * `id` holds all three (memo keys).
+ * Phase 40: the cheapest switch reaching `minMagicAttack` from these pieces: the fewest items the kit doesn't already
+ * carry (`inKit`), then the most preferred slots (`prefer`), then the most magic attack. Null when even all of them
+ * fall short. Display only (the freezer's own inventory; not charged to your kit).
  */
-export const timeVariantsFor = (
-  defs: { def: RequiredVariantDef, equipment: Partial<PlayerEquipment>, key: string }[],
-  base: Player,
-  a: BestSetupAssumptions,
-): TimeVariant[] => {
-  if (!defs.length) return [];
-  // the spec plan's inputs (carriers, your specs, damage specs, doses) are left out: the time model's passes ask the
-  // variant kit with the event's spec counts (or no drains), which fix the monster, and the pass memo is shared across
-  // them (`kitMemo` passKey leaves out the spec budget); with them in, fa's pass runs doubled
-  const json = JSON.stringify({
-    ...a, team: undefined, mySpecs: undefined, damageSpecs: undefined, damageFiller: undefined, surgePotions: undefined,
-  });
-  if (ASSUMPTION_IDS.size >= ASSUMPTION_IDS_MAX) {
-    ASSUMPTION_IDS.clear();
-    CACHES.clear();
-  }
-  let aid = ASSUMPTION_IDS.get(json);
-  if (aid === undefined) {
-    aid = ASSUMPTION_IDS.size;
-    ASSUMPTION_IDS.set(json, aid);
-  }
-  return defs.map(({ def, equipment, key }) => {
-    const id = `${def.id}|${key}|a${aid}`;
-    let cache = CACHES.get(id);
-    if (!cache) {
-      cache = kitEvaluatorCache();
-      CACHES.set(id, cache);
+export const freezerSwitch = (
+  def: Pick<RequiredVariantDef, 'minMagicAttack' | 'prefer'>,
+  pieces: Partial<Record<keyof PlayerEquipment, EquipmentPiece>>,
+  inKit: (id: number) => boolean = () => false,
+): { slots: (keyof PlayerEquipment)[], magic: number } | null => {
+  const slots = def.prefer.filter((s) => pieces[s]);
+  const magicOf = (s: keyof PlayerEquipment) => pieces[s]!.offensive?.magic ?? 0;
+  let best: { slots: (keyof PlayerEquipment)[], magic: number, extra: number, rank: number } | null = null;
+  for (let mask = 1; mask < (1 << slots.length); mask++) {
+    const set = slots.filter((_, i) => mask & (1 << i));
+    const magic = set.reduce((t, s) => t + magicOf(s), 0);
+    if (magic < def.minMagicAttack) continue;
+    const extra = set.filter((s) => !inKit(pieces[s]!.id)).length;
+    const rank = set.reduce((t, s) => t + slots.indexOf(s), 0) + 100 * set.length;
+    if (!best || extra < best.extra || (extra === best.extra && (rank < best.rank || (rank === best.rank && magic > best.magic)))) {
+      best = {
+        slots: set, magic, extra, rank,
+      };
     }
-    return timeVariant({
-      id,
-      encounter: def.encounter,
-      rowKeys: [...def.rowKeys],
-      share: def.share,
-      headcount: def.headcount,
-      partySize: Math.floor(a.partySize),
-    }, createKitEvaluator([variantKitLoadout(def, base, equipment, a)], a, cache));
-  });
+  }
+  return best ? { slots: best.slots, magic: best.magic } : null;
 };
+
+/** Phase 40: the time variants of the assumptions (kit-independent: only the party size and the def). */
+export const timeVariantsFor = (
+  defs: RequiredVariantDef[],
+  a: Pick<BestSetupAssumptions, 'partySize'>,
+): TimeVariant[] => defs.map((def) => ({
+  id: def.id,
+  encounter: def.encounter,
+  rowKeys: [...def.rowKeys],
+  share: def.share,
+  headcount: def.headcount,
+  partySize: Math.floor(a.partySize),
+  keep: variantKeep(def),
+}));
 
 /** Phase 40: the time assumptions with these variants (unchanged when there are none). */
 export const withTimeVariants = (t: RaidTimeAssumptions, variants: TimeVariant[]): RaidTimeAssumptions => (variants.length
   ? { ...t, variants } : t);
 
-/**
- * Phase 40: the time variants of a plan's result (its `variants`: the loadouts it timed), for re-timing the plan outside
- * the planner (tests, probes). `toEquipment`: the plan equipment → player equipment (planner.ts `toPlayerEquipment`).
- */
+/** Phase 40: the time variants of a plan's result (its `variants`), for re-timing the plan outside the planner. */
 export const timeVariantsOfPlan = (
-  variants: { id: string, loadout: { equipment: object } }[] | undefined,
-  toEquipment: (eq: never) => Partial<PlayerEquipment>,
-  base: Player,
-  a: BestSetupAssumptions,
-): TimeVariant[] => timeVariantsFor((variants ?? []).flatMap((v) => {
-  const def = (REQUIRED_VARIANTS[a.raid ?? 'fractured-archive'] ?? []).find((d) => d.id === v.id);
-  if (!def) return [];
-  const equipment = toEquipment(v.loadout.equipment as never);
-  const key = (['head', 'cape', 'neck', 'ammo', 'weapon', 'body', 'shield', 'legs', 'hands', 'feet', 'ring'] as (keyof PlayerEquipment)[])
-    .map((sl) => equipment[sl]?.id ?? 0).join(',');
-  return [{ def, equipment, key }];
-}), base, a);
+  variants: { id: string }[] | undefined,
+  a: Pick<BestSetupAssumptions, 'raid' | 'partySize'>,
+): TimeVariant[] => timeVariantsFor((variants ?? []).flatMap((v) => (REQUIRED_VARIANTS[a.raid ?? 'fractured-archive'] ?? [])
+  .filter((d) => d.id === v.id)), a);

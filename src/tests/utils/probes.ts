@@ -121,7 +121,7 @@ export const retimeHeadline = (name: HeadlineName): Retime => {
   const a = finalAssumptions(name, fx);
   const inputs = c.inputs();
   // phase 40: the plan's required variants (the Xarth freezer), rebuilt from the loadouts it timed
-  const timeA = withTimeVariants(raidTimeAssumptionsFrom(a, inputs.drain, inputs.settings, raid.time), timeVariantsOfPlan(fx.variants, toPlayerEquipment, generateEmptyPlayer(), a));
+  const timeA = withTimeVariants(raidTimeAssumptionsFrom(a, inputs.drain, inputs.settings, raid.time), timeVariantsOfPlan(fx.variants, a));
   const comparison = compareRoutes(createKitEvaluator(kitLoadouts(fx.kit, a), a), timeA, routesFor(timeA));
   const h = headline(name);
   const route = comparison.routes.find((r) => r.route.id === h.route);

@@ -713,7 +713,7 @@ describe('review: you carry a drain weapon or you damage-spec (Team, one bar eac
       };
     });
     // phase 40: with the plan's required variants (the Xarth freezer at party 6)
-    const ta = withTimeVariants(raidTimeAssumptionsFrom(a, 'team', raid.defaultTimeSettings, raid.time), timeVariantsOfPlan(res.variants, toPlayerEquipment, base, a));
+    const ta = withTimeVariants(raidTimeAssumptionsFrom(a, 'team', raid.defaultTimeSettings, raid.time), timeVariantsOfPlan(res.variants, a));
     const cmp = compareRoutes(createKitEvaluator(loadouts, a), ta, routesFor({ model: raid.time }).filter((r) => r.id === ROUTE));
     return cmp.routes[cmp.fastest];
   };

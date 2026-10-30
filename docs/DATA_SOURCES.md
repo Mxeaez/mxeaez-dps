@@ -1089,7 +1089,14 @@ and https://oldschool.runescape.wiki/w/Xarth (`?action=raw`: no corpse / spellbo
   older wording).
 
 Finding: one player freezes the corpses at Xarth (headcount 1, Xarth only) — the user's framing. The wiki names no
-required spellbook: freezing is ice spells (Ancients), and Undead Grasp (Arceuus) or water spells (douse) also work. We
-model the Ancients freezer with Ice Barrage, P2 = 50% of the HP, the freezer's DPS = the Ice Barrage loadout's on Xarth:
-**unverified** (UNVERIFIED D37; BEST_SETUP *Required variants*).
+required spellbook: freezing is ice spells (Ancients), and Undead Grasp (Arceuus) or water spells (douse) also work.
 
+Phase 40 rework (2026-10-30). https://oldschool.runescape.wiki/w/Corpse_(Xarth) (`?action=raw`, read 2026-10-30):
+62 HP, Magic 100, magic defence 0; "A magic accuracy of 75 guarantees a freeze"; "Water spells and ice spells are 1-tick
+on unfrozen corpses"; "Fire spells spawn more corpses". **No wave interval or corpse count** on the Corpse, Xarth or
+Strategies pages (a web search found none either). The user (2026-10-30): the freezer casts Ice Barrage on the corpses,
+then swaps back to DPS on Xarth (no barrage on Xarth); their switch is Kodai + Ancestral robe top + Elidinis' ward (f)
+(28 + 35 + 25 = 88 magic attack ≥ 75). Estimates (**unverified**, UNVERIFIED D37): one wave every 30 ticks (18 s); per
+wave the freezer loses 6 ticks (3.6 s: the switch with the cast, Ice Barrage's 5-tick delay, the swap back), so they keep
+1 − 3.6 ÷ 18 = 80% of their DPS on phase 2, taken as 50% of Xarth's HP (the user: 50-60%). The freeze is taken as
+guaranteed.

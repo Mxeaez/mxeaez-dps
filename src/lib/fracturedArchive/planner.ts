@@ -61,7 +61,7 @@ import {
 import { drainOutcomeStates, EncounterAlloc, encounterWallSeconds } from '@/lib/fracturedArchive/encounterBudget';
 import { createKitMemo } from '@/lib/fracturedArchive/kitMemo';
 import {
-  requiredVariantsFor, timeVariantsFor, variantEquipment, variantOptions, withTimeVariants,
+  freezerSwitch, requiredVariantsFor, timeVariantsFor, variantKeep, variantPieces, withTimeVariants,
 } from '@/lib/fracturedArchive/variants';
 import { VariantChoice, variantKit } from '@/lib/fracturedArchive/variantBlend';
 import { dosesAllowed, SURGE_DOSES_PER_POTION } from '@/lib/fracturedArchive/specBudget';
@@ -1413,34 +1413,39 @@ export const VARIANT_DROP_ORDER: SupplyType[] = ['brew', 'food', 'other', 'resto
 /** Phase 40: a required variant of the plan (the planner keeps the kit; `headcount` players add this). */
 export interface PlanVariant {
   id: string;
-  /** "+ Ancients (Xarth corpses)". */
+  /** "freezes corpses (Ice Barrage, ≥75 magic attack: Kodai wand + Ancestral robe top + Elidinis' ward (f)), then back to DPS". */
   label: string;
   /** The planned route has the encounter (the Plan tab shows only these; the others are timed on their routes too). */
   onRoute: boolean;
   headcount: number;
   encounter: EncounterId;
   spellbook: Spellbook;
-  /** What the variant player does. */
-  role: string;
+  spell: string;
   /** Share of the encounter rows' HP the variant covers. */
   share: number;
   /** Where on the encounter ("phase 2"). */
   where: string;
-  /** The variant loadout (its options: the spell it casts). */
-  loadout: PlanCandidate;
-  /** Items the variant player carries beyond the kit (the switch; the heart when no kit loadout is magic). */
+  /** DPS share the variant player keeps there (1 − castSeconds ÷ waveSeconds). */
+  keep: number;
+  castSeconds: number;
+  waveSeconds: number;
+  /** The switch (the cheapest owned set reaching the magic attack; empty when none does) and its magic attack. */
+  switchItems: PlanItem[];
+  magicAttack: number;
+  minMagicAttack: number;
+  /** Display only (the variant player's own inventory, not charged to your kit): switch items the kit lacks. */
   extraItems: PlanItem[];
   /** The kit's free slots (paid first). */
   freeSlots: number;
-  /** Supplies left behind for the rest (VARIANT_DROP_ORDER). */
+  /** Supplies the variant player leaves behind when the free slots are not enough (VARIANT_DROP_ORDER). */
   droppedSupplies: { type: SupplyType, count: number }[];
   /** Even without every supply the switch doesn't fit. */
   overfull: boolean;
-  /** On the encounter's first variant row of the planned route: your DPS, the variant loadout's, the team's average (the blend). */
+  /** On the encounter's first variant row of the planned route: your DPS, the variant player's, the team's (the blend). */
   baseDps: number;
   variantDps: number;
   teamDps: number;
-  /** Seconds the variant adds on the route (its rows' seconds vs every player at your DPS, same spec plan). */
+  /** Seconds the variant adds on its rows of the planned route (vs every player at your DPS, same spec plan). */
   seconds: number;
 }
 
@@ -1740,22 +1745,12 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     const autoSolo = autoSpecs && drain === 'solo';
     const withSubset = (sub: PlannerWeapon[]): BestSetupAssumptions => ({ ...ringA, mySpecs: mySpecsForSubset(sub, ringA.mySpecs) });
     let assumptions = autoSolo ? withSubset(ownedSpecs) : ringA;
-    // phase 40 (ROADMAP 40): the raid's required variants (the FA's Xarth freezer): their loadouts (owned pieces, the
-    // camped ring) and every time assumption of this run with them (variants.ts; kit-independent, so the optimiser,
-    // the exact re-times and the brute force all time the same team)
-    const variantDefs = requiredVariantsFor(planA).flatMap((def) => {
-      const eq0 = variantEquipment(def, notOwned, ring ? equipmentById(ring.id) ?? null : null);
-      if (!eq0) return [];
-      // as the kit's loadouts: plan items → player equipment (the re-timers rebuild it from the result the same way)
-      const planEq: PlanEquipment = Object.fromEntries(Object.entries(eq0).map(([slot, it]) => [slot, toPlanItem(it!, slot as Slot)]));
-      const eq = toPlayerEquipment(planEq);
-      return [{
-        def, planEq, equipment: eq, key: ALL_SLOTS.map((sl) => eq[sl]?.id ?? 0).join(','),
-      }];
-    });
+    // phase 40 (ROADMAP 40): the raid's required variants (the FA's Xarth freezer) in every time assumption of this run
+    // (variants.ts; kit-independent, so the optimiser, the exact re-times and the brute force all time the same team)
+    const variantDefs = requiredVariantsFor(planA);
     const timeA = (a: BestSetupAssumptions): RaidTimeAssumptions => withTimeVariants(
       raidTimeAssumptionsFrom(a, drain, settings, tuning.model),
-      timeVariantsFor(variantDefs, basePlayer, a),
+      timeVariantsFor(variantDefs, a),
     );
     let exactA = timeA(assumptions);
     // Team / None: drains don't depend on the fight length, any fixed length is exact. Solo: set per encounter below.
@@ -3411,15 +3406,17 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       notes,
     };
 
-    // phase 40: the required variants (the planned route's have the DPS and seconds): the variant player's kit = this kit + the variant loadout's
-    // items it lacks (+ the heart when no kit loadout is magic), paid from the free slots, then from the supplies
+    // phase 40: the required variants (the planned route's have the DPS and seconds). The switch: the cheapest owned
+    // set reaching the magic attack (fewest items the kit lacks); display only (the variant player's inventory: free
+    // slots, then supplies left behind), not charged to your kit
     const routeEncounters = planned >= 0 ? comparison.routes[planned].encounters : [];
     const kitIds = new Set<number>([...runCarried, ...runSpecItems.map((it) => it.id), ...heartItems.map((h) => h.id), ...kit.flatMap((c) => equipmentItemIds(c.equipment)), ...raidSupplied]);
-    const variants: PlanVariant[] = variantDefs.flatMap(({ def, planEq: loadoutEq }) => {
+    const variants: PlanVariant[] = variantDefs.map((def) => {
       const enc = routeEncounters.find((e) => e.id === def.encounter);
-      const extraItems: PlanItem[] = equipmentItemIds(loadoutEq).filter((id, i, all) => all.indexOf(id) === i && !kitIds.has(id))
-        .map((id) => Object.values(loadoutEq).find((it) => it?.id === id)!);
-      if (boostsNeedSupplies && def.preset.group === 'magic' && !kit.some((c) => c.group === 'magic') && !heartPinned) extraItems.push(heartPlanItem(heart));
+      const pieces = variantPieces(def, notOwned);
+      const sw = freezerSwitch(def, pieces, (id) => kitIds.has(id));
+      const switchItems = (sw?.slots ?? []).map((sl) => toPlanItem(pieces[sl]!, sl as Slot));
+      const extraItems = switchItems.filter((it) => !kitIds.has(it.id));
       const free = slots.free;
       let short = Math.max(0, extraItems.length - free);
       const dropped: { type: SupplyType, count: number }[] = [];
@@ -3435,19 +3432,23 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         const c = r.choice as VariantChoice | null;
         return c?.baseDps && c.baseDps > 0 && Number.isFinite(r.seconds) ? t + r.seconds * (1 - r.dps / c.baseDps) : t;
       }, 0);
-      return [{
+      const names = switchItems.map((it) => it.name).join(' + ');
+      return {
         id: def.id,
-        label: def.label,
+        label: `freezes corpses (${def.spell}, ≥${def.minMagicAttack} magic attack${names ? `: ${names}` : ': no owned switch reaches it'}), then back to DPS`,
         onRoute: !!enc,
         headcount: def.headcount,
         encounter: def.encounter,
         spellbook: def.spellbook,
-        role: def.role,
+        spell: def.spell,
         share: def.share,
         where: def.where,
-        loadout: {
-          key: `variant:${def.id}`, label: def.preset.name, kind: 'preset', group: def.preset.group, equipment: loadoutEq, options: variantOptions(def), source: def.source,
-        },
+        keep: variantKeep(def),
+        castSeconds: def.castSeconds,
+        waveSeconds: def.waveSeconds,
+        switchItems,
+        magicAttack: sw?.magic ?? 0,
+        minMagicAttack: def.minMagicAttack,
         extraItems,
         freeSlots: free,
         droppedSupplies: dropped,
@@ -3456,7 +3457,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         variantDps: first?.variantDps ?? 0,
         teamDps: first?.dps ?? 0,
         seconds: lost,
-      }];
+      };
     });
 
     const tEnd = Date.now();

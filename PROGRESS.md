@@ -3,6 +3,32 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 40 rework: freezer barrages then swaps back (FA, numbers, 2026-10-30)
+
+The user's answers on 2bc60f6b (rebased on 39b). docs/BEST_SETUP.md *Required variants*; DATA_SOURCES *Phase 40*; D37.
+- **Freezer DPS**: the freezer Ice Barrages the corpses (no damage to Xarth) and swaps back to the kit, so on Xarth's
+  phase 2 they keep 1 − 3.6 s ÷ 18 s = **80%** of your DPS (was: the Ice Barrage loadout's DPS on Xarth, 1.73). Corpse
+  (Xarth) wiki page: "A magic accuracy of 75 guarantees a freeze"; **no wave interval anywhere** (Corpse, Xarth,
+  Strategies, a web search): 30 ticks per wave and 6 ticks lost per wave are estimates (D37, with the user's 50-60%
+  phase 2 share; the Xarth row's cost depends on both). The variant is now plain data (`keep`, no evaluator): the
+  reviewer's cache findings (shared monsters map, id counter, base player in the id) are moot.
+- **Switch** (display only, the freezer's inventory): the cheapest owned set of the freezer pieces reaching 75 magic
+  attack (`freezerSwitch`): Kodai wand + Ancestral robe top + Elidinis' ward (f) = 88 (no pair reaches 75). fa: +3 items
+  in the kit's 4 free slots. Head: "1 player: freezes corpses (Ice Barrage, ≥75 magic attack: Kodai wand + Ancestral
+  robe top + Elidinis' ward (f)), then back to DPS". Team line bracketed "(5 × a + 1 × b) ÷ 6 = c …; ≈ +X s (same spec
+  plan)" (review findings 4-5).
+- **Headlines** (`pinHeadlines --full`; vs 2bc60f6b → vs pre-40): fa 21:29.1 → **21:17.1** (21:14.1 before phase 40;
+  Xarth 195.57 → 183.63, 180.61 before: the hand factor 0.5 + 0.5 ÷ (1 − 0.2/6) = 1.0172 → 183.72 at the same spec
+  plan; the plan respends a little). faNotOwned 24:30.9 → **24:21.2** (24:17.6 before): back on the Xarth route with
+  Ultor and the pre-40 kit (the 3.6 s freezer cost no longer flips it to Dagon'hai). faSolo unchanged.
+- **Pins**: r27fa 1548.9 → 1535.2 (Xarth route again, the pre-40 kit; PHASE37_MEMO r27fa 1136 / 1341 / 27136 / 185),
+  Phase27 1535.2, Phase38h3 fa Xarth ZCB per bar 75.9 (74.9 before 40), Phase38h2 faNotOwned HP 3615.4.
+- **Planning time**: this machine ran ~2.4× slower during the re-pin (faSolo, untouched code, 130 s vs 52.7 s alone
+  earlier); fa 108.8 s alone in the same session, so fa / faSolo 0.84 (0.87 at 2bc60f6b): no slowdown from the rework.
+- Tests: Phase40 rewritten (keep 0.8; hand case d 12 → 1300/12 + 1300/11.6 = 220.402 s; switch subsets 88 / 86 / 79 with
+  kit items free; fixture blend = formula). verifyPhase40 updated; screenshot re-taken.
+- Run: fast suite green (1488); FA slow suites green (397, incl. headline memo / CPU, Phase36 / 37c brute force); retime probe gap 0 (fa, faSolo, faNotOwned); verifyAll 40 39 39b 38j OK (phase40 screenshot re-taken alone); tsc, lint clean.
+
 ## Phase 40: Required variants — the Xarth freezer (FA, numbers, 2026-10-30)
 
 ROADMAP row 40. docs/BEST_SETUP.md *Required variants*; DATA_SOURCES *Phase 40*; UNVERIFIED D37.
