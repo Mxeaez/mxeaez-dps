@@ -54,4 +54,5 @@ agents); (2) the working tree is clean and pushed (`git status`, `git log origin
 memory (`~/.claude/projects/c--dev-mxeaez-dps/memory/raid4-dps-calc-plan.md`) says: the live commit and headline
 totals, the next ROADMAP row to run, any open decision for the user; (4) ROADMAP rows have their status (done with
 commit, or planned). On resume: read the memory, `git status` + `git log -3`, the next ROADMAP row, the top PROGRESS
-entry, then launch it with the project agent types (builder / numbers-builder / reviewer; no model override).
+entry, then build the row in the main session yourself (user, 2026-10-30, phase 40c; `docs/BUILDER.md` still applies)
+and launch only the independent **reviewer** agent (project agent type, no model override) for anything touching numbers.
