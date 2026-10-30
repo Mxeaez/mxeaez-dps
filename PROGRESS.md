@@ -3,6 +3,22 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 38h-4: Soulflame horn (FA, display only, 2026-10-29)
+
+ROADMAP row 38h-4. Wiki read first (docs/DATA_SOURCES.md *Soulflame horn*): Entice costs 25% energy per other player and makes
+their next melee attack within 6 s always hit, melee specs included. The wiki matches the row (frees accuracy-limited drains).
+
+- `soulflame.ts` (pure): `soulflameSaving` per melee drain weapon (Elder maul, DWH, BGS; not Tonalztics / Ayak): specs saved per
+  landed drain = 1/p - 1/p' (p' = 1 for the maul, damage > 0 given an accurate roll for DWH / BGS), times the weapon's 50%
+  energy, less the horn's 25% for one ally; shown only when the net is above zero (the maul below 2/3), else silent.
+  `soulflameNote` picks the best weapon in the plan. SpecPlanPanel computes and shows it (not a DrainLine field: that would change the pinned plan hash).
+- Value is in specs / spec energy, not HP: an HP value needs the team DPS and boss HP, which a drain state doesn't have (the
+  planner's HP values live in the encounter budget); a note under the spec plan, no plan choice.
+- FA: the maul is 54% only on Smorks (0.8 specs, 42% energy, 17% net: shown); every other target's maul is above 66% (silent,
+  Ezekiel 88% tested). Tests (Phase38h4, hand-computed: maul 40% = 1.5 specs / 75% / 50% net; DWH 40.2% of 41.8% accurate; 80%
+  silent). verifyPhase38h4.mjs + docs/screenshots/phase38h4-soulflame.png.
+- Run: `pinHeadlines --full --check` no change; Phase38h4, fast suite, tsc, lint clean; verifyAll 38h4 OK.
+
 ## Phase 38h-3 review fixes 2 (FA, 2026-10-29)
 
 Re-review of 5362a476: FAIL on C. `assignMe`'s HP now credits your carrying only when every bar is a carrier's

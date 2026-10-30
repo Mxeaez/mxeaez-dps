@@ -1050,3 +1050,17 @@ AG Flying: melee shows accuracy 38.8% / 68.2% in ours vs 0% in Gearscape, DPS 0 
 
 Gearscape quirks noted again: its Ocellus "Phase 2 (the Blade)" (id 16674) has our Blade stats here (accuracy identical), and its
 Bork (Stunned) has the same stats as Bork minus `flat`.
+
+## Soulflame horn (phase 38h-4, read 2026-10-29)
+
+Source: https://oldschool.runescape.wiki/w/Soulflame_horn (page last modified 8 Oct 2026). Special attack **Entice**: costs
+25% special energy per OTHER player affected (the user gets it free, regardless of the count); radius 0-3 tiles, players
+affected configurable "between 1 and 20" (the page's opening sentence says "up to 3"); 4-tick cooldown. Effect: "the
+player's next melee attack within 10 ticks (6 seconds) is always a successful hit; this also applies to melee special
+attacks" (multi-hit specials: only the first roll; dragon / burning claws: the second roll; Crimson Kisten: not all rolls).
+Works in all raids. Alone it does nothing (no energy used). Mainly meant for defence-draining specials (elder maul).
+Modelled (display only, `soulflame.ts`): Elder maul / DWH / BGS drain spec guaranteed accurate for 25% of the horn
+user's energy; value = specs saved per landed drain (1/p - 1/p') x weapon energy, less the 25%. **Unverified** (not on
+the page): default radius and ally count, whether Entice refreshes or stacks, whether it ends on death, how the 1-20 setting
+interacts with the 25% (taken as one ally per Entice), whether it guarantees a damaging DWH / BGS hit (taken as accurate
+roll only), whether Tonalztics (ranged) / Eye of Ayak (magic) are excluded (the page says melee only).

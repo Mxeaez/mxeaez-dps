@@ -9,6 +9,7 @@ import { drainModel, planLabelText } from '@/lib/fracturedArchive/specs';
 import { formatProbability, recommendCarriers } from '@/lib/fracturedArchive/teamSpecs';
 import DrainLineView, { DrainBrief, DrainFactsLine } from '@/app/components/bestSetup/DrainLineView';
 import { briefResultText } from '@/lib/fracturedArchive/drainLine';
+import { soulflameNote } from '@/lib/fracturedArchive/soulflame';
 import { SURGE_DOSE_ENERGY } from '@/lib/fracturedArchive/specBudget';
 import { assumptionsForTarget } from '@/lib/raids/toa/supplies';
 
@@ -38,7 +39,7 @@ const SpecPlanPanel: React.FC<{
   const noDrains = !!target.noDrains && drain !== 'none';
   const noSpecsNote = noDrains ? undefined : noSpecsNoteIn;
   const {
-    state, rec, floor, surge,
+    state, rec, floor, surge, soulflame,
   } = useMemo(() => {
     const built = buildTargetMonster(target, phase, drain, assumptions);
     // phase 38c: a ToA room before the supplies drains with the normal potions (as buildTargetMonster does)
@@ -48,6 +49,8 @@ const SpecPlanPanel: React.FC<{
       // phase 36: the Solo drains with a surge dose on top (+25% spec energy)
       surge: drain === 'solo' ? buildTargetMonster(target, phase, drain, { ...assumptions, soloExtraEnergy: SURGE_DOSE_ENERGY }).drain : undefined,
       floor: model.floor,
+      // phase 38h-4: Soulflame horn note (display only; computed here so the plan and its pins are untouched)
+      soulflame: built.drain.line ? soulflameNote(model, built.drain.line.items.filter((i) => i.count > 0).map((i) => i.weapon)) : undefined,
       rec: recommendCarriers(model, {
         partySize: assumptions.partySize,
         threshold: assumptions.floorThreshold,
@@ -75,6 +78,7 @@ const SpecPlanPanel: React.FC<{
       </div>
       {/* phase 38g: the drain facts, the same line as on Plan and Summary */}
       {state.line?.facts && !noDrains && <div><DrainFactsLine facts={state.line.facts} /></div>}
+      {soulflame && !noDrains && <div className="text-amber-700 dark:text-amber-400" data-testid="drain-soulflame">{soulflame}</div>}
       {surge?.line && !noSpecsNote && !noDrains && (
         <div className="flex flex-wrap items-center gap-2" data-testid="drain-surge" data-plan={surge.plan} title={`With a Surge potion dose (+${SURGE_DOSE_ENERGY}% spec energy): ${surge.plan}`}>
           <span className="text-gray-600 dark:text-gray-300">with a surge dose:</span>
