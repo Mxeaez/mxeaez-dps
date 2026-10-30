@@ -4,6 +4,7 @@ import React, {
   useCallback, useEffect, useRef, useState,
 } from 'react';
 import { generateEmptyPlayer } from '@/state';
+import { withActiveLevels } from '@/lib/fracturedArchive/levels';
 import Spinner from '@/app/components/Spinner';
 import { buildTargetMonster, DrainStateId, findTarget } from '@/lib/fracturedArchive/bestSetup';
 import { BestSetupAssumptions } from '@/lib/fracturedArchive/presets';
@@ -113,7 +114,7 @@ const SearchView: React.FC<{
     setStartedAt(t0);
     const j = startGearSearch(
       {
-        basePlayer: generateEmptyPlayer(),
+        basePlayer: withActiveLevels(generateEmptyPlayer()),
         query: {
           targetKey, phase, drain, styles,
         },
@@ -165,7 +166,7 @@ const SearchView: React.FC<{
 
   const onLoad = (row: SearchRow) => {
     const { monster } = buildTargetMonster(findTarget(targetKey), phase, drain, assumptions);
-    const player = searchRowToPlayer(generateEmptyPlayer(row.weaponLabel), row, monster, assumptions);
+    const player = searchRowToPlayer(withActiveLevels(generateEmptyPlayer(row.weaponLabel)), row, monster, assumptions);
     openInCalculator(player, monster).catch(console.error);
   };
 

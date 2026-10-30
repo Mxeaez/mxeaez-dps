@@ -41,6 +41,9 @@ import {
   loadNotOwned, loadOnlyOwned, saveNotOwned, saveOnlyOwned,
 } from '@/lib/fracturedArchive/ownership';
 import {
+  loadLevels, saveLevels, SavedLevels, setActiveLevels,
+} from '@/lib/fracturedArchive/levels';
+import {
   clearSettings, defaultSettings, loadSettings, PlanInputSettings, RaidSettings, resetRaidSettings, saveSettings, SavedSettings,
 } from '@/lib/raids/settings';
 
@@ -240,6 +243,9 @@ const AssumptionsBox: React.FC<{
   onTimeSettings: (s: TimeSettings) => void,
   notOwned: string[],
   onNotOwned: (names: string[]) => void,
+  /** Phase 39b: imported levels (RuneLite character-exporter). */
+  levels?: SavedLevels | null,
+  onLevels?: (l: SavedLevels | null) => void,
   /** Phase 29: set while the Plan tab's ring policy decides the ring (camp Lightbearer / camp one ring). */
   lightbearerLock?: LightbearerLock | null,
   /** Phase 33: who picks the spec weapons (shared with the Plan tab's "Spec weapons"), and the last plan's "Bring". */
@@ -250,7 +256,7 @@ const AssumptionsBox: React.FC<{
   onReset: () => void,
   onResetAll?: () => void,
 }> = ({
-  raid, value, onChange, ayakHint, timeSettings, onTimeSettings, notOwned, onNotOwned, lightbearerLock,
+  raid, value, onChange, ayakHint, timeSettings, onTimeSettings, notOwned, onNotOwned, levels, onLevels, lightbearerLock,
   specMode = 'manual', onSpecMode, planBring, onReset, onResetAll,
 }) => {
   // phase 33: "Planner decides": the chips mirror the last plan's "Bring" (read-only); none before a plan has run
@@ -397,7 +403,7 @@ const AssumptionsBox: React.FC<{
           />
         )}
       </div>
-      <NotOwnedBox value={notOwned} onChange={onNotOwned} />
+      <NotOwnedBox value={notOwned} onChange={onNotOwned} levels={levels} onLevels={onLevels} />
       <details data-testid="advanced">
         <summary className="cursor-pointer font-semibold" data-testid="advanced-toggle">Advanced</summary>
         <div className="flex flex-col gap-2 mt-2 pl-2 border-l-2 border-body-400 dark:border-dark-200">
@@ -482,10 +488,12 @@ const RaidBestSetup: React.FC<{
   raidTabs: React.ReactNode,
   notOwned: string[],
   setNotOwned: (names: string[]) => void,
+  levels: SavedLevels | null,
+  setLevels: (l: SavedLevels | null) => void,
   onlyOwned: boolean,
   setOnlyOwned: (on: boolean) => void,
 }> = ({
-  raid, settings, update, generation, onReset, onResetAll, raidTabs, notOwned, setNotOwned, onlyOwned, setOnlyOwned,
+  raid, settings, update, generation, onReset, onResetAll, raidTabs, notOwned, setNotOwned, levels, setLevels, onlyOwned, setOnlyOwned,
 }) => {
   const [mode, setMode] = useState<'summary' | 'search' | 'plan'>('search');
   // phase 37b: the inputs are the page's saved settings (assumptions, time model, drains, spec mode, plan inputs)
@@ -593,6 +601,8 @@ const RaidBestSetup: React.FC<{
             onTimeSettings={setTimeSettings}
             notOwned={notOwned}
             onNotOwned={setNotOwned}
+            levels={levels}
+            onLevels={setLevels}
             lightbearerLock={mode === 'plan' ? planLightbearer : null}
             specMode={specMode}
             onSpecMode={setSpecMode}
@@ -708,7 +718,13 @@ const BestSetup: React.FC = () => {
   // phase 26: global, kept in localStorage (read after mount: the page is a static export)
   const [notOwned, setNotOwnedState] = useState<string[]>([]);
   const [onlyOwned, setOnlyOwnedState] = useState(false);
+  // phase 39b: imported levels (null = all 99); a change remounts the raid view so every search / plan restarts with them
+  const [levels, setLevelsState] = useState<SavedLevels | null>(null);
+  const [levelsVersion, setLevelsVersion] = useState(0);
   useEffect(() => {
+    const saved = loadLevels();
+    setActiveLevels(saved ? saved.levels : null);
+    setLevelsState(saved);
     setNotOwnedState(loadNotOwned());
     setOnlyOwnedState(loadOnlyOwned());
     setSettings(loadSettings());
@@ -734,6 +750,12 @@ const BestSetup: React.FC = () => {
     setNotOwnedState(names);
     saveNotOwned(names);
   }, []);
+  const setLevels = useCallback((l: SavedLevels | null) => {
+    setActiveLevels(l ? l.levels : null);
+    saveLevels(l);
+    setLevelsState(l);
+    setLevelsVersion((v) => v + 1);
+  }, []);
   const setOnlyOwned = useCallback((on: boolean) => {
     setOnlyOwnedState(on);
     saveOnlyOwned(on);
@@ -757,7 +779,7 @@ const BestSetup: React.FC = () => {
   if (!loaded) return <div className="max-w-[1420px] mx-auto mt-4 px-2 text-sm" data-testid="settings-loading">Loading…</div>;
   return (
     <RaidBestSetup
-      key={raid.id}
+      key={`${raid.id}-${levelsVersion}`}
       raid={raid}
       settings={settings.raids[raid.id]}
       update={update}
@@ -767,6 +789,8 @@ const BestSetup: React.FC = () => {
       raidTabs={raidTabs}
       notOwned={notOwned}
       setNotOwned={setNotOwned}
+      levels={levels}
+      setLevels={setLevels}
       onlyOwned={onlyOwned}
       setOnlyOwned={setOnlyOwned}
     />

@@ -3,6 +3,31 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 39b: Import my bank and stats (RuneLite character-exporter, UI, 2026-10-30)
+
+ROADMAP row 39b. No calculation change (`pinHeadlines --full --check`: no change).
+- **UI**: "Import from RuneLite..." under the Items I don't own box (`BankImportBox.tsx`): pick `bank.json` and/or
+  `character.json` (either or both; recognised by content). Read in the browser; nothing is uploaded, the account name is
+  never read into state or stored. A confirm panel first: "Matched N pool items; M not found - untick any you have on you
+  or in the POH / seed vault / group storage", every not-found item a ticked checkbox, plus a levels preview. Apply writes the
+  not-owned list, the levels (`mxeaez-dps:levels`) and an info entry (`mxeaez-dps:bank-import`); the box then shows
+  "bank imported 30 Oct (exported 27 Oct)" and "levels imported ... use 99s".
+- **Matching** (`src/lib/fracturedArchive/bankImport.ts`): gear = worn pool / preset / spec items of every raid pool
+  (not slot `ammo`, not blowpipe darts or pool ammo options, nothing that isn't equipment). A pool item P is owned when the
+  bank has P, `P (...)` (uncharged, l, max, f, or, i, g), an ornament kit ("Sanguine / Holy / Radiant / Frozen / Volcanic " + P),
+  or something in P's alias group / with P's id. The upgrade doesn't come from the base ("Avernic treads (max)" needs the max).
+- **Levels** (`levels.ts`): `real_level` of Attack, Strength, Defence, Hitpoints, Ranged, Magic, Prayer (required) and
+  Mining / Herblore (99 if absent) become the base player's skills in Search / Summary / Plan (`withActiveLevels`); the potion
+  boosts are recomputed from them by `applyLoadoutToPlayer`. A change remounts the raid view so every search / plan restarts.
+  Default stays all 99, so nothing moves without an import.
+- **Decisions**: re-import replaces the pool items it judges in the not-owned list and keeps entries it doesn't (typed by hand,
+  non-pool); the not-owned list is global like before; the pool is every raid's (hidden raids too); "use 99s" clears the levels
+  only (the not-owned list has its own Clear); Reset all settings does not touch them.
+- Tests: Phase39b.test.ts (parsers, variant matching, ammo exclusion, merge, levels mapping, boosts recomputed; synthetic
+  fixtures only). verifyPhase39b (Playwright, synthetic upload: confirm, untick, apply, Search DPS drops with levels 70-80, reload
+  restores, no non-GET request), screenshot docs/screenshots/phase39b-import.png.
+- Run: fast suite green, tsc, lint clean, verifyAll 39b OK.
+
 ## Phase 39: Carriers and route up front (FA, UI, 2026-10-30)
 
 ROADMAP row 39. No calculation change (`pinHeadlines --full --check`: no change).

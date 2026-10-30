@@ -99,7 +99,7 @@ export const saveOnlyOwned = (on: boolean, storage: StorageLike | null = default
 let aliasGroups: Map<string, string[]> | null = null;
 
 /** Item name → every name of its upstream alias group (incl. itself); names without aliases are absent. */
-const aliasGroupsByName = (): Map<string, string[]> => {
+export const aliasGroupsByName = (): Map<string, string[]> => {
   if (aliasGroups) return aliasGroups;
   const nameOf = new Map(availableEquipment.map((e) => [e.id, e.name]));
   const groups = new Map<string, Set<string>>();

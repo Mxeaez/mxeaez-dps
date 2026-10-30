@@ -6,6 +6,8 @@ import { ItemIcon } from '@/app/components/bestSetup/ItemIcons';
 import { equipmentImageUrl } from '@/lib/fracturedArchive/loadoutIcons';
 import { resolveItem } from '@/lib/fracturedArchive/loadout';
 import { RAID4_REWARDS } from '@/lib/fracturedArchive/ownership';
+import BankImportBox from '@/app/components/bestSetup/BankImportBox';
+import { SavedLevels } from '@/lib/fracturedArchive/levels';
 
 // Phase 26: "Items I don't own" (src/lib/fracturedArchive/ownership.ts). Global (every raid tab), kept in localStorage
 // by BestSetup.tsx. Search / Summary mark rows that use a listed item (or, with "Only items I own", skip them); the Plan
@@ -19,7 +21,15 @@ const imageOf = (name: string): string | null => {
   }
 };
 
-const NotOwnedBox: React.FC<{ value: string[], onChange: (names: string[]) => void }> = ({ value, onChange }) => {
+const NotOwnedBox: React.FC<{
+  value: string[],
+  onChange: (names: string[]) => void,
+  /** Phase 39b: the imported levels (RuneLite character-exporter) and their setter. */
+  levels?: SavedLevels | null,
+  onLevels?: (l: SavedLevels | null) => void,
+}> = ({
+  value, onChange, levels, onLevels,
+}) => {
   const add = (name: string) => {
     if (!value.includes(name)) onChange([...value, name]);
   };
@@ -78,6 +88,7 @@ const NotOwnedBox: React.FC<{ value: string[], onChange: (names: string[]) => vo
       <div className="max-w-[360px]" data-testid="not-owned-search">
         <EquipmentSelect onSelectedItemChange={(opt) => { if (opt) add(opt.equipment.name); }} />
       </div>
+      <BankImportBox notOwned={value} onNotOwned={onChange} levels={levels} onLevels={onLevels} />
     </div>
   );
 };

@@ -4,6 +4,7 @@ import React, {
   useCallback, useEffect, useMemo, useRef, useState,
 } from 'react';
 import { generateEmptyPlayer } from '@/state';
+import { withActiveLevels } from '@/lib/fracturedArchive/levels';
 import { PlayerEquipment } from '@/types/Player';
 import Spinner from '@/app/components/Spinner';
 import EquipmentSelect from '@/app/components/player/equipment/EquipmentSelect';
@@ -652,7 +653,7 @@ const PlanView: React.FC<{
     return {
       prefix,
       data: {
-        basePlayer: generateEmptyPlayer(),
+        basePlayer: withActiveLevels(generateEmptyPlayer()),
         // phase 38a: the raid clock (only when changed: the default keeps the assumptions as they are)
         // phase 38b: the spellbook likewise
         assumptions: {
@@ -785,13 +786,13 @@ const PlanView: React.FC<{
   const loadWorn = () => {
     const monster = monsterForFirstPhase();
     if (!result || !monster) return;
-    const player = planLoadoutToPlayer(generateEmptyPlayer(), result.kit[0], monster, resultAssumptions(), findTarget(firstPhase!.targetKey));
+    const player = planLoadoutToPlayer(withActiveLevels(generateEmptyPlayer()), result.kit[0], monster, resultAssumptions(), findTarget(firstPhase!.targetKey));
     openInCalculator(player, monster).catch(console.error);
   };
   const loadAll = () => {
     const monster = monsterForFirstPhase();
     if (!result || !monster) return;
-    const players = result.kit.map((c) => planLoadoutToPlayer(generateEmptyPlayer(), c, monster, resultAssumptions(), findTarget(firstPhase!.targetKey)));
+    const players = result.kit.map((c) => planLoadoutToPlayer(withActiveLevels(generateEmptyPlayer()), c, monster, resultAssumptions(), findTarget(firstPhase!.targetKey)));
     openLoadoutsInCalculator(players, monster).catch(console.error);
   };
 

@@ -4,6 +4,7 @@ import React, {
   useCallback, useEffect, useMemo, useRef, useState,
 } from 'react';
 import { generateEmptyPlayer } from '@/state';
+import { withActiveLevels } from '@/lib/fracturedArchive/levels';
 import Spinner from '@/app/components/Spinner';
 import {
   BestSetupTarget, buildTargetMonster, DRAIN_STATES, findTarget, summaryQueries,
@@ -108,7 +109,7 @@ const SummaryView: React.FC<{
         setCurrent({ index: i, progress: null });
         const j = startGearSearch(
           {
-            basePlayer: generateEmptyPlayer(), query: q, assumptions, ...(searchNotOwned.length ? { notOwned: searchNotOwned } : {}),
+            basePlayer: withActiveLevels(generateEmptyPlayer()), query: q, assumptions, ...(searchNotOwned.length ? { notOwned: searchNotOwned } : {}),
           },
           (progress) => {
             if (runId.current === id) setCurrent({ index: i, progress });
@@ -155,7 +156,7 @@ const SummaryView: React.FC<{
   const onLoad = (q: GearSearchQuery, cell: SummaryCell) => {
     if (!cell.top) return;
     const { monster } = buildTargetMonster(findTarget(q.targetKey), q.phase, q.drain, assumptions);
-    const player = searchRowToPlayer(generateEmptyPlayer(cell.top.weaponLabel), cell.top, monster, assumptions);
+    const player = searchRowToPlayer(withActiveLevels(generateEmptyPlayer(cell.top.weaponLabel)), cell.top, monster, assumptions);
     openInCalculator(player, monster).catch(console.error);
   };
 
