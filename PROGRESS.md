@@ -3,6 +3,40 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 38j follow-up: kits ranked by their own spec plan (FA, 2026-10-30)
+
+Orchestrator decision on 7d882dd2's open items. docs/BEST_SETUP.md *Kits ranked by their own spec plan*.
+
+- **Own plans** (planner.ts `ownPlanPick`): the optimiser's time (a reference kit's spec plan, `fixedAlloc`) is a
+  pre-screen. Every fitting kit the optimisers timed is re-scored; in borrowed order, those within `OWN_PLAN_MARGIN` 1% of
+  the best (each loadout saving ≥ 0.5 s there) are re-timed exactly with their own plan, memoised per kit, until the
+  borrowed time passes the best exact × 1.01. The fastest that keeps the dedupe rule on exact times wins. This runs again
+  after the Team carriers are re-picked by HP, because the brute force times every kit under the final carriers (in the
+  tiny pool the miss came from that order). Measured slack of the winners: 0.50% (small pool), 0.77% (tiny). A 2% margin
+  cost 498 s (fa) / 1243 s (faNotOwned) and was dropped.
+- **Brute force**: Phase37c tiny gap 7.88 → 0, `bruteForceKits.mjs fa` 2.68 → 0, Phase36 (294 kits) 4.39 → 0. Phase36
+  now applies the dedupe rule like the probe does (since 38c). Its old best, mace + Twisted bow + Scythe + Scythe #3
+  (1495.11 s), has a loadout that saves less than its slots require, so the planner may never return it.
+- **Headlines** (`pinHeadlines --full`): fa 21:14.1 and faSolo 22:08.7 unchanged. **faNotOwned 24:17.4 → 24:17.6**
+  (+0.2 s): the Lightbearer run now picks another kit, its carriers are re-picked by HP, and that run ends at 1458.40 s.
+  So Ultor (1457.62) wins, with the pre-38j carriers 1 Elder maul + 4 Tonalztics. The carrier re-pick is in HP, so the
+  final seconds are not monotone; the brute force agrees.
+- **Leftover display rule** (f555ecea → 7d882dd2): "the cheapest cheaper weapon" matched the fight-wall clock, which
+  left 22-40% after the ZCB specs (only Burning claws fit). With the room times the plan's leftover is ≥ 50% where it
+  specs a filler, and its DP takes Crimson kisten (more HP for one spec). So Search / Summary now name the cheaper weapon
+  with the most HP for one spec. Test (Phase38h3b, every damage-spec row of fa and faSolo, at the row's DPS and drains):
+  - Where the Plan names a leftover (fa Xarth / Ocellus, faSolo Ocellus), Search names the same one, or none on a phase
+    kisten can't hit. The old rule would name Burning claws there.
+  - Elsewhere Search is per boss and is pinned. fa Bork 10-14 shows "leftover: Voidwaker", which the route doesn't bring.
+    faSolo Ocellus P3 Q1-3 ranks kisten first on that phase.
+- Static (A) tags kept: noted in UNVERIFIED *Known limitations* and ROADMAP round 7.
+- **Pins**: PHASE37_MEMO fa / faSolo / faNotOwned re-measured. Phase27's caches check is now second < first / 4 (was / 5):
+  the own-plan re-times use a fresh exact evaluator per plan. Phase38h2 faNotOwned carriers: 3614.7 HP.
+- **Planning time** (pinHeadlines, one at a time): fa 41.6 s, faSolo 51.4 s, faNotOwned 56.9 s, all under 2× the pre-38j
+  times (fa ~35, faSolo ~30, faNotOwned ~57).
+- Run: fast suite green (1451); FA slow suites (CrossRaid, Phase2*, Phase3*) green (380, the brute-force tests
+  included); retime gap 0 (three FA); verifyAll 38j 27 OK; tsc, lint clean.
+
 ## Phase 38j: FA Plan tab you can trust (FA, 2026-10-30)
 
 ROADMAP row 38j (absorbs 41). docs/BEST_SETUP.md *Plan tab you can trust (phase 38j, FA)*; UNVERIFIED D36 (new), D30

@@ -1876,9 +1876,14 @@ ROADMAP 38j (absorbs 41; user, 2026-10-28: "right about choices, not minutes"). 
 
 **Result** (`pinHeadlines --full`): fa 21:43.3 → 21:14.1, faSolo 22:53.9 → 22:08.7, faNotOwned 24:43.4 → 24:17.4 (more
 energy per encounter: the rooms last 2-5× the 6-man fight wall). PROGRESS has the per-encounter changes.
-**Known gap** (open at commit): the optimiser times kits with a reference kit's spec plan; with the spare energy the
-exact plans differ more between kits, and the brute-force probes find kits 0.2-0.5% faster than the planner's on the
-reduced pools (Phase36 4.39 s, Phase37c tiny 7.88 s). The headline plans re-time exactly (gap 0).
+**Kits ranked by their own spec plan** (38j follow-up): the optimiser times a kit with a reference kit's spec plan
+(`fixedAlloc`), which undervalued kits whose own plan differs (other drain weapons per event once energy is spare; the
+brute-force probes found kits 0.2-0.5% faster). That time is now a pre-screen: every fitting kit the optimisers timed
+(`seenKits`) is re-scored, and in borrowed order those within `OWN_PLAN_MARGIN` (1%) of the best, each loadout saving ≥
+`OWN_PLAN_MEMBER_MIN` (0.5 s), are re-timed exactly with their own plan (memoised per kit) until the borrowed time passes
+the best exact × 1.01; the fastest keeping the dedupe rule on exact times wins. Run again after the Team carriers are
+re-picked by HP (the brute force times every kit under the final carriers). The winners needed 0.50% (small pool) and
+0.77% (tiny pool) of borrowed slack. Phase36's brute force now applies the dedupe rule, as the probe does since 38c.
 
 ## Routes tab (phase 16: raid time model)
 

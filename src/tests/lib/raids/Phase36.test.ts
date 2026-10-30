@@ -20,7 +20,7 @@ import {
 } from '@/lib/fracturedArchive/raidTime';
 import {
   comfortSupplies, DEFAULT_CARRIER_MODE, DEFAULT_RING_POLICY, DEFAULT_SPEC_MODE, plan, planAssumptions, PlanHooks, planItemByName,
-  ringAssumptions, toPlayerEquipment,
+  ringAssumptions, switchSavingRequired, toPlayerEquipment,
 } from '@/lib/fracturedArchive/planner';
 import { applyLoadoutToPlayer } from '@/lib/fracturedArchive/loadout';
 import { raidConfig } from '@/lib/raids';
@@ -628,12 +628,24 @@ describe('review: the optimiser\'s fixed spec plan vs the exact per-kit allocati
     let best = Infinity;
     let bestKit: number[] = [];
     let kits = 0;
+    // phase 38j: the planner's dedupe rule (as the brute-force probe since 38c): a kit where a loadout saves less than
+    // switchSavingRequired(the slots it adds) is not a plan the planner may return (exact times, every subset timed)
+    const exact = new Map<string, number>();
+    const exactOf = (m: number[]) => {
+      const k = [...m].sort((a, b) => a - b).join(',');
+      if (!exact.has(k)) exact.set(k, s.exactSeconds(m));
+      return exact.get(k)!;
+    };
+    const dedupeOk = (m: number[], t: number) => !Number.isFinite(t) || m.length < 2 || m.every((_, j) => {
+      const fewer = m.filter((__, k) => k !== j);
+      return exactOf(fewer) - t >= switchSavingRequired(s.used(m) - s.used(fewer)) - 1e-6;
+    });
     const walk = (from: number, m: number[]) => {
       if (m.length) {
         if (s.used(m) <= s.total) {
           kits += 1;
-          const t = s.exactSeconds(m);
-          if (t < best - 1e-9) {
+          const t = exactOf(m);
+          if (t < best - 1e-9 && dedupeOk(m, t)) {
             best = t;
             bestKit = [...m];
           }

@@ -203,6 +203,9 @@ To record it:
 
 ## Known limitations (modelling choices, not data gaps)
 
+- **Close calls are tagged, not tested** (phase 38j): the Plan's "close call (depends on A11, …)" names the (A) rows a
+  choice rests on (static, by weapon); whether it flips under one is not computed (ROADMAP round 7).
+
 - **Specs aren't simulated as a fight.** The best-setup drain states (Solo / Team, phase 14) use exact spec hit
   chances and outcome distributions but no timing (every spec at the start of each boss) and no boss healing; the
   calculator's Max-drain buttons still count every spec as landing. Spec weapons (Burning claws, Voidwaker, Elder maul,

@@ -202,7 +202,8 @@ slowDescribe('caches (review fix)', () => {
     const second = plan(inputs(7), reduced(raid));
     expect(first.stats.searches).toBeGreaterThan(0);
     expect(second.stats.searches).toBe(0);
-    expect(second.stats.evaluations).toBeLessThan(first.stats.evaluations / 5);
+    // phase 38j: the kits re-timed with their own spec plan (exact, a fresh evaluator per plan) add evaluations: / 5 → / 4
+    expect(second.stats.evaluations).toBeLessThan(first.stats.evaluations / 4);
     // same DPS as an uncached run
     clearPlanCaches();
     const fresh = plan(inputs(7), reduced(raid));

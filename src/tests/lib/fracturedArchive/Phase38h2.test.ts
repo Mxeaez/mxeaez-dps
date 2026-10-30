@@ -375,16 +375,16 @@ describe('carrier sets valued by the HP the bars really pay (review 38h-2 N1)', 
     const planned = hpOf(r.assumptions.team.carriers);
     // the review's alternatives on the final kit (seconds there: 1481.98 / 1485.02 / 1488.38 / 1484.56; the plan 1483.36):
     // HP 3347.1 / 3355.3 / 3293.2 / 3324.5 vs the plan's 1 Elder maul + 4 Tonalztics 3358.9. Phase 38j (room times):
-    // the plan 2 Elder maul + 2 Tonalztics + 1 Ayak 3822.4 vs 3773.1 / 3781.1 / 3720.8 / 3784.6 (the old plan)
+    // the plan (1 Elder maul + 4 Tonalztics on the Ultor kit; kits ranked by their own spec plan) 3614.7 vs 3602.5 / 3611.1
+    // / 3548.7 / 3582.9
     const sets: Record<string, number>[] = [
       { elderMaul: 1, tonalztics: 3, ayak: 1 }, { elderMaul: 2, tonalztics: 3 }, { tonalztics: 4, ayak: 1 },
-      // phase 38j: 2 Elder maul + 2 Tonalztics + 1 Ayak is the plan now; the old plan (1 Elder maul + 4 Tonalztics) instead
-      { elderMaul: 1, tonalztics: 4 },
+      { elderMaul: 2, tonalztics: 2, ayak: 1 },
     ];
     const alternatives = sets.map(hpOf);
     // eslint-disable-next-line no-console
     if (process.env.PRINT_PINS) console.log(JSON.stringify([r.assumptions.team.carriers, planned, alternatives]));
     alternatives.forEach((x) => expect(planned.hp).toBeGreaterThanOrEqual(x.hp - 1e-6));
-    expect(Math.round(planned.hp * 10) / 10).toBe(3822.4);
+    expect(Math.round(planned.hp * 10) / 10).toBe(3614.7);
   }, 300000);
 });

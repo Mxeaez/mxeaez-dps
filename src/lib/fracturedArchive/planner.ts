@@ -1345,6 +1345,13 @@ const SEARCH_TOP_N = 80;
 
 /** Best optimiser kits re-timed exactly before the winner is picked (matters for Solo drains). */
 const RETIME_TOP = 5;
+/**
+ * Phase 38j: kits within this fraction of the best borrowed-plan time are re-timed with their own spec plan (the
+ * brute-force probes: the planner's kit = the best kit).
+ */
+export const OWN_PLAN_MARGIN = 0.01;
+/** Phase 38j: a kit re-timed with its own plan has every loadout saving at least this (s) on the borrowed plan. */
+export const OWN_PLAN_MEMBER_MIN = 0.5;
 
 export interface PlanProgress {
   stage: 'search' | 'matrix' | 'partials' | 'optimise' | 'rings' | 'final';
@@ -2088,8 +2095,12 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     const legacyA: RaidTimeAssumptions = { ...fastA, specBudget: undefined, fixedAlloc: undefined };
     const budgetOn = !!fastA.specBudget;
     let runA: RaidTimeAssumptions = legacyA;
+    // phase 38j: every kit the optimisers time (their keys), re-scored at the end (`OWN_PLAN_MARGIN`)
+    const seenKits = new Map<string, number[]>();
     const routeTimeWith = (table: number[][], ta?: RaidTimeAssumptions) => (members: number[]) => {
       const t = ta ?? runA;
+      const sk = [...members].sort((a, b) => a - b).join(',');
+      if (!seenKits.has(sk)) seenKits.set(sk, [...members]);
       const cmp = compareRoutes(matrixKit(members, table, !!t.specBudget), t, routes);
       return cmp.fastest >= 0 ? cmp.routes[cmp.fastest].seconds : Infinity;
     };
@@ -3005,20 +3016,82 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     let chosen = finalists[0];
     // phase 37: the re-timed kits share their DPS memo (same assumptions; a loadout's id is its candidate key)
     const exactCache = kitEvaluatorCache();
-    let evaluator = createKitEvaluator(kitLoadoutsOf(chosen.members), assumptions, exactCache);
-    let comparison = compareRoutes(evaluator, exactA, routes);
-    let exactEvaluations = evaluator.evaluations();
     const exactSeconds = (c: RouteComparison) => (c.fastest >= 0 ? c.routes[c.fastest].seconds : Infinity);
+    // phase 38j: a kit's exact time (its OWN spec plan), memoised per kit
+    let exactEvaluations = 0;
+    let exactMemo = new Map<string, { ev: ReturnType<typeof createKitEvaluator>, cmp: RouteComparison }>();
+    const exactOf = (m: number[]) => {
+      const k = [...m].sort((a, b) => a - b).join(',');
+      let x = exactMemo.get(k);
+      if (!x) {
+        if (cancelled()) throw new PlanCancelled();
+        const ev = createKitEvaluator(kitLoadoutsOf(m), assumptions, exactCache);
+        x = { ev, cmp: compareRoutes(ev, exactA, routes) };
+        exactEvaluations += ev.evaluations();
+        exactMemo.set(k, x);
+      }
+      return x;
+    };
+    let { ev: evaluator, cmp: comparison } = exactOf(chosen.members);
     for (const f of finalists.slice(1)) {
-      const ev = createKitEvaluator(kitLoadoutsOf(f.members), assumptions, exactCache);
-      const cmp = compareRoutes(ev, exactA, routes);
-      exactEvaluations += ev.evaluations();
-      if (exactSeconds(cmp) < exactSeconds(comparison) - EPS) {
+      const x = exactOf(f.members);
+      if (exactSeconds(x.cmp) < exactSeconds(comparison) - EPS) {
         chosen = f;
-        evaluator = ev;
-        comparison = cmp;
+        evaluator = x.ev;
+        comparison = x.cmp;
       }
     }
+    // phase 38j (ROADMAP 38j: kits ranked by their own spec plan): the optimiser's time replays a reference kit's spec plan
+    // (`fixedAlloc`), a pre-screen only: a kit whose own plan differs (other drains on its phases) is undervalued. Every
+    // fitting kit the optimisers timed whose borrowed time is within OWN_PLAN_MARGIN of the best is re-timed with its own
+    // plan (exact); the fastest that keeps the dedupe rule on exact times (each loadout saves switchSavingRequired(its
+    // slots) vs the kit without it) wins.
+    const ownPlanPick = () => {
+      if (screen || !budgetOn) return;
+      const keyOf = (m: number[]) => [...m].sort((a, b) => a - b).join(',');
+      const borrowedMemo = new Map<string, number>();
+      const borrowedOf = (m: number[]) => {
+        const k = keyOf(m);
+        let t = borrowedMemo.get(k);
+        if (t === undefined) {
+          t = routeTime(m);
+          borrowedMemo.set(k, t);
+        }
+        return t;
+      };
+      const fits = Array.from(seenKits.values()).map((m) => ({ m, t: borrowedOf(m), used: usedWith(runCarried, m) }))
+        .filter((x) => x.used <= total && Number.isFinite(x.t));
+      const best = Math.min(...fits.map((x) => x.t), chosen.time);
+      // within the margin, and every loadout pulls its weight on the borrowed plan (a member saving < OWN_PLAN_MEMBER_MIN
+      // s is a superset of a kit already in the pool: the dedupe rule would drop it)
+      const pool = fits.filter((x) => x.t <= best * (1 + OWN_PLAN_MARGIN) + EPS
+        && (x.m.length < 2 || x.m.every((_, j) => borrowedOf(x.m.filter((__, k) => k !== j)) - x.t >= OWN_PLAN_MEMBER_MIN)))
+        .sort((a, b) => (a.t - b.t) || (a.m.length - b.m.length));
+      const dedupeOk = (m: number[], t: number) => m.length < 2 || m.every((_, j) => {
+        const fewer = m.filter((__, k) => k !== j);
+        return exactSeconds(exactOf(fewer).cmp) - t >= switchSavingRequired(usedWith(runCarried, m) - usedWith(runCarried, fewer)) - 1e-6;
+      });
+      // in borrowed order; a kit's own plan beats its borrowed time by less than the margin, so stop past it
+      let bestExact = exactSeconds(comparison);
+      let win: { m: number[], t: number, used: number } | null = null;
+      for (const x of pool) {
+        if (x.t > bestExact * (1 + OWN_PLAN_MARGIN) + EPS) break;
+        const e = exactSeconds(exactOf(x.m).cmp);
+        if (e < bestExact - EPS && dedupeOk(x.m, e)) {
+          bestExact = e;
+          win = x;
+        }
+      }
+      if (win) {
+        const x = exactOf(win.m);
+        chosen = {
+          members: [...win.m], time: win.t, used: win.used, seed: chosen.seed,
+        };
+        evaluator = x.ev;
+        comparison = x.cmp;
+      }
+    };
+    ownPlanPick();
     if (screen) return { seconds: exactSeconds(comparison), ms: Date.now() - tRing };
     // review 38h-2 (Team, auto carriers): the carriers were taken on an earlier kit (the item steps re-optimise it) and
     // by a per-phase value that credits every phase with full bars. On the final kit every set the carrier walk considers
@@ -3053,6 +3126,11 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         evaluator = createKitEvaluator(kitLoadoutsOf(chosen.members), a2, kitEvaluatorCache());
         comparison = compareRoutes(evaluator, exactA, routes);
         exactEvaluations += evaluator.evaluations();
+        runA = fixedFor(assumptions, chosen.members);
+        // phase 38j: the kits again under the final carriers (each by its own spec plan)
+        exactMemo = new Map();
+        exactMemo.set([...chosen.members].sort((x, y) => x - y).join(','), { ev: evaluator, cmp: comparison });
+        ownPlanPick();
         runA = fixedFor(assumptions, chosen.members);
       }
     }

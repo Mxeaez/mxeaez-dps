@@ -117,8 +117,10 @@ export const PHASE37_MEMO: Record<string, MemoCounters> = {
   // faSolo 84288 / 39263 / 3156808 / 46445, faNotOwned 82985 / 13958 / 2177152 / 75431
   // phase 38h-3b (the filler weapon: one route per candidate, faNotOwned a kit re-optimised for it): fa was 10638 / 8309 /
   // 497142 / 3847, faSolo 24029 / 18699 / 1166147 / 6425, faNotOwned 20896 / 13664 / 591775 / 9461
+  // phase 38j (kits ranked by their own spec plan: every optimiser kit re-scored, those within 1% re-timed exactly): fa
+  // was 10698 / 8388 / 462466 / 5554
   fa: {
-    encounterRuns: 10698, passRuns: 8388, encounterHits: 462466, passHits: 5554,
+    encounterRuns: 15282, passRuns: 8578, encounterHits: 778019, passHits: 10545,
   },
   // phase 38a (rooms 1-2 before the supplies: other drain states and candidates): was 32784 / 10825 / 544791 / 24576;
   // phase 38b (Liquid adrenaline: more spec options per event, damage specs on the adds' rows): was 39715 / 11721 /
@@ -140,16 +142,18 @@ export const PHASE37_MEMO: Record<string, MemoCounters> = {
   // phase 38h-3 review fix 2 (each Solo drain weapon checked against a kit slot: one optimiser run without it):
   // faSolo was 9706 / 9352 / 640382 / 1292
   // phase 38j (the room times: Solo plans every camp ring in full): faSolo was 23993 / 18648 / 1141713 / 7065
+  // phase 38j (own spec plans): faSolo was 25386 / 23603 / 1088304 / 3478
   faSolo: {
-    encounterRuns: 25386, passRuns: 23603, encounterHits: 1088304, passHits: 3478,
+    encounterRuns: 30958, passRuns: 26363, encounterHits: 1430156, passHits: 6290,
   },
   // phase 38h-1 (2 Elder maul + 3 Tonalztics carriers cover every boss, so you are no longer a carrier: free slots, the
   // item beam re-optimises kits with damage specs / surge): faNotOwned was 9153 / 9086 / 583727 / 227
   // phase 38h-2 review fixes (the final carrier choice by the budgeted plans' HP: one route pass per carrier set):
   // faNotOwned was 74977 / 9838 / 1854095 / 66172
   // phase 38j (the room times: every camp ring planned in full): faNotOwned was 29805 / 13946 / 822703 / 18920
+  // phase 38j (own spec plans): faNotOwned was 35675 / 12487 / 822877 / 27203
   faNotOwned: {
-    encounterRuns: 35675, passRuns: 12487, encounterHits: 822877, passHits: 27203,
+    encounterRuns: 44516, passRuns: 20310, encounterHits: 1569776, passHits: 27265,
   },
 };
 export const memoCountersWithin = (m: MemoCounters | undefined, want: MemoCounters | undefined): boolean => {

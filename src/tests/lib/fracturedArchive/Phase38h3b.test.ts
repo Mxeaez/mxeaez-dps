@@ -1,7 +1,7 @@
 import { describe, expect, test } from '@jest/globals';
 import { allocateBudget, AllocationProblem } from '@/lib/fracturedArchive/specBudget';
 import {
-  damageThenText, leftoverWeapon, thenWithLeftover, withLeftover,
+  damageSpecRow, damageThenText, leftoverWeapon, thenWithLeftover, withLeftover,
 } from '@/lib/fracturedArchive/bringRule';
 import { buildTargetMonster, findTarget } from '@/lib/fracturedArchive/bestSetup';
 import { assumptionsForTarget } from '@/lib/raids/toa/supplies';
@@ -172,5 +172,67 @@ describe('Search / Summary name the filler of the Plan (review 38h-3b)', () => {
     const { monster } = buildTargetMonster(t, undefined, 'team', ta);
     expect(fx.specs.then!.xarth).toBe('Then: 1. Zaryte crossbow (per bar) · leftover: Crimson kisten');
     expect(damageThenText(monster, ta, row.dps)).toBe(fx.specs.then!.xarth);
+  }, 120000);
+});
+
+// phase 38j: the Search / Summary rule moved from "the cheapest cheaper weapon" (f555ecea, when the fight-wall clock left
+// 22-40% after the ZCB specs: only Burning claws fit) to "the cheaper weapon with the most HP for one spec": with the
+// measured room times the plan's leftover is ≥ 50% where it specs a filler, and its DP takes Crimson kisten. On every
+// FA boss / phase of both headline routes (Search's line at the row's DPS and drains): where the Plan's line names a
+// leftover, Search names the same one (the old rule named Burning claws there); elsewhere Search is per boss / phase and
+// may name a weapon the route doesn't bring (pinned below).
+// [row, Search's first weapon, Search's leftover]. fa: the Plan's leftover (Crimson kisten, Xarth / Ocellus) = Search's;
+// Bork 10-14: Voidwaker (more HP per spec there; the route brings no Voidwaker). faSolo Ocellus P3 Q1-3: kisten ranks
+// first per bar on that phase alone (within 1.2× of ZCB, 38h-3), the route brings ZCB first. No leftover: the phases kisten
+// can't hit (AG flying / shield, Moia, the Deflect Melee quadrant).
+const SEARCH_LINES: Record<string, [string, string, string | null][]> = {
+  fa: [
+    ['ag-shield', 'Zaryte crossbow', null], ['ag-grounded', 'Zaryte crossbow', 'Crimson kisten'],
+    ['ag-flying', 'Zaryte crossbow', null], ['bork-8', 'Zaryte crossbow', 'Crimson kisten'],
+    ['bork-10', 'Zaryte crossbow', 'Voidwaker'], ['bork-12', 'Zaryte crossbow', 'Voidwaker'],
+    ['bork-14', 'Zaryte crossbow', 'Voidwaker'], ['smorks', 'Zaryte crossbow', 'Crimson kisten'],
+    ['moia', 'Zaryte crossbow', null], ['xarth', 'Zaryte crossbow', 'Crimson kisten'],
+    ['ocellus-p1', 'Zaryte crossbow', 'Crimson kisten'], ['ocellus-p3', 'Zaryte crossbow', 'Crimson kisten'],
+    ['ocellus-p3-last', 'Zaryte crossbow', null],
+  ],
+  faSolo: [
+    ['ag-shield', 'Zaryte crossbow', null], ['ag-grounded', 'Zaryte crossbow', 'Crimson kisten'],
+    ['ag-flying', 'Zaryte crossbow', null], ['ezekiel', 'Zaryte crossbow', 'Crimson kisten'],
+    ['moia', 'Zaryte crossbow', null], ['xarth', 'Zaryte crossbow', 'Crimson kisten'],
+    ['ocellus-p1', 'Zaryte crossbow', 'Crimson kisten'], ['ocellus-p3', 'Crimson kisten', 'Burning claws'],
+    ['ocellus-p3-last', 'Zaryte crossbow', null],
+  ],
+};
+describe.each(['fa', 'faSolo'] as HeadlineName[])('Search / Summary leftover vs the Plan on every %s boss / phase (phase 38j)', (name) => {
+  test('each damage-spec row: damageThenText at its DPS and drains', () => {
+    const fx = phase37Fixture(name) as PlanResult;
+    const { cmp } = countsOf(name);
+    const a = finalAssumptions(name, fx);
+    const drain = headlineCase(name).inputs().drain;
+    const got: [string, string, string | null][] = [];
+    const matched = new Set<string>();
+    cmp.routes[0].encounters.forEach((e) => {
+      const planLine = fx.specs.then?.[e.id] ?? '';
+      const planLeft = / · leftover: (.+)$/.exec(planLine)?.[1] ?? null;
+      e.phases.forEach((row) => {
+        if (!damageSpecRow(row)) return;
+        const ev = e.specPlan!.events[e.specPlan!.rowEvent[row.key]];
+        const t = findTarget(row.targetKey);
+        const ta = assumptionsForTarget(t, a);
+        const { monster } = buildTargetMonster(t, row.phase, drain, ta, ev.counts);
+        const line = damageThenText(monster, ta, row.dps) ?? '';
+        const first = /^Then: 1\. (.+?)(?: 2\.| \(per bar\))/.exec(line)?.[1] ?? '';
+        const left = / · leftover: (.+)$/.exec(line)?.[1] ?? null;
+        got.push([row.key, first, left]);
+        // where the Plan names a leftover and Search ranks the same weapon first, Search's leftover is the Plan's (or none:
+        // a phase the filler can't hit, e.g. Ocellus's Deflect Melee quadrant)
+        if (planLeft && first === 'Zaryte crossbow') expect([row.key, left === null || left === planLeft]).toEqual([row.key, true]);
+        if (planLeft && left === planLeft) matched.add(e.id);
+      });
+      if (planLeft) expect([e.id, matched.has(e.id)]).toEqual([e.id, true]);
+    });
+    // eslint-disable-next-line no-console
+    if (process.env.PRINT_PINS) console.log(name, JSON.stringify(got));
+    expect(got).toEqual(SEARCH_LINES[name]);
   }, 120000);
 });

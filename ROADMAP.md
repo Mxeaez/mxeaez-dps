@@ -330,6 +330,8 @@ check) -> 38h-1 (bars pay the line) -> 38h-2 (HP values) -> 38h-3 (bring rule, n
 
 Carried from the round 6 list (items not scheduled above):
 
+**Close calls that flip under an assumption** (38j left it static, orchestrator 2026-10-30): the Plan tags each close call with the UNVERIFIED (A) rows it rests on (A11 always, plus the weapons' rows); computing whether a choice really flips needs a magnitude per assumption (e.g. Defence scaling as in CoX for A11, demonbane 100% for A8) and a re-plan under it.
+
 **Other raids catch-up** (from the 2026-10-28 FA-only decision): show the tabs again and turn their tests back on (38f-2 flags), re-pin their fixtures once, then apply 38g-2 / 38h / 38j to ToA, CoX and ToB with a
 full review each; Crystal / Dragon halberd specs (Bloat) and the "spare top-up specs" clean-up (old 39); ToB variants
 (Maiden freezer, nylo ranged set: old 40); the old 38g-2 Olm-claw and ToA Wardens Ayak cases as tests; 38d if wanted. Phase 38h-2 removed the Liquid adrenaline window guard (ToA only: a row's specs now cost what its start says, half inside the window; a row running past the window used to pay full cost for the specs only its later regen funds): re-check the ToA adrenaline tests and pins then. Phase 38h-3: with the spec budget off (legacy timing) the Solo planner brings every owned drain weapon (no subset search any more): check the other raids' Solo plans then.
