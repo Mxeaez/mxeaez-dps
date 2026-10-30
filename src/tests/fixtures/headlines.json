@@ -200,8 +200,8 @@
   "faNotOwned": {
    "raid": "fractured-archive",
    "label": "Fractured Archive without Obligator / Ascension crossbows",
-   "total": "24:48.4",
-   "seconds": 1488.377179887893,
+   "total": "24:43.4",
+   "seconds": 1483.3578916860674,
    "route": "archive-guardian>bork-smorks>moia>xarth>ocellus",
    "ring": "Ultor ring",
    "kit": [
@@ -211,11 +211,11 @@
    ],
    "freeSlots": 0,
    "carriers": {
-    "elderMaul": 0,
+    "elderMaul": 1,
     "dwh": 0,
     "bgs": 0,
     "tonalztics": 4,
-    "ayak": 1
+    "ayak": 0
    },
    "bring": "Bring: Zaryte crossbow",
    "items": [
@@ -225,10 +225,10 @@
    "surgeAt": [],
    "encounters": {
     "archive-guardian": 191.91,
-    "bork-smorks": 217.5,
+    "bork-smorks": 222.8,
     "moia": 65.97,
     "xarth": 209.7,
-    "ocellus": 803.29
+    "ocellus": 792.97
    }
   }
  }

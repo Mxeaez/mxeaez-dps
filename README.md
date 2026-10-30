@@ -52,7 +52,7 @@ What this fork adds on top of upstream:
 | Chambers of Xeric (Team defaults) | **7:24.0** | Inquisitor's + Obligator · Ascension crossbows + diamond (e) (Masori) · Dragon pickaxe · Inquisitor's + Scythe (slash) · Ascension crossbows + Diamond ascension bolts (e) #2 · Scorching bow + Seeking dragon arrow #2 · Tumeken's shadow (Ancestral) · Twisted bow (Masori) | Ultor ring | 2 Elder maul + 3 Tonalztics | Dragon claws, Zaryte crossbow |
 | Theatre of Blood (Team defaults) | **7:28.8** | Ascension crossbows + Onyx ascension bolts (e) · Torva helm + Oathplate + Scythe (slash) · Torva helm + Oathplate + Scythe (slash) + Salve amulet(ei) · Dawnbringer switch +5 on Torva helm + Oathplate + Scythe (slash) · Tumeken's shadow (Ancestral) | Ultor ring | 3 Tonalztics | Dragon claws |
 | Fractured Archive Solo (party 1) | **22:53.4** | Ascension crossbows + diamond (e) (Masori) · Twisted bow (Masori) · Inquisitor's + Obligator | Ultor ring | Solo | Tonalztics, Zaryte crossbow, Burning claws, Crimson kisten, Surge potion |
-| Fractured Archive without Obligator / Ascension crossbows | **24:48.4** | Twisted bow switch +5 on Tumeken's shadow (Ancestral) · Tumeken's shadow (Ancestral) · Inquisitor's + Scythe (slash) | Ultor ring | 4 Tonalztics + 1 Eye of Ayak | Zaryte crossbow |
+| Fractured Archive without Obligator / Ascension crossbows | **24:43.4** | Twisted bow switch +5 on Tumeken's shadow (Ancestral) · Tumeken's shadow (Ancestral) · Inquisitor's + Scythe (slash) | Ultor ring | 1 Elder maul + 4 Tonalztics | Zaryte crossbow |
 <!-- headlines:end -->
 
 **Known limitations** — no fight simulation (no healing, adds, downtime or switch ticks), unverified Fractured Archive

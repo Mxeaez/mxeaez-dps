@@ -138,8 +138,10 @@ export const PHASE37_MEMO: Record<string, MemoCounters> = {
   },
   // phase 38h-1 (2 Elder maul + 3 Tonalztics carriers cover every boss, so you are no longer a carrier: free slots, the
   // item beam re-optimises kits with damage specs / surge): faNotOwned was 9153 / 9086 / 583727 / 227
+  // phase 38h-2 review fixes (the final carrier choice by the budgeted plans' HP: one route pass per carrier set):
+  // faNotOwned was 74977 / 9838 / 1854095 / 66172
   faNotOwned: {
-    encounterRuns: 74977, passRuns: 9838, encounterHits: 1854095, passHits: 66172,
+    encounterRuns: 82985, passRuns: 13958, encounterHits: 2177152, passHits: 75431,
   },
 };
 export const memoCountersWithin = (m: MemoCounters | undefined, want: MemoCounters | undefined): boolean => {

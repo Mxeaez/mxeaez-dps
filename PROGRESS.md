@@ -3,6 +3,32 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 38h-2 review fixes 2 (FA, 2026-10-29)
+
+Re-review of 136283d7: FAIL on N1 (Medium); findings 1-6 closed.
+
+- **N1, carrier sets valued by what the bars pay** (option b, at the final choice): `kitCarriers`' per-phase value credits
+  every phase with full bars (Ocellus, 4 Tonalztics: T ×2 + T ×8 + T ×5), so it overrates one-weapon-heavy sets. On the
+  final kit the planner now values every set the walk considers (the most carriers the bars allow, Eye of Ayak ≤ the
+  kit's mages, + the current one) by Σ `EncounterSpecPlan.hp` of the budgeted plans over the planned route (bars shared;
+  the planner's DPS matrix, one route pass per set) and keeps the most HP (`pickCarriersByHp`, the 10% leave-you-out
+  rule). The per-phase value still drives the kit search (cheap). *Correction*: the previous entry called faNotOwned's
+  gap a search limit; it was this value bias.
+- **N2**: Eye of Ayak stays at its ranked drain (documented in `drainOutcomeStates` and BEST_SETUP: averaging its up to
+  magic-defence + 1 outcomes would multiply the DPS evaluations; unverified as an approximation).
+- **Headlines** (`pinHeadlines --full`): fa 21:41.0 and faSolo 22:53.4 unchanged; **faNotOwned 24:48.4 → 24:43.4** (−5.0 s):
+  same kit and route, carriers 4 Tonalztics + 1 Eye of Ayak → 1 Elder maul + 4 Tonalztics (HP on the route 3293.2 →
+  3358.9; Bork + Smorks 217.50 → 222.80, Ocellus 803.29 → 792.97). The review's 1 Elder maul + 3 Tonalztics + 1 Eye of
+  Ayak is 1.4 s faster (1481.98 s) but pays less HP (3347.1): the choice is by HP, not seconds. PHASE37_MEMO faNotOwned
+  re-measured (82985 / 13958 / 2177152 / 75431: one route pass per carrier set). r27fa, Phase27 and the CrossRaid preset
+  pins unchanged.
+- **Tests** (Phase38h2.test.ts): `pickCarriersByHp` by hand; faNotOwned: the plan's carriers pay the most HP on the
+  planned route among the review's alternatives (3358.9 vs 3347.1 / 3355.3 / 3293.2 / 3324.5, exact evaluator).
+- Speed (Node, alone, same session): fa 15.7 s (38h-1 code) → 28.6 s (1.82×).
+- Run: fast suite 1418 passed / 196 skipped; FA slow (`CrossRaid Phase2 Phase3`) once: 346 passed, none out of date;
+  retime probe gap 0 (fa, faSolo, faNotOwned); drainOutcome faNotOwned Ocellus / Bork + Smorks: spec plan = the plan's;
+  tsc, lint clean.
+
 ## Phase 38h-2 review fixes (FA, 2026-10-29)
 
 Review of 87f51141 = FAIL; fixes (docs/BEST_SETUP.md *Spec bars valued in boss HP (phase 38h-2, FA)* updated).
@@ -27,9 +53,8 @@ Review of 87f51141 = FAIL; fixes (docs/BEST_SETUP.md *Spec bars valued in boss H
   739.40 → 734.19 (a ZCB spec on P1, the dose here). **faNotOwned 24:53.7 → 24:48.4** (−5.3 s): another kit (Tumeken's
   shadow + a Twisted bow switch + Scythe; a mage, so 4 Tonalztics + 1 Eye of Ayak are valid and taken again on it), route
   Bork + Smorks instead of Ezekiel, Zaryte crossbow only (AG 191.91, Bork + Smorks 217.50, Moia 65.97, Xarth 209.70,
-  Ocellus 803.29). The review's alternative (the 87f51141 kit, Twisted bow + Scythe with 2 Elder maul + 3 Tonalztics,
-  24:42.0) is 6.4 s faster in seconds; the planner reaches this kit under the new values and keeps the carriers its HP
-  value picks (open: the planner does not re-search kits after re-taking carriers). r27fa 1545.8 → 1531.5 (memo 1116 /
+  Ocellus 803.29). *Corrected in review fixes 2*: the carrier pick here was the per-phase value's bias (full bars
+  at every phase), not a search limit. r27fa 1545.8 → 1531.5 (memo 1116 /
   1320 / 19132 / 185); Phase27 ring pin 1545.8 → 1531.5; CrossRaid preset kit Ocellus 833.8 → 820.8; memo counters of
   fa / faSolo / faNotOwned within PHASE37_MEMO.
 - **Tests** (Phase38h2.test.ts): per FA boss (Team, Solo) each event's HP recomputed by enumerating upstream's spec calc

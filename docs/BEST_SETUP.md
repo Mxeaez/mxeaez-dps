@@ -1703,7 +1703,7 @@ are worth most.
   Review fix (user decision): **averaged over the drain's outcomes**, Σ P(Defence d) × H × (1 − DPS without ÷ DPS at d):
   every Defence the specs can leave (sent in the plan's order, each at the Defence the earlier ones leave:
   `orderedDistribution`), the DPS at d on the monster with that Defence (`PhaseQuery.defence`, bestSetup.ts
-  `monsterAtDefence`: a flat drain of the difference); Eye of Ayak at its ranked drain. So a partial drain counts with its
+  `monsterAtDefence`: a flat drain of the difference); Eye of Ayak at its ranked drain (not averaged: its drain has up to magic defence + 1 outcomes, which would multiply the DPS evaluations; unverified as an approximation). So a partial drain counts with its
   real chances (1 Tonalztics spec on Ocellus P1, 73%, is worth less than 2; it was worth as much at the ranked Defence and
   was therefore excluded before the fix). Ocellus P2 (fixed 120 s, `fixedWall`) counts the extra damage it deals at the
   expected DPS × its carry-over (what comes off P3). H for a later event (P3) is the damage with the earlier events at
@@ -1743,17 +1743,21 @@ plan's route is chosen; summing every route made alternatives like Bork + Smorks
 at the line's plan within the kit, averaged over the outcomes as above (H = the phase's damage in the kit's undrained
 pass, the DPS = the kit's best; Ocellus P2: the extra damage × its carry-over). The most HP wins (ties: more carriers,
 then ROLE_ORDER), except that a kit leaving you out wins unless the other is worth > 1.1 × it (your slot stays yours on
-a close call). Per weapon still at most what its line needs. **Taken again on the final kit** (review fix): the
-carriers are chosen on an earlier kit and the item steps re-optimise it (a damage spec weapon takes a slot), so the plan
-takes them again on the final kit (`headcountOf`, Eye of Ayak capped at its mages) and keeps the faster of the two; a kit
-never keeps more Eye of Ayak carriers than mages.
+a close call). Per weapon still at most what its line needs. **On the final kit, by what the bars pay** (review fixes N1): the per-phase value above credits every phase with its
+full line plan within the kit, as if every bar were full at every phase (Ocellus with 4 Tonalztics: T ×2 on P1 + T ×8
+on P2 + T ×5 on P3, which four bars can't pay), so it overrates one-weapon-heavy sets; it still drives the kit search.
+The final choice, on the final kit (the item steps re-optimise the kit the carriers were taken on), values every set the
+walk considers with the most carriers the bars allow (Eye of Ayak at most the kit's mages) plus the current one by the HP
+the bars really pay: Σ `EncounterSpecPlan.hp` (drains + your damage specs, the bars shared between an encounter's
+events) of the budgeted plans over the planned route (the planner's DPS matrix); the most HP wins (`pickCarriersByHp`,
+within 10% a set leaving you out). A kit never keeps more Eye of Ayak carriers than mages.
 
 **Result** (`pinHeadlines --full`; PROGRESS phase 38h-2 and its review fixes have every moved total): fa 21:39.9 →
-21:41.0, faSolo 23:39.1 → 22:53.4, faNotOwned 24:40.2 → 24:48.4. Times move both ways: the objective is HP, not seconds.
+21:41.0, faSolo 23:39.1 → 22:53.4, faNotOwned 24:40.2 → 24:43.4. Times move both ways: the objective is HP, not seconds.
 
-**Speed** (Node, one plan alone, the machine's load varies: compared against the 38h-1 code in the same session): fa
-1.4× (13.2 → 18.5 s before the review fixes), 1.85× after them (35.0 → 64.8 s under load: the DPS at every Defence
-outcome); faSolo about 1.1× before the fixes.
+**Speed** (Node, one plan alone, compared against the 38h-1 code in the same session; the machine's load varies): fa
+1.4× before the review fixes (13.2 → 18.5 s), 1.82× after them (15.7 → 28.6 s: the DPS at every Defence outcome, one
+route pass per carrier set at the end).
 
 ## Routes tab (phase 16: raid time model)
 

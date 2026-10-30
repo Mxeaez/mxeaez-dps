@@ -20,9 +20,12 @@ import { EquipmentCategory } from '@/enums/EquipmentCategory';
 import {
   defenceOutcome, DefenceDrainWeapon, DrainStep, kitDrainPlan,
 } from '@/lib/fracturedArchive/teamSpecs';
-import { kitCarriers } from '@/lib/fracturedArchive/specChoice';
+import { kitCarriers, NO_CARRIERS, pickCarriersByHp } from '@/lib/fracturedArchive/specChoice';
+import { kitLoadouts, retimeHeadline } from '@/tests/utils/probes';
+import { headlineCase } from '@/tests/utils/headlines';
+import { phase37Fixture } from '@/tests/utils/phase37';
 import {
-  createKitEvaluator, drainFightSecondsOf, encounterTime, PhaseTime, presetKitLoadout, raidTimeAssumptionsFrom,
+  compareRoutes, createKitEvaluator, drainFightSecondsOf, encounterTime, PhaseTime, presetKitLoadout, raidTimeAssumptionsFrom,
 } from '@/lib/fracturedArchive/raidTime';
 import { assumptionsForTarget } from '@/lib/raids/toa/supplies';
 import { raidConfig } from '@/lib/raids';
@@ -345,4 +348,41 @@ describe('Eye of Ayak carriers never exceed the mages (review 38h-2)', () => {
     if (name !== 'faSolo') expect(team?.carriers).toBeDefined();
     if (team?.carriers) expect(team.carriers.ayak ?? 0).toBeLessThanOrEqual(team.mages);
   });
+});
+
+describe('carrier sets valued by the HP the bars really pay (review 38h-2 N1)', () => {
+  test('pickCarriersByHp: the most HP; within 10% a set leaving you out; ties: more carriers (by hand)', () => {
+    const sets = [{ id: 'a', hp: 100, total: 5 }, { id: 'b', hp: 108, total: 6 }, { id: 'c', hp: 100, total: 4 }];
+    // party 6: b makes you a carrier and is worth 108 ≤ 1.1 × 100 (a, the more carriers of the two at 100): a
+    expect(pickCarriersByHp(sets, 6)!.id).toBe('a');
+    // b at 111 > 110: b
+    expect(pickCarriersByHp([...sets.slice(0, 1), { id: 'b', hp: 111, total: 6 }], 6)!.id).toBe('b');
+    // party 7: everyone leaves you out: the most HP
+    expect(pickCarriersByHp(sets, 7)!.id).toBe('b');
+  });
+  test('faNotOwned: the plan\'s carriers pay the most HP on the planned route among the review\'s alternatives', () => {
+    const r = retimeHeadline('faNotOwned');
+    const c = headlineCase('faNotOwned');
+    const inputs = c.inputs();
+    const fx = phase37Fixture('faNotOwned') as unknown as { kit: Parameters<typeof kitLoadouts>[0] };
+    const hpOf = (carriers: Record<string, number>) => {
+      const a = { ...r.assumptions, team: { ...r.assumptions.team, carriers: { ...NO_CARRIERS, ...carriers } } };
+      const ta = raidTimeAssumptionsFrom(a, inputs.drain, inputs.settings, FA.time);
+      const route = r.comparison.routes.find((x) => x.route.id === r.route)!.route;
+      const cmp = compareRoutes(createKitEvaluator(kitLoadouts(fx.kit, a), a), ta, [route]);
+      return { hp: cmp.routes[0].encounters.reduce((t, e) => t + (e.specPlan?.hp ?? 0), 0), seconds: cmp.routes[0].seconds };
+    };
+    const planned = hpOf(r.assumptions.team.carriers);
+    // the review's alternatives on the final kit (seconds there: 1481.98 / 1485.02 / 1488.38 / 1484.56; the plan 1483.36):
+    // HP 3347.1 / 3355.3 / 3293.2 / 3324.5 vs the plan's 1 Elder maul + 4 Tonalztics 3358.9
+    const sets: Record<string, number>[] = [
+      { elderMaul: 1, tonalztics: 3, ayak: 1 }, { elderMaul: 2, tonalztics: 3 }, { tonalztics: 4, ayak: 1 },
+      { elderMaul: 2, tonalztics: 2, ayak: 1 },
+    ];
+    const alternatives = sets.map(hpOf);
+    // eslint-disable-next-line no-console
+    if (process.env.PRINT_PINS) console.log(JSON.stringify([r.assumptions.team.carriers, planned, alternatives]));
+    alternatives.forEach((x) => expect(planned.hp).toBeGreaterThanOrEqual(x.hp - 1e-6));
+    expect(Math.round(planned.hp * 10) / 10).toBe(3358.9);
+  }, 300000);
 });

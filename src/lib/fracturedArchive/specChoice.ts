@@ -498,6 +498,19 @@ export const teamRoles = (
 };
 
 /**
+ * Phase 38h-2: the carrier set worth the most HP (ties: more carriers, then the earlier in the list), except that a set
+ * leaving you out (fewer carriers than `party`) wins unless the other is worth more than (1 + DRAIN_CLOSE_CALL) × it.
+ */
+export const pickCarriersByHp = <T extends { hp: number, total: number }>(xs: T[], party: number): T | null => {
+  const leavesYou = (total: number) => party > 1 && total < party;
+  const top = (ys: T[]) => ys.reduce<T | null>((b, x) => (!b || x.hp > b.hp + 1e-9
+    || (Math.abs(x.hp - b.hp) <= 1e-9 && x.total > b.total) ? x : b), null);
+  const all = top(xs);
+  const free = top(xs.filter((x) => leavesYou(x.total)));
+  return all && free && !leavesYou(all.total) && !(all.hp > (1 + DRAIN_CLOSE_CALL) * free.hp + 1e-9) ? free : all;
+};
+
+/**
  * Phase 38g: the kit's carriers by headcount, no seconds: per weapon the most any boss / phase needs (`teamRoles`: each
  * boss's fewest carriers at the threshold, `recommendCarriers`; Eye of Ayak: the fewest Ayak carriers to magic def 0,
  * capped at the mages). When those add up to more than the bars (`partySize`: the party, or the party − 1 when your bar
@@ -526,6 +539,11 @@ export const kitCarriers = (
      * undefined = the phase 38g scoring (coverage, P(floor)).
      */
     value?: (key: string, counts: Partial<Record<PlannerWeapon, number>>) => number,
+    /**
+     * Review 38h-2: receives every kit within the bars the walk considered (each weapon at most what its line needs; the
+     * one kit when everything fits), for the planner's final choice by the HP the bars really pay.
+     */
+    onCandidates?: (kits: CarrierCounts[]) => void,
   },
 ): { carriers: CarrierCounts, uncovered: string[] } => {
   const threshold = opts.threshold ?? DEFAULT_FLOOR_THRESHOLD;
@@ -537,7 +555,10 @@ export const kitCarriers = (
   const max: CarrierCounts = { ...NO_CARRIERS };
   roles.rows.forEach((r) => { max[r.weapon] = r.weapon === 'ayak' ? Math.min(r.carriers, mages) : r.carriers; });
   const sum = (c: Partial<CarrierCounts>) => Object.values(c).reduce((t: number, v) => t + (v ?? 0), 0);
-  if (sum(max) <= party && (leavesYou(sum(max)) || realParty <= 1)) return { carriers: max, uncovered: [] };
+  if (sum(max) <= party && (leavesYou(sum(max)) || realParty <= 1)) {
+    opts.onCandidates?.([{ ...max }]);
+    return { carriers: max, uncovered: [] };
+  }
   const weapons: PlannerWeapon[] = ['elderMaul', 'tonalztics', 'dwh', 'bgs', 'ayak'];
   const defence: DefenceDrainWeapon[] = ['elderMaul', 'tonalztics', 'dwh', 'bgs'];
   // phase 38h-1: the drain line's team first (its carriers, its chance), then every other 95% team
@@ -606,15 +627,9 @@ export const kitCarriers = (
     for (let n = Math.min(max[w], party - total); n >= 0; n--) walk(i + 1, { ...k, [w]: n }, total + n);
   };
   walk(0, {}, 0);
+  if (opts.onCandidates) opts.onCandidates(valued.length ? valued.map((x) => ({ ...NO_CARRIERS, ...x.k })) : []);
   let k = (best as Best | null)?.k ?? {};
-  if (opts.value) {
-    const top = (xs: Valued[]) => xs.reduce<Valued | null>((b, x) => (!b || x.hp > b.hp + 1e-9
-      || (Math.abs(x.hp - b.hp) <= 1e-9 && x.total > b.total) ? x : b), null);
-    const all = top(valued);
-    const free = top(valued.filter((x) => leavesYou(x.total)));
-    const pick = all && free && !leavesYou(all.total) && !(all.hp > (1 + DRAIN_CLOSE_CALL) * free.hp + 1e-9) ? free : all;
-    k = pick?.k ?? {};
-  }
+  if (opts.value) k = pickCarriersByHp(valued, realParty)?.k ?? {};
   return {
     carriers: { ...NO_CARRIERS, ...k },
     uncovered: [

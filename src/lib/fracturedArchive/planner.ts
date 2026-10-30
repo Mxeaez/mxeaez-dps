@@ -78,6 +78,7 @@ import {
   ItemBeamChild,
   itemStepNet,
   kitCarriers,
+  pickCarriersByHp,
   mostNeededWeapon,
   mySpecsForSubset,
   NO_CARRIERS,
@@ -2337,6 +2338,20 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       }
       return { ...c };
     };
+    // review 38h-2: every carrier set the walk considers for this kit (the final choice values them by what the bars pay)
+    const carrierCandidates = (m: number[], totalCarriers: number, a: BestSetupAssumptions = assumptions): CarrierCounts[] => {
+      const rt = routeTargets(m, a);
+      let out: CarrierCounts[] = [];
+      kitCarriers(rt.targets, {
+        partySize: Math.max(1, totalCarriers),
+        mages: magesOf(m),
+        threshold: assumptions.floorThreshold,
+        party: Math.max(1, Math.floor(assumptions.partySize)),
+        value: (key, counts) => drainValueOf(m, key, counts),
+        onCandidates: (xs) => { out = xs; },
+      });
+      return out;
+    };
     const carrierGreedy = (m: number[], totalCarriers: number): { carriers: CarrierCounts, steps: CarrierStep[] | undefined, seconds: number } => {
       const carriers = headcountOf(m, totalCarriers);
       return { carriers, steps: undefined, seconds: cmpSeconds(teamCmp(carriers, m)) };
@@ -2916,33 +2931,41 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       }
     }
     if (screen) return { seconds: exactSeconds(comparison), ms: Date.now() - tRing };
-    // review 38h-2 (Team, auto carriers): the carriers were taken on an earlier kit (the item steps re-optimise it):
-    // take them again on the final kit (by its HP value; Eye of Ayak capped at its mages), re-time, keep the faster; a
-    // kit with more Eye of Ayak carriers than mages is never kept as it is (timing every finalist this way was tried:
-    // 3× slower, the same headlines)
-    if (drain === 'team' && autoCarriers && budgetOn) {
+    // review 38h-2 (Team, auto carriers): the carriers were taken on an earlier kit (the item steps re-optimise it) and
+    // by a per-phase value that credits every phase with full bars. On the final kit every set the carrier walk considers
+    // (with the most carriers the bars allow; Eye of Ayak at most the kit's mages) is valued by the HP the bars really
+    // pay: Σ of the budgeted plans' HP (`EncounterSpecPlan.hp`: drains + your damage specs, the bars shared between the
+    // encounter's events) over the planned route; the most HP wins (`pickCarriersByHp`: within 10% a set leaving you out)
+    if (drain === 'team' && autoCarriers && budgetOn && comparison.fastest >= 0) {
       const cur = teamCarriers();
       const mages = magesOf(chosen.members);
-      const bars = Math.max(1, Math.max(1, Math.floor(assumptions.partySize)) - (damageBring.length || surgePotions ? 1 : 0));
+      const party = Math.max(1, Math.floor(assumptions.partySize));
+      const bars = Math.max(1, party - (damageBring.length || surgePotions ? 1 : 0));
       const key = (c: CarrierCounts) => JSON.stringify(c);
-      const retaken = headcountOf(chosen.members, bars);
-      const options = [retaken, ...(cur.ayak > mages ? [{ ...cur, ayak: mages }] : [])].filter((c) => key(c) !== key(cur));
-      let bestS = cur.ayak <= mages ? exactSeconds(comparison) : Infinity;
-      options.forEach((c) => {
-        const a2: BestSetupAssumptions = { ...assumptions, team: { ...assumptions.team, carriers: { ...c } } };
-        const ea = raidTimeAssumptionsFrom(a2, drain, settings, tuning.model);
-        const ev = createKitEvaluator(kitLoadoutsOf(chosen.members), a2, kitEvaluatorCache());
-        const cmp = compareRoutes(ev, ea, routes);
-        exactEvaluations += ev.evaluations();
-        if (exactSeconds(cmp) < bestS - EPS) {
-          bestS = exactSeconds(cmp);
-          assumptions = a2;
-          exactA = ea;
-          evaluator = ev;
-          comparison = cmp;
-          runA = fixedFor(assumptions, chosen.members);
-        }
+      const sumOf = (c: CarrierCounts) => Object.values(c).reduce((t, v) => t + v, 0);
+      const pool = carrierCandidates(chosen.members, bars);
+      const most = Math.max(0, ...pool.map(sumOf));
+      const sets: CarrierCounts[] = [];
+      [...pool.filter((c) => sumOf(c) === most), cur.ayak <= mages ? cur : { ...cur, ayak: mages }].forEach((c) => {
+        if (c.ayak <= mages && !sets.some((x) => key(x) === key(c))) sets.push(c);
       });
+      const route = comparison.routes[comparison.fastest].route;
+      const withCarriers = (c: CarrierCounts): BestSetupAssumptions => ({ ...assumptions, team: { ...assumptions.team, carriers: { ...c } } });
+      const valued = sets.map((c) => {
+        const cmp = compareRoutes(matrixKit(chosen.members, dps, true), budgetA(withCarriers(c)), [route]);
+        const hp = cmp.routes[0].encounters.reduce((t, e) => t + (e.specPlan?.hp ?? 0), 0);
+        return { c, hp, total: sumOf(c) };
+      });
+      const pick = pickCarriersByHp(valued, party);
+      if (pick && key(pick.c) !== key(cur)) {
+        const a2 = withCarriers(pick.c);
+        assumptions = a2;
+        exactA = raidTimeAssumptionsFrom(a2, drain, settings, tuning.model);
+        evaluator = createKitEvaluator(kitLoadoutsOf(chosen.members), a2, kitEvaluatorCache());
+        comparison = compareRoutes(evaluator, exactA, routes);
+        exactEvaluations += evaluator.evaluations();
+        runA = fixedFor(assumptions, chosen.members);
+      }
     }
     const { members } = chosen;
     hooks.onKitSpace?.({

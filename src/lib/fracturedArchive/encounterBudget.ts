@@ -463,7 +463,9 @@ const countsSum = (c: SpecCounts | undefined): number => Object.values(c ?? {}).
  * Phase 38h-2 (review): the outcomes of a drain on one phase: each Defence the specs can leave (sent in the order that
  * lands most often, each at the Defence the earlier ones leave: teamSpecs.ts `orderedDistribution`) with its chance, and
  * the Eye of Ayak drain (its ranked drain: magic def 0 at the threshold, else the expected drain). No specs: the
- * undrained Defence.
+ * undrained Defence. Review 38h-2 (N2): Eye of Ayak is not averaged over its outcomes: its drain is a sum of damage rolls
+ * with up to magic-defence + 1 values (Ocellus P3: 201), so the outcomes would multiply the DPS evaluations per option by
+ * that much; its value is at the ranked drain (the expected one below the threshold), unverified as an approximation.
  */
 export const drainOutcomeStates = (m: DrainModel, counts: SpecCounts, threshold = DEFAULT_FLOOR_THRESHOLD): { p: number, def: number, ayak: number }[] => {
   const att = attemptsFromCounts(m, counts);
