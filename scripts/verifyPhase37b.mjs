@@ -50,7 +50,6 @@ const main = async () => {
   const planInputs = async () => {
     await page.locator('[data-testid="plan-tab"]').click();
     await page.locator('[data-testid="plan-inputs"]').waitFor({ timeout: 60000 });
-    if (!(await page.locator('[data-testid="plan-route"]').isVisible())) await page.locator('[data-testid="plan-advanced-toggle"]').click();
     return {
       brew: await page.locator('#plan-supply-brew').inputValue(),
       route: await page.locator('[data-testid="plan-route"]').inputValue(),

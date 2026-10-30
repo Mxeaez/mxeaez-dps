@@ -13,7 +13,7 @@ import {
   targetPhases,
 } from '@/lib/fracturedArchive/bestSetup';
 import {
-  BestSetupAssumptions, carriersUseLightbearer, ItemRef, MySpecs, StyleGroup, TeamSpecAssumptions, withCarrierLightbearer, withPlanCarriers,
+  BestSetupAssumptions, ItemRef, MySpecs, StyleGroup, TeamSpecAssumptions, withPlanCarriers,
 } from '@/lib/fracturedArchive/presets';
 import { scaleMonster } from '@/lib/MonsterScaling';
 import {
@@ -28,6 +28,7 @@ import { resolveItem } from '@/lib/fracturedArchive/loadout';
 import SpecPlanPanel from '@/app/components/bestSetup/SpecPlanPanel';
 import SearchView from '@/app/components/bestSetup/SearchView';
 import SummaryView from '@/app/components/bestSetup/SummaryView';
+import TeamCarriersBox from '@/app/components/bestSetup/TeamCarriersBox';
 import PlanView, { LightbearerLock } from '@/app/components/bestSetup/PlanView';
 import TimeSettingsBox from '@/app/components/bestSetup/TimeSettingsBox';
 import { equipmentImageUrl, targetImageUrl } from '@/lib/fracturedArchive/loadoutIcons';
@@ -70,8 +71,6 @@ const GROUP_PRAYER: Record<StyleGroup, string> = { melee: 'Piety', ranged: 'Rigo
 
 type MyWeapon = 'elderMaul' | 'dwh' | 'bgs' | 'tonalztics';
 const MY_SPEC_WEAPONS: MyWeapon[] = ['elderMaul', 'dwh', 'bgs', 'tonalztics'];
-type TeamWeapon = keyof TeamSpecAssumptions['carriers'];
-const TEAM_WEAPONS: TeamWeapon[] = ['elderMaul', 'dwh', 'bgs', 'tonalztics', 'ayak'];
 
 /** Icon of a spec weapon / Lightbearer (equipment.json image), or null. */
 const itemImage = (ref: ItemRef): string | null => {
@@ -243,8 +242,6 @@ const AssumptionsBox: React.FC<{
   onNotOwned: (names: string[]) => void,
   /** Phase 29: set while the Plan tab's ring policy decides the ring (camp Lightbearer / camp one ring). */
   lightbearerLock?: LightbearerLock | null,
-  /** Phase 29 review 2: the last plan's carriers (shown in the disabled counts while the planner decides). */
-  planCarriers?: TeamSpecAssumptions['carriers'] | null,
   /** Phase 33: who picks the spec weapons (shared with the Plan tab's "Spec weapons"), and the last plan's "Bring". */
   specMode?: SpecMode,
   onSpecMode?: (m: SpecMode) => void,
@@ -253,7 +250,7 @@ const AssumptionsBox: React.FC<{
   onReset: () => void,
   onResetAll?: () => void,
 }> = ({
-  raid, value, onChange, ayakHint, timeSettings, onTimeSettings, notOwned, onNotOwned, lightbearerLock, planCarriers,
+  raid, value, onChange, ayakHint, timeSettings, onTimeSettings, notOwned, onNotOwned, lightbearerLock,
   specMode = 'manual', onSpecMode, planBring, onReset, onResetAll,
 }) => {
   // phase 33: "Planner decides": the chips mirror the last plan's "Bring" (read-only); none before a plan has run
@@ -262,7 +259,6 @@ const AssumptionsBox: React.FC<{
   let specsLock: string | undefined;
   if (plannerSpecs) specsLock = planBring ? 'from the last plan' : 'run a plan to fill these';
   const set = (patch: Partial<BestSetupAssumptions>) => onChange({ ...value, ...patch });
-  const carrierTotal = Object.values(value.team.carriers).reduce((t, n) => t + n, 0);
   const mult = teamDpsMultiplier(value);
   return (
     <div className="text-xs bg-body-100 dark:bg-dark-400 border border-body-400 dark:border-dark-200 rounded p-3 flex flex-col gap-2" data-testid="assumptions">
@@ -405,60 +401,6 @@ const AssumptionsBox: React.FC<{
       <details data-testid="advanced">
         <summary className="cursor-pointer font-semibold" data-testid="advanced-toggle">Advanced</summary>
         <div className="flex flex-col gap-2 mt-2 pl-2 border-l-2 border-body-400 dark:border-dark-200">
-          <div className="flex flex-wrap gap-x-3 gap-y-2 items-center" data-testid="team-specs">
-            <span className="font-semibold" title="Team drain state: teammates who bring a drain weapon spec twice each at the start of every fight">
-              {`Team carriers (party of ${value.partySize}, set above):`}
-            </span>
-            <select
-              id="bs-team-mode"
-              className="form-control text-xs py-0.5"
-              value={value.team.manual ? 'manual' : 'auto'}
-              data-testid="team-carrier-mode"
-              title="Planner decides: the Plan tab picks the carriers (the ones that save the most route time) and its Team drains use them; Search and Summary use the counts here. Set manually: every tab uses the counts here"
-              onChange={(e) => set({ team: { ...value.team, manual: e.target.value === 'manual' } })}
-            >
-              <option value="auto">Planner decides (Plan tab)</option>
-              <option value="manual">Set manually</option>
-            </select>
-            {TEAM_WEAPONS.map((k) => (
-              <label key={k} htmlFor={`bs-team-${k}`} className="flex items-center gap-1" title={`How many teammates bring ${SPEC_WEAPONS[k].label} and spec it at the start`}>
-                <ItemIcon name={SPEC_WEAPONS[k].label} src={itemImage(SPEC_WEAPONS[k].item)} size={18} />
-                <span className="sr-only">{SPEC_WEAPONS[k].label}</span>
-                <input
-                  id={`bs-team-${k}`}
-                  type="number"
-                  disabled={!value.team.manual}
-                  className="form-control text-xs py-0.5 w-12 disabled:opacity-50"
-                  min={0}
-                  max={8}
-                  value={(!value.team.manual && planCarriers ? planCarriers : value.team.carriers)[k]}
-                  onChange={(e) => set({
-                    team: {
-                      ...value.team,
-                      carriers: { ...value.team.carriers, [k]: Math.min(8, Math.max(0, Math.floor(Number(e.target.value) || 0))) },
-                    },
-                  })}
-                />
-              </label>
-            ))}
-            <label htmlFor="bs-team-lightbearer" className="flex items-center gap-1" title="Every carrier wears Lightbearer (spec energy back twice as fast). Only changes the whole-fight figures: the ranking uses the first round, done with full energy">
-              <input
-                id="bs-team-lightbearer"
-                type="checkbox"
-                checked={carriersUseLightbearer(value.team)}
-                onChange={(e) => set({ team: withCarrierLightbearer(value.team, e.target.checked) })}
-              />
-              carriers use Lightbearer
-            </label>
-            {!value.team.manual && (
-              <span className="text-gray-500 dark:text-gray-400" data-testid="team-carriers-note">
-                {planCarriers ? '(from the last plan; Search / Summary use them)' : '(run a plan to fill these; until then Search / Summary use the counts shown)'}
-              </span>
-            )}
-            {value.team.manual && carrierTotal > value.partySize && (
-              <span className="text-red-600" data-testid="team-too-many">{`${carrierTotal} carriers > party size: only the first ${value.partySize} count`}</span>
-            )}
-          </div>
           {raid.raidOnlyAssumptions && (
             <label htmlFor="bs-fragments" className="flex items-center gap-1" title="All four elemental fragments unlocked: +2 base max hit for elemental spells (magic setups only)">
               <input
@@ -652,7 +594,6 @@ const RaidBestSetup: React.FC<{
             notOwned={notOwned}
             onNotOwned={setNotOwned}
             lightbearerLock={mode === 'plan' ? planLightbearer : null}
-            planCarriers={planCarriers}
             specMode={specMode}
             onSpecMode={setSpecMode}
             planBring={planBring}
@@ -743,7 +684,7 @@ const RaidBestSetup: React.FC<{
             />
           )}
           {mode === 'plan' && drainButtons}
-          {mode === 'plan' && <PlanView key={generation} assumptions={assumptions} drain={drain} raid={raid} timeSettings={timeSettings} notOwned={notOwned} onLightbearer={setPlanLightbearer} onCarriers={setPlanCarriers} specMode={specMode} onSpecMode={setSpecMode} onSpecs={setPlanBring} initialInputs={settings.plan} onInputs={setPlanInputs} />}
+          {mode === 'plan' && <PlanView key={generation} carriersBox={drain === 'team' ? <TeamCarriersBox value={assumptions} onChange={setAssumptions} planCarriers={planCarriers} /> : undefined} assumptions={assumptions} drain={drain} raid={raid} timeSettings={timeSettings} notOwned={notOwned} onLightbearer={setPlanLightbearer} onCarriers={setPlanCarriers} specMode={specMode} onSpecMode={setSpecMode} onSpecs={setPlanBring} initialInputs={settings.plan} onInputs={setPlanInputs} />}
 
           <div className="text-[11px] text-gray-500 dark:text-gray-400">
             {`Same calculation as the main calculator. ${raid.hpNote} ${teamTimeLabel(teamDpsMultiplier(assumptions))}. Prayers: ${Object.values(GROUP_PRAYER).join(' / ')}. See docs/BEST_SETUP.md for caveats.`}

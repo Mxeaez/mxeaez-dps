@@ -562,6 +562,8 @@ const SpecPlanBody: React.FC<{ specs: PlanResult['specs'] }> = ({ specs }) => (
 );
 
 const PlanView: React.FC<{
+  /** Phase 39: the Team carriers box (Team drains only), shown with the other plan inputs. */
+  carriersBox?: React.ReactNode,
   assumptions: BestSetupAssumptions, drain: DrainStateId, raid: RaidConfig, timeSettings?: TimeSettings, notOwned?: string[],
   /** Phase 29: the Lightbearer flag the ring policy sets (null = the user's toggle). */
   onLightbearer?: (lock: LightbearerLock | null) => void,
@@ -576,7 +578,7 @@ const PlanView: React.FC<{
   initialInputs?: PlanInputSettings,
   onInputs?: (p: PlanInputSettings) => void,
 }> = ({
-  assumptions, drain, raid, timeSettings, notOwned: notOwnedProp, onLightbearer, onCarriers,
+  carriersBox, assumptions, drain, raid, timeSettings, notOwned: notOwnedProp, onLightbearer, onCarriers,
   specMode: specModeProp, onSpecMode, onSpecs, initialInputs, onInputs,
 }) => {
   const notOwnedKey = JSON.stringify(notOwnedProp ?? []);
@@ -837,7 +839,15 @@ const PlanView: React.FC<{
               {SPEC_MODES.map((m) => <option key={m.id} value={m.id} title={m.title}>{m.label}</option>)}
             </select>
           </label>
+          <label htmlFor="plan-route" className="flex items-center gap-1">
+            Route
+            <select id="plan-route" className="form-control text-xs py-0.5" value={route} onChange={(e) => setRoute(e.target.value)} data-testid="plan-route">
+              <option value="all">Compare all (plan for the fastest)</option>
+              {routes.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
+            </select>
+          </label>
         </div>
+        {carriersBox}
         <div className="flex flex-wrap gap-x-3 gap-y-2 items-center" data-testid="plan-supplies">
           <span className="font-semibold" title="Brews, restores, food and anything else you like to bring: the planner doesn't choose these">{`Comfort supplies (your call, ${supplyTotal} slots):`}</span>
           {SUPPLY_TYPES.filter((s) => COMFORT_SUPPLY_TYPES.includes(s.id)).map((s) => (
@@ -881,13 +891,6 @@ const PlanView: React.FC<{
         <details className="border border-body-400 dark:border-dark-200 rounded px-2 py-1" data-testid="plan-advanced">
           <summary className="cursor-pointer font-semibold" data-testid="plan-advanced-toggle">Advanced (plan)</summary>
           <div className="flex flex-col gap-1 mt-1">
-            <label htmlFor="plan-route" className="flex items-center gap-1">
-              Route
-              <select id="plan-route" className="form-control text-xs py-0.5" value={route} onChange={(e) => setRoute(e.target.value)} data-testid="plan-route">
-                <option value="all">Compare all (plan for the fastest)</option>
-                {routes.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
-              </select>
-            </label>
             <div className="text-gray-600 dark:text-gray-300" data-testid="plan-potions-note">
               {raid.boostsNeedSupplies
                 ? `Potions: chosen from the kit — one Super combat if it has a melee loadout, one Ranging potion if ranged, the ${kitHeart(assumptions, keptPinned).name} if magic (a slot each).`

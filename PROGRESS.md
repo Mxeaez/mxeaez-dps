@@ -3,6 +3,23 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 39: Carriers and route up front (FA, UI, 2026-10-30)
+
+ROADMAP row 39. No calculation change (`pinHeadlines --full --check`: no change).
+- **Moved** out of Advanced into the Plan tab's "Assumptions (plan)" box: the Route select (next to "Spec weapons") and
+  the Team carriers (new `TeamCarriersBox.tsx`, Team drains only, passed to PlanView as `carriersBox`). The carriers read
+  as plain icon x count with a note ("from the last plan" / "set manually" / "run a plan to fill these"); a small
+  "Set manually" toggle opens the mode select, the counts and "carriers use Lightbearer". Saved settings unchanged
+  (same state: `assumptions.team`, `plan.route`).
+- **Left in Advanced**: floor confidence, team-DPS multiplier, energy priority, time model; and under Advanced (plan)
+  mages, potions note, raid items (not asked for).
+- Side effect: the Search / Summary tabs no longer show the carrier counts; they use the last plan's (or manual) carriers.
+- Tests: Phase39.test.ts (placement), verifyPhase39 (Playwright: both outside Advanced, planner carriers = fa headline,
+  manual + Lightbearer + route persist across a reload), screenshot docs/screenshots/phase39-plan.png. verifyPhase29 /
+  37b / 23 adjusted to the new place. verifyPhase23 fails on a Team drain-line text check with or without this change
+  (pre-existing, stale numbers).
+- Run: fast suite green (1456), tsc, lint clean, verifyAll 39 29 38j OK.
+
 ## Phase 38j review fixes (FA, 2026-10-30)
 
 Review of 7d882dd2 + dcbf15cb: PASS with findings.

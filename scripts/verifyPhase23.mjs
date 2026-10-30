@@ -90,8 +90,7 @@ const main = async () => {
   // Advanced
   await page.locator('[data-testid="advanced-toggle"]').click();
   await page.waitForTimeout(300);
-  check(await page.locator('#bs-team-elderMaul').isVisible(), 'Advanced: carriers visible');
-  check(await page.locator('#bs-team-lightbearer').isVisible(), 'Advanced: one "carriers use Lightbearer" toggle');
+  check(await page.locator('#bs-team-elderMaul').count() === 0, 'phase 39: carriers are on the Plan tab, not in Advanced');
   const advText = await page.locator('[data-testid="advanced"]').innerText();
   check(advText.includes('Use the Defence floor when its chance is ≥'), 'Advanced: floor confidence label');
   check(advText.includes('Players assumed at your DPS when converting HP to time'), 'Advanced: team-DPS multiplier label');

@@ -86,9 +86,13 @@ const main = async () => {
   // "needed ×4 (98%) · team brings ×4 (8 hits, 98%)"; phase 32: "needs 4 landed hits · 4 specs (2 carriers), 8 swings ·
   // 98%" (Search uses the Advanced 2 / 2 / 1 before any plan)
   check(/needs 4 landed hits · 4 specs \(2 carriers\) = 8 attacks, 4 must land · 9\d%/.test(panelTona) && !/team:/.test(panelTona), `Search drain box (AG Flying, Team): "${panelTona}"`);
+  // phase 39: the carriers live in the Plan tab's inputs (not Advanced)
+  await page.locator('[data-testid="plan-tab"]').click();
+  await page.locator('[data-testid="team-carriers-toggle"]').click();
   check(/run a plan to fill these/.test((await page.locator('[data-testid="team-carriers-note"]').textContent())), 'carriers note before any plan: "run a plan to fill these"');
   check(await page.locator('[data-testid="team-carrier-mode"]').inputValue() === 'auto', 'Team carriers: "Planner decides" by default');
   check(await page.locator('#bs-team-elderMaul').isDisabled(), 'carrier counts disabled while the planner decides');
+  await page.locator('[data-testid="search-tab"]').click();
   await shot(page, 'search-header');
 
   // --- Plan, defaults (Team, planner decides)
@@ -135,7 +139,8 @@ const main = async () => {
   await shot(page, 'team');
   // review 2: Search / Summary now use the plan's carriers (shown in the disabled counts)
   check(/from the last plan/.test((await page.locator('[data-testid="team-carriers-note"]').textContent())), 'carriers note after the plan: "from the last plan"');
-  check(await page.locator('#bs-team-tonalztics').inputValue() === String(headlineOf('fa').carriers.tonalztics) && await page.locator('#bs-team-ayak').inputValue() === '0', `Advanced counts follow the plan: Tonalztics ${await page.locator('#bs-team-tonalztics').inputValue()}, Ayak ${await page.locator('#bs-team-ayak').inputValue()}`);
+  if (!(await page.locator('#bs-team-tonalztics').isVisible())) await page.locator('[data-testid="team-carriers-toggle"]').click();
+  check(await page.locator('#bs-team-tonalztics').inputValue() === String(headlineOf('fa').carriers.tonalztics) && await page.locator('#bs-team-ayak').inputValue() === '0', `Plan-tab counts follow the plan: Tonalztics ${await page.locator('#bs-team-tonalztics').inputValue()}, Ayak ${await page.locator('#bs-team-ayak').inputValue()}`);
 
   await page.locator('[data-testid="plan-ring-policy"]').selectOption('camp-lightbearer'); // phase 30: with the inputs
   await page.waitForTimeout(300);
