@@ -100,9 +100,9 @@ export const PHASE37_MEMO: Record<string, MemoCounters> = {
   // phase 40 rework (the Xarth freezer keeps 80% of their DPS on phase 2: same kit and route): r27fa was 1221 / 1212 /
   // 18419 / 57
   // phase 40b (stun-swap Bork; Bork's rows: stunned (+ armour 14) instead of four armour quarters): r27fa was 1136 / 1341
-  // / 27136 / 185
+  // / 27136 / 185; phase 40b-2 (25-tick stuns): was 1215 / 1415 / 26377 / 188
   r27fa: {
-    encounterRuns: 1215, passRuns: 1415, encounterHits: 26377, passHits: 188,
+    encounterRuns: 1147, passRuns: 1320, encounterHits: 27381, passHits: 200,
   },
   r27toa: {
     encounterRuns: 1531, passRuns: 1523, encounterHits: 16802, passHits: 81,

@@ -3,6 +3,51 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 40b-2: Bork stun length ≈ 5 Scythe hits (FA, numbers, 2026-10-30)
+
+ROADMAP 40b-2. DATA_SOURCES *Phase 40b-2*; UNVERIFIED A6 / D3; BEST_SETUP *Bork + Smorks stun-swap*.
+- **Input**: the user: "Bork's stun lasts enough time to get around 5 Scythe hits in" → 5 attacks of a 5-tick weapon span
+  21-25 ticks; default **25 ticks (15 s)** (was 7 ticks, back-solved from the fa kit: circular). Label "Bork stun length
+  (ticks, ≈ 5 Scythe hits)". Stuns per kill stays 4. Cap per kill = 4 × 15 s × party × stunned DPS.
+- **Headlines** (`pinHeadlines --full`): fa **20:18.9 unchanged** (the cap 60 × 6 × 15.68 = 5644 hp already covered Bork
+  at 7 ticks; only the alternatives / other rings in phase37/fa.json moved, e.g. Lightbearer 1264.54 → 1262.86).
+  faSolo 22:06.1 → **21:32.8** (−33.3 s): same kit / route / ring (AG > Bork > Moia > Xarth > Ocellus, Lightbearer); Bork
+  + Smorks 214.02 → 180.75: the stuns now cover 60 s × 14.56 = 873 hp (58.2%, was 16.3%), 627 hp at armour 14 (7.77
+  drained DPS). The 40b close call is gone: Ezekiel's route 1328.75 s is 36.0 s behind (was 2.69 s).
+  faNotOwned 22:43.2 → **22:39.5** (−3.7 s): the 17 hp armour 14 remainder is gone, so the kit no longer needs the Zaryte
+  crossbow loadout (Bork armour 14 / Smorks) or Torva + Scythe (its edge on stunned Bork, 14.71 vs 14.05, is ~4.8 s);
+  new kit Twisted bow, Inquisitor's + Scythe, **Inquisitor's mace (full crush)** (Ocellus P3 rows: −14.3 s on Ocellus
+  vs the kit without it), 3 free slots; ring Ultor → **Lightbearer** (a new close call: Ultor 1361.70 s, +2.15 s); surge
+  doses + Moia. Per encounter: AG 182.85 → 180.69, Bork + Smorks 142.46 → 144.63 (Bork stunned at 14.05, the Smorks
+  with the Scythe at 11.70 drained), Moia 59.50 → 53.69 (surge), Xarth 210.31 → 215.21 (no Torva kit), Ocellus 768.09
+  → 765.33. Carriers unchanged (1 maul + 4 Tonalztics).
+- **Sanity notes** (re-checked, wording updated in DATA_SOURCES / UNVERIFIED D3): at 25 ticks a 6-player team at the
+  model's DPS kills Bork in ~16 s, about **one** stun, not four: the user's 4 stuns imply far less damage per stun than
+  modelled (the stuns are only a cap, so at party 6 nothing moves). Room: ~16 s + the Smorks' ~13 s of team hitting in
+  the 2:00-2:30 room, as before. The Smorks die right after Bork (killed last).
+- **Sensitivity** (headline kits re-timed): 21 ticks: fa / faNotOwned 0, faSolo +8.4 s; 3 stuns: faSolo +13.1 s; route
+  unchanged in both.
+- **Pins**: Phase40b (defaults 4 × 25 ticks, label, rows at 25 ticks + old 7 ticks; faNotOwned undrained 1500 ÷ 14.0458 +
+  600 ÷ 6.1317 = 204.65 s; **faSolo by hand**: 60 s + 626.62 ÷ 6.6697 + 600 ÷ 7.5258 = 233.68 s); RaidTime (toy kit,
+  25 ticks: party 2 150 s, party 1 210 s, 3 stuns party 1 232.5 s); CrossRaid FA preset kit bork-smorks 187.3 → 178.9;
+  Planner Solo (party 6) Bork rows stunned + Smorks only; Phase38h2 faNotOwned carriers HP 3742.8 → 4006.4 (alternatives
+  3956.6 / 4002.9 / 3901.8 / 3929.7); Phase38h3 faSolo Tonalztics refSpecs 10 → 12, the Elder maul now passes a slot
+  check (adds 107.4 ≥ costs 41.5 HP); r27fa re-captured (objective 1451.6 → 1444.2; PHASE37_MEMO r27fa 1147 / 1320 /
+  27381 / 200); verifyPhase40b (25 ticks, the label, "4 × 25 ticks"). Slow: Phase32 the user's plan (party 4) 24:59.9 →
+  24:05.1 (the stuns now cover Bork at party 4); Phase29 Solo with the phase 29 pinned list 1349.05 → 1306.25, Ultor →
+  Lightbearer, now brings Elder maul + Tonalztics (the kit leaves the maul a free slot); its "fixed point" check no
+  longer holds: the ring screens timed {Tonalztics} (the first full ring's choice) and the guard's full Lightbearer run
+  brings the maul too and wins (the planner re-screens at most once, by design; the test now pins that), manual {maul, Tonalztics}
+  1417.96 → 1396.74; Phase38h3 slow slot check Tonalztics / Ayak adds 1061.8 / 437.2. Phase36 (you carry or you
+  damage-spec): its exact re-time now passes the plan's filler (`damageFiller`, as probes.ts does); without it the
+  party-6 plan (same kit as faNotOwned, 1359.55 s) re-timed to 1358.79 s, i.e. **that plan's filler costs 0.76 s**
+  (for the reviewer: a filler spent from leftover energy should not cost time; not investigated here).
+- Run: fast suite green (1499); FA slow suites (CrossRaid Phase2 Phase3 Phase40) run once: 6 failures, all pins moved by
+  this phase (above) or the CPU cap under load (CrossRaidHeadlines fa 303 s > 200 with ~30 files at once); after the pin
+  fixes the failing tests re-run green, CrossRaidHeadlines alone green; retime probe fa / faSolo / faNotOwned gap 0;
+  verifyAll 40b OK (phase40b-bork-stun.png re-taken: "4 × 25 ticks"); tsc, lint clean. Planning time (pinHeadlines, 3 at
+  once): fa 198 s, faSolo 174 s, faNotOwned 145 s.
+
 ## Phase 40b: Bork + Smorks stun-swap kill order (FA, numbers, 2026-10-30)
 
 ROADMAP 40b. docs/BEST_SETUP.md *Bork + Smorks stun-swap*; DATA_SOURCES *Phase 40b*; UNVERIFIED A6 / D3.

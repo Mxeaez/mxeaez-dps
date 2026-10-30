@@ -1123,3 +1123,23 @@ stunned DPS); the rest at **armour 14** — by the last stun the team has been h
 they have taken most of their damage and are kept alive at ≤ 25% hp (the "25-0%" step, A7). Rows: Bork stunned, Bork
 armour 14 (only when the stuns can't cover him), the Smorks 600. Killed evenly (the old model, an option): four quarters
 at armour 8 / 10 / 12 / 14, no stun.
+
+## Phase 40b-2 — Bork stun length ≈ 5 Scythe hits (2026-10-30)
+
+Source: the user, in-game (2026-10-30): "Bork's stun lasts enough time to get around 5 Scythe hits in." The Scythe of
+vitur attacks every 5 ticks (wiki infobox, attack speed 5), so 5 attacks span at least **21 ticks** (attacks on ticks 0, 5,
+10, 15, 20) and up to **25 ticks** (5 × 5, the stun starting just after an attack). Default **25 ticks = 15 s**
+(the "≈ 5 Scythe hits" reading; **unverified**, UNVERIFIED A6 / D3). It replaces phase 40b's 7 ticks, which was
+back-solved from the fa kit's own DPS (circular). Stuns per kill stays 4 (the user). Advanced input label "Bork stun
+length (ticks, ≈ 5 Scythe hits)".
+
+Sensitivity (headline kits re-timed, nothing re-planned): fa and faNotOwned (party 6) don't move anywhere in 21-25 ticks
+(the cap 4 × stun × 6 × stunned DPS ≥ 4700 hp > 1500; fa needs ≥ 6.65 ticks); faSolo +8.4 s at 21 ticks, +13.1 s at 3
+stuns (still the Bork route: Ezekiel's route is 1328.75 s).
+
+Sanity notes re-checked: at 25 ticks a 6-player team at the calculator's DPS (fa: 15.68 each on stunned Bork) deals 1500
+hp in **~16 s of stun, about one stun**, not four; the 4 stuns per kill hold only if the team does much less damage per
+stun than the model (not all six on Bork, time lost getting to him, misses with other gear). The model uses the stuns
+only as a cap, so at party 6 they change nothing; the room is still ~16 s + the Smorks' ~13 s of team hitting in the
+user's 2:00-2:30 (the rest: waiting for cannonballs, moving), and the Smorks are still killed last (they die after Bork,
+"together" only in the sense that the team finishes them right after).

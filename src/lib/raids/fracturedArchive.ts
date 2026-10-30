@@ -35,7 +35,7 @@ export const FRACTURED_ARCHIVE_RAID: RaidConfig = {
       key: 'borkStunsPerKill', label: 'Bork stuns per kill', kind: 'number', title: 'Heavy-cannonball stuns per Bork kill (stun-swap; the user: ~4)', max: 20,
     },
     {
-      key: 'borkStunTicks', label: 'Bork stun length', kind: 'number', unit: 'ticks', title: 'Length of one stun in game ticks (0.6 s). Unpublished: 7 ticks estimated from 1500 hp over 4 stuns at a 6-player team\'s stunned melee DPS (unverified)', max: 50,
+      key: 'borkStunTicks', label: 'Bork stun length (ticks, ≈ 5 Scythe hits)', kind: 'number', unit: 'ticks', title: 'Length of one stun in game ticks (0.6 s). Unpublished; the user: "enough time to get around 5 Scythe hits in" (the Scythe attacks every 5 ticks: 21-25 ticks); default 25 ticks = 15 s (unverified)', max: 50,
     },
     {
       key: 'ocellusWalkingFraction', label: 'Ocellus P1 walking', kind: 'percent', title: 'Share of P1\'s hp dealt while he walks to a corner (Protect from Melee)',

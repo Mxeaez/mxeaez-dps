@@ -522,7 +522,7 @@
   }
  ],
  "pinnedItems": [],
- "comparison": "50b4ea6aca370cb2507727584b0f62ffa38115e87d611d654da021a9b8c26492",
+ "comparison": "7610960c04e3206532a652c18d871015641077db8f789f3517d3f8e1630d0bc7",
  "planned": 5,
  "rejected": [],
  "alternatives": [
@@ -542,9 +542,9 @@
   {
    "label": "ranged + magic: Tumeken's shadow (Ancestral) / Twisted bow (Masori) / Ascension crossbows + diamond (e) (Masori) / Ascension crossbows + Diamond ascension bolts (e)",
    "kind": "alternative",
-   "deltaSeconds": -332.71228638465664,
+   "deltaSeconds": -322.08339106743506,
    "deltaSlots": 4,
-   "reason": "332.7 s slower",
+   "reason": "322.1 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Twisted bow",
@@ -555,9 +555,9 @@
   {
    "label": "magic: Tumeken's shadow (Ancestral) / Harmonised Nightmare staff / Harmonised Nightmare staff #4",
    "kind": "alternative",
-   "deltaSeconds": -933.5034219774079,
+   "deltaSeconds": -929.3112794210638,
    "deltaSlots": -5,
-   "reason": "933.5 s slower",
+   "reason": "929.3 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Harmonised Nightmare staff",
@@ -681,7 +681,7 @@
     },
     {
      "key": "bork|Stunned (armour 0)",
-     "label": "Bork, stunned (4 × 7 ticks)",
+     "label": "Bork, stunned (4 × 25 ticks)",
      "gains": {
       "voidwaker": 32.75214462614235,
       "dragonClaws": 60.75214462614232,
@@ -951,12 +951,12 @@
    },
    {
     "ring": "Lightbearer",
-    "seconds": 1264.5416658208364,
+    "seconds": 1262.8579926403468,
     "full": true
    },
    {
     "ring": "Venator ring",
-    "seconds": 1272.602875174734,
+    "seconds": 1270.9192019942443,
     "full": true
    },
    {
@@ -966,7 +966,7 @@
    },
    {
     "ring": "Magus ring",
-    "seconds": 1291.8353136919168,
+    "seconds": 1290.1516405114273,
     "full": true
    }
   ]

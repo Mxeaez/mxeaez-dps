@@ -1,6 +1,6 @@
 /**
  * Phase 40b UI check (not part of the Jest run): Bork + Smorks stun-swap. Advanced → Time model has "Bork kill order"
- * (Stun-swap default, Killed evenly), "Bork stuns per kill" (4) and "Bork stun length" (7 ticks), not "Bork stun uptime".
+ * (Stun-swap default, Killed evenly), "Bork stuns per kill" (4) and "Bork stun length (ticks, ≈ 5 Scythe hits)" (25 ticks, phase 40b-2), not "Bork stun uptime".
  * The default FA Team plan is the fa headline; its Bork + Smorks row is stunned Bork + the Smorks (phase details).
  * Killed evenly re-plans with Bork's four armour quarters.
  *
@@ -49,7 +49,8 @@ const main = async () => {
   const options = await order.locator('option').allTextContents();
   check(options.join(',') === 'Stun-swap,Killed evenly', `options: ${options.join(', ')}`);
   check(await page.locator('#rt-borkStunsPerKill').inputValue() === '4', 'stuns per kill 4');
-  check(await page.locator('#rt-borkStunTicks').inputValue() === '7', 'stun length 7 ticks');
+  check(await page.locator('#rt-borkStunTicks').inputValue() === '25', 'stun length 25 ticks');
+  check((await page.locator('label[for="rt-borkStunTicks"]').textContent() ?? '').includes('Bork stun length (ticks, ≈ 5 Scythe hits)'), 'stun length label ≈ 5 Scythe hits');
   check(await page.locator('#rt-borkStunUptime').count() === 0, 'no Bork stun uptime input');
   const times = page.locator('[data-testid="time-settings"]');
   await times.scrollIntoViewIfNeeded();
@@ -61,7 +62,7 @@ const main = async () => {
   const total = (await page.locator('[data-testid="plan-total"]').textContent()) ?? '';
   check(total.includes(h.total), `plan total ${h.total} (the fa headline)`);
   const phases = await borkPhases(page);
-  check(/Bork, stunned \(4 × 7 ticks\)/.test(phases), `Bork row: stunned (4 × 7 ticks): ${phases.slice(0, 160)}`);
+  check(/Bork, stunned \(4 × 25 ticks\)/.test(phases), `Bork row: stunned (4 × 25 ticks): ${phases.slice(0, 160)}`);
   check(!/armour (8|10|12)/.test(phases), 'no armour 8 / 10 / 12 rows');
   await page.locator('[data-testid="plan-encounter-row"][data-encounter="bork-smorks"]').scrollIntoViewIfNeeded();
   await page.screenshot({ path: 'docs/screenshots/phase40b-bork-stun.png', fullPage: false });

@@ -117,12 +117,12 @@ export const RAID_TIME_DEFAULTS: RaidTimeSettings = {
   // at most 70% of the 550 hp is dealt while grounded; we assume all of it is, and the last 30% at Flying DPS.
   agGroundedFraction: 0.7,
   // Phase 40b (the user, 2026-10-30): the team hits Bork only while he is stunned, the Smorks between stuns (kept alive:
-  // their heavy cannonballs cause the stuns), ~4 stuns per kill. The stun length is unpublished (UNVERIFIED A6): 7 ticks
-  // = 4.2 s, estimated from 1500 hp ÷ (4 stuns × 6 players × 15.68 stunned DPS, the phase 40 fa kit) = 3.99 s, rounded
-  // up to whole ticks (docs/DATA_SOURCES.md *Phase 40b*).
+  // their heavy cannonballs cause the stuns), ~4 stuns per kill. The stun length is unpublished; phase 40b-2 (the user,
+  // 2026-10-30): a stun lasts "enough time to get around 5 Scythe hits in" (Scythe: 5 ticks per attack, so 21-25 ticks):
+  // 25 ticks = 15 s (UNVERIFIED A6, docs/DATA_SOURCES.md *Phase 40b-2*).
   borkKillOrder: 'stun-swap',
   borkStunsPerKill: 4,
-  borkStunTicks: 7,
+  borkStunTicks: 25,
   // Strategies: "While walking to a quadrant, he will have Protect from Melee active"; share unknown, 0 by default.
   ocellusWalkingFraction: 0,
   // P2 is time-limited (three quadrant cycles, Strategies → Phase 2); its length is unpublished. Phase 38c: 120 s by

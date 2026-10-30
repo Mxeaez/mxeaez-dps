@@ -1931,14 +1931,17 @@ The user (2026-10-30): the team hits Bork only while a heavy cannonball has him 
   `Stunned (armour 0)`); the team is every player at your DPS, the same as the wall clock (seconds × multiplier ÷ party).
 - the rest, if any, at **armour 14** (`BORK_FALLBACK_PHASE`): after the stuns the Smorks have taken most of their damage.
 - rows: `bork-stunned`, `bork-14` (only with a remainder), `smorks` (Bork dies first: Death Charge on his last row).
-- defaults 4 stuns × 7 ticks (DATA_SOURCES *Phase 40b*: 1500 ÷ (4 × 6 × 15.68) = 3.99 s → 7 ticks; UNVERIFIED A6 / D3).
+- defaults 4 stuns × **25 ticks** (phase 40b-2, the user: a stun lasts "around 5 Scythe hits" = 21-25 ticks; DATA_SOURCES
+  *Phase 40b-2*; UNVERIFIED A6 / D3; was 7 ticks, back-solved from the fa kit in 40b). At party 6 the cap (60 s × 6 ×
+  stunned DPS) no longer binds for any headline kit; at party 1 it covers 60 s × your stunned DPS (faSolo: 58.2% of Bork).
 - `borkKillOrder: 'evenly'` keeps the old rows (four quarters at armour 8 / 10 / 12 / 14) as an option; the planner
   searches stunned Bork + armour 14 for stun-swap, the four armour phases for evenly.
 - Drains / damage specs roll per row as before: on stunned Bork a melee drain spec always lands (but drains don't help a
   melee kit there, so the headline puts no drain on Bork); a damage spec on that row rolls against armour 0.
 
-Hand check (RaidTime.test.ts, toy kit 15 stunned / 6 at armour 14 / 12 Smorks DPS): party 6, 7 ticks: cap 4 × 4.2 × 6 ×
-15 = 1512 ≥ 1500 → 1500 / 15 + 600 / 12 = 150 s; 5 ticks: cap 1080 → 72 + 420 / 6 + 50 = 192 s.
+Hand check (RaidTime.test.ts, toy kit 15 stunned / 6 at armour 14 / 12 Smorks DPS): party 6, 25 ticks: cap 4 × 15 × 6 ×
+15 = 5400 ≥ 1500 → 1500 / 15 + 600 / 12 = 150 s; 5 ticks: cap 1080 → 72 + 420 / 6 + 50 = 192 s; party 1, 25 ticks: cap
+900 → 60 + 600 / 6 + 50 = 210 s. Phase40b.test.ts: faSolo undrained 60 + 626.62 ÷ 6.6697 + 600 ÷ 7.5258 = 233.68 s.
 ## Routes tab (phase 16: raid time model)
 
 **Phase 23: the tab is gone.** Its route table is now part of the Plan tab's results (the *planned* kit timed on every

@@ -704,6 +704,8 @@ describe('review: you carry a drain weapon or you damage-spec (Team, one bar eac
       },
       damageSpecs: damage,
       surgePotions: surge,
+      // phase 40b-2: the plan's filler too (spent from leftover energy; as probes.ts finalAssumptions)
+      ...(res.specs.filler ? { damageFiller: [res.specs.filler] } : {}),
     };
     const base = generateEmptyPlayer();
     const loadouts: KitLoadout[] = res.kit.map((c) => {

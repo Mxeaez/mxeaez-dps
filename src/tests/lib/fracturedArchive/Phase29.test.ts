@@ -503,12 +503,13 @@ slowDescribe('FA defaults (slow)', () => {
     ringPolicy: DEFAULT_RING_POLICY, specMode: 'auto', pinned: phase29Pinned, ...patch,
   }), { model: FA.time });
 
-  test('Solo, party 1, planner decides (phase 29 pinned list): Bring Tonalztics, the maul priced against its kit slot; the ring and the subset are a fixed point', () => {
+  test('Solo, party 1, planner decides (phase 29 pinned list): Bring Elder maul + Tonalztics (phase 40b-2); the ring screens timed the subset of the first full ring', () => {
     const r = full({ drain: 'solo', assumptions: { ...FA.defaultAssumptions, partySize: 1 } });
     // phase 38h-3: the plan with every owned drain weapon specs Elder maul and Tonalztics; with this pinned list the maul
-    // needs a slot from the kit and adds less HP than the kit loses (review fix 2), so Tonalztics alone
-    expect(r.specs.bring).toEqual(['tonalztics']);
-    expect(r.specs.notes.some((n) => /^Elder maul: no free slot; it adds \d+ HP, the kit without a slot for it costs \d+ HP$/.test(n))).toBe(true);
+    // needs a slot from the kit and adds less HP than the kit loses (review fix 2), so Tonalztics alone. Phase 40b-2
+    // (25-tick stuns; the Lightbearer kit): the kit leaves the maul a free slot (no slot check), so both are brought
+    expect(r.specs.bring).toEqual(['elderMaul', 'tonalztics']);
+    expect(r.specs.solo!.perWeapon.find((d) => d.weapon === 'elderMaul')!.slot).toBeUndefined();
     // phase 36 review (damage specs at the hp left; regen on the drained clock): the bound is the reviewer's phase 29
     // brute force re-timed by the model since: 1330.53 → 1334.22
     // phase 38f: the pin followed the model (38a-38e: 1388.56 s); gear exact, the time within 1%
@@ -517,10 +518,13 @@ slowDescribe('FA defaults (slow)', () => {
     // eslint-disable-next-line no-console
     if (process.env.PRINT_PINS) console.log('PHASE29_SOLO', total(r), r.ring.ring);
     // phase 38j (the measured room times): 1388.56 → 1349.05 (22:29.1; still the Ultor ring with this pinned list)
-    expect(withinPct(total(r), 1349.05, 1)).toBe(true);
-    expect(r.ring.ring).toBe('Ultor ring');
-    // the ring screens timed the chosen subset (no second round needed here, or it converged)
-    expect(r.specs.solo!.screenedWith).toEqual(r.specs.bring);
+    // phase 40b-2 (25-tick stuns cover 58% of Bork at party 1): 1349.05 → 1306.25 (21:46.2), Ultor → Lightbearer
+    expect(withinPct(total(r), 1306.25, 1)).toBe(true);
+    expect(r.ring.ring).toBe('Lightbearer');
+    // the ring screens timed the chosen subset (no second round needed here, or it converged). Phase 40b-2: not a fixed
+    // point any more: the screens timed {Tonalztics} (the first full ring's choice), and the guard's full run of
+    // Lightbearer brings the maul too and wins (the planner re-screens at most once, by design)
+    expect(r.specs.solo!.screenedWith).toEqual(['tonalztics']);
     // phase 38h-3: the brought weapons are those the plan with every owned one specs (no route-time deltas)
     // a brought weapon was specced by the reference plan; one left at home was not, or a note says why (no slot)
     r.specs.solo!.perWeapon.forEach((d) => expect(d.chosen ? d.refSpecs > 0 : (d.refSpecs === 0 || r.specs.notes.some((n) => n.startsWith(SPEC_WEAPONS[d.weapon].label)))).toBe(true));
@@ -540,7 +544,8 @@ slowDescribe('FA defaults (slow)', () => {
     // phase 36 (one spec budget per encounter: no fight regen for the start-of-fight drains): 1329.96 → 1364.55
     // phase 38g (your bar pays the 95% drains first): 1415.95 → 1463.90
     // phase 38h-2 (your bar's drains and damage specs by their HP value): 1463.90 → 1417.96
-    expect(withinPct(total(r), 1417.96, 1)).toBe(true); // phase 38f: was 1364.55 at phase 36
+    // phase 40b-2 (25-tick stuns): 1417.96 → 1396.74
+    expect(withinPct(total(r), 1396.74, 1)).toBe(true); // phase 38f: was 1364.55 at phase 36
   }, 900000);
 
   test('Team, 6-man: the planner picks 1 Elder maul + 4 Tonalztics (phase 40b; 38g-40: 2 + 3 by headcount), within 3% of the Advanced 2 / 2 / 1', () => {

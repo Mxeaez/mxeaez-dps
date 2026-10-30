@@ -230,13 +230,14 @@ describe.each([
 
 describe('no seconds in the spec choices (the headline plans)', () => {
   // phase 38j (room times: more energy): Elder maul 2 → 5 in the reference plan, 1 → 2 in the final one
-  test('Solo: brought ⇔ the plan with every owned one specs it (Elder maul 5, Tonalztics 10); the final plan makes 2 / 7', () => {
+  test('Solo: brought ⇔ the plan with every owned one specs it (Elder maul 5, Tonalztics 12); the final plan makes 2 / 7', () => {
     const fx = phase37Fixture('faSolo') as PlanResult;
     // review fix 3: `specs` = the final plan's route (the damage specs and the surge dose take energy), `refSpecs` = the
-    // reference plan that chose them; free slots there, so no slot check
+    // reference plan that chose them. Phase 40b-2 (25-tick stuns): Tonalztics 10 → 12 in the reference plan, and the
+    // kit without the Elder maul fills every slot, so the maul passes the slot check (adds 107.4 HP ≥ costs 41.5)
     expect(fx.specs.solo!.perWeapon).toEqual([
       {
-        weapon: 'elderMaul', chosen: true, specs: 2, refSpecs: 5,
+        weapon: 'elderMaul', chosen: true, specs: 2, refSpecs: 5, slot: { adds: expect.closeTo(107.36, 1), costs: expect.closeTo(41.47, 1) },
       },
       {
         weapon: 'dwh', chosen: false, specs: 0, refSpecs: 0,
@@ -245,7 +246,7 @@ describe('no seconds in the spec choices (the headline plans)', () => {
         weapon: 'bgs', chosen: false, specs: 0, refSpecs: 0,
       },
       {
-        weapon: 'tonalztics', chosen: true, specs: 7, refSpecs: 10,
+        weapon: 'tonalztics', chosen: true, specs: 7, refSpecs: 12,
       },
       {
         weapon: 'ayak', chosen: false, specs: 0, refSpecs: 0,
@@ -293,9 +294,10 @@ describe('Solo drain weapons against a kit slot (review fix 2)', () => {
     });
     // as measured (0.1 HP): Elder maul adds 0 HP (Tonalztics / Eye of Ayak cover its drains) vs 148.9: left at home;
     // Tonalztics 1045.0 vs 194.0 and Eye of Ayak 420.4 vs 339.8: kept. Phase 38j (the room times' regen): Tonalztics adds
-    // 1061.4, Eye of Ayak 436.8. Phase 40b (stun-swap Bork): 1061.5 / 436.9
-    const hp = Object.fromEntries(checked.map((d) => [d.weapon, [Math.round(d.slot!.adds * 10) / 10, Math.round(d.slot!.costs * 10) / 10]]));
-    expect(hp).toEqual({ elderMaul: [0, 148.9], tonalztics: [1061.5, 194], ayak: [436.9, 339.8] });
+    // 1061.4, Eye of Ayak 436.8. Phase 40b (stun-swap Bork): 1061.5 / 436.9; phase 40b-2 (25-tick stuns): 1061.8 / 437.2
+    // (`+ 0` turns the maul's −0 into 0)
+    const hp = Object.fromEntries(checked.map((d) => [d.weapon, [Math.round(d.slot!.adds * 10) / 10 + 0, Math.round(d.slot!.costs * 10) / 10]]));
+    expect(hp).toEqual({ elderMaul: [0, 148.9], tonalztics: [1061.8, 194], ayak: [437.2, 339.8] });
     expect(r.specs.bring).toEqual(['tonalztics', 'ayak']);
   }, 900000);
 });

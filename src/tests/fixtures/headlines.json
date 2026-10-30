@@ -162,14 +162,14 @@
   "faSolo": {
    "raid": "fractured-archive",
    "label": "Fractured Archive Solo (party 1)",
-   "total": "22:06.1",
-   "seconds": 1326.0594408620466,
+   "total": "21:32.8",
+   "seconds": 1292.7826012568376,
    "route": "archive-guardian>bork-smorks>moia>xarth>ocellus",
    "ring": "Lightbearer",
    "kit": [
     "Ascension crossbows + diamond (e) (Masori)",
-    "Inquisitor's + Obligator + Torva full helm",
-    "Twisted bow (Masori)"
+    "Twisted bow (Masori)",
+    "Inquisitor's + Obligator + Torva full helm"
    ],
    "freeSlots": 2,
    "carriers": null,
@@ -189,7 +189,7 @@
    ],
    "encounters": {
     "archive-guardian": 175.15,
-    "bork-smorks": 214.02,
+    "bork-smorks": 180.75,
     "moia": 42.06,
     "xarth": 179.2,
     "ocellus": 715.62
@@ -198,17 +198,16 @@
   "faNotOwned": {
    "raid": "fractured-archive",
    "label": "Fractured Archive without Obligator / Ascension crossbows",
-   "total": "22:43.2",
-   "seconds": 1363.2117164134788,
+   "total": "22:39.5",
+   "seconds": 1359.5498797241012,
    "route": "archive-guardian>bork-smorks>moia>xarth>ocellus",
-   "ring": "Ultor ring",
+   "ring": "Lightbearer",
    "kit": [
     "Twisted bow (Masori)",
-    "Torva + Scythe (slash)",
     "Inquisitor's + Scythe (slash)",
-    "Zaryte crossbow + Ruby dragon bolts (e)"
+    "Inquisitor's mace (full crush)"
    ],
-   "freeSlots": 1,
+   "freeSlots": 3,
    "carriers": {
     "elderMaul": 1,
     "dwh": 0,
@@ -225,14 +224,15 @@
    "yourShare": null,
    "surgeAt": [
     "Archive Guardian",
+    "Moia",
     "Ocellus"
    ],
    "encounters": {
-    "archive-guardian": 182.85,
-    "bork-smorks": 142.46,
-    "moia": 59.5,
-    "xarth": 210.31,
-    "ocellus": 768.09
+    "archive-guardian": 180.69,
+    "bork-smorks": 144.63,
+    "moia": 53.69,
+    "xarth": 215.21,
+    "ocellus": 765.33
    }
   }
  }

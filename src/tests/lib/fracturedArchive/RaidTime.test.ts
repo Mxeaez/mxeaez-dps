@@ -148,9 +148,9 @@ describe('Raid time: encounters (toy kit, hand-computed)', () => {
   });
 
   // phase 40b: stun-swap (default) — Bork hit only while stunned, capped by stuns × ticks × 0.6 s × party × stunned DPS
-  test('Bork + Smorks stun-swap (default): 4 stuns × 7 ticks cover Bork at 15 stunned DPS, party 6', () => {
+  test('Bork + Smorks stun-swap (default): 4 stuns × 25 ticks cover Bork at 15 stunned DPS, party 6', () => {
     const e = encounterTime('bork-smorks', kit, assume());
-    // cap = 4 × 7 × 0.6 s × 6 players × 15 = 1512 ≥ 1500: all of Bork stunned, then the Smorks
+    // cap = 4 × 25 × 0.6 s × 6 players × 15 = 5400 ≥ 1500: all of Bork stunned, then the Smorks
     expect(e.phases.map((p) => [p.key, p.phase, p.damage])).toEqual([
       ['bork-stunned', BORK_STUNNED_PHASE, 1500], ['smorks', undefined, 600],
     ]);
@@ -166,10 +166,12 @@ describe('Raid time: encounters (toy kit, hand-computed)', () => {
     expect(e.phases[0].damage).toBeCloseTo(1080, 9);
     expect(e.phases[1].damage).toBeCloseTo(420, 9);
     expect(e.seconds).toBeCloseTo(1080 / 15 + 420 / 6 + 600 / 12, 9); // 72 + 70 + 50 = 192
-    // party 2: cap = 4 × 4.2 s × 2 × 15 = 504 → 504 / 15 + 996 / 6 + 50 = 249.6
-    expect(encounterTime('bork-smorks', kit, assume({}, 'none', 2)).seconds).toBeCloseTo(33.6 + 166 + 50, 9);
-    // 3 stuns: cap = 3 × 4.2 × 6 × 15 = 1134 → 75.6 + 366 / 6 + 50 = 186.6
-    expect(encounterTime('bork-smorks', kit, assume({ borkStunsPerKill: 3 })).seconds).toBeCloseTo(75.6 + 61 + 50, 9);
+    // party 2 (default 25 ticks): cap = 4 × 15 s × 2 × 15 = 1800 ≥ 1500 → 100 + 50 = 150
+    expect(encounterTime('bork-smorks', kit, assume({}, 'none', 2)).seconds).toBeCloseTo(100 + 50, 9);
+    // party 1: cap = 4 × 15 s × 1 × 15 = 900 → 900 / 15 + 600 / 6 + 50 = 60 + 100 + 50 = 210
+    expect(encounterTime('bork-smorks', kit, assume({}, 'none', 1)).seconds).toBeCloseTo(60 + 100 + 50, 9);
+    // 3 stuns, party 1: cap = 3 × 15 × 15 = 675 → 45 + 825 / 6 + 50 = 232.5
+    expect(encounterTime('bork-smorks', kit, assume({ borkStunsPerKill: 3 }, 'none', 1)).seconds).toBeCloseTo(45 + 137.5 + 50, 9);
     // no stuns: all of Bork at armour 14
     expect(encounterTime('bork-smorks', kit, assume({ borkStunsPerKill: 0 })).phases.map((p) => p.key)).toEqual(['bork-14', 'smorks']);
   });
