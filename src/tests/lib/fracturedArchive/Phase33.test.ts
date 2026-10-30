@@ -285,11 +285,13 @@ describe('encounter line = the first phase\'s line (FA, presets kit)', () => {
 
 slowDescribe('planner decides, full FA plans (slow)', () => {
   const full = (patch: Partial<PlanInputs>) => plan(inputs({ ringPolicy: 'camp-one', ...patch }));
-  test('Solo party 1: Bring Tonalztics → the chips are Tonalztics only; the Search Solo drain uses it', () => {
+  test('Solo party 1: Bring Elder maul + Tonalztics → the chips are the same; the Search Solo drain uses them', () => {
     const r = full({ drain: 'solo', assumptions: { ...FA.defaultAssumptions, partySize: 1 } });
-    expect(r.specs.bring).toEqual(['tonalztics']);
-    expect(chipsOf(r)).toEqual(['tonalztics']);
+    // phase 38h-3: the drain weapons the plan with every owned one specs (was Tonalztics alone: the maul saved < 1 s)
+    expect(r.specs.bring).toEqual(['elderMaul', 'tonalztics']);
+    expect(chipsOf(r)).toEqual(['elderMaul', 'tonalztics']);
     const a = withPlanSpecs({ ...FA.defaultAssumptions, partySize: 1 }, r.specs.bring, false);
+    // AG (Flying): a melee weapon can't hit it, so Tonalztics only
     const d = buildTargetMonster(findTarget('ag-flying'), undefined, 'solo', a).drain;
     expect(d.line!.items.map((i) => i.weapon)).toEqual(['tonalztics']);
   }, 1800000);

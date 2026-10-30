@@ -8,10 +8,7 @@ import {
 } from '@/lib/fracturedArchive/planner';
 import { DEFAULT_ASSUMPTIONS, PresetDef, withPlanCarriers } from '@/lib/fracturedArchive/presets';
 import {
-  allSubsets,
   assignMe,
-  AUTO_AYAK_SPECS,
-  bestWithoutText,
   bringText,
   CarrierCounts,
   carriersText,
@@ -21,13 +18,10 @@ import {
   rowsFromCarriers,
   mySpecsForSubset,
   RoleTarget,
-  searchSpecSubsets,
   SHARE_MAX_SLOT_SECONDS,
-  subsetOfMySpecs,
   teamRoles,
-  weaponDeltaText,
 } from '@/lib/fracturedArchive/specChoice';
-import { drainModel } from '@/lib/fracturedArchive/specs';
+import { drainModel, SPEC_WEAPONS } from '@/lib/fracturedArchive/specs';
 import {
   ayakOutcome, ayakSpecsToThreshold, defenceOutcome, formatProbability, neededSpecs, recommendCarriers, soloSpecPlan, specsNeeded,
 } from '@/lib/fracturedArchive/teamSpecs';
@@ -45,122 +39,8 @@ const ELIDINIS_WARD = "Elidinis' ward (f)";
 const undrained = (key: string, phase?: string) => buildTargetMonster(findTarget(key), phase, 'none', A).monster;
 const roleTarget = (key: string): RoleTarget => ({ key, label: findTarget(key).label, model: drainModel(undrained(key), A) });
 
-describe('Solo subset search (toy)', () => {
-  // 3 weapons, 2 encounters (100 s each). Encounter 1: A saves 30 s, B 20 s, both 35 s (overlapping drains);
-  // encounter 2: C saves 3 s. One free slot; every spec slot beyond it costs 10 s of gear.
-  type W = 'A' | 'B' | 'C';
-  const saves = (s: W[]) => {
-    const e1 = { A: 30, B: 20, AB: 35 }[(['A', 'B'] as W[]).filter((w) => s.includes(w)).join('')] ?? 0;
-    return e1 + (s.includes('C') ? 3 : 0);
-  };
-  const time = (s: W[]) => 200 - saves(s) + Math.max(0, s.length - 1) * 10;
-  // hand-computed: {} 200, {A} 170, {B} 180, {C} 197, {A,B} 175, {A,C} 177, {B,C} 187, {A,B,C} 182 → {A}
-  const toy = (extra: Partial<Parameters<typeof searchSpecSubsets<W>>[0]> = {}) => searchSpecSubsets<W>({
-    weapons: ['A', 'B', 'C'],
-    signature: (s) => s.join('+'),
-    slots: (s) => s.length,
-    quick: time,
-    ...extra,
-  });
-
-  test('finds the hand-computed optimum and each weapon\'s Δ', () => {
-    expect(allSubsets(['A', 'B', 'C']).length).toBe(8);
-    const r = toy();
-    expect(r.best).toEqual(['A']);
-    expect(r.seconds).toBe(170);
-    expect(r.signatures).toBe(8);
-    const d = Object.fromEntries(r.perWeapon.map((x) => [x.weapon, x]));
-    expect(d.A).toMatchObject({ chosen: true, deltaSeconds: 30, deltaSlots: 1 }); // {} 200 − {A} 170
-    expect(d.B).toMatchObject({ chosen: false, deltaSeconds: -5, deltaSlots: 1 }); // {A} 170 − {A,B} 175
-    expect(d.C).toMatchObject({ chosen: false, deltaSeconds: -7, deltaSlots: 1 }); // {A} 170 − {A,C} 177
-    expect(r.bestRejected?.weapon).toBe('B');
-  });
-
-  test('two free slots: A + B (175 → 165) beats A alone (170)', () => {
-    const t2 = (s: ('A' | 'B' | 'C')[]) => 200 - saves(s) + Math.max(0, s.length - 2) * 10;
-    // {A,B} 165, {A,C} 167, {A,B,C} 172, {A} 170
-    const r = searchSpecSubsets<W>({
-      weapons: ['A', 'B', 'C'], signature: (s) => s.join('+'), slots: (s) => s.length, quick: t2,
-    });
-    expect(r.best).toEqual(['A', 'B']);
-    expect(r.perWeapon.find((x) => x.weapon === 'B')).toMatchObject({ chosen: true, deltaSeconds: 5 });
-    expect(r.bestRejected).toMatchObject({ weapon: 'C', deltaSeconds: -7 }); // {A,B} 165 − {A,B,C} 172
-  });
-
-  test('same drain state = one candidate (the one with fewer slots); a useless weapon is never brought', () => {
-    // D changes nothing: {X} and {X, D} share a signature
-    type W4 = W | 'D';
-    const r = searchSpecSubsets<W4>({
-      weapons: ['A', 'B', 'C', 'D'],
-      signature: (s) => s.filter((w) => w !== 'D').join('+'),
-      slots: (s) => s.length,
-      quick: (s) => time(s.filter((w) => w !== 'D') as W[]) + (s.includes('D') ? 10 : 0),
-    });
-    expect(r.signatures).toBe(8);
-    expect(r.best).toEqual(['A']);
-    expect(r.perWeapon.find((x) => x.weapon === 'D')).toMatchObject({ chosen: false, deltaSeconds: -10 });
-  });
-
-  test('quick ranks, full decides among the finalists; dominated subsets are not timed', () => {
-    // quick overstates {A} by 8 s: it ranks 3rd ({A,B} 175, {A,C} 177, {A} 178) and still wins on its full time
-    const r = toy({ quick: (s) => time(s) + (s.join('') === 'A' ? 8 : 0), full: time, finalists: 3 });
-    expect(r.best).toEqual(['A']);
-    expect(r.seconds).toBe(170);
-    // with one finalist the quick ranking decides
-    expect(toy({ quick: (s) => time(s) + (s.join('') === 'A' ? 8 : 0), full: time, finalists: 1 }).best).toEqual(['A', 'B']);
-    // dominance: C alone is dominated by A (same slots, never faster)
-    const timed: string[] = [];
-    toy({
-      quick: (s) => { timed.push(s.join('')); return time(s); },
-      dominated: (s, by) => s.join('') === 'C' && by.join('') === 'A',
-    });
-    expect(timed).not.toContain('C');
-    expect(timed).toContain('A');
-  });
-
-  test('texts', () => {
-    expect(bringText(['tonalztics', 'elderMaul'])).toBe('Bring: Elder maul, Tonalztics');
-    expect(bringText([])).toBe('Bring: no spec weapons');
-    // review fix: one change to this plan, as a route-time change
-    expect(weaponDeltaText({
-      weapon: 'tonalztics', chosen: false, deltaSeconds: -49.6, deltaSlots: 1,
-    })).toBe('adding Tonalztics to this plan: +49.6 s (1 slot)');
-    expect(weaponDeltaText({
-      weapon: 'tonalztics', chosen: false, deltaSeconds: 4, deltaSlots: 1,
-    })).toBe('adding Tonalztics to this plan: −4.0 s (1 slot)');
-    expect(weaponDeltaText({
-      weapon: 'elderMaul', chosen: true, deltaSeconds: 104.44, deltaSlots: 1,
-    })).toBe('dropping Elder maul from this plan: +104.4 s (frees 1 slot)');
-    expect(bestWithoutText({ weapon: 'tonalztics', weapons: ['ayak', 'elderMaul'], seconds: 1362.66 }, (x) => `${x.toFixed(1)}`))
-      .toBe('best without Tonalztics: Elder maul + Eye of Ayak, 1362.7');
-  });
-
-  test('guard: a subset whose quick run was unlucky still gets the full run when within 2 × the best\'s quick − full gap', () => {
-    // quick overstates every set by 10 s; {B} (true 180) by 40 s more. Best by quick: {A} (180 → full 170, gap 10).
-    // Guard 2 × 10 = 20: {B} quick 230 > 170 + 20 → not timed in full; with a lucky full time it would win
-    const quick = (s: W[]) => time(s) + 10 + (s.join('') === 'B' ? 40 : 0);
-    const full = (s: W[]) => (s.join('') === 'B' ? 160 : time(s));
-    expect(toy({ quick, full, finalists: 1 }).best).toEqual(['A']);
-    expect(toy({
-      quick, full, finalists: 1, guard: Infinity,
-    }).best).toEqual(['B']);
-    // {B} not unlucky beyond the gap: quick 190 ≤ 170 + 20 → full run → wins at 160 (it ranks 4th by quick)
-    const quick2 = (s: W[]) => time(s) + 10;
-    const r = toy({ quick: quick2, full, finalists: 1 });
-    expect(r.best).toEqual(['B']);
-    expect(r.bestWithout).toEqual([{ weapon: 'B', weapons: ['A'], seconds: 170 }]);
-  });
-
-  test('a subset as "Specs I bring": Ayak until magic def 0, Defence drains first, the Lightbearer flag kept', () => {
-    const m = mySpecsForSubset(['elderMaul', 'ayak'], { lightbearer: true });
-    expect(m).toEqual({
-      elderMaul: true, dwh: false, bgs: false, tonalztics: false, ayak: AUTO_AYAK_SPECS, ayakAuto: true, lightbearer: true, priority: 'defence',
-    });
-    expect(subsetOfMySpecs(m)).toEqual(['elderMaul', 'ayak']);
-    expect(subsetOfMySpecs(withPhase32Specs(A).mySpecs)).toEqual(['elderMaul', 'ayak']);
-    expect(subsetOfMySpecs(A.mySpecs)).toEqual([]); // phase 33: the default brings nothing
-  });
-});
+// phase 38h-3: the Solo subset search (searchSpecSubsets, route seconds) is gone: the drain weapons are those the plan
+// with every owned one specs (Phase38h3.test.ts)
 
 describe('seeds (review fix)', () => {
   test('the best of every style group is kept however few seeds are asked for; ranked by the given times', () => {
@@ -554,9 +434,9 @@ describe('planner: spec modes', () => {
     expect(r.specs.bring).not.toContain('ayak');
     const ayak = r.specs.solo!.perWeapon.find((d) => d.weapon === 'ayak')!;
     expect(ayak.chosen).toBe(false);
-    expect(ayak.deltaSeconds).toBeLessThanOrEqual(1e-9);
-    // the chosen weapons each save time
-    r.specs.solo!.perWeapon.filter((d) => d.chosen).forEach((d) => expect(d.deltaSeconds).toBeGreaterThan(0));
+    // phase 38h-3: the plan with every owned drain weapon makes no Eye of Ayak spec; each brought weapon is specced
+    expect(ayak.specs).toBe(0);
+    r.specs.solo!.perWeapon.filter((d) => d.chosen).forEach((d) => expect(d.specs).toBeGreaterThan(0));
     // phase 36: + the damage spec weapons / Surge potions the planner added, after the drain weapons
     expect(r.specItems.map((x) => x.name).length).toBe(r.specs.bring.length + (r.specs.damage?.length ?? 0) + (r.specs.surgePotions ?? 0));
     expect(r.specs.text.startsWith(r.specs.bring.length ? bringText(r.specs.bring) : 'Bring:')).toBe(true);
@@ -567,19 +447,14 @@ describe('planner: spec modes', () => {
     const r = plan(inputs({ drain: 'solo', specMode: 'auto', assumptions: a }), MAGIC);
     expect(r.kit.every((c) => c.group === 'magic')).toBe(true);
     expect(r.specs.bring).toContain('ayak');
-    expect(r.specs.solo!.perWeapon.find((d) => d.weapon === 'ayak')!.deltaSeconds).toBeGreaterThan(0);
-    // and the planner's choice is at least as fast as bringing every weapon by hand
-    const all = plan(inputs({
-      drain: 'solo',
-      specMode: 'manual',
-      assumptions: {
-        ...a,
-        mySpecs: {
-          ...a.mySpecs, elderMaul: true, dwh: true, bgs: true, tonalztics: true, ayak: 2,
-        },
-      },
-    }), MAGIC);
-    expect(total(r)).toBeLessThanOrEqual(total(all) + 1e-6);
+    // phase 38h-3: brought because the plan with every owned drain weapon specs it (was: it saved route seconds; the
+    // "at least as fast as bringing everything" check went with the seconds)
+    expect(r.specs.solo!.perWeapon.find((d) => d.weapon === 'ayak')!.specs).toBeGreaterThan(0);
+    // the plan's weapons are those specced with every owned one, less any the damage specs / doses then leave unused
+    const chosen = r.specs.solo!.perWeapon.filter((d) => d.chosen).map((d) => d.weapon);
+    expect(chosen.filter((w) => !r.specs.bring.includes(w)).map((w) => (r.specs.items ?? []).some((s) => s.item === `without ${SPEC_WEAPONS[w].label}`)))
+      .toEqual(chosen.filter((w) => !r.specs.bring.includes(w)).map(() => true));
+    r.specs.bring.forEach((w) => expect(chosen).toContain(w));
   }, 600000);
 
   test('Ayak hint: carried (Specs I bring) with no magic loadout in the kit', () => {
@@ -604,9 +479,10 @@ slowDescribe('FA defaults (slow)', () => {
     ringPolicy: DEFAULT_RING_POLICY, specMode: 'auto', pinned: phase29Pinned, ...patch,
   }), { model: FA.time });
 
-  test('Solo, party 1, planner decides: Bring Tonalztics, ≤ 22:10.5; the ring and the subset are a fixed point', () => {
+  test('Solo, party 1, planner decides: Bring Elder maul + Tonalztics (phase 38h-3); the ring and the subset are a fixed point', () => {
     const r = full({ drain: 'solo', assumptions: { ...FA.defaultAssumptions, partySize: 1 } });
-    expect(r.specs.bring).toEqual(['tonalztics']);
+    // phase 38h-3: Elder maul + Tonalztics (the plan with every owned drain weapon specs both; was Tonalztics alone)
+    expect(r.specs.bring).toEqual(['elderMaul', 'tonalztics']);
     // phase 36 review (damage specs at the hp left; regen on the drained clock): the bound is the reviewer's phase 29
     // brute force re-timed by the model since: 1330.53 → 1334.22
     // phase 38f: the pin followed the model (38a-38e: 1388.56 s); gear exact, the time within 1%
@@ -616,10 +492,8 @@ slowDescribe('FA defaults (slow)', () => {
     expect(r.ring.ring).toBe('Ultor ring');
     // the ring screens timed the chosen subset (no second round needed here, or it converged)
     expect(r.specs.solo!.screenedWith).toEqual(r.specs.bring);
-    // the per-weapon deltas are one-change moves from the optimum: none of them is faster
-    r.specs.solo!.perWeapon.forEach((d) => expect(d.chosen ? d.deltaSeconds : -d.deltaSeconds).toBeGreaterThan(0));
-    expect(r.specs.solo!.bestWithout[0]).toMatchObject({ weapon: 'tonalztics' });
-    expect(r.specs.solo!.bestWithout[0].seconds).toBeGreaterThan(total(r));
+    // phase 38h-3: the brought weapons are those the plan with every owned one specs (no route-time deltas)
+    r.specs.solo!.perWeapon.forEach((d) => expect(d.chosen).toBe(d.specs > 0));
   }, 900000);
 
   test('Specs I bring {Elder maul, Tonalztics}, Solo party 1: ends on Ultor at 1364.55 (review 2: the guard used to stop at Lightbearer, 1400.17; phase 32: 1382.50 → 1329.96; phase 36: 1364.55)', () => {

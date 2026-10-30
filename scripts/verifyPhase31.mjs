@@ -131,11 +131,12 @@ const main = async () => {
   const soloTotal = await text(page.locator('[data-testid="plan-total"]'));
   const soloBring = await text(page.locator('[data-testid="plan-bring"]'));
   // phase 36: + damage spec weapons and a Surge potion
-  check(soloBring === headlineOf('faSolo').bring && durationClose(soloTotal, SOLO_TOTAL), `Solo: "${soloBring}", ${soloTotal} (expected Bring: Tonalztics, Zaryte crossbow, Burning claws, Surge potion, ${SOLO_TOTAL}; phase 30: Elder maul + Tonalztics 22:01.3)`);
+  check(soloBring === headlineOf('faSolo').bring && durationClose(soloTotal, SOLO_TOTAL), `Solo: "${soloBring}", ${soloTotal} (expected ${headlineOf('faSolo').bring}, ${SOLO_TOTAL})`);
   const maul = page.locator('[data-testid="plan-spec-weapons"] li[data-weapon="elderMaul"]');
   const maulText = (await maul.count()) ? await text(maul.first()) : '';
-  // phase 38g: your bar pays the drains first; adding the maul may cost time now (+4.5 s): either way it is not brought
-  check(/^adding Elder maul to this plan: [−+±]\d+\.\d s \(1 slot/.test(maulText), `Solo: "${maulText}"`);
+  // phase 38h-3 (no seconds): the maul is brought when the plan with every owned drain weapon specs it
+  const maulBrought = headlineOf('faSolo').items.includes('Elder maul');
+  check(maulBrought ? /^Elder maul: \d+ specs? on the route \(brought\)$/.test(maulText) : /left at home/.test(maulText), `Solo: "${maulText}"`);
   await checkKit(page, 'Solo');
   await shot(page, 'solo');
 

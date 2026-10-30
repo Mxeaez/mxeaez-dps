@@ -44,7 +44,7 @@ import { OnlyOwnedToggle } from '@/app/components/bestSetup/SearchView';
 // the best preset, the drain sentence and the Solo budget ("fight ≈ 15 s → 2 specs") are tooltips; "load" is an icon button.
 
 /** What the table needs of a search (the full result has 10+ rows per search). */
-type SummaryCell = Pick<GearSearchResult, 'drain' | 'bestPreset'> & { top: GearSearchResult['rows'][number] | null };
+type SummaryCell = Pick<GearSearchResult, 'drain' | 'bestPreset' | 'then'> & { top: GearSearchResult['rows'][number] | null };
 
 const caches = new Map<string, { cells: Map<string, SummaryCell>, assumptions: string }>();
 const raidCache = (a: BestSetupAssumptions) => {
@@ -118,7 +118,9 @@ const SummaryView: React.FC<{
         try {
           // eslint-disable-next-line no-await-in-loop
           const r = await j.promise;
-          cache.set(key, { drain: r.drain, bestPreset: r.bestPreset, top: r.rows[0] ?? null });
+          cache.set(key, {
+            drain: r.drain, bestPreset: r.bestPreset, top: r.rows[0] ?? null, then: r.then ?? null,
+          });
         } catch (e) {
           if (runId.current === id && (e as Error).message !== 'cancelled') {
             setError(`${findTarget(q.targetKey).label} ${q.phase ?? ''} ${q.drain}: ${(e as Error).message}`);
@@ -271,7 +273,7 @@ const SummaryView: React.FC<{
                             />
                           )}
                           {/* phase 38g: the drain facts, the same line as on Search and Plan */}
-                          {cell.drain.line?.facts && !target.noDrains && <div><DrainFactsLine facts={cell.drain.line.facts} /></div>}
+                          {cell.drain.line?.facts && !target.noDrains && <div><DrainFactsLine facts={cell.drain.line.facts} then={cell.then} /></div>}
                         </div>
                       </td>
                     );

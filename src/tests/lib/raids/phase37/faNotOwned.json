@@ -679,11 +679,174 @@
   "items": [
    {
     "item": "Zaryte crossbow",
-    "saved": 27.7966105230189,
+    "hp": 438.92527588722714,
     "slots": 1,
-    "how": "a slot from the kit (re-optimised)"
+    "how": "a slot from the kit (re-optimised; +400 HP vs the kit's 99 HP)"
    }
   ],
+  "bringRule": {
+   "first": "zcb",
+   "second": null,
+   "bring": [
+    "zcb"
+   ],
+   "firstOn": [
+    "ag-flying|",
+    "ag-grounded|",
+    "bork|Smorks 100-76% HP (armour 8)",
+    "bork|Smorks 75-51% HP (armour 10)",
+    "bork|Smorks 50-26% HP (armour 12)",
+    "bork|Smorks 25-0% HP (armour 14)",
+    "smorks|",
+    "moia|",
+    "xarth|",
+    "ocellus-p1|At a corner",
+    "ocellus-p3|Quadrants 1-3",
+    "ocellus-p3|Last quadrant: Deflect Melee"
+   ],
+   "secondOn": [],
+   "gains": [
+    {
+     "key": "ag-flying|",
+     "label": "Flying shield",
+     "gains": {
+      "voidwaker": 0,
+      "dragonClaws": 0,
+      "burningClaws": 0,
+      "zcb": 93.17085649666872,
+      "crimsonKisten": 0
+     }
+    },
+    {
+     "key": "ag-grounded|",
+     "label": "Grounded (70% of hp)",
+     "gains": {
+      "voidwaker": 55.5927979480755,
+      "dragonClaws": 59.93680721105251,
+      "burningClaws": 52.29904215152339,
+      "zcb": 90.5640913176561,
+      "crimsonKisten": 70.24118711428679
+     }
+    },
+    {
+     "key": "bork|Smorks 100-76% HP (armour 8)",
+     "label": "Bork, armour 8 (¼ of hp)",
+     "gains": {
+      "voidwaker": 62.63173105263243,
+      "dragonClaws": 0.6158061979084621,
+      "burningClaws": -11.101986698325154,
+      "zcb": 88.92709690760381,
+      "crimsonKisten": 53.00683896333301
+     }
+    },
+    {
+     "key": "bork|Smorks 75-51% HP (armour 10)",
+     "label": "Bork, armour 10 (¼ of hp)",
+     "gains": {
+      "voidwaker": 62.63173105263243,
+      "dragonClaws": -5.389660541392928,
+      "burningClaws": -17.05220706476264,
+      "zcb": 86.50747623380491,
+      "crimsonKisten": 49.069130537111505
+     }
+    },
+    {
+     "key": "bork|Smorks 50-26% HP (armour 12)",
+     "label": "Bork, armour 12 (¼ of hp)",
+     "gains": {
+      "voidwaker": 62.63173105263243,
+      "dragonClaws": -10.571211136350378,
+      "burningClaws": -22.280706630689053,
+      "zcb": 84.08785556000602,
+      "crimsonKisten": 45.13142211089
+     }
+    },
+    {
+     "key": "bork|Smorks 25-0% HP (armour 14)",
+     "label": "Bork, armour 14 (¼ of hp)",
+     "gains": {
+      "voidwaker": 62.63173105263243,
+      "dragonClaws": -15.110310354912325,
+      "burningClaws": -26.787485396104405,
+      "zcb": 81.66823488620714,
+      "crimsonKisten": 41.19371368466847
+     }
+    },
+    {
+     "key": "smorks|",
+     "label": "The Smorks",
+     "gains": {
+      "voidwaker": 49.55356863092384,
+      "dragonClaws": 60.73527821386683,
+      "burningClaws": 51.53609413059833,
+      "zcb": 94.4525889924062,
+      "crimsonKisten": 72.49855444440749
+     }
+    },
+    {
+     "key": "moia|",
+     "label": "Moia",
+     "gains": {
+      "voidwaker": 0,
+      "dragonClaws": 0,
+      "burningClaws": 0,
+      "zcb": 85.53568359466333,
+      "crimsonKisten": 0
+     }
+    },
+    {
+     "key": "xarth|",
+     "label": "Xarth",
+     "gains": {
+      "voidwaker": 49.89619913409204,
+      "dragonClaws": 64.20617507232701,
+      "burningClaws": 58.872721467431354,
+      "zcb": 82.1834970596393,
+      "crimsonKisten": 69.31518946340088
+     }
+    },
+    {
+     "key": "ocellus-p1|At a corner",
+     "label": "P1 at a corner",
+     "gains": {
+      "voidwaker": 57.22829732721322,
+      "dragonClaws": 67.30235913392778,
+      "burningClaws": 64.59380435570453,
+      "zcb": 93.96077600090871,
+      "crimsonKisten": 68.37529449650006
+     }
+    },
+    {
+     "key": "ocellus-p3|Quadrants 1-3",
+     "label": "P3 quadrants 1-3 (75%)",
+     "gains": {
+      "voidwaker": 56.95666618264032,
+      "dragonClaws": 60.071769775640966,
+      "burningClaws": 56.23500301199469,
+      "zcb": 71.1409530196079,
+      "crimsonKisten": 70.44495666446781
+     }
+    },
+    {
+     "key": "ocellus-p3|Last quadrant: Deflect Melee",
+     "label": "P3 last quadrant, Deflect Melee (25%)",
+     "gains": {
+      "voidwaker": 0,
+      "dragonClaws": 0,
+      "burningClaws": 0,
+      "zcb": 81.00907372976134,
+      "crimsonKisten": 0
+     }
+    }
+   ]
+  },
+  "then": {
+   "archive-guardian": "Then: 1. Zaryte crossbow (per bar)",
+   "bork-smorks": "Then: 1. Zaryte crossbow (per bar)",
+   "moia": "Then: 1. Zaryte crossbow (per bar)",
+   "xarth": "Then: 1. Zaryte crossbow (per bar)",
+   "ocellus": "Then: 1. Zaryte crossbow (per bar)"
+  },
   "team": {
    "partySize": 6,
    "mages": 1,
@@ -869,8 +1032,8 @@
    "manual": false
   },
   "notes": [
-   "Burning claws: saves 3.2 s with a free slot, but none is free and the kit without a slot for it loses more",
-   "Your spec bar goes to Zaryte crossbow: 5 carriers (party − 1), 24:48.4 vs 25:16.2 if you carry a drain weapon instead."
+   "Surge potion(4): no free slot",
+   "Your spec bar goes to Zaryte crossbow: 5 carriers (party − 1); the bars pay 3293 HP on the route vs 2854 HP if you carry a drain weapon instead."
   ]
  },
  "ring": {

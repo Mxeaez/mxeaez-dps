@@ -4,8 +4,8 @@
   "fa": {
    "raid": "fractured-archive",
    "label": "Fractured Archive (Team defaults)",
-   "total": "21:41.0",
-   "seconds": 1301.0040849381658,
+   "total": "21:47.8",
+   "seconds": 1307.8104934857347,
    "route": "archive-guardian>bork-smorks>moia>xarth>ocellus",
    "ring": "Ultor ring",
    "kit": [
@@ -13,7 +13,7 @@
     "Twisted bow (Masori)",
     "Inquisitor's + Obligator"
    ],
-   "freeSlots": 3,
+   "freeSlots": 6,
    "carriers": {
     "elderMaul": 2,
     "dwh": 0,
@@ -21,25 +21,18 @@
     "tonalztics": 3,
     "ayak": 0
    },
-   "bring": "Bring: Zaryte crossbow, Burning claws, Crimson kisten, Surge potion",
+   "bring": "Bring: Zaryte crossbow",
    "items": [
-    "Zaryte crossbow",
-    "Burning claws",
-    "Crimson kisten",
-    "Surge potion(4)"
+    "Zaryte crossbow"
    ],
    "yourShare": null,
-   "surgeAt": [
-    "Archive Guardian",
-    "Xarth",
-    "Ocellus"
-   ],
+   "surgeAt": [],
    "encounters": {
-    "archive-guardian": 173.49,
-    "bork-smorks": 189.75,
+    "archive-guardian": 175.78,
+    "bork-smorks": 190.63,
     "moia": 65.32,
-    "xarth": 180.61,
-    "ocellus": 691.84
+    "xarth": 182.78,
+    "ocellus": 693.3
    }
   },
   "toa": {
@@ -164,8 +157,8 @@
   "faSolo": {
    "raid": "fractured-archive",
    "label": "Fractured Archive Solo (party 1)",
-   "total": "22:53.4",
-   "seconds": 1373.3981058413428,
+   "total": "22:57.2",
+   "seconds": 1377.2491849735156,
    "route": "archive-guardian>ezekiel>moia>xarth>ocellus",
    "ring": "Ultor ring",
    "kit": [
@@ -173,14 +166,13 @@
     "Twisted bow (Masori)",
     "Inquisitor's + Obligator"
    ],
-   "freeSlots": 2,
+   "freeSlots": 3,
    "carriers": null,
-   "bring": "Bring: Tonalztics, Zaryte crossbow, Burning claws, Crimson kisten, Surge potion",
+   "bring": "Bring: Elder maul, Tonalztics, Zaryte crossbow, Surge potion",
    "items": [
+    "Elder maul",
     "Tonalztics of Ralos",
     "Zaryte crossbow",
-    "Burning claws",
-    "Crimson kisten",
     "Surge potion(4)"
    ],
    "yourShare": null,
@@ -191,10 +183,10 @@
    ],
    "encounters": {
     "archive-guardian": 180.67,
-    "ezekiel": 211.61,
+    "ezekiel": 211.89,
     "moia": 65.32,
-    "xarth": 181.62,
-    "ocellus": 734.19
+    "xarth": 182.78,
+    "ocellus": 736.58
    }
   },
   "faNotOwned": {

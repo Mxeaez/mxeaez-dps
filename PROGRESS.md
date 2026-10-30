@@ -3,6 +3,63 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 38h-3: bring rule, no seconds left in spec choices (FA, 2026-10-29)
+
+ROADMAP row 38h-3. docs/BEST_SETUP.md *Bring rule, no seconds in spec choices (phase 38h-3, FA)*.
+
+- **Bring rule** (bringRule.ts, planner items block; replaces 38e's seconds beam / swaps and the 1 s a slot test): per
+  boss / phase of the kit's planned route, each damage weapon's HP per full bar (`gainPerFullBar` at the row's drain
+  event and DPS, `routeSpecGains`); bring the weapon ranked first on the most bosses / phases, a second only where the
+  first can't hit or another deals ≥ 1.2× per bar (at most two); a free slot, or one from the kit (re-optimised) when the
+  HP the item adds there is at least the HP the kit change costs on the route (`kitHpCost`: Σ damage × (1 − new DPS ÷ old
+  DPS), the drain value's form; found by the FA tiny brute force: forcing ZCB into the kit's last slot left a 9.6 s
+  faster kit unfound, so the slot is valued too; faNotOwned +400 vs 99 HP: kept). Surge
+  potions while one adds HP the bars pay and a slot is free. A damage weapon (Solo: also a drain weapon) the plan then
+  never specs is left at home.
+- **Solo drain weapons**: `searchSpecSubsets` / `deltaSeconds` removed; the weapons the plan with every owned one specs
+  on the reference kit's route (`PlanSpecs.solo.perWeapon`: weapon, chosen, specs).
+- **You carry or you spec** (Team): by the HP the bars pay on the route (`pickCarriersByHp`, 10% leave-you-out), not
+  the faster. `PlanItemStep.saved` (seconds) → `hp`. Removed: `searchSpecSubsets`, `weaponDeltaText`, `bestWithoutText`,
+  `pickSpecItem`, `itemBeam`, `itemStepNet` (and their tests in Phase29 / 31 / 36 / 38e).
+- **Briefing per boss**: "Drain: … · Then: 1. Zaryte crossbow (per bar)" on Plan (`PlanSpecs.then`, the brought
+  weapons per encounter), Search (Specs box) and Summary (`GearSearchResult.then`, lazy). Plan's spec plan reads in HP
+  (the bring rule line, "+N HP the bars pay", Solo "N specs on the route (brought)" / "left at home").
+- **Scope choices** (closest to "values in HP, no seconds, fewer inputs"): the bring rule counts bosses / phases (Ocellus
+  P3's two quadrants and Bork's four armour phases count separately); it runs on the kit before the items (the carriers
+  then are the party's); a second weapon's slot is never priced in seconds (the rule decides; the kit is re-optimised
+  if no slot is free); surge potions never take a kit slot; `assignMe`'s slot value in seconds (your share when you carry,
+  no items) is not a choice this row names and stays. The ZCB ruby proc is valued at full hp in the rule (unverified
+  simplification; the spec budget still caps at the hp left).
+- **Headlines** (`pinHeadlines --full`): **fa 21:41.0 → 21:47.8** (+6.8 s): Bring ZCB + Burning claws + Crimson kisten +
+  Surge potion → ZCB only. ZCB is first on all 12 Team phases (closest Ocellus P3 Q1-3, Crimson kisten 59.8 vs 62.3 HP per
+  bar), so no second; the surge dose adds 0 HP with ZCB alone (75% a spec: +25% buys no extra spec on this route).
+  Free slots 3 → 6; AG 173.49 → 175.78, Bork + Smorks 189.75 → 190.63, Xarth 180.61 → 182.78, Ocellus 691.84 → 693.30
+  (the claws / kisten specs filling leftover energy are gone); kit, ring, route, carriers (2 maul + 3 Tonalztics) and
+  "you spec" (2968 vs 2589 HP) unchanged. **faSolo 22:53.4 → 22:57.2** (+3.8 s): Bring Tonalztics → Elder maul +
+  Tonalztics (the plan with every owned drain weapon specs the maul 2× and Tonalztics 10×; the maul used to be dropped for
+  saving < 1 s per slot), ZCB + one Surge potion (+123 HP; a second adds none), Burning claws / Crimson kisten not brought
+  (ZCB first on 7 of 8 phases; Ocellus P3 Q1-3 kisten 59.3 vs 58.7, below 1.2×). Free slots 2 → 3; Ezekiel 211.61 →
+  211.89, Xarth 181.62 → 182.78, Ocellus 734.19 → 736.58. **faNotOwned 24:43.4** unchanged (ZCB only already; you spec
+  3293 vs 2854 HP); its phase37 fixture moved only by the new fields (bring rule, Then, item HP, notes).
+- **Tests** (Phase38h3.test.ts, 13): the rule on toys by hand (first / second / 1.2× edge / ties / not owned / nothing
+  gains), `mergeGains`, `thenText`, `profileGain` ((50 − 10 × 5 × 0.6) ÷ 75 × 100); per FA boss on fa (Team) and faSolo
+  (Solo): an independent HP per bar (buildTargetMonster at each event's counts, upstream's spec profile, the formula) with
+  ZCB pinned per boss / phase (0.1 HP), the best other weapon, none ≥ 1.2×; `routeSpecGains` (kit path) = the independent
+  values; the plan's stored decision = the rule on its stored gains; "Then" on every encounter; Solo perWeapon; Team
+  you-spec by `pickCarriersByHp` on the note's HP. Updated: Phase29 / 31 (Solo choice by specs), Phase36 (carry vs spec
+  in HP, slow), Phase37c Xarth (your pool 37.5: no surge dose), Phase38e (beam tests removed; the party-8 plan 25:08.7 →
+  25:15.9, ZCB only), Phase33 / 29 slow (Solo Bring Elder maul + Tonalztics), Phase34 (alternatives with 3 more free
+  slots; Bring ZCB), PHASE37_MEMO fa / faSolo / faNotOwned re-measured (10638 / 8309 / 497142 / 3847; 9706 / 9352 /
+  640382 / 1292; 20896 / 13664 / 591775 / 9461: no subset search, no beam). Verify scripts: new
+  verifyPhase38h3; 29 and 31's Solo checks.
+- Speed (Node, `pinHeadlines --check --jobs 1`, same session, vs a0efe7ed via `git archive`): fa 30.1 → 25.3 s, faSolo
+  76.8 → 17.8 s (no subset search), faNotOwned 82.0 → 50.6 s (no item beam).
+- Run: fast suite green; FA slow (`CrossRaid Phase2 Phase3`) once: 344 passed; retime probe gap 0 (fa, faSolo,
+  faNotOwned); bruteForceKits fa (small and tiny) gap 0; `pinHeadlines --full --check` no change; verifyAll 29 31 38h3 OK
+  (29's AG Flying chance check relaxed to 9x%: it has read 99% since 38h-1/2); tsc, lint clean.
+- Unverified / open: the ZCB ruby proc at full hp in the rule; the 1.2× factor and "most bosses / phases" counting are
+  the ROADMAP's wording read literally (Bork's armour phases count four times).
+
 ## Phase 38h-2 review fixes 2 (FA, 2026-10-29)
 
 Re-review of 136283d7: FAIL on N1 (Medium); findings 1-6 closed.

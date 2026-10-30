@@ -85,7 +85,7 @@ import { isOwned } from '@/lib/fracturedArchive/ownership';
 import { defaultPinnedIds, PlanInputSettings, RAID_MINUTES_RANGE } from '@/lib/raids/settings';
 import { RAID_LENGTH_SOURCES, SPELLBOOK_NOTES } from '@/lib/raids/base';
 import {
-  bestWithoutText, describeNeed, specWeaponLabel, weaponDeltaText,
+  describeNeed, specWeaponLabel,
 } from '@/lib/fracturedArchive/specChoice';
 import { PlannerWeapon, SPEC_WEAPONS } from '@/lib/fracturedArchive/specs';
 import { damageSpecLabel } from '@/lib/fracturedArchive/damageSpecs';
@@ -442,26 +442,22 @@ const BringBox: React.FC<{ specs: PlanResult['specs'] }> = ({ specs }) => (
 const SpecPlanBody: React.FC<{ specs: PlanResult['specs'] }> = ({ specs }) => (
   <div className="text-xs flex flex-col gap-1">
     {specs.solo && (
-      <ul className="list-disc ml-5" data-testid="plan-spec-weapons" title="Route-time change of one change to this plan (the kit re-optimised each time; drains planned at each encounter's fight length), and the fastest set timed without each brought weapon">
-        {specs.solo.perWeapon.filter((d) => d.chosen).map((d) => (
-          <li key={d.weapon} data-testid="plan-spec-weapon" data-weapon={d.weapon} data-delta={d.deltaSeconds.toFixed(1)} data-slots={d.deltaSlots}>
+      <ul className="list-disc ml-5" data-testid="plan-spec-weapons" title="Phase 38h-3: the drain weapons you own, each with its specs in the plan that may use all of them (the spec budget values every bar in boss HP); a weapon the plan never specs stays at home">
+        {specs.solo.perWeapon.map((d) => (
+          <li key={d.weapon} data-testid={d.chosen ? 'plan-spec-weapon' : 'plan-spec-other'} data-weapon={d.weapon} data-specs={d.specs}>
             <span className="inline-block align-middle mr-0.5"><ItemIcon name={specWeaponLabel(d.weapon)} src={specIcon(d.weapon)} size={16} /></span>
-            {weaponDeltaText(d)}
+            {d.chosen
+              ? `${specWeaponLabel(d.weapon)}: ${d.specs} spec${d.specs === 1 ? '' : 's'} on the route (brought)`
+              : `${specWeaponLabel(d.weapon)}: no spec on the route (left at home)`}
           </li>
         ))}
-        {(specs.solo.bestWithout ?? []).map((b) => (
-          <li key={`without-${b.weapon}`} data-testid="plan-spec-without" data-weapon={b.weapon} data-seconds={b.seconds.toFixed(2)}>{bestWithoutText(b, (x) => formatDuration(x))}</li>
-        ))}
-        {specs.solo.perWeapon.filter((d) => !d.chosen).sort((a, b) => b.deltaSeconds - a.deltaSeconds).map((d) => (
-          <li key={d.weapon} data-testid={specs.solo!.bestRejected?.weapon === d.weapon ? 'plan-spec-rejected' : 'plan-spec-other'} data-weapon={d.weapon} data-delta={d.deltaSeconds.toFixed(1)}>
-            <span className="inline-block align-middle mr-0.5"><ItemIcon name={specWeaponLabel(d.weapon)} src={specIcon(d.weapon)} size={16} /></span>
-            {weaponDeltaText(d)}
-          </li>
-        ))}
-        <li className="text-gray-500 dark:text-gray-400 list-none -ml-5">
-          {`${specs.solo.signatures} distinct drain states among the ${2 ** specs.solo.perWeapon.length} weapon sets; ${specs.solo.evaluated} timed, ${specs.solo.pruned} skipped (no DPS gain for their slots)`}
-        </li>
       </ul>
+    )}
+    {specs.bringRule && (
+      <div data-testid="plan-bring-rule" data-first={specs.bringRule.first ?? ''} data-second={specs.bringRule.second ?? ''} title="The damage spec weapon ranked first (most HP over your normal hits per full bar) on the most bosses / phases of the route; a second only where the first can't hit or another deals at least 20% more per bar">
+        {`Damage specs: ${specs.bringRule.first ? damageSpecLabel(specs.bringRule.first) : 'none'} (first on ${specs.bringRule.firstOn.length} boss / phase${specs.bringRule.firstOn.length === 1 ? '' : 's'})`}
+        {specs.bringRule.second && `, ${damageSpecLabel(specs.bringRule.second)} (where it deals ≥ 20% more per bar or the first can't hit: ${specs.bringRule.secondOn.length})`}
+      </div>
     )}
     {specs.team && (
       <div className="flex flex-col gap-1" data-testid="plan-team-roles">
@@ -519,12 +515,12 @@ const SpecPlanBody: React.FC<{ specs: PlanResult['specs'] }> = ({ specs }) => (
       </div>
     )}
     {specs.items && specs.items.length > 0 && (
-      <ul className="list-disc ml-5" data-testid="plan-spec-items" title="Damage spec weapons and Surge potions the planner added, in order: each saves at least 1 s per slot (the spec budget re-planned with it)">
+      <ul className="list-disc ml-5" data-testid="plan-spec-items" title="Damage spec weapons (the bring rule) and Surge potions the planner added, in order, with the boss HP the spec bars pay more on the route with each (the spec budget re-planned with it)">
         {specs.items.map((s) => (
-          <li key={s.item} data-testid="plan-spec-item" data-saved={s.saved.toFixed(1)} data-slots={s.slots}>
+          <li key={s.item} data-testid="plan-spec-item" data-hp={s.hp.toFixed(1)} data-slots={s.slots}>
             {s.slots < 0
-              ? `${s.item}: +${(-s.saved).toFixed(1)} s, frees a slot (worth < 1 s now)`
-              : `${s.item}: −${s.saved.toFixed(1)} s (${s.slots} slot${s.slots === 1 ? '' : 's'}, ${s.how})`}
+              ? `${s.item}: frees a slot (${s.how})`
+              : `${s.item}: +${s.hp.toFixed(0)} HP the bars pay (${s.slots} slot${s.slots === 1 ? '' : 's'}, ${s.how})`}
           </li>
         ))}
       </ul>
@@ -1037,7 +1033,7 @@ const PlanView: React.FC<{
           </div>
 
           <PlanBriefing
-            rows={briefingRows(planned.encounters, drain, planned.surgeDoses ?? [])}
+            rows={briefingRows(planned.encounters, drain, planned.surgeDoses ?? [], result.specs.then ?? {})}
             kit={result.kit}
             imageOf={(id) => targetImageUrl(findTarget(raid.encounterTarget[id]))}
           />

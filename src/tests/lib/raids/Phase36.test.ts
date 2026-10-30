@@ -18,7 +18,6 @@ import {
   compareRoutes, createKitEvaluator, encounterPlan, encounterTime, EncounterTime, formatDuration, KitLoadout, presetKitLoadout,
   RAID_TIME_DEFAULTS, raidTimeAssumptionsFrom, routesFor, routeSurgeDoses, specBudgetFrom,
 } from '@/lib/fracturedArchive/raidTime';
-import { pickSpecItem } from '@/lib/fracturedArchive/specChoice';
 import {
   comfortSupplies, DEFAULT_CARRIER_MODE, DEFAULT_RING_POLICY, DEFAULT_SPEC_MODE, plan, planAssumptions, PlanHooks, planItemByName,
   ringAssumptions, toPlayerEquipment,
@@ -368,16 +367,6 @@ describe('surge doses along a route (placeDoses, routeSurgeDoses)', () => {
   });
 });
 
-describe('the 1 s per slot rule for damage spec weapons and the Surge potion (pickSpecItem)', () => {
-  test('an item must save ≥ 1 s per slot; carried anyway (0 slots) > 0.05 s; the best net of its slots wins', () => {
-    expect(pickSpecItem([{ item: 'vw', seconds: 99.2, slots: 1 }], 100)).toBeNull();
-    expect(pickSpecItem([{ item: 'vw', seconds: 99, slots: 1 }], 100)?.item).toBe('vw');
-    expect(pickSpecItem([{ item: 'zcb', seconds: 99.9, slots: 0 }], 100)?.item).toBe('zcb');
-    expect(pickSpecItem([{ item: 'zcb', seconds: 99.97, slots: 0 }], 100)).toBeNull();
-    expect(pickSpecItem([{ item: 'a', seconds: 97, slots: 1 }, { item: 'b', seconds: 96.5, slots: 2 }], 100)?.item).toBe('a');
-  });
-});
-
 // --- the time model ------------------------------------------------------------------------------------------------
 
 const kitOf = (id: RaidId, a: BestSetupAssumptions) => {
@@ -662,8 +651,9 @@ describe('review: the optimiser\'s fixed spec plan vs the exact per-kit allocati
 });
 
 describe('review: you carry a drain weapon or you damage-spec (Team, one bar each)', () => {
-  // The planner keeps the faster of "you carry, no damage specs / doses" and "you spec, carriers ≤ party − 1". Checked
-  // both ways with the exact time model on the planned kit: the option not taken is never faster.
+  // Phase 38h-3 (no seconds): the planner keeps "you carry, no damage specs / doses" or "you spec, carriers ≤ party − 1"
+  // by the HP the bars pay on the route (pickCarriersByHp: within 10% the set leaving you out). Checked with the exact
+  // time model on the planned kit: the option taken pays at least the other's HP (or is within the 10% rule).
   const raid = raidConfig('fractured-archive');
   const ROUTE = 'archive-guardian>bork-smorks>moia>xarth>ocellus';
   const planAt = (party: number) => plan({
@@ -688,8 +678,8 @@ describe('review: you carry a drain weapon or you damage-spec (Team, one bar eac
     partners: 1,
     seeds: 2,
   });
-  /** The planned kit's exact route time with these carriers / damage specs / doses. */
-  const exactWith = (res: ReturnType<typeof planAt>, party: number, carriers: Record<string, number>, damage: DamageSpecWeapon[], surge: number) => {
+  /** The planned kit's exact route with these carriers / damage specs / doses. */
+  const routeWith = (res: ReturnType<typeof planAt>, party: number, carriers: Record<string, number>, damage: DamageSpecWeapon[], surge: number) => {
     const ringA = ringAssumptions(planAssumptions({ ...raid.defaultAssumptions, partySize: party }, comfortSupplies(raid.defaultSupplies), raid.planDefaults.pinned.map((n) => planItemByName(n).id)), DEFAULT_RING_POLICY, res.ring.ring ? { name: res.ring.ring } : null);
     const a: BestSetupAssumptions = {
       ...ringA,
@@ -710,34 +700,31 @@ describe('review: you carry a drain weapon or you damage-spec (Team, one bar eac
       };
     });
     const cmp = compareRoutes(createKitEvaluator(loadouts, a), raidTimeAssumptionsFrom(a, 'team', raid.defaultTimeSettings, raid.time), routesFor({ model: raid.time }).filter((r) => r.id === ROUTE));
-    return cmp.routes[cmp.fastest].seconds;
+    return cmp.routes[cmp.fastest];
   };
-  (process.env.RUN_SLOW_TESTS ? test : test.skip)('party 1: your one bar carries the drain weapon (a damage spec instead is slower); party 6: the reverse', () => {
-    const one = planAt(1);
-    const t1 = one.comparison!.routes[one.planned].seconds;
-    expect(one.specs.damage ?? []).toEqual([]);
-    expect(one.specs.surgePotions ?? 0).toBe(0);
-    const c1 = one.specs.team!.carriers!;
-    expect(Object.values(c1).reduce((t, v) => t + v, 0)).toBe(1);
-    // the same kit with your bar on a Zaryte crossbow / Voidwaker and no carrier: slower
-    expect(exactWith(one, 1, {}, ['zcb'], 0)).toBeGreaterThan(t1);
-    expect(exactWith(one, 1, {}, ['voidwaker'], 0)).toBeGreaterThan(t1);
-    expect(exactWith(one, 1, c1, [], 0)).toBeCloseTo(t1, 6);
-
-    const six = planAt(6);
-    const t6 = six.comparison!.routes[six.planned].seconds;
-    const c6 = six.specs.team!.carriers!;
-    expect(exactWith(six, 6, c6, six.specs.damage ?? [], six.specs.surgePotions ?? 0)).toBeCloseTo(t6, 6);
-    if ((six.specs.damage ?? []).length) {
-      expect(Object.values(c6).reduce((t, v) => t + v, 0)).toBeLessThanOrEqual(5);
-      // you carrying instead (one more carrier of each weapon, no items): slower
-      (Object.keys(c6) as (keyof typeof c6)[]).filter((w) => w !== 'ayak').forEach((w) => {
-        expect(exactWith(six, 6, { ...c6, [w]: c6[w] + 1 }, [], 0)).toBeGreaterThan(t6);
-      });
-    } else {
-      // phase 38g fix: with this reduced kit the carriers by headcount fill the party of 6 (every boss's 95% team needs
-      // them), so you carry; the items-vs-one-fewer-carrier comparison that decides it is 38h's
-      expect(Object.values(c6).reduce((t, v) => t + v, 0)).toBe(6);
-    }
+  const exactWith = (...x: Parameters<typeof routeWith>) => routeWith(...x).seconds;
+  /** The HP the bars pay on the route (Σ EncounterSpecPlan.hp). */
+  const hpWith = (...x: Parameters<typeof routeWith>) => routeWith(...x).encounters.reduce((t, e) => t + (e.specPlan?.hp ?? 0), 0);
+  (process.env.RUN_SLOW_TESTS ? test : test.skip)('party 1 and 6: the option taken pays the most HP (the 10% rule leaving you out)', () => {
+    [1, 6].forEach((party) => {
+      const res = planAt(party);
+      const t = res.comparison!.routes[res.planned].seconds;
+      const c = res.specs.team!.carriers!;
+      const dmg = res.specs.damage ?? [];
+      const surge = res.specs.surgePotions ?? 0;
+      expect(exactWith(res, party, c, dmg, surge)).toBeCloseTo(t, 6);
+      const taken = hpWith(res, party, c, dmg, surge);
+      const sum = Object.values(c).reduce((x, v) => x + v, 0);
+      if (dmg.length || surge) {
+        // you spec: carriers ≤ party − 1; you carrying instead (one more carrier of a weapon, no items) pays ≤ 1.1 × this
+        expect(sum).toBeLessThanOrEqual(party - 1);
+        (Object.keys(c) as (keyof typeof c)[]).filter((w) => w !== 'ayak' && c[w] > 0).forEach((w) => {
+          expect(hpWith(res, party, { ...c, [w]: c[w] + 1 }, [], 0)).toBeLessThanOrEqual(1.1 * taken + 1e-6);
+        });
+      } else if (party === 1) {
+        // party 1: your one bar carries; a Zaryte crossbow instead (no carrier) pays no more HP
+        expect(hpWith(res, 1, {}, ['zcb'], 0)).toBeLessThanOrEqual(taken + 1e-6);
+      }
+    });
   }, 3600000);
 });

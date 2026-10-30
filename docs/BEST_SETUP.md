@@ -1759,6 +1759,52 @@ within 10% a set leaving you out). A kit never keeps more Eye of Ayak carriers t
 1.4× before the review fixes (13.2 → 18.5 s), 1.82× after them (15.7 → 28.6 s: the DPS at every Defence outcome, one
 route pass per carrier set at the end).
 
+### Bring rule, no seconds in spec choices (phase 38h-3, FA)
+
+Code: `src/lib/fracturedArchive/bringRule.ts` (pure), planner.ts (the items block and the Solo drain weapons); tests
+`src/tests/lib/fracturedArchive/Phase38h3.test.ts`; UI check `scripts/verifyPhase38h3.mjs`.
+
+**Bring rule** (damage spec weapons). A weapon's value on a boss / phase is its **HP per full bar**: `gainPerFullBar`
+= (E[spec] − DPS × ticks × 0.6) ÷ energy × 100, E from upstream's spec calc at the Defence of the row's drain event (the
+encounter's spec plan) and the row's DPS (`routeSpecGains`; rows of one boss / phase merged by their damage; rows damage
+specs can't apply to are skipped: Ocellus P2, targets with `noDamageSpecs`). On the kit before the items and its planned
+route: **first** = the weapon ranked first on the most bosses / phases (ties: Σ HP per bar over every phase, then the
+weapon order); a **second** only on the bosses / phases where the first gains nothing (can't hit) or another weapon
+deals ≥ `BRING_SECOND_FACTOR` (1.2) × the first's HP per bar: the best other weapon there is a candidate, the candidate
+of the most such phases is brought. At most two. Each takes a free slot, or (none free) the kit is re-optimised with it
+carried and the item kept when the HP it adds on that kit is at least the HP the kit change costs on the route
+(`kitHpCost`: per row of the old kit's pass, damage × (1 − new DPS ÷ old DPS), the drain value's form; Ocellus P2 × its
+carry-over); faNotOwned: ZCB +400 HP vs the kit's 99 HP, kept; the FA tiny brute-force pool: +412 vs 546, left out. Not modelled: the Zaryte crossbow's ruby proc at the hp left (the rule values it at full hp; the spec budget
+still caps every spec at the hp left).
+
+**Surge potions**: while one adds HP the bars pay on the route (Σ `EncounterSpecPlan.hp`) and a slot is free (never a
+slot from the kit). **Left at home**: a damage weapon the plan then never specs; Solo, a drain weapon the plan no longer
+specs once the damage specs / doses are in.
+
+**Solo drain weapons** (replaces `searchSpecSubsets`: every subset timed, 1 s a slot): the plan with every owned drain
+weapon on the reference kit (the bootstrap kit carrying all of them), the spec budget valuing every bar in HP (38h-2);
+the weapons it specs on the planned route are brought (`PlanSpecs.solo.perWeapon`: weapon, chosen, specs). The ring
+screens reuse that set (`screenSubset`).
+
+**You carry or you spec** (Team; replaces the faster of the two): "you spec, carriers ≤ party − 1, the items" against
+"you carry, no items" by the HP the bars pay on the planned route, `pickCarriersByHp` (within 10% the set leaving you out
+wins). The spec items (`PlanItemStep.hp`) report the HP each adds, not seconds. Removed: `searchSpecSubsets`,
+`weaponDeltaText`, `bestWithoutText`, `pickSpecItem`, `itemBeam`, `itemStepNet` (38e's beam and swaps). Kept (not a spec
+choice of this row): `assignMe`'s slot value in seconds for your share when you carry (no items).
+
+**Briefing per boss**: after the drain line, "· Then: 1. Zaryte crossbow (per bar)" (`thenText`: the weapons that gain,
+best HP per bar first, at most two). Plan: the brought weapons per encounter (`PlanSpecs.then`). Search: the Specs box's
+order (every damage weapon). Summary: each cell's top loadout (`GearSearchResult.then`, computed on first read).
+
+**Per FA boss** (ZCB HP per bar on the headline plans; best other weapon): Team AG Flying 90.9 (melee can't hit),
+Grounded 82.0 (Crimson kisten 60.0), Bork 85.9-84.8 (Crimson kisten / Voidwaker 54-61), Smorks 85.1 (kisten 60.4), Moia
+85.5 (melee can't hit), Xarth 74.9 (kisten 60.6), Ocellus P1 86.5 (kisten 59.4), P3 Q1-3 62.3 (kisten 59.8, the closest:
+0.96×), P3 Deflect Melee 81.0. Solo: the same order; Ezekiel 67.1 (kisten 60.7); P3 Q1-3 is the one phase where Crimson
+kisten is first (59.3 vs 58.7, 1.01×, below 1.2×). So every FA headline brings the Zaryte crossbow alone.
+
+**Result** (`pinHeadlines --full`; PROGRESS phase 38h-3 has every moved total): fa 21:41.0 → 21:47.8, faSolo 22:53.4 →
+22:57.2, faNotOwned 24:43.4 unchanged. Times only estimate (user: gear over time): the choices are by the rule and HP.
+
 ## Routes tab (phase 16: raid time model)
 
 **Phase 23: the tab is gone.** Its route table is now part of the Plan tab's results (the *planned* kit timed on every

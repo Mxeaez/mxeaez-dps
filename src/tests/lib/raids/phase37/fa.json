@@ -275,7 +275,7 @@
   },
   {
    "slots": 1,
-   "seconds": 46.028662601616816
+   "seconds": 46.02866260161659
   },
   {
    "slots": 8,
@@ -286,15 +286,15 @@
   "total": 28,
   "supplies": 12,
   "nonItem": 1,
-  "carriedItems": 23,
+  "carriedItems": 20,
   "wornItems": 10,
   "minLoadoutItems": 10,
   "keptAmmo": 0,
-  "inventoryItems": 13,
+  "inventoryItems": 10,
   "swapReserve": 0,
   "quiverAmmo": 1,
-  "used": 25,
-  "free": 3,
+  "used": 22,
+  "free": 6,
   "overfull": false
  },
  "inventory": [
@@ -459,40 +459,20 @@
    }
   },
   {
-   "kind": "spec",
-   "label": "Burning claws",
-   "item": {
-    "id": 29577,
-    "name": "Burning claws",
-    "version": "",
-    "slot": "weapon",
-    "twoHanded": true
-   }
-  },
-  {
-   "kind": "spec",
-   "label": "Crimson kisten",
-   "item": {
-    "id": 33631,
-    "name": "Crimson kisten",
-    "version": "",
-    "slot": "weapon",
-    "twoHanded": true
-   }
-  },
-  {
-   "kind": "spec",
-   "label": "Surge potion(4)",
-   "item": {
-    "id": -9101,
-    "name": "Surge potion(4)",
-    "version": "",
-    "slot": "ring"
-   }
-  },
-  {
    "kind": "non-item",
    "label": "Rune pouch"
+  },
+  {
+   "kind": "free",
+   "label": "Free slot"
+  },
+  {
+   "kind": "free",
+   "label": "Free slot"
+  },
+  {
+   "kind": "free",
+   "label": "Free slot"
   },
   {
    "kind": "free",
@@ -513,51 +493,30 @@
    "name": "Zaryte crossbow",
    "version": "",
    "slot": "weapon"
-  },
-  {
-   "id": 29577,
-   "name": "Burning claws",
-   "version": "",
-   "slot": "weapon",
-   "twoHanded": true
-  },
-  {
-   "id": 33631,
-   "name": "Crimson kisten",
-   "version": "",
-   "slot": "weapon",
-   "twoHanded": true
-  },
-  {
-   "id": -9101,
-   "name": "Surge potion(4)",
-   "version": "",
-   "slot": "ring"
   }
  ],
  "pinnedItems": [],
- "comparison": "34b75976b7dd7b9302bc7931d95eb998e1b32a7bf9e39ab13409f1de4c99d5b2",
+ "comparison": "a035620fa82e5d5c99b5065d8cb58c146a3e9b6352158a5522417cd688c96544",
  "planned": 5,
  "rejected": [],
  "alternatives": [
   {
-   "label": "melee + ranged + magic: Tumeken's shadow (Ancestral) / Inquisitor's + Obligator / Harmonised Nightmare staff / Harmonised Nightmare staff #4 / Twisted bow (Masori)",
+   "label": "melee + ranged + magic: Inquisitor's + Obligator / Twisted bow (Masori) / Ascension crossbows + diamond (e) (Masori) / Tumeken's shadow switch on Inquisitor's + Obligator",
    "kind": "alternative",
-   "deltaSeconds": -8.093998955987445,
-   "deltaSlots": 11,
-   "reason": "does not fit (36 of 28 slots)",
+   "deltaSeconds": 0,
+   "deltaSlots": 2,
+   "reason": "0.0 s slower",
    "weapons": [
-    "Tumeken's shadow",
     "Obligator",
-    "Harmonised Nightmare staff",
-    "Harmonised Nightmare staff",
-    "Twisted bow"
+    "Twisted bow",
+    "Ascension crossbows",
+    "Tumeken's shadow"
    ]
   },
   {
    "label": "melee + magic: Tumeken's shadow (Ancestral) / Inquisitor's + Obligator / Harmonised Nightmare staff / Harmonised Nightmare staff #4",
    "kind": "alternative",
-   "deltaSeconds": -94.45065528535497,
+   "deltaSeconds": -94.45065528535474,
    "deltaSlots": 3,
    "reason": "94.5 s slower",
    "weapons": [
@@ -568,11 +527,11 @@
    ]
   },
   {
-   "label": "ranged + magic: Tumeken's shadow (Ancestral) / Twisted bow (Masori) / Ascension crossbows + diamond (e) (Masori) / Ascension crossbows + onyx (e) (Masori)",
+   "label": "ranged + magic: Tumeken's shadow (Ancestral) / Twisted bow (Masori) / Ascension crossbows + diamond (e) (Masori) / Ascension crossbows + Onyx ascension bolts (e)",
    "kind": "alternative",
-   "deltaSeconds": -319.5028832558223,
-   "deltaSlots": 1,
-   "reason": "319.5 s slower",
+   "deltaSeconds": -303.6935272886931,
+   "deltaSlots": 5,
+   "reason": "303.7 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Twisted bow",
@@ -583,9 +542,9 @@
   {
    "label": "magic: Tumeken's shadow (Ancestral) / Harmonised Nightmare staff / Harmonised Nightmare staff #4",
    "kind": "alternative",
-   "deltaSeconds": -909.0392294156195,
+   "deltaSeconds": -923.9826812631791,
    "deltaSlots": -5,
-   "reason": "909.0 s slower",
+   "reason": "924.0 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Harmonised Nightmare staff",
@@ -636,44 +595,181 @@
   "mode": "auto",
   "drain": "team",
   "bring": [],
-  "text": "Bring: Zaryte crossbow, Burning claws, Crimson kisten, Surge potion",
+  "text": "Bring: Zaryte crossbow",
   "damage": [
-   "zcb",
-   "burningClaws",
-   "crimsonKisten"
-  ],
-  "surgePotions": 1,
-  "surgeAt": [
-   "Archive Guardian",
-   "Xarth",
-   "Ocellus"
+   "zcb"
   ],
   "items": [
    {
     "item": "Zaryte crossbow",
-    "saved": 34.905964056416906,
-    "slots": 1,
-    "how": "a free slot"
-   },
-   {
-    "item": "Burning claws",
-    "saved": 2.045826012958969,
-    "slots": 1,
-    "how": "a free slot"
-   },
-   {
-    "item": "Surge potion(4)",
-    "saved": 2.46338744321838,
-    "slots": 1,
-    "how": "a free slot"
-   },
-   {
-    "item": "Crimson kisten",
-    "saved": 2.297195091391586,
+    "hp": 378.5439449109649,
     "slots": 1,
     "how": "a free slot"
    }
   ],
+  "bringRule": {
+   "first": "zcb",
+   "second": null,
+   "bring": [
+    "zcb"
+   ],
+   "firstOn": [
+    "ag-flying|",
+    "ag-grounded|",
+    "bork|Smorks 100-76% HP (armour 8)",
+    "bork|Smorks 75-51% HP (armour 10)",
+    "bork|Smorks 50-26% HP (armour 12)",
+    "bork|Smorks 25-0% HP (armour 14)",
+    "smorks|",
+    "moia|",
+    "xarth|",
+    "ocellus-p1|At a corner",
+    "ocellus-p3|Quadrants 1-3",
+    "ocellus-p3|Last quadrant: Deflect Melee"
+   ],
+   "secondOn": [],
+   "gains": [
+    {
+     "key": "ag-flying|",
+     "label": "Flying shield",
+     "gains": {
+      "voidwaker": 0,
+      "dragonClaws": 0,
+      "burningClaws": 0,
+      "zcb": 90.85139780786487,
+      "crimsonKisten": 0
+     }
+    },
+    {
+     "key": "ag-grounded|",
+     "label": "Grounded (70% of hp)",
+     "gains": {
+      "voidwaker": 45.306737221496626,
+      "dragonClaws": 49.65074648447364,
+      "burningClaws": 37.60466968498214,
+      "zcb": 81.99237404550705,
+      "crimsonKisten": 59.955126387707914
+     }
+    },
+    {
+     "key": "bork|Smorks 100-76% HP (armour 8)",
+     "label": "Bork, armour 8 (¼ of hp)",
+     "gains": {
+      "voidwaker": 53.485288424996035,
+      "dragonClaws": 4.340236664363346,
+      "burningClaws": -7.989265755913258,
+      "zcb": 85.9130986599228,
+      "crimsonKisten": 54.013454299501845
+     }
+    },
+    {
+     "key": "bork|Smorks 75-51% HP (armour 10)",
+     "label": "Bork, armour 10 (¼ of hp)",
+     "gains": {
+      "voidwaker": 56.07128396638365,
+      "dragonClaws": -1.2536778348756101,
+      "burningClaws": -12.8328465392606,
+      "zcb": 85.55812059854789,
+      "crimsonKisten": 52.60953055973236
+     }
+    },
+    {
+     "key": "bork|Smorks 50-26% HP (armour 12)",
+     "label": "Bork, armour 12 (¼ of hp)",
+     "gains": {
+      "voidwaker": 58.65570469060009,
+      "dragonClaws": -5.610435179288643,
+      "burningClaws": -16.607876954372266,
+      "zcb": 85.20183018953037,
+      "crimsonKisten": 51.204032002791735
+     }
+    },
+    {
+     "key": "bork|Smorks 25-0% HP (armour 14)",
+     "label": "Bork, armour 14 (¼ of hp)",
+     "gains": {
+      "voidwaker": 61.23658851173228,
+      "dragonClaws": -9.058329784952207,
+      "burningClaws": -19.31715998112399,
+      "zcb": 84.84259236127596,
+      "crimsonKisten": 49.794996542766846
+     }
+    },
+    {
+     "key": "smorks|",
+     "label": "The Smorks",
+     "gains": {
+      "voidwaker": 39.06180489874849,
+      "dragonClaws": 49.56095301724275,
+      "burningClaws": 36.01652244653547,
+      "zcb": 85.05553271408043,
+      "crimsonKisten": 60.403681420341634
+     }
+    },
+    {
+     "key": "moia|",
+     "label": "Moia",
+     "gains": {
+      "voidwaker": 0,
+      "dragonClaws": 0,
+      "burningClaws": 0,
+      "zcb": 85.53568359466333,
+      "crimsonKisten": 0
+     }
+    },
+    {
+     "key": "xarth|",
+     "label": "Xarth",
+     "gains": {
+      "voidwaker": 41.198554274409105,
+      "dragonClaws": 55.50853021264409,
+      "burningClaws": 46.44751452502716,
+      "zcb": 74.93545967657018,
+      "crimsonKisten": 60.617544603717946
+     }
+    },
+    {
+     "key": "ocellus-p1|At a corner",
+     "label": "P1 at a corner",
+     "gains": {
+      "voidwaker": 48.25202182112817,
+      "dragonClaws": 58.32608362784271,
+      "burningClaws": 51.77055363272588,
+      "zcb": 86.4805464125045,
+      "crimsonKisten": 59.39901899041502
+     }
+    },
+    {
+     "key": "ocellus-p3|Quadrants 1-3",
+     "label": "P3 quadrants 1-3 (75%)",
+     "gains": {
+      "voidwaker": 46.29031012284959,
+      "dragonClaws": 49.40541371585023,
+      "burningClaws": 40.99735149800793,
+      "zcb": 62.25232296978229,
+      "crimsonKisten": 59.77860060467708
+     }
+    },
+    {
+     "key": "ocellus-p3|Last quadrant: Deflect Melee",
+     "label": "P3 last quadrant, Deflect Melee (25%)",
+     "gains": {
+      "voidwaker": 0,
+      "dragonClaws": 0,
+      "burningClaws": 0,
+      "zcb": 81.00907372976134,
+      "crimsonKisten": 0
+     }
+    }
+   ]
+  },
+  "then": {
+   "archive-guardian": "Then: 1. Zaryte crossbow (per bar)",
+   "bork-smorks": "Then: 1. Zaryte crossbow (per bar)",
+   "moia": "Then: 1. Zaryte crossbow (per bar)",
+   "xarth": "Then: 1. Zaryte crossbow (per bar)",
+   "ocellus": "Then: 1. Zaryte crossbow (per bar)"
+  },
   "team": {
    "partySize": 6,
    "mages": 0,
@@ -683,19 +779,19 @@
      "weapon": "tonalztics",
      "carriers": 3,
      "drivers": [
-      "Bork + Smorks (6.1 s)",
+      "Bork + Smorks (6.2 s)",
       "Ocellus (4.0 s)"
      ],
-     "lastSaved": 10.148517588728964
+     "lastSaved": 10.257694631542563
     },
     {
      "weapon": "elderMaul",
      "carriers": 2,
      "drivers": [
-      "Bork + Smorks (5.5 s)",
+      "Bork + Smorks (5.7 s)",
       "Ocellus (0.7 s)"
      ],
-     "lastSaved": 6.206507713225619
+     "lastSaved": 6.414251873563444
     }
    ],
    "perTarget": [
@@ -856,11 +952,12 @@
   "share": {
    "weapon": null,
    "carry": false,
-   "reason": "your spec energy goes to your Zaryte crossbow specs / Burning claws specs / Crimson kisten specs / surge doses — let a teammate carry Tonalztics (most needed: 3 carriers)",
+   "reason": "your spec energy goes to your Zaryte crossbow specs — let a teammate carry Tonalztics (most needed: 3 carriers)",
    "manual": false
   },
   "notes": [
-   "Your spec bar goes to Zaryte crossbow / Burning claws / Crimson kisten / surge doses: 5 carriers (party − 1), 21:41.0 vs 22:22.7 if you carry a drain weapon instead."
+   "Surge potion(4): adds no HP the bars pay",
+   "Your spec bar goes to Zaryte crossbow: 5 carriers (party − 1); the bars pay 2968 HP on the route vs 2589 HP if you carry a drain weapon instead."
   ]
  },
  "ring": {
@@ -869,12 +966,12 @@
   "screened": [
    {
     "ring": "Ultor ring",
-    "seconds": 1301.0040849381658,
+    "seconds": 1307.8104934857347,
     "full": true
    },
    {
     "ring": "Bellator ring",
-    "seconds": 1352.3040338526114,
+    "seconds": 1359.9533769270788,
     "full": true
    },
    {
@@ -927,20 +1024,16 @@
  "droppedPinned": [],
  "ownershipNotices": [],
  "searchRows": "29977aeaca168973ef66b19c6049e6f403f8b1c3c4eb7bfc8a80437a4e182844",
- "objectiveSeconds": 1301.0040849381658,
+ "objectiveSeconds": 1307.8104934857347,
  "fightSeconds": null,
  "plannedRoute": {
   "id": "archive-guardian>bork-smorks>moia>xarth>ocellus",
-  "seconds": 1301.0040849381658,
-  "surgeDoses": [
-   "archive-guardian",
-   "xarth",
-   "ocellus"
-  ],
+  "seconds": 1307.8104934857347,
+  "surgeDoses": null,
   "encounters": [
    {
     "id": "archive-guardian",
-    "seconds": 173.48552944199616,
+    "seconds": 175.7807091304241,
     "events": [
      {
       "npc": "Archive Guardian",
@@ -954,16 +1047,13 @@
     "damage": {
      "ag-shield": {
       "zcb": 1
-     },
-     "ag-grounded": {
-      "crimsonKisten": 1
      }
     },
-    "surge": true
+    "surge": false
    },
    {
     "id": "bork-smorks",
-    "seconds": 189.753424710628,
+    "seconds": 190.63113492078526,
     "events": [
      {
       "npc": "Bork",
@@ -986,9 +1076,6 @@
     "damage": {
      "bork-8": {
       "zcb": 1
-     },
-     "smorks": {
-      "burningClaws": 1
      }
     },
     "surge": false
@@ -1015,7 +1102,7 @@
    },
    {
     "id": "xarth",
-    "seconds": 180.60612471884792,
+    "seconds": 182.78395343900075,
     "events": [
      {
       "npc": "Xarth",
@@ -1029,15 +1116,14 @@
     ],
     "damage": {
      "xarth": {
-      "zcb": 1,
-      "crimsonKisten": 1
+      "zcb": 1
      }
     },
-    "surge": true
+    "surge": false
    },
    {
     "id": "ocellus",
-    "seconds": 691.8439422614264,
+    "seconds": 693.2996321902571,
     "events": [
      {
       "npc": "Ocellus",
@@ -1069,14 +1155,13 @@
     ],
     "damage": {
      "ocellus-p1": {
-      "zcb": 1,
-      "burningClaws": 1
+      "zcb": 1
      },
      "ocellus-p3-last": {
       "zcb": 1
      }
     },
-    "surge": true
+    "surge": false
    }
   ]
  }

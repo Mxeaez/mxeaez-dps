@@ -35,8 +35,6 @@ import { cpuSeconds, memoWithin } from '@/tests/utils/phase37';
 import {
   BestSetupAssumptions, PresetDef, PRESETS, StyleGroup,
 } from '@/lib/fracturedArchive/presets';
-import { searchSpecSubsets, SHARE_MAX_SLOT_SECONDS, weaponDeltaText } from '@/lib/fracturedArchive/specChoice';
-import { PlannerWeapon } from '@/lib/fracturedArchive/specs';
 import {
   CHAMBERS_OF_XERIC_RAID, FRACTURED_ARCHIVE_RAID, RaidConfig, THEATRE_OF_BLOOD_RAID, TOMBS_OF_AMASCUT_RAID,
 } from '@/lib/raids';
@@ -47,7 +45,7 @@ import { slowDescribe, SLOW } from '@/tests/utils/slow';
 
 // Phase 31: (1) Dizana's quiver holds a second arrow / bolt type at no inventory cost; (2) the Saturated heart is
 // magic's kit potion (one slot when the kit has a magic loadout, FA / ToB), not a pinned item; (3) the Solo spec-subset
-// search prices a slot at SHARE_MAX_SLOT_SECONDS (a larger subset must save ≥ 1 s per extra slot).
+// search's slot price (removed in phase 38h-3: no seconds in spec choices).
 // Docs: docs/BEST_SETUP.md (*Quiver ammo and the heart (phase 31)*), docs/UNVERIFIED.md D23.
 
 const NO_SUPPLIES: SupplyCounts = {
@@ -370,46 +368,7 @@ describe('heart: magic\'s kit potion (FA / ToB)', () => {
   }, 300000);
 });
 
-// --- 3. the Solo subset search's slot price --------------------------------------------------------------------------
-
-describe('Solo subset search: ≥ 1 s per extra slot', () => {
-  // Tonalztics alone saves 10 s; Elder maul on top saves `extra` more for one more slot
-  const toy = (extra: number, slotSeconds?: number) => {
-    const t: Record<string, number> = {
-      '': 100, tonalztics: 90, elderMaul: 99, 'elderMaul+tonalztics': 90 - extra,
-    };
-    return searchSpecSubsets<PlannerWeapon>({
-      weapons: ['elderMaul', 'tonalztics'],
-      signature: (s) => s.join('+'),
-      slots: (s) => s.length,
-      quick: (s) => t[s.join('+')],
-      ...(slotSeconds !== undefined ? { slotSeconds } : {}),
-    });
-  };
-
-  test('(i) a second weapon saving 0.5 s is not brought; 1.5 s is', () => {
-    expect(SHARE_MAX_SLOT_SECONDS).toBe(1);
-    const half = toy(0.5);
-    expect(half.best).toEqual(['tonalztics']);
-    expect(half.seconds).toBe(90);
-    const maul = half.perWeapon.find((d) => d.weapon === 'elderMaul')!;
-    expect(maul).toMatchObject({ chosen: false, deltaSeconds: 0.5, deltaSlots: 1 });
-    expect(weaponDeltaText(maul)).toBe('adding Elder maul to this plan: −0.5 s (1 slot, < 1 s per slot)');
-    expect(half.bestRejected?.weapon).toBe('elderMaul');
-    const more = toy(1.5);
-    expect(more.best).toEqual(['elderMaul', 'tonalztics']);
-    expect(more.seconds).toBe(88.5);
-    expect(weaponDeltaText(more.perWeapon.find((d) => d.weapon === 'elderMaul')!)).toBe('dropping Elder maul from this plan: +1.5 s (frees 1 slot)');
-    // exactly 1 s per slot: brought (≥, like the kit switches)
-    expect(toy(1).best).toEqual(['elderMaul', 'tonalztics']);
-    // slotSeconds 0 = the phase 29 ranking (fastest)
-    expect(toy(0.5, 0).best).toEqual(['elderMaul', 'tonalztics']);
-    // a lone weapon saving < 1 s isn't brought either
-    expect(searchSpecSubsets<PlannerWeapon>({
-      weapons: ['elderMaul'], signature: (s) => s.join('+'), slots: (s) => s.length, quick: (s) => (s.length ? 99.4 : 100),
-    }).best).toEqual([]);
-  });
-});
+// --- 3. phase 38h-3: the Solo subset search (searchSpecSubsets, 1 s a slot) is gone; see Phase38h3.test.ts ----------------
 
 // --- slow: the full FA plans -----------------------------------------------------------------------------------------
 /** Phase 31: FA Solo party 1 (defaults, planner decides). Pinned after the run; see PROGRESS. */
@@ -427,7 +386,7 @@ slowDescribe('FA defaults (slow)', () => {
     specMode: 'auto',
   }, { model: FA.time });
 
-  test('Solo, party 1, planner decides: Bring Tonalztics (Elder maul saves < 1 s for its slot)', () => {
+  test('Solo, party 1, planner decides: the drain weapons the plan with every owned one specs (phase 38h-3)', () => {
     const { result: r, seconds: cpu } = cpuSeconds(() => full({ drain: 'solo', assumptions: { ...FA.defaultAssumptions, partySize: 1 } }));
     // phase 37: bit-identical to the phase 36 planner's plan; memo counters near the recorded ones; a catastrophe-only
     // CPU budget (5× its 41 s alone; src/tests/utils/phase37.ts, CrossRaid's PHASE37_FIXTURE)
@@ -435,12 +394,14 @@ slowDescribe('FA defaults (slow)', () => {
     // phase 38h-2 review fixes: the drain values average the DPS over every Defence outcome (~1.9× the planning time):
     // 205 → 300 s
     expect(cpu).toBeLessThan(300);
-    expect(r.specs.bring).toEqual(['tonalztics']);
+    // phase 38h-3: Elder maul + Tonalztics (the plan with every owned drain weapon specs both; was Tonalztics alone,
+    // Elder maul saved < 1 s for its slot)
+    expect(r.specs.bring).toEqual(['elderMaul', 'tonalztics']);
     expect(Math.abs(total(r) - SOLO_HEADLINE[1])).toBeLessThanOrEqual(SOLO_HEADLINE[1] * 0.01);
     expect(headlineGear(headlineOf('faSolo', r))).toEqual(headlineGear(headline('faSolo')));
     expect(headlineTimeProblems(headlineOf('faSolo', r), headline('faSolo'))).toEqual([]);
-    // every weapon not brought saves < 1 s per slot (or costs time)
-    r.specs.solo!.perWeapon.filter((d) => !d.chosen).forEach((d) => expect(d.deltaSeconds).toBeLessThan(d.deltaSlots * SHARE_MAX_SLOT_SECONDS));
+    // phase 38h-3: a weapon not brought makes no spec in the plan with every owned one
+    r.specs.solo!.perWeapon.forEach((d) => expect(d.chosen).toBe(d.specs > 0));
     // the slot count = the exhaustive count of the returned kit (heart and spec weapons carried)
     const carried = [...r.specItems.map((x) => x.id), ...(r.potions.some((p) => p.type === 'heart') ? [SATURATED] : [])];
     expect(r.slots!.used).toBe(r.slots!.supplies + r.slots!.nonItem + exhaustive(kitItems(r), carried, true));

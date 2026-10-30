@@ -99,7 +99,9 @@ const PlanBriefing: React.FC<{
                   </span>
                 ))}
                 {/* phase 38g: the drain facts per drain event, the same line as on Search and Summary */}
-                {r.facts.map((f) => <DrainFactsLine key={`${f.label ?? ''}|${f.facts.text}`} facts={f.facts} label={f.label} />)}
+                {/* phase 38h-3: "· Then: 1. Voidwaker 2. Zaryte crossbow (per bar)" after the encounter's last drain line */}
+                {r.facts.map((f, i) => <DrainFactsLine key={`${f.label ?? ''}|${f.facts.text}`} facts={f.facts} label={f.label} then={i === r.facts.length - 1 ? r.then : undefined} />)}
+                {!r.facts.length && r.then && <span className="text-[11px] text-gray-600 dark:text-gray-300" data-testid="drain-facts-then" data-text={r.then}>{r.then}</span>}
                 {/* phase 36: your damage specs and the surge dose (your own spec energy) */}
                 {(r.damage.length > 0 || r.surge) && (
                   <span className="inline-flex flex-wrap items-center gap-x-2" data-testid="plan-briefing-damage" data-text={damageText(r.damage)} data-surge={r.surge ? 'true' : 'false'}>

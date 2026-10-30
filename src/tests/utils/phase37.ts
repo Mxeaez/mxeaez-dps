@@ -113,8 +113,10 @@ export const PHASE37_MEMO: Record<string, MemoCounters> = {
   // 9904; phase 38e (the item beam: a kit re-optimised per candidate when no slot is free, the beam's states, swaps):
   // fa was 11075 / 10789 / 444757 / 12739, toa 69292 / 18123 / 1307456 / 56648, tob 25001 / 23772 / 1335979 / 5729,
   // cox 73944 / 35416 / 1961276 / 62818, faNotOwned 26777 / 19128 / 776583 / 19830
+  // phase 38h-3 (the bring rule instead of the item beam; Solo: no subset search): fa was 10616 / 9091 / 448944 / 2377,
+  // faSolo 84288 / 39263 / 3156808 / 46445, faNotOwned 82985 / 13958 / 2177152 / 75431
   fa: {
-    encounterRuns: 10616, passRuns: 9091, encounterHits: 448944, passHits: 2377,
+    encounterRuns: 10638, passRuns: 8309, encounterHits: 497142, passHits: 3847,
   },
   // phase 38a (rooms 1-2 before the supplies: other drain states and candidates): was 32784 / 10825 / 544791 / 24576;
   // phase 38b (Liquid adrenaline: more spec options per event, damage specs on the adds' rows): was 39715 / 11721 /
@@ -134,14 +136,14 @@ export const PHASE37_MEMO: Record<string, MemoCounters> = {
   // phase 38c (Ocellus: P2 in the plan, three drain events): faSolo was 91778 / 38942 / 3464758 / 56722, faNotOwned
   // 58528 / 10474 / 1579384 / 59896
   faSolo: {
-    encounterRuns: 84288, passRuns: 39263, encounterHits: 3156808, passHits: 46445,
+    encounterRuns: 9706, passRuns: 9352, encounterHits: 640382, passHits: 1292,
   },
   // phase 38h-1 (2 Elder maul + 3 Tonalztics carriers cover every boss, so you are no longer a carrier: free slots, the
   // item beam re-optimises kits with damage specs / surge): faNotOwned was 9153 / 9086 / 583727 / 227
   // phase 38h-2 review fixes (the final carrier choice by the budgeted plans' HP: one route pass per carrier set):
   // faNotOwned was 74977 / 9838 / 1854095 / 66172
   faNotOwned: {
-    encounterRuns: 82985, passRuns: 13958, encounterHits: 2177152, passHits: 75431,
+    encounterRuns: 20896, passRuns: 13664, encounterHits: 591775, passHits: 9461,
   },
 };
 export const memoCountersWithin = (m: MemoCounters | undefined, want: MemoCounters | undefined): boolean => {

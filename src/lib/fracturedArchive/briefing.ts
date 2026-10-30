@@ -95,6 +95,8 @@ export interface BriefingRow {
   surge: boolean;
   /** Phase 38g: the drain facts per drain event (the same line as Search / Summary), equal ones once; [] for None. */
   facts: { label?: string, facts: DrainFacts }[];
+  /** Phase 38h-3: "Then: 1. Voidwaker 2. Zaryte crossbow (per bar)" (the plan's `specs.then`; the brought damage weapons). */
+  then?: string;
 }
 
 /**
@@ -135,7 +137,12 @@ export const encounterDamageSpecs = (e: Pick<EncounterTime, 'phases'>): Briefing
 /** Phase 36: "Voidwaker ×2" per weapon, joined with " + ". */
 export const damageText = (d: BriefingRow['damage']): string => d.map((x) => `${x.label} ×${x.count}`).join(' + ');
 
-export const briefingRows = (encounters: EncounterTime[], drain: DrainStateId, surgeDoses: string[] = []): BriefingRow[] => encounters.map((e) => {
+export const briefingRows = (
+  encounters: EncounterTime[],
+  drain: DrainStateId,
+  surgeDoses: string[] = [],
+  then: Record<string, string> = {},
+): BriefingRow[] => encounters.map((e) => {
   const loadouts = Array.from(new Set(e.phases.map((p) => p.choice?.loadout).filter((l): l is string => !!l)));
   const summary = drain === 'none' ? undefined : encounterDrainSummary(drainSummaryPhases(e.phases), drain);
   const specs = summary ? encounterBrief(summary) : [];
@@ -151,5 +158,6 @@ export const briefingRows = (encounters: EncounterTime[], drain: DrainStateId, s
     damage: encounterDamageSpecs(e),
     surge: surgeDoses.includes(e.id),
     facts: encounterFacts(summary),
+    ...(then[e.id] ? { then: then[e.id] } : {}),
   };
 });

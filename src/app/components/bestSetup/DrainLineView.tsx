@@ -121,7 +121,13 @@ export const DrainBrief: React.FC<{
  * plan, "Drain: Elder maul → Tonalztics ×2 (floor 96%); 1 brings Elder maul, 1 brings Tonalztics", then, when the bars
  * pay fewer, "(needs 3 specs, you have ~2)" in orange.
  */
-export const DrainFactsLine: React.FC<{ facts: DrainFacts | undefined, label?: string, className?: string }> = ({ facts, label, className }) => (facts ? (
+export const DrainFactsLine: React.FC<{
+  facts: DrainFacts | undefined, label?: string, className?: string,
+  /** Phase 38h-3: "Then: 1. Voidwaker 2. Zaryte crossbow (per bar)", the damage specs after the drain (bringRule.ts `thenText`). */
+  then?: string | null,
+}> = ({
+  facts, label, className, then,
+}) => (facts ? (
   <span
     className={`text-[11px] text-gray-600 dark:text-gray-300 ${className ?? ''}`}
     data-testid="drain-facts"
@@ -132,6 +138,7 @@ export const DrainFactsLine: React.FC<{ facts: DrainFacts | undefined, label?: s
     {label ? `${label}: ` : ''}
     {facts.text}
     {facts.short && <span className="ml-1 font-semibold text-orange-700 dark:text-orange-300" data-testid="drain-facts-short">{`(${facts.short})`}</span>}
+    {then && <span data-testid="drain-facts-then" data-text={then} title="Damage specs after the drain, best first: the most boss HP over your normal hits per full spec bar, at the Defence the drain leaves">{` · ${then}`}</span>}
   </span>
 ) : null);
 

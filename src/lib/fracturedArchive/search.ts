@@ -35,6 +35,7 @@ import { raidBase } from '@/lib/raids/base';
 import { BestSetupTarget } from '@/lib/raids/types';
 import { assumptionsForTarget } from '@/lib/raids/toa/supplies';
 import { filterStylePool, isOwned } from '@/lib/fracturedArchive/ownership';
+import { damageThenText } from '@/lib/fracturedArchive/bringRule';
 
 /**
  * Full gear search (phase 9, "Search" tab of /best-setup). Pure and React-free: runs in its own web worker
@@ -160,6 +161,8 @@ export interface GearSearchResult {
   bestPreset: PresetResult | null;
   /** Weapon variants skipped because no style of them deals damage here, with the reason. */
   cantHit: { weapon: string, reason: string }[];
+  /** Phase 38h-3: the damage specs after the drains for the top row (bringRule.ts `thenText`); null: none gains. */
+  then?: string | null;
   evaluations: number;
   variants: number;
   elapsedMs: number;
@@ -584,7 +587,7 @@ export const runGearSearch = (
     rowsByWeapon[0].ttk = rows[0].ttk;
   }
 
-  return {
+  const result: GearSearchResult = {
     targetKey: query.targetKey,
     phase: monster.inputs.phase,
     drain,
@@ -598,6 +601,18 @@ export const runGearSearch = (
     elapsedMs: Date.now() - start,
     cancelled,
   };
+  // phase 38h-3: "Then: 1. Voidwaker 2. Zaryte crossbow (per bar)" for the top row (the damage specs after the drains,
+  // HP per full bar at its DPS). Computed on first read, like the drain facts (the planner's searches never read it)
+  let then: string | null | undefined;
+  Object.defineProperty(result, 'then', {
+    enumerable: true,
+    configurable: true,
+    get: () => {
+      if (then === undefined) then = rows.length && rows[0].dps > 0 ? damageThenText(monster, assumptions, rows[0].dps) : null;
+      return then;
+    },
+  });
+  return result;
 };
 
 // --- Summary tab (phase 13) ----------------------------------------------------------------------------------------
