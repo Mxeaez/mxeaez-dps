@@ -523,7 +523,8 @@ slowDescribe('FA defaults (slow)', () => {
     expect(r.ring.ring).toBe('Lightbearer');
     // the ring screens timed the chosen subset (no second round needed here, or it converged). Phase 40b-2: not a fixed
     // point any more: the screens timed {Tonalztics} (the first full ring's choice), and the guard's full run of
-    // Lightbearer brings the maul too and wins (the planner re-screens at most once, by design)
+    // Lightbearer brings the maul too and wins (the planner re-screens at most once, by design). Known heuristic gap
+    // (40b-2 review finding 3, planner.ts:3579: the second round only looks at the first full ring) - not intended behaviour
     expect(r.specs.solo!.screenedWith).toEqual(['tonalztics']);
     // phase 38h-3: the brought weapons are those the plan with every owned one specs (no route-time deltas)
     // a brought weapon was specced by the reference plan; one left at home was not, or a note says why (no slot)

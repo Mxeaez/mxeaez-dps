@@ -1134,7 +1134,7 @@ back-solved from the fa kit's own DPS (circular). Stuns per kill stays 4 (the us
 length (ticks, ≈ 5 Scythe hits)".
 
 Sensitivity (headline kits re-timed, nothing re-planned): fa and faNotOwned (party 6) don't move anywhere in 21-25 ticks
-(the cap 4 × stun × 6 × stunned DPS ≥ 4700 hp > 1500; fa needs ≥ 6.65 ticks); faSolo +8.4 s at 21 ticks, +13.1 s at 3
+(the cap 4 × stun × 6 × stunned DPS ≥ 4200 hp > 1500; fa needs ≥ 6.65 ticks); faSolo +8.4 s at 21 ticks, +13.1 s at 3
 stuns (still the Bork route: Ezekiel's route is 1328.75 s).
 
 Sanity notes re-checked: at 25 ticks a 6-player team at the calculator's DPS (fa: 15.68 each on stunned Bork) deals 1500

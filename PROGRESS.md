@@ -40,8 +40,8 @@ ROADMAP 40b-2. DATA_SOURCES *Phase 40b-2*; UNVERIFIED A6 / D3; BEST_SETUP *Bork 
   brings the maul too and wins (the planner re-screens at most once, by design; the test now pins that), manual {maul, Tonalztics}
   1417.96 → 1396.74; Phase38h3 slow slot check Tonalztics / Ayak adds 1061.8 / 437.2. Phase36 (you carry or you
   damage-spec): its exact re-time now passes the plan's filler (`damageFiller`, as probes.ts does); without it the
-  party-6 plan (same kit as faNotOwned, 1359.55 s) re-timed to 1358.79 s, i.e. **that plan's filler costs 0.76 s**
-  (for the reviewer: a filler spent from leftover energy should not cost time; not investigated here).
+  party-6 plan (same kit as faNotOwned, 1359.55 s) re-timed to 1358.79 s, i.e. the filler-priority rule (38h-3b: main specs first, the filler from leftover energy) costs 0.76 s compared with
+  kisten as a normal damage weapon; against no kisten the filler saves 9.8 s (faSolo: 3.04 s, fa: 0; reviewer probe).
 - Run: fast suite green (1499); FA slow suites (CrossRaid Phase2 Phase3 Phase40) run once: 6 failures, all pins moved by
   this phase (above) or the CPU cap under load (CrossRaidHeadlines fa 303 s > 200 with ~30 files at once); after the pin
   fixes the failing tests re-run green, CrossRaidHeadlines alone green; retime probe fa / faSolo / faNotOwned gap 0;
