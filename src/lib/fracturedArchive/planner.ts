@@ -75,6 +75,7 @@ import {
   CarrierStep,
   kitCarriers,
   pickCarriersByHp,
+  carrierBarCredit,
   mostNeededWeapon,
   mySpecsForSubset,
   NO_CARRIERS,
@@ -2465,7 +2466,10 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
           sub.filter((w) => !carriedSet.has(specId(w))).forEach((w) => {
             const fewer = sub.filter((x) => x !== w);
             const optNo = runSub(fewer, seedCount);
-            if (total - optNo.best.used >= 1) return; // the kit without it leaves a slot for it
+            if (total - optNo.best.used >= 1) {
+              delete slotChecks[w]; // the kit without it leaves a slot for it
+              return;
+            }
             const aNo = withSubset(fewer);
             const adds = routeHp(mWith, aWith, route) - routeHp(mWith, aNo, route);
             const costs = kitHpCost(optNo.best.members, mWith, aNo, route);
@@ -2874,8 +2878,9 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
             const route = plannedRouteOf(dpCmp(m, assumptions));
             const c = teamCarriers();
             const fewer = { ...assumptions, team: { ...assumptions.team, carriers: { ...c, [w]: Math.max(0, c[w] - 1) } } };
+            const nCarriers = Object.values(c).reduce((t, v) => t + v, 0);
             slotHp = {
-              adds: budgetOn ? routeHp(m, assumptions, route) - routeHp(m, fewer, route) : 0,
+              adds: budgetOn ? carrierBarCredit(nCarriers, assumptions.partySize, routeHp(m, assumptions, route) - routeHp(m, fewer, route)) : 0,
               costs: budgetOn ? kitHpCost(m, opt2.best.members, assumptions, route) : Infinity,
             };
           }

@@ -3,6 +3,14 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 38h-3 review fixes 2 (FA, 2026-10-29)
+
+Re-review of 5362a476: FAIL on C. `assignMe`'s HP now credits your carrying only when every bar is a carrier's
+(Σ carriers > party − 1, `carrierBarCredit`); with a teammate's bar free the Team drain counts their carrier the same, so
+0 HP and no kit slot given up. Low: a Solo slot check is dropped when a later round finds a free slot. Tests (Phase29):
+5 carriers of 6 → 0 HP, no carry; 6 of 6 → 120 HP vs 30, carry; party 1 credited. Headlines unchanged (`pinHeadlines
+--full --check` no change); Phase29 / 31 / 38h3 with slow tests green, fast suite green, retime gap 0, tsc, lint clean.
+
 ## Phase 38h-3 review fixes (FA, 2026-10-29)
 
 Review of a4c63704: PASS with findings; fixed (the reviewer's A: filler weapon for leftover energy, and B: vote

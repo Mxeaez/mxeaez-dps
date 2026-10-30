@@ -437,6 +437,14 @@ export const assignMe = (opts: {
   };
 };
 
+/**
+ * Phase 38h-3 re-review: the drain HP your carrying credits you with. The Team drain state counts every carrier whoever
+ * holds the weapon, so while the carriers fit the party without you (Σ carriers ≤ party − 1) a teammate with a free bar
+ * carries it and your carrying adds nothing (0); only when every bar is a carrier's (Σ > party − 1) is the last carrier's
+ * bar `hp` yours.
+ */
+export const carrierBarCredit = (carriers: number, party: number, hp: number): number => (carriers > Math.max(1, Math.floor(party)) - 1 ? hp : 0);
+
 /** e.g. "2 Tonalztics → 97%" for one boss. */
 export const describeNeed = (n: RoleTargetNeed): string => {
   if (!n.carriers) return n.note ?? '—';

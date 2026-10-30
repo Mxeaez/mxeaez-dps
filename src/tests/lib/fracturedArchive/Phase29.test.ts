@@ -9,6 +9,7 @@ import {
 import { DEFAULT_ASSUMPTIONS, PresetDef, withPlanCarriers } from '@/lib/fracturedArchive/presets';
 import {
   assignMe,
+  carrierBarCredit,
   bringText,
   CarrierCounts,
   carriersText,
@@ -201,6 +202,21 @@ describe('your share ("assign me")', () => {
     expect(no.reason).toBe('none: your last slot is worth 75 HP as gear (its bar pays 40 HP) — let a teammate carry Tonalztics (most needed: 2 carriers)');
     // nothing measured: no carry
     expect(assignMe({ weapon: 'tonalztics', carriedAnyway: false, freeSlots: 0 }).carry).toBe(false);
+  });
+
+  test('re-review: your carrying is credited only when every bar is a carrier’s (Σ carriers > party − 1)', () => {
+    // party 6, 5 carriers: a teammate with a free bar carries it → 0 HP added → a slot costing 30 HP is not given up
+    expect(carrierBarCredit(5, 6, 120)).toBe(0);
+    expect(assignMe({
+      weapon: 'tonalztics', carriedAnyway: false, freeSlots: 0, slotHp: { adds: carrierBarCredit(5, 6, 120), costs: 30 },
+    }).carry).toBe(false);
+    // party 6, 6 carriers: everyone carries, the last carrier's bar is yours → 120 HP ≥ 30 → carry
+    expect(carrierBarCredit(6, 6, 120)).toBe(120);
+    expect(assignMe({
+      weapon: 'tonalztics', carriedAnyway: false, freeSlots: 0, slotHp: { adds: carrierBarCredit(6, 6, 120), costs: 30 },
+    }).carry).toBe(true);
+    // party 1: your bar is the only one (1 > 0)
+    expect(carrierBarCredit(1, 1, 50)).toBe(50);
   });
 });
 
