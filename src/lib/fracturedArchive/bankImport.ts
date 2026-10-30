@@ -21,6 +21,7 @@ import { RAID_BASES } from '@/lib/raids/base';
  * 2. B is an ornament kit of P: the same name behind "Sanguine ", "Holy ", "Radiant " (Sanguine torva full helm,
  *    Holy scythe of vitur, Radiant oathplate helm ...) - then rule 1 applies to what is left, or
  * 3. B is in the same upstream alias group as P (locked / broken / cosmetic recolours: src/lib/EquipmentAliases.ts).
+ * 4. B is an upgrade made from P that fully replaces it in DPS terms (UPGRADE_TIERS below), then rule 1 applies.
  * Everything else is not found; the UI lets the user untick items carried or stored elsewhere.
  */
 
@@ -52,6 +53,18 @@ export const parseBank = (raw: unknown): ParsedBank | { error: string } => {
 
 const ORNAMENT_PREFIXES = ['sanguine ', 'holy ', 'radiant ', 'frozen ', 'volcanic '];
 
+/**
+ * Upgrade (lower case, without "(...)") -> the lower tiers it is made from and fully replaces (phase 39b fix).
+ * - Blessed Dizana's quiver: the Dizana's quiver blessed at the Blessed ... altar, same ranged-strength/accuracy
+ *   bonuses and attuned effect, https://oldschool.runescape.wiki/w/Blessed_Dizana%27s_quiver
+ * - Dizana's max cape: Dizana's quiver + max cape combined; it keeps the quiver's effect in DPS terms,
+ *   https://oldschool.runescape.wiki/w/Dizana%27s_max_cape (lower tier: https://oldschool.runescape.wiki/w/Dizana%27s_quiver)
+ */
+const UPGRADE_TIERS: Record<string, string[]> = {
+  "blessed dizana's quiver": ["dizana's quiver"],
+  "dizana's max cape": ["dizana's quiver"],
+};
+
 /** The names a bank item stands for: itself, its id's name, its alias group, without an ornament prefix (lower case). */
 const ownedForms = (b: BankItem): string[] => {
   const names = [b.name];
@@ -62,6 +75,10 @@ const ownedForms = (b: BankItem): string[] => {
   for (const n of [...lower]) {
     const pre = ORNAMENT_PREFIXES.find((p) => n.startsWith(p));
     if (pre) lower.push(n.slice(pre.length));
+  }
+  for (const n of [...lower]) {
+    const lowerTiers = UPGRADE_TIERS[n.replace(/ \(.*\)$/, '')];
+    if (lowerTiers) lower.push(...lowerTiers);
   }
   return Array.from(new Set(lower));
 };

@@ -119,6 +119,18 @@ describe('matching the bank to the pool gear', () => {
     expect(m.matched).not.toContain('Dragon arrow');
   });
 
+  test('owning an upgrade counts as owning its lower tier (Dizana\'s quiver)', () => {
+    const quiver = ['Blessed Dizana\'s quiver (l)'];
+    expect(bankOwns('Dizana\'s quiver', [item(quiver[0])])).toBe(true);
+    expect(bankOwns('Dizana\'s quiver', [item('Dizana\'s max cape (l)')])).toBe(true);
+    expect(bankOwns('Dizana\'s quiver', [item('Dizana\'s max cape')])).toBe(true);
+    // not the other way round
+    expect(bankOwns('Blessed Dizana\'s quiver', [item('Dizana\'s quiver')])).toBe(false);
+    const m = matchBank([item(quiver[0])], ['Dizana\'s quiver', 'Blessed Dizana\'s quiver', 'Twisted bow']);
+    expect(m.matched).toEqual(['Dizana\'s quiver', 'Blessed Dizana\'s quiver']);
+    expect(m.missing).toEqual(['Twisted bow']);
+  });
+
   test('mergeNotOwned replaces the pool items it judges and keeps the others', () => {
     const pool = ['Twisted bow', 'Obligator', 'Scythe of vitur'];
     const out = mergeNotOwned(['Twisted bow', 'Scythe of vitur', 'Something typed by hand'], ['Obligator'], pool);

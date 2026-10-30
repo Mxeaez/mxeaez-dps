@@ -3,6 +3,13 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 39b fix: owning an upgrade counts as owning its lower tier (2026-10-30)
+
+No calculation change. A bank with only "Blessed Dizana's quiver (l)" left the pool item "Dizana's quiver" in `missing`
+(the pool uses the lower tier; `bankOwns` only accepted the item itself, `P (...)`, ornament kits and alias groups).
+New `UPGRADE_TIERS` in `bankImport.ts`: Blessed Dizana's quiver and Dizana's max cape each count as Dizana's quiver
+(wiki URLs in the comment). Not the other way round. Jest test added to `Phase39b.test.ts`.
+
 ## Phase 39b: Import my bank and stats (RuneLite character-exporter, UI, 2026-10-30)
 
 ROADMAP row 39b. No calculation change (`pinHeadlines --full --check`: no change).
