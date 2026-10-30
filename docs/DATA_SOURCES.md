@@ -1072,3 +1072,24 @@ user's energy; value = specs saved per landed drain (1/p - 1/p') x weapon energy
 the page): default radius and ally count, whether Entice refreshes or stacks, whether it ends on death, how the 1-20 setting
 interacts with the 25% (taken as one ally per Entice), whether it guarantees a damaging DWH / BGS hit (taken as accurate
 roll only), whether Tonalztics (ranged) / Eye of Ayak (magic) are excluded (the page says melee only).
+
+## Phase 40 — Xarth's corpse freezer (read 2026-10-30)
+
+Sources: https://oldschool.runescape.wiki/w/The_Fractured_Archive/Strategies (`?action=raw`, section *Xarth* → *Phase 2*)
+and https://oldschool.runescape.wiki/w/Xarth (`?action=raw`: no corpse / spellbook text; strategy via
+`{{HasStrategy}}`). Quotes (Phase 2):
+- video caption: "A player freezes the incoming corpses right before they can heal Xarth, allowing designated teammates to
+  attack him and the corpses with a venator bow. Another player is assigned to attack Xarth with melee."
+- "he will additionally reanimate corpses ... If allowed to reach him, they will heal him for their remaining health.
+  Corpses can be frozen, or they may be attacked with water spells to douse them ... Undead Grasp, under the effects of
+  Mark of Darkness, freezes Corpses in place for longer than the usual 4 ticks, at least 10 ticks. Ice, water spells, and
+  Undead Grasp do not have any delay when used on corpses. Avoid using fire spells".
+- "A Venator bow will outperform most non-melee setups for overall damage if corpses are frozen adjacent to Xarth."
+- Phase 2 starts "When all pillars are gone" (not at an HP %; the earlier "Phase 2 at 50% HP" note above is the page's
+  older wording).
+
+Finding: one player freezes the corpses at Xarth (headcount 1, Xarth only) — the user's framing. The wiki names no
+required spellbook: freezing is ice spells (Ancients), and Undead Grasp (Arceuus) or water spells (douse) also work. We
+model the Ancients freezer with Ice Barrage, P2 = 50% of the HP, the freezer's DPS = the Ice Barrage loadout's on Xarth:
+**unverified** (UNVERIFIED D37; BEST_SETUP *Required variants*).
+

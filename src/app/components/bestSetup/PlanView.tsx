@@ -56,6 +56,7 @@ import {
 } from '@/lib/fracturedArchive/loadoutIcons';
 import { ItemIcon, ItemNames, LoadoutIconRow } from '@/app/components/bestSetup/ItemIcons';
 import PlanBriefing from '@/app/components/bestSetup/PlanBriefing';
+import VariantsBox from '@/app/components/bestSetup/VariantsBox';
 import { briefingRows, drainSummaryPhases } from '@/lib/fracturedArchive/briefing';
 import DrainLineView from '@/app/components/bestSetup/DrainLineView';
 import {
@@ -608,11 +609,13 @@ const PlanView: React.FC<{
   const [nonFightMinutes, setNonFightMinutes] = useState<number>(initialInputs?.nonFightMinutes ?? raid.nonFightMinutes);
   // phase 38b: the players' spellbook (Arceuus: Death Charge)
   const [spellbook, setSpellbook] = useState<Spellbook>(initialInputs?.spellbook ?? raid.spellbook);
+  // phase 40: the required variants you play ("I'm this player")
+  const [variantMe, setVariantMe] = useState<string[]>(initialInputs?.variantMe ?? []);
   useEffect(() => {
     onInputs?.({
-      route, supplies, ringPolicy, nonItem, pinned, nonFightMinutes, spellbook, ...(mages !== undefined ? { mages } : {}),
+      route, supplies, ringPolicy, nonItem, pinned, nonFightMinutes, spellbook, ...(mages !== undefined ? { mages } : {}), ...(variantMe.length ? { variantMe } : {}),
     });
-  }, [onInputs, route, supplies, ringPolicy, mages, nonItem, pinned, nonFightMinutes, spellbook]);
+  }, [onInputs, route, supplies, ringPolicy, mages, nonItem, pinned, nonFightMinutes, spellbook, variantMe]);
   // a new Heart in the Assumptions box replaces the pinned one (or removes it); the first render keeps the defaults
   const lastHeart = useRef(selectedHeart);
   useEffect(() => {
@@ -1081,6 +1084,15 @@ const PlanView: React.FC<{
             imageOf={(id) => targetImageUrl(findTarget(raid.encounterTarget[id]))}
           />
           {result.specs && <BringBox specs={result.specs} />}
+          {(result.variants ?? []).some((v) => v.onRoute) && (
+            <VariantsBox
+              variants={result.variants!.filter((v) => v.onRoute)}
+              partySize={assumptions.partySize}
+              labelOf={(id) => raid.time.labels[id] ?? id}
+              mine={variantMe}
+              onMine={setVariantMe}
+            />
+          )}
           <CloseCallsBox result={result} />
           {result.unusedCarried.length > 0 && (
             <div className="px-2 py-1 rounded border border-orange-400 bg-orange-50 dark:bg-orange-900/30 flex flex-wrap items-center gap-2" data-testid="unused-carried">

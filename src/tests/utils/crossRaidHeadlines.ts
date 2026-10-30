@@ -8,6 +8,7 @@ import {
   comfortSupplies, DEFAULT_RING_POLICY, PlanResult, planAssumptions, planItemByName, ringAssumptions, toPlayerEquipment,
 } from '@/lib/fracturedArchive/planner';
 import { applyLoadoutToPlayer } from '@/lib/fracturedArchive/loadout';
+import { timeVariantsOfPlan, withTimeVariants } from '@/lib/fracturedArchive/variants';
 import { RaidConfig, raidConfig } from '@/lib/raids';
 import { cpuSeconds, memoWithin } from '@/tests/utils/phase37';
 import { faRows } from '@/tests/utils/otherRaids';
@@ -121,7 +122,9 @@ export const recomputed = (raid: RaidConfig, res: PlanResult): number => {
       toPlayer: (m, o, ta) => applyLoadoutToPlayer(base, c.label, c.group, eq, o.style, o.spell, m, ta ?? planA),
     };
   });
-  const cmp = compareRoutes(createKitEvaluator(loadouts, planA), raidTimeAssumptionsFrom(planA, 'team', raid.defaultTimeSettings, raid.time));
+  // phase 40: the plan's required variants (the Xarth freezer), rebuilt from the loadouts it timed
+  const timeA = withTimeVariants(raidTimeAssumptionsFrom(planA, 'team', raid.defaultTimeSettings, raid.time), timeVariantsOfPlan(res.variants, toPlayerEquipment, base, planA));
+  const cmp = compareRoutes(createKitEvaluator(loadouts, planA), timeA);
   return cmp.routes[cmp.fastest].seconds;
 };
 

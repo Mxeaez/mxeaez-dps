@@ -290,10 +290,11 @@ describe('ring policy', () => {
    * Phase 38g (one fixed drain set per event, the fewest carriers at 95%, no seconds-based option search): FA 1534.7 →
    * 1564.4, ToA 905.5 → 918.2, CoX 452.7 → 469.8, ToB 457.3 → 461.7. Phase 38h-2 (bars valued in boss HP, specs where
    * they are worth most; ToA / CoX / ToB frozen): FA 1564.4 → 1545.8; review fix (values averaged over the drain's
-   * outcomes, carriers on the planned route): 1545.8 → 1531.5.
+   * outcomes, carriers on the planned route): 1545.8 → 1531.5. Phase 40 (the Xarth freezer: the team averages a lower DPS
+   * on Xarth's phase 2, so the Dagon'hai route wins with a Twisted bow kit): 1531.5 → 1548.9.
    */
   test.each(rowsFor(faRows([
-    { id: 'fractured-archive', seconds: 1531.5 },
+    { id: 'fractured-archive', seconds: 1548.9 },
     { id: 'toa', seconds: 918.2 },
     { id: 'cox', seconds: 469.8 },
     { id: 'tob', seconds: 461.7 },

@@ -40,6 +40,7 @@ import {
   DEFAULT_FIGHT_SECONDS, DrainModel, drainModel, PlannerWeapon,
 } from '@/lib/fracturedArchive/specs';
 import { DrainLine } from '@/lib/fracturedArchive/drainLine';
+import { kitWithVariants, TimeVariant } from '@/lib/fracturedArchive/variantBlend';
 import type { SpecCounts } from '@/lib/fracturedArchive/bestSetup';
 import {
   atHpLeft, DAMAGE_SPEC_WEAPON_IDS, DAMAGE_SPEC_WEAPONS, damageSpecItemName, damageSpecProfile, DamageSpecProfile, DamageSpecWeapon,
@@ -475,6 +476,11 @@ export interface RaidTimeAssumptions {
   roomSeconds?: Partial<Record<EncounterId, number>>;
   /** Phase 38a (ToB): the surge cooldown pauses between encounters (its clock is fight time only). */
   surgePausesBetweenEncounters?: boolean;
+  /**
+   * Phase 40 (ROADMAP 40): required variants (variantBlend.ts): on their encounter's rows the team averages the variant
+   * players' DPS with yours. Undefined = none (every player at your DPS).
+   */
+  variants?: TimeVariant[];
 }
 
 /**
@@ -800,9 +806,14 @@ const encounterTimeOf = (id: EncounterId, kit: RaidKit, a: RaidTimeAssumptions, 
   };
 };
 
-export const encounterTime = (id: EncounterId, kit: RaidKit, a: RaidTimeAssumptions, opts: EncounterBudgetOptions = {}): EncounterTime => (kit.memoEncounter
-  ? kit.memoEncounter(id, a, opts, (k) => encounterTimeOf(id, k, a, opts))
-  : encounterTimeOf(id, kit, a, opts));
+export const encounterTime = (id: EncounterId, kit: RaidKit, a: RaidTimeAssumptions, opts: EncounterBudgetOptions = {}): EncounterTime => {
+  // phase 40: a required variant on this encounter answers its rows at the team's average DPS (the memo is the raw
+  // kit's: the run wraps the recording view; the variant's id is in the assumptions' key)
+  const on = (k: RaidKit) => (a.variants?.some((v) => v.encounter === id) ? kitWithVariants(k, id, a.variants) : k);
+  return kit.memoEncounter
+    ? kit.memoEncounter(id, a, opts, (k) => encounterTimeOf(id, on(k), a, opts))
+    : encounterTimeOf(id, on(kit), a, opts);
+};
 
 export interface RouteTime {
   route: Route;

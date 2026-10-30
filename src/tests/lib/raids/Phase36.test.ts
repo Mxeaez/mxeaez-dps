@@ -28,6 +28,7 @@ import { BestSetupAssumptions } from '@/lib/fracturedArchive/presets';
 import { RaidId, NO_DRAINS_ADDS } from '@/lib/raids/types';
 import { getCombatStylesForCategory } from '@/utils';
 import { EquipmentCategory } from '@/enums/EquipmentCategory';
+import { timeVariantsOfPlan, withTimeVariants } from '@/lib/fracturedArchive/variants';
 
 // Phase 36: damage specs vs drains, the surge potion, one spec budget per encounter. Docs: docs/BEST_SETUP.md *Damage
 // specs, surge potion and one spec budget per encounter (phase 36)*; readings: UNVERIFIED B10, D27-D29.
@@ -711,7 +712,9 @@ describe('review: you carry a drain weapon or you damage-spec (Team, one bar eac
         id: c.key, name: c.label, group: c.group, options: c.options, toPlayer: (m, o, ta) => applyLoadoutToPlayer(base, c.label, c.group, eq, o.style, o.spell, m, ta ?? a),
       };
     });
-    const cmp = compareRoutes(createKitEvaluator(loadouts, a), raidTimeAssumptionsFrom(a, 'team', raid.defaultTimeSettings, raid.time), routesFor({ model: raid.time }).filter((r) => r.id === ROUTE));
+    // phase 40: with the plan's required variants (the Xarth freezer at party 6)
+    const ta = withTimeVariants(raidTimeAssumptionsFrom(a, 'team', raid.defaultTimeSettings, raid.time), timeVariantsOfPlan(res.variants, toPlayerEquipment, base, a));
+    const cmp = compareRoutes(createKitEvaluator(loadouts, a), ta, routesFor({ model: raid.time }).filter((r) => r.id === ROUTE));
     return cmp.routes[cmp.fastest];
   };
   const exactWith = (...x: Parameters<typeof routeWith>) => routeWith(...x).seconds;

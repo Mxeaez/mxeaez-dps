@@ -275,7 +275,7 @@
   },
   {
    "slots": 1,
-   "seconds": 41.61546422906417
+   "seconds": 41.6154642290644
   },
   {
    "slots": 8,
@@ -522,14 +522,14 @@
   }
  ],
  "pinnedItems": [],
- "comparison": "e81528c287019d3fa3058484a4458321991f2e99cb89d032d3f3e02a77db007e",
+ "comparison": "4dd9d039bd103d248b2e9734c49dcafb0c5a3fde650f325bab4f833babcdab3a",
  "planned": 5,
  "rejected": [],
  "alternatives": [
   {
    "label": "melee + magic: Tumeken's shadow (Ancestral) / Inquisitor's + Obligator / Harmonised Nightmare staff / Harmonised Nightmare staff #4",
    "kind": "alternative",
-   "deltaSeconds": -86.73904358212144,
+   "deltaSeconds": -86.73904358212167,
    "deltaSlots": 3,
    "reason": "86.7 s slower",
    "weapons": [
@@ -542,9 +542,9 @@
   {
    "label": "ranged + magic: Tumeken's shadow (Ancestral) / Twisted bow (Masori) / Ascension crossbows + diamond (e) (Masori) / Ascension crossbows + Diamond ascension bolts (e)",
    "kind": "alternative",
-   "deltaSeconds": -305.4145789895458,
+   "deltaSeconds": -290.44928937990016,
    "deltaSlots": 4,
-   "reason": "305.4 s slower",
+   "reason": "290.4 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Twisted bow",
@@ -555,9 +555,9 @@
   {
    "label": "magic: Tumeken's shadow (Ancestral) / Harmonised Nightmare staff / Harmonised Nightmare staff #4",
    "kind": "alternative",
-   "deltaSeconds": -884.2797719302027,
+   "deltaSeconds": -869.3144823205571,
    "deltaSlots": -5,
-   "reason": "884.3 s slower",
+   "reason": "869.3 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Harmonised Nightmare staff",
@@ -621,19 +621,19 @@
   "items": [
    {
     "item": "Zaryte crossbow",
-    "hp": 618.0370091792374,
+    "hp": 621.3225416853866,
     "slots": 1,
     "how": "a free slot"
    },
    {
     "item": "Surge potion(4)",
-    "hp": 124.34014311332658,
+    "hp": 127.62567561947526,
     "slots": 1,
     "how": "a free slot"
    },
    {
     "item": "Crimson kisten",
-    "hp": 18.06404091675404,
+    "hp": 17.40693441552503,
     "slots": 1,
     "how": "filler (leftover energy; a free slot)"
    }
@@ -752,11 +752,11 @@
      "key": "xarth|",
      "label": "Xarth",
      "gains": {
-      "voidwaker": 41.198554274409105,
-      "dragonClaws": 55.50853021264409,
-      "burningClaws": 46.44751452502716,
-      "zcb": 74.93545967657018,
-      "crimsonKisten": 60.617544603717946
+      "voidwaker": 46.45540628424725,
+      "dragonClaws": 60.76538222248223,
+      "burningClaws": 53.957303110510225,
+      "zcb": 79.31616968476864,
+      "crimsonKisten": 65.87439661355609
      }
     },
     {
@@ -814,7 +814,7 @@
       "Bork + Smorks (4.4 s)",
       "Ocellus (4.0 s)"
      ],
-     "lastSaved": 8.448390974210952
+     "lastSaved": 8.44839097421118
     },
     {
      "weapon": "elderMaul",
@@ -823,7 +823,7 @@
       "Bork + Smorks (4.0 s)",
       "Ocellus (0.7 s)"
      ],
-     "lastSaved": 4.699469060798265
+     "lastSaved": 4.699469060798492
     }
    ],
    "perTarget": [
@@ -989,7 +989,7 @@
   },
   "notes": [
    "Surge potion(4) (second): adds no HP the bars pay",
-   "Your spec bar goes to Zaryte crossbow / Crimson kisten / surge doses: 5 carriers (party − 1); the bars pay 3350 HP on the route vs 2589 HP if you carry a drain weapon instead."
+   "Your spec bar goes to Zaryte crossbow / Crimson kisten / surge doses: 5 carriers (party − 1); the bars pay 3353 HP on the route vs 2587 HP if you carry a drain weapon instead."
   ]
  },
  "ring": {
@@ -998,33 +998,33 @@
   "screened": [
    {
     "ring": "Ultor ring",
-    "seconds": 1274.1212107638123,
+    "seconds": 1289.086500373458,
     "full": true
    },
    {
     "ring": "Bellator ring",
-    "seconds": 1325.0098005897034,
+    "seconds": 1340.5798321804991,
     "full": true
    },
    {
     "ring": "Venator ring",
-    "seconds": 1336.0040984749257,
+    "seconds": 1351.9864635350111,
     "full": true
    },
    {
     "ring": "Ring of shadows",
-    "seconds": 1340.0398987133162,
+    "seconds": 1355.8397443476279,
     "full": true
    },
    {
     "ring": "Lightbearer",
-    "seconds": 1442.6968406336734,
+    "seconds": 1455.9191445267631,
     "full": false,
     "atLeast": 0
    },
    {
     "ring": "Magus ring",
-    "seconds": 1442.6968406336734,
+    "seconds": 1455.9191445267631,
     "full": false,
     "atLeast": 0
    }
@@ -1049,16 +1049,176 @@
   "bork|Smorks 25-0% HP (armour 14)": 8.90904406005578,
   "smorks|": 14.645399161189738
  },
+ "variants": [
+  {
+   "id": "xarth-freezer",
+   "label": "+ Ancients (Xarth corpses)",
+   "onRoute": true,
+   "headcount": 1,
+   "encounter": "xarth",
+   "spellbook": "ancients",
+   "role": "Ice Barrage the corpses next to Xarth in phase 2 (Ancient spellbook: no Death Charge for this player, not in the times)",
+   "share": 0.5,
+   "where": "phase 2",
+   "loadout": {
+    "key": "variant:xarth-freezer",
+    "label": "Freezer: Kodai + Ice Barrage (Ancestral)",
+    "kind": "preset",
+    "group": "magic",
+    "equipment": {
+     "head": {
+      "id": 21018,
+      "name": "Ancestral hat",
+      "version": "",
+      "slot": "head"
+     },
+     "body": {
+      "id": 21021,
+      "name": "Ancestral robe top",
+      "version": "",
+      "slot": "body"
+     },
+     "legs": {
+      "id": 21024,
+      "name": "Ancestral robe bottom",
+      "version": "",
+      "slot": "legs"
+     },
+     "cape": {
+      "id": 21793,
+      "name": "Imbued Guthix cape",
+      "version": "Normal",
+      "slot": "cape"
+     },
+     "neck": {
+      "id": 12002,
+      "name": "Occult necklace",
+      "version": "",
+      "slot": "neck"
+     },
+     "hands": {
+      "id": 31106,
+      "name": "Confliction gauntlets",
+      "version": "",
+      "slot": "hands"
+     },
+     "feet": {
+      "id": 31097,
+      "name": "Avernic treads (max)",
+      "version": "",
+      "slot": "feet"
+     },
+     "ring": {
+      "id": 28307,
+      "name": "Ultor ring",
+      "version": "",
+      "slot": "ring"
+     },
+     "weapon": {
+      "id": 21006,
+      "name": "Kodai wand",
+      "version": "",
+      "slot": "weapon"
+     },
+     "shield": {
+      "id": 27251,
+      "name": "Elidinis' ward (f)",
+      "version": "",
+      "slot": "shield"
+     }
+    },
+    "options": [
+     {
+      "style": {
+       "name": "Spell",
+       "type": "magic",
+       "stance": "Autocast"
+      },
+      "spell": "Ice Barrage"
+     }
+    ],
+    "source": "wiki The Fractured Archive/Strategies → Xarth → Phase 2 (read 2026-10-30): \"A player freezes the incoming corpses\""
+   },
+   "extraItems": [
+    {
+     "id": 12002,
+     "name": "Occult necklace",
+     "version": "",
+     "slot": "neck"
+    },
+    {
+     "id": 21006,
+     "name": "Kodai wand",
+     "version": "",
+     "slot": "weapon"
+    },
+    {
+     "id": 21018,
+     "name": "Ancestral hat",
+     "version": "",
+     "slot": "head"
+    },
+    {
+     "id": 21021,
+     "name": "Ancestral robe top",
+     "version": "",
+     "slot": "body"
+    },
+    {
+     "id": 21024,
+     "name": "Ancestral robe bottom",
+     "version": "",
+     "slot": "legs"
+    },
+    {
+     "id": 21793,
+     "name": "Imbued Guthix cape",
+     "version": "Normal",
+     "slot": "cape"
+    },
+    {
+     "id": 27251,
+     "name": "Elidinis' ward (f)",
+     "version": "",
+     "slot": "shield"
+    },
+    {
+     "id": 31106,
+     "name": "Confliction gauntlets",
+     "version": "",
+     "slot": "hands"
+    },
+    {
+     "id": -9001,
+     "name": "Saturated heart",
+     "version": "",
+     "slot": "ring"
+    }
+   ],
+   "freeSlots": 4,
+   "droppedSupplies": [
+    {
+     "type": "brew",
+     "count": 5
+    }
+   ],
+   "overfull": false,
+   "baseDps": 13.91696785949811,
+   "variantDps": 1.7335925488568287,
+   "teamDps": 12.821790357448496,
+   "seconds": 15.390235515303837
+  }
+ ],
  "unusedCarried": [],
  "excluded": [],
  "droppedPinned": [],
  "ownershipNotices": [],
  "searchRows": "29977aeaca168973ef66b19c6049e6f403f8b1c3c4eb7bfc8a80437a4e182844",
- "objectiveSeconds": 1274.1212107638123,
+ "objectiveSeconds": 1289.086500373458,
  "fightSeconds": null,
  "plannedRoute": {
   "id": "archive-guardian>bork-smorks>moia>xarth>ocellus",
-  "seconds": 1274.1212107638123,
+  "seconds": 1289.086500373458,
   "surgeDoses": [
    "archive-guardian",
    "ocellus"
@@ -1138,7 +1298,7 @@
    },
    {
     "id": "xarth",
-    "seconds": 180.60612471884792,
+    "seconds": 195.57141432849374,
     "events": [
      {
       "npc": "Xarth",
@@ -1147,7 +1307,7 @@
        "elderMaul": 2,
        "tonalztics": 1
       },
-      "hp": 200.6997791578577
+      "hp": 198.07065132118004
      }
     ],
     "damage": {

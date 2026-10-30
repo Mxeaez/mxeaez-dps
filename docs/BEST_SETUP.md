@@ -1889,6 +1889,34 @@ Review 38j: the margin is 1.5% (a kit's own plan beat its borrowed time by up to
 timed with the reference kit's spec plan (the optimiser's score, error up to ~1.2%, under the 2% close-call margin; the
 tooltip says so); the chosen kit is not.
 
+### Required variants (phase 40, FA)
+
+Everyone runs the planner's kit; a raid can force a variation on a few players. The FA's (variants.ts `XARTH_FREEZER`;
+wiki Strategies → Xarth → Phase 2, docs/DATA_SOURCES.md *Phase 40*): **1 player: + Ancients (Xarth corpses)**, on every
+route with Xarth, party ≥ 2 (party 1: none; other raids: none, round 7).
+
+- **Team DPS** (variantBlend.ts, UNVERIFIED D37): on the `xarth` row, `share` = 50% of the HP is phase 2, where the
+  freezer casts Ice Barrage at Xarth (Kodai wand + Ancestral, Elidinis' ward (f), the camped ring; owned pieces only) and
+  the other n − 1 players deal your DPS d. The team averages d2 = d × (1 − 1/n) + v/n there, so the row's seconds are
+  0.5 H ÷ d + 0.5 H ÷ d2, i.e. the row's DPS is the harmonic blend `variantRowDps` = 1 ÷ (0.5/d + 0.5/d2). It is
+  applied at the kit (`variantKit` wraps `best` on the variant rows), so passes, drain values, damage specs and the
+  carrier valuation all read the team's average. Hand case (Phase40.test.ts): H 2600, d 12, v 6, n 6 → d2 11, 108.33 +
+  118.18 = 226.52 s vs 216.67 s.
+- **Kit-independent**: the freezer's loadout is fixed per plan run (not sized per kit), so the optimiser, the exact
+  re-times, the own-plan picks and the brute force all time the same team (`timeA` in `plan()`; the re-timers rebuild it
+  from `PlanResult.variants` with `timeVariantsOfPlan`). The variant's id (def, items, assumptions) is in the memo keys;
+  its evaluator is shared per id.
+- **Sized to 28 slots** (`PlanResult.variants`): the freezer carries the switch items the kit lacks (+ the heart when no
+  kit loadout is magic), paid from the kit's free slots, then supplies are left behind (`VARIANT_DROP_ORDER`: brews,
+  food, other, restores). fa: +9 items, 4 free, 5 Saradomin brews left behind.
+- **Plan tab** (`VariantsBox.tsx`): "1 player: + Ancients (Xarth corpses)", the role, the switch, the slots, the team DPS
+  line ("5 × 13.92 + 1 × 1.73 (Ice Barrage) ÷ 6 = 11.89 DPS per player there; +15.4 s"), and "I'm this player" (saved:
+  `plan.variantMe`) showing that kit. Who is the freezer does not change the times.
+- **Not modelled**: the freezer's Death Charge (Ancients: their own bar gets none; D32), corpse HP / healing, the
+  barrage's damage to the corpses, freezes by Undead Grasp or water spells (the wiki's alternatives).
+- Headlines: fa 21:14.1 → 21:29.1 (Xarth 180.61 → 195.57; kit unchanged); faNotOwned 24:17.6 → 24:30.9 (the Dagon'hai
+  route and Lightbearer win once Xarth costs the freezer); faSolo (party 1) unchanged.
+
 ## Routes tab (phase 16: raid time model)
 
 **Phase 23: the tab is gone.** Its route table is now part of the Plan tab's results (the *planned* kit timed on every

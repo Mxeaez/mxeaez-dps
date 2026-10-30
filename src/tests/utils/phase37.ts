@@ -97,8 +97,10 @@ export const PHASE37_MEMO: Record<string, MemoCounters> = {
   // so far fewer pass hits; carriers by headcount, no carrier greedy): every entry re-measured
   // phase 38c (Ocellus: P2 in the plan, three drain events; ToA: six routes, 9 encounters): r27fa was 1048 / 1126 /
   // 14200 / 175, r27toa 1009 / 1217 / 10261 / 317
+  // phase 40 (the Xarth freezer: another kit and the Dagon'hai route; without the variant this plan measures 1136 / 1341 /
+  // 27136 / 185): r27fa was 1221 / 1212 / 18419 / 57
   r27fa: {
-    encounterRuns: 1221, passRuns: 1212, encounterHits: 18419, passHits: 57,
+    encounterRuns: 2228, passRuns: 1483, encounterHits: 25340, passHits: 1291,
   },
   r27toa: {
     encounterRuns: 1531, passRuns: 1523, encounterHits: 16802, passHits: 81,

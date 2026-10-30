@@ -4,8 +4,8 @@
   "fa": {
    "raid": "fractured-archive",
    "label": "Fractured Archive (Team defaults)",
-   "total": "21:14.1",
-   "seconds": 1274.1212107638123,
+   "total": "21:29.1",
+   "seconds": 1289.086500373458,
    "route": "archive-guardian>bork-smorks>moia>xarth>ocellus",
    "ring": "Ultor ring",
    "kit": [
@@ -36,7 +36,7 @@
     "archive-guardian": 169.5,
     "bork-smorks": 186.19,
     "moia": 59.5,
-    "xarth": 180.61,
+    "xarth": 195.57,
     "ocellus": 678.32
    }
   },
@@ -199,12 +199,12 @@
   "faNotOwned": {
    "raid": "fractured-archive",
    "label": "Fractured Archive without Obligator / Ascension crossbows",
-   "total": "24:17.6",
-   "seconds": 1457.6226665357194,
-   "route": "archive-guardian>bork-smorks>moia>xarth>ocellus",
-   "ring": "Ultor ring",
+   "total": "24:30.9",
+   "seconds": 1470.9435242116033,
+   "route": "archive-guardian>bork-smorks>moia>dagonhai>ocellus",
+   "ring": "Lightbearer",
    "kit": [
-    "Twisted bow switch +5 on Tumeken's shadow (Ancestral)",
+    "Twisted bow switch +5 on Inquisitor's + Scythe (slash)",
     "Tumeken's shadow (Ancestral)",
     "Inquisitor's + Scythe (slash)"
    ],
@@ -223,11 +223,11 @@
    "yourShare": null,
    "surgeAt": [],
    "encounters": {
-    "archive-guardian": 191.91,
-    "bork-smorks": 214.78,
-    "moia": 60.07,
-    "xarth": 209.7,
-    "ocellus": 781.17
+    "archive-guardian": 186.7,
+    "bork-smorks": 216.44,
+    "moia": 60.19,
+    "dagonhai": 224.21,
+    "ocellus": 783.4
    }
   }
  }

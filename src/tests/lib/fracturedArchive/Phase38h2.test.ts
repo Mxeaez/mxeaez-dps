@@ -22,6 +22,8 @@ import {
 } from '@/lib/fracturedArchive/teamSpecs';
 import { kitCarriers, NO_CARRIERS, pickCarriersByHp } from '@/lib/fracturedArchive/specChoice';
 import { kitLoadouts, retimeHeadline } from '@/tests/utils/probes';
+import { timeVariantsOfPlan, withTimeVariants } from '@/lib/fracturedArchive/variants';
+import { PlanVariant, toPlayerEquipment } from '@/lib/fracturedArchive/planner';
 import { headlineCase } from '@/tests/utils/headlines';
 import { phase37Fixture } from '@/tests/utils/phase37';
 import {
@@ -364,10 +366,11 @@ describe('carrier sets valued by the HP the bars really pay (review 38h-2 N1)', 
     const r = retimeHeadline('faNotOwned');
     const c = headlineCase('faNotOwned');
     const inputs = c.inputs();
-    const fx = phase37Fixture('faNotOwned') as unknown as { kit: Parameters<typeof kitLoadouts>[0] };
+    const fx = phase37Fixture('faNotOwned') as unknown as { kit: Parameters<typeof kitLoadouts>[0], variants?: PlanVariant[] };
     const hpOf = (carriers: Record<string, number>) => {
       const a = { ...r.assumptions, team: { ...r.assumptions.team, carriers: { ...NO_CARRIERS, ...carriers } } };
-      const ta = raidTimeAssumptionsFrom(a, inputs.drain, inputs.settings, FA.time);
+      // phase 40: with the plan's required variants (the Xarth freezer; none on the Dagon'hai route)
+      const ta = withTimeVariants(raidTimeAssumptionsFrom(a, inputs.drain, inputs.settings, FA.time), timeVariantsOfPlan(fx.variants, toPlayerEquipment, generateEmptyPlayer(), a));
       const route = r.comparison.routes.find((x) => x.route.id === r.route)!.route;
       const cmp = compareRoutes(createKitEvaluator(kitLoadouts(fx.kit, a), a), ta, [route]);
       return { hp: cmp.routes[0].encounters.reduce((t, e) => t + (e.specPlan?.hp ?? 0), 0), seconds: cmp.routes[0].seconds };
@@ -376,7 +379,8 @@ describe('carrier sets valued by the HP the bars really pay (review 38h-2 N1)', 
     // the review's alternatives on the final kit (seconds there: 1481.98 / 1485.02 / 1488.38 / 1484.56; the plan 1483.36):
     // HP 3347.1 / 3355.3 / 3293.2 / 3324.5 vs the plan's 1 Elder maul + 4 Tonalztics 3358.9. Phase 38j (room times):
     // the plan (1 Elder maul + 4 Tonalztics on the Ultor kit; kits ranked by their own spec plan) 3614.7 vs 3602.5 / 3611.1
-    // / 3548.7 / 3582.9
+    // / 3548.7 / 3582.9. Phase 40 (the Xarth freezer makes Xarth slower: the plan takes the Dagon'hai route, Lightbearer):
+    // the plan's carriers 4013.3
     const sets: Record<string, number>[] = [
       { elderMaul: 1, tonalztics: 3, ayak: 1 }, { elderMaul: 2, tonalztics: 3 }, { tonalztics: 4, ayak: 1 },
       { elderMaul: 2, tonalztics: 2, ayak: 1 },
@@ -385,6 +389,6 @@ describe('carrier sets valued by the HP the bars really pay (review 38h-2 N1)', 
     // eslint-disable-next-line no-console
     if (process.env.PRINT_PINS) console.log(JSON.stringify([r.assumptions.team.carriers, planned, alternatives]));
     alternatives.forEach((x) => expect(planned.hp).toBeGreaterThanOrEqual(x.hp - 1e-6));
-    expect(Math.round(planned.hp * 10) / 10).toBe(3614.7);
+    expect(Math.round(planned.hp * 10) / 10).toBe(4013.3);
   }, 300000);
 });

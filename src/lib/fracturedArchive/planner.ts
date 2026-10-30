@@ -60,10 +60,14 @@ import {
 } from '@/lib/fracturedArchive/damageSpecs';
 import { drainOutcomeStates, EncounterAlloc, encounterWallSeconds } from '@/lib/fracturedArchive/encounterBudget';
 import { createKitMemo } from '@/lib/fracturedArchive/kitMemo';
+import {
+  requiredVariantsFor, timeVariantsFor, variantEquipment, variantOptions, withTimeVariants,
+} from '@/lib/fracturedArchive/variants';
+import { VariantChoice, variantKit } from '@/lib/fracturedArchive/variantBlend';
 import { dosesAllowed, SURGE_DOSES_PER_POTION } from '@/lib/fracturedArchive/specBudget';
 import { assumptionsForTarget } from '@/lib/raids/toa/supplies';
 import { raidBase } from '@/lib/raids/base';
-import { TimeSettings } from '@/lib/raids/types';
+import { Spellbook, TimeSettings } from '@/lib/raids/types';
 import {
   DEFAULT_FIGHT_SECONDS, drainModel, LIGHTBEARER_REGEN_SECONDS, PlannerWeapon, SPEC_REGEN_SECONDS, SPEC_WEAPONS, SpecWeapon,
 } from '@/lib/fracturedArchive/specs';
@@ -1403,6 +1407,43 @@ export interface PlanRejection {
   weapons?: string[];
 }
 
+/** Phase 40: the supplies a variant player leaves behind for its switch, first to last (prayer restores last). */
+export const VARIANT_DROP_ORDER: SupplyType[] = ['brew', 'food', 'other', 'restore'];
+
+/** Phase 40: a required variant of the plan (the planner keeps the kit; `headcount` players add this). */
+export interface PlanVariant {
+  id: string;
+  /** "+ Ancients (Xarth corpses)". */
+  label: string;
+  /** The planned route has the encounter (the Plan tab shows only these; the others are timed on their routes too). */
+  onRoute: boolean;
+  headcount: number;
+  encounter: EncounterId;
+  spellbook: Spellbook;
+  /** What the variant player does. */
+  role: string;
+  /** Share of the encounter rows' HP the variant covers. */
+  share: number;
+  /** Where on the encounter ("phase 2"). */
+  where: string;
+  /** The variant loadout (its options: the spell it casts). */
+  loadout: PlanCandidate;
+  /** Items the variant player carries beyond the kit (the switch; the heart when no kit loadout is magic). */
+  extraItems: PlanItem[];
+  /** The kit's free slots (paid first). */
+  freeSlots: number;
+  /** Supplies left behind for the rest (VARIANT_DROP_ORDER). */
+  droppedSupplies: { type: SupplyType, count: number }[];
+  /** Even without every supply the switch doesn't fit. */
+  overfull: boolean;
+  /** On the encounter's first variant row of the planned route: your DPS, the variant loadout's, the team's average (the blend). */
+  baseDps: number;
+  variantDps: number;
+  teamDps: number;
+  /** Seconds the variant adds on the route (its rows' seconds vs every player at your DPS, same spec plan). */
+  seconds: number;
+}
+
 export interface PlanResult {
   cancelled: boolean;
   /** Kit loadouts, the worn one first. */
@@ -1446,6 +1487,11 @@ export interface PlanResult {
   unusedCarried: PlanItem[];
   /** Phase 26: the "Items I don't own" list the plan honoured (empty = max gear). */
   excluded: string[];
+  /**
+   * Phase 40 (ROADMAP 40): the raid's required variants (the FA's Xarth freezer; `onRoute`: on the planned route); the
+   * times above already count them (variantBlend.ts). Missing = none applies (other raids, party 1).
+   */
+  variants?: PlanVariant[];
   /** Phase 26: pinned items dropped because they're on the list. */
   droppedPinned: PlanItem[];
   /** Phase 26: what the list changed beyond the pool (dropped pinned items, unowned spec weapons in "Specs I bring"). */
@@ -1694,7 +1740,24 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     const autoSolo = autoSpecs && drain === 'solo';
     const withSubset = (sub: PlannerWeapon[]): BestSetupAssumptions => ({ ...ringA, mySpecs: mySpecsForSubset(sub, ringA.mySpecs) });
     let assumptions = autoSolo ? withSubset(ownedSpecs) : ringA;
-    let exactA = raidTimeAssumptionsFrom(assumptions, drain, settings, tuning.model);
+    // phase 40 (ROADMAP 40): the raid's required variants (the FA's Xarth freezer): their loadouts (owned pieces, the
+    // camped ring) and every time assumption of this run with them (variants.ts; kit-independent, so the optimiser,
+    // the exact re-times and the brute force all time the same team)
+    const variantDefs = requiredVariantsFor(planA).flatMap((def) => {
+      const eq0 = variantEquipment(def, notOwned, ring ? equipmentById(ring.id) ?? null : null);
+      if (!eq0) return [];
+      // as the kit's loadouts: plan items → player equipment (the re-timers rebuild it from the result the same way)
+      const planEq: PlanEquipment = Object.fromEntries(Object.entries(eq0).map(([slot, it]) => [slot, toPlanItem(it!, slot as Slot)]));
+      const eq = toPlayerEquipment(planEq);
+      return [{
+        def, planEq, equipment: eq, key: ALL_SLOTS.map((sl) => eq[sl]?.id ?? 0).join(','),
+      }];
+    });
+    const timeA = (a: BestSetupAssumptions): RaidTimeAssumptions => withTimeVariants(
+      raidTimeAssumptionsFrom(a, drain, settings, tuning.model),
+      timeVariantsFor(variantDefs, basePlayer, a),
+    );
+    let exactA = timeA(assumptions);
     // Team / None: drains don't depend on the fight length, any fixed length is exact. Solo: set per encounter below.
     const fastA: RaidTimeAssumptions = { ...exactA, fixedFightSeconds: drain === 'none' ? undefined : fallbackFight };
     // 2. full candidates (presets + search rows), merged by items + group
@@ -2202,7 +2265,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
     // phase 36: the spec budget's DP on a kit (the matrix, these members) for the assumptions' specs, and the spec plan
     // it picks as the optimiser's fixed plan (the fastest route's encounters win: their surge doses)
     const budgetA = (a: BestSetupAssumptions): RaidTimeAssumptions => ({
-      ...raidTimeAssumptionsFrom(a, drain, settings, tuning.model),
+      ...timeA(a),
       ...(fastA.fixedFightSeconds !== undefined ? { fixedFightSeconds: fastA.fixedFightSeconds } : {}),
     });
     const dpMemo = new Map<string, RouteComparison>();
@@ -2317,6 +2380,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         undrainedRows.set(mk, rows);
       }
       let v = 0;
+      const rowKit = (exactA.variants ?? []).reduce((k, tv) => variantKit(k, tv), kit as RaidKit);
       (rows.get(key) ?? []).forEach((r) => {
         if (!(r.damage > 0) || !(r.dps > 0)) return;
         const q: PhaseQuery = {
@@ -2328,8 +2392,9 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         let meanDps = 0;
         let gain = 0;
         drainOutcomeStates(model, counts, assumptions.floorThreshold).forEach((x) => {
+          // phase 40: a variant row's DPS is the team's average (as `r.dps`, from encounterTime)
           const d = x.def >= model.def && !(x.ayak > 0) ? r.dps
-            : (kit.best({ ...q, defence: { undrainedDef: model.def, def: x.def, ayak: x.ayak } })?.dps ?? 0);
+            : (rowKit.best({ ...q, defence: { undrainedDef: model.def, def: x.def, ayak: x.ayak } })?.dps ?? 0);
           meanDps += x.p * d;
           if (d > 0) gain += x.p * (1 - r.dps / d);
         });
@@ -2531,7 +2596,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
         opt = optimiseFor(dps, carriedWith(best), seedsFor(dps, seedCount), `spec weapons: ${bringText(best).replace('Bring: ', '')}`);
         runA = fixedFor(assumptions, opt.best.members);
       }
-      exactA = raidTimeAssumptionsFrom(assumptions, drain, settings, tuning.model);
+      exactA = timeA(assumptions);
       seeds = seedsFor(dps, seedCount);
       runCarried = carriedWith(best);
       runSpecItems = best.map((w) => planItemByName(SPEC_WEAPONS[w].item));
@@ -2561,7 +2626,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       carrierSteps = g.steps;
       assumptions = teamData(g.carriers).a;
       runA = fixedFor(assumptions, opt.best.members);
-      exactA = raidTimeAssumptionsFrom(assumptions, drain, settings, tuning.model);
+      exactA = timeA(assumptions);
     } else {
       opt = optimiseFor(dps, carried, seeds, 'kits', legacyA);
       if (drain === 'team') {
@@ -2583,7 +2648,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
           opt = optimiseFor(dps, carried, seeds, 'kits', legacyA);
         }
         assumptions = teamData(eff).a;
-        exactA = raidTimeAssumptionsFrom(assumptions, drain, settings, tuning.model);
+        exactA = timeA(assumptions);
       }
       if (budgetOn) {
         // phase 36: the spec plan of the bootstrap kit, the kit re-optimised once under it
@@ -2815,7 +2880,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       }
       if (itemSteps.length) {
         runA = fixedFor(assumptions, opt.best.members);
-        exactA = raidTimeAssumptionsFrom(assumptions, drain, settings, tuning.model);
+        exactA = timeA(assumptions);
         // the optimiser's times were under the plan without the items: re-time its kits under the new plan
         const retime = (x: KitSolution): KitSolution => ({ ...x, time: routeTime(x.members) });
         opt = { ...opt, best: retime(opt.best), finals: opt.finals.map(retime) };
@@ -2851,7 +2916,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
             assumptions = specA;
             carrierSteps = specSteps;
             runA = fixedFor(assumptions, m);
-            exactA = raidTimeAssumptionsFrom(assumptions, drain, settings, tuning.model);
+            exactA = timeA(assumptions);
             const retime = (x: KitSolution): KitSolution => ({ ...x, time: routeTime(x.members) });
             opt = { ...opt, best: retime(opt.best), finals: opt.finals.map(retime) };
           }
@@ -3136,7 +3201,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       if (pick && key(pick.c) !== key(cur)) {
         const a2 = withCarriers(pick.c);
         assumptions = a2;
-        exactA = raidTimeAssumptionsFrom(a2, drain, settings, tuning.model);
+        exactA = timeA(a2);
         evaluator = createKitEvaluator(kitLoadoutsOf(chosen.members), a2, kitEvaluatorCache());
         comparison = compareRoutes(evaluator, exactA, routes);
         exactEvaluations += evaluator.evaluations();
@@ -3346,6 +3411,54 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       notes,
     };
 
+    // phase 40: the required variants (the planned route's have the DPS and seconds): the variant player's kit = this kit + the variant loadout's
+    // items it lacks (+ the heart when no kit loadout is magic), paid from the free slots, then from the supplies
+    const routeEncounters = planned >= 0 ? comparison.routes[planned].encounters : [];
+    const kitIds = new Set<number>([...runCarried, ...runSpecItems.map((it) => it.id), ...heartItems.map((h) => h.id), ...kit.flatMap((c) => equipmentItemIds(c.equipment)), ...raidSupplied]);
+    const variants: PlanVariant[] = variantDefs.flatMap(({ def, planEq: loadoutEq }) => {
+      const enc = routeEncounters.find((e) => e.id === def.encounter);
+      const extraItems: PlanItem[] = equipmentItemIds(loadoutEq).filter((id, i, all) => all.indexOf(id) === i && !kitIds.has(id))
+        .map((id) => Object.values(loadoutEq).find((it) => it?.id === id)!);
+      if (boostsNeedSupplies && def.preset.group === 'magic' && !kit.some((c) => c.group === 'magic') && !heartPinned) extraItems.push(heartPlanItem(heart));
+      const free = slots.free;
+      let short = Math.max(0, extraItems.length - free);
+      const dropped: { type: SupplyType, count: number }[] = [];
+      for (const t of VARIANT_DROP_ORDER) {
+        if (short <= 0) break;
+        const k = Math.min(short, Math.max(0, Math.floor(supplies[t] || 0)));
+        if (k > 0) dropped.push({ type: t, count: k });
+        short -= k;
+      }
+      const rowsOn = (enc?.phases ?? []).filter((r) => def.rowKeys.includes(r.key));
+      const first = rowsOn.find((r) => r.choice)?.choice as VariantChoice | null | undefined;
+      const lost = rowsOn.reduce((t, r) => {
+        const c = r.choice as VariantChoice | null;
+        return c?.baseDps && c.baseDps > 0 && Number.isFinite(r.seconds) ? t + r.seconds * (1 - r.dps / c.baseDps) : t;
+      }, 0);
+      return [{
+        id: def.id,
+        label: def.label,
+        onRoute: !!enc,
+        headcount: def.headcount,
+        encounter: def.encounter,
+        spellbook: def.spellbook,
+        role: def.role,
+        share: def.share,
+        where: def.where,
+        loadout: {
+          key: `variant:${def.id}`, label: def.preset.name, kind: 'preset', group: def.preset.group, equipment: loadoutEq, options: variantOptions(def), source: def.source,
+        },
+        extraItems,
+        freeSlots: free,
+        droppedSupplies: dropped,
+        overfull: short > 0,
+        baseDps: first?.baseDps ?? 0,
+        variantDps: first?.variantDps ?? 0,
+        teamDps: first?.dps ?? 0,
+        seconds: lost,
+      }];
+    });
+
     const tEnd = Date.now();
     const result: PlanResult = {
       cancelled: false,
@@ -3365,6 +3478,7 @@ export const plan = (inputs: PlanInputs, tuning: PlanTuning = {}, hooks: PlanHoo
       specs,
       ring: { policy, ring: ring?.name ?? null, screened: [] },
       matrixDps: Object.fromEntries(targets.map((t, col) => [phaseKey(t.targetKey, t.phase), Math.max(0, ...members.map((m) => dps[m][col]))])),
+      ...(variants.length ? { variants } : {}),
       unusedCarried: pinnedItems
         .filter((it, i, all) => all.findIndex((x) => x.id === it.id) === i)
         .filter((it) => !runSpecItems.some((x) => x.id === it.id))

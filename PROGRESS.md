@@ -3,6 +3,42 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 40: Required variants — the Xarth freezer (FA, numbers, 2026-10-30)
+
+ROADMAP row 40. docs/BEST_SETUP.md *Required variants*; DATA_SOURCES *Phase 40*; UNVERIFIED D37.
+- **Wiki** (Strategies → Xarth → Phase 2, read 2026-10-30): "A player freezes the incoming corpses right before they can
+  heal Xarth" — one player, Xarth only (matches the user's framing). No spellbook is required by the page: ice spells
+  freeze, Undead Grasp (Arceuus) freezes longer, water spells douse. We model Ancients / Ice Barrage (unverified).
+- **Model** (variants.ts, variantBlend.ts): FA party ≥ 2, every route with Xarth: on the `xarth` row, 50% of the HP
+  (phase 2) is dealt by n − 1 players at your DPS d and the freezer at the Ice Barrage loadout's DPS v (Kodai + Ancestral
+  + Elidinis' ward (f), the camped ring, owned pieces): row DPS = 1 ÷ (0.5/d + 0.5/(d(1 − 1/n) + v/n)). Applied by
+  wrapping the kit's `best` on that row (`encounterTime`), so the budget, drain values, damage specs and the carrier
+  valuation read the team's average. Kit-independent: one variant per plan run (in every `timeA` of `plan()`), so the
+  optimiser, the exact re-times and the brute force agree; re-timers rebuild it from `PlanResult.variants`.
+- **Plan tab** (VariantsBox.tsx): "1 player: + Ancients (Xarth corpses)", role, switch icons, "+9 items: 4 free slots,
+  then leave 5 Saradomin brew behind", "Xarth phase 2 (50% of the HP): 5 × 13.92 + 1 × 1.73 (Ice Barrage) ÷ 6 = 11.89
+  DPS per player there; +15.4 s on the route", and "I'm this player" (saved as `plan.variantMe`) → "Your kit: the kit
+  above + the freezer switch (Ancient spellbook); carry …". `SPELLBOOK_NOTES` (FA) points at it.
+- **Headlines** (`pinHeadlines --full`): fa 21:14.1 → **21:29.1** (Xarth 180.61 → 195.57, +14.96 s; kit, carriers,
+  ring unchanged; the box's +15.4 s is the Xarth row alone at the same spec plan). faNotOwned 24:17.6 → **24:30.9**:
+  with the freezer the Xarth route costs more, so the Dagon'hai route and Lightbearer win (kit: Tbow switch on
+  Inquisitor's + Scythe; no variant on that route). faSolo (party 1) 22:08.7 unchanged.
+- **Pins**: r27fa re-captured (1531.5 → 1548.9: Dagon'hai route, Tbow kit; PHASE37_MEMO r27fa 2228 / 1483 / 25340 / 1291,
+  1136 encounter runs without the variant), Phase27 switch-policy 1531.5 → 1548.9, Phase38h3 fa Xarth ZCB per bar 74.9 → 79.3,
+  Phase38h2 faNotOwned HP 3614.7 → 4013.3 (Dagon'hai route). Re-timers (crossRaidHeadlines `recomputed`, probes
+  `retimeHeadline`, Phase36 `routeWith`, Phase38h2) include the plan's variants.
+- **Planning time alone** (pinHeadlines --jobs 1): fa 45.8 s (was 45.1), faSolo 52.7 s (53.1), faNotOwned 72.8 s (65.4;
+  1.11×). fa memo runs unchanged (15282 / 8578). The variant's memo id leaves out the spec plan's inputs (carriers, your
+  specs, damage specs, doses): with them in, fa's pass runs doubled (17291).
+- Tests: Phase40.test.ts (hand cases: 264/23 blend, Xarth 226.515 s vs 216.667 s, ×6 multiplier, other encounters
+  untouched, party 1 / other raids none, fixture blend = formula, slot sizing, text, saved tick). verifyPhase40 (Playwright):
+  box, lines, tick + saved, a Dagon'hai route shows none; screenshot docs/screenshots/phase40-variants.png.
+- Probes: retime fa / faSolo / faNotOwned gap 0; bruteForceKits fa gap 0 (1513.29 s).
+- Open: the freezer's switch (9 items, 5 brews) vs a Kodai-only switch (0.41 DPS on Xarth, ~+1.3 s, nothing left
+  behind); Ancients vs Arceuus Undead Grasp; P2's HP share; the freezer's Death Charge (not modelled).
+- Run: FA slow suites green (383, incl. CrossRaidHeadlines memo / CPU, Phase36 / 37c brute force); fast suite green (1472);
+  `pinHeadlines --full --check` no change after the last code edit; verifyAll 40 39 38j OK; tsc, lint clean.
+
 ## Phase 39b fix: owning an upgrade counts as owning its lower tier (2026-10-30)
 
 No calculation change. A bank with only "Blessed Dizana's quiver (l)" left the pool item "Dizana's quiver" in `missing`

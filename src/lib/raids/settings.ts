@@ -53,6 +53,8 @@ export interface PlanInputSettings {
   nonFightMinutes: number;
   /** Phase 38b: "Spellbook" (Arceuus: Death Charge; default `RaidBase.spellbook`). */
   spellbook: Spellbook;
+  /** Phase 40: the required variants you play ("I'm this player", variant ids); missing = none. */
+  variantMe?: string[];
 }
 
 /** Phase 38a: the range of the raid clock input (minutes; phase 38c: "Non-fight time"). */
@@ -219,6 +221,11 @@ export const validatePlanInputs = (raid: RaidConfig, raw: unknown, a: BestSetupA
     nonFightMinutes: num(field(raw, 'nonFightMinutes'), RAID_MINUTES_RANGE.min, RAID_MINUTES_RANGE.max, d.nonFightMinutes),
     spellbook: oneOf(field(raw, 'spellbook'), SPELLBOOKS.map((b) => b.id), d.spellbook),
   };
+  const variantMe = field(raw, 'variantMe');
+  if (Array.isArray(variantMe)) {
+    const ids = variantMe.filter((id, i) => typeof id === 'string' && id.length > 0 && id.length <= 64 && variantMe.indexOf(id) === i);
+    if (ids.length) out.variantMe = ids as string[];
+  }
   const mages = field(raw, 'mages');
   if (Number.isInteger(mages) && (mages as number) >= 0 && (mages as number) <= raid.partySize.max) out.mages = mages as number;
   const pinned = field(raw, 'pinned');

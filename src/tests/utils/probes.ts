@@ -13,6 +13,7 @@ import {
 } from '@/lib/fracturedArchive/planner';
 import { mySpecsForSubset } from '@/lib/fracturedArchive/specChoice';
 import { applyLoadoutToPlayer } from '@/lib/fracturedArchive/loadout';
+import { timeVariantsOfPlan, withTimeVariants } from '@/lib/fracturedArchive/variants';
 import {
   attemptsFromCounts, buildTargetMonster, findTarget,
 } from '@/lib/fracturedArchive/bestSetup';
@@ -119,7 +120,8 @@ export const retimeHeadline = (name: HeadlineName): Retime => {
   const fx = phase37Fixture(name) as PlanResult & { plannedRoute: { id: string } };
   const a = finalAssumptions(name, fx);
   const inputs = c.inputs();
-  const timeA = raidTimeAssumptionsFrom(a, inputs.drain, inputs.settings, raid.time);
+  // phase 40: the plan's required variants (the Xarth freezer), rebuilt from the loadouts it timed
+  const timeA = withTimeVariants(raidTimeAssumptionsFrom(a, inputs.drain, inputs.settings, raid.time), timeVariantsOfPlan(fx.variants, toPlayerEquipment, generateEmptyPlayer(), a));
   const comparison = compareRoutes(createKitEvaluator(kitLoadouts(fx.kit, a), a), timeA, routesFor(timeA));
   const h = headline(name);
   const route = comparison.routes.find((r) => r.route.id === h.route);
