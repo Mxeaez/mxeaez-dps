@@ -477,13 +477,13 @@
    "slot": "ring"
   }
  ],
- "comparison": "a65f81bea61bc1b4db9c5ef87f9370bf2ad1eb238048b6299e195a3d22f39e22",
+ "comparison": "9d34f6576f38c256855f53e90a13d9f2f0557aaa1dba0b31f8ff0516f1d906df",
  "planned": 5,
  "rejected": [
   {
    "label": "Twisted bow (Masori)",
    "kind": "addition",
-   "deltaSeconds": 21.72885898522736,
+   "deltaSeconds": 21.03824897241998,
    "deltaSlots": 1,
    "reason": "needs 1 more slot, 0 free",
    "weapons": [
@@ -515,9 +515,9 @@
   {
    "label": "melee + magic: Tumeken's shadow (Ancestral) / Scythe of Vitur / Scythe of Vitur #4",
    "kind": "alternative",
-   "deltaSeconds": -86.62780599786743,
+   "deltaSeconds": -93.98613906430342,
    "deltaSlots": 0,
-   "reason": "86.6 s slower",
+   "reason": "94.0 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Scythe of Vitur",
@@ -527,9 +527,9 @@
   {
    "label": "ranged + magic: Tumeken's shadow (Ancestral) / Twisted bow (Masori)",
    "kind": "alternative",
-   "deltaSeconds": -180.53098634145795,
+   "deltaSeconds": -187.88931940789394,
    "deltaSlots": -1,
-   "reason": "180.5 s slower",
+   "reason": "187.9 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Twisted bow"
@@ -538,9 +538,9 @@
   {
    "label": "magic: Tumeken's shadow (Ancestral)",
    "kind": "alternative",
-   "deltaSeconds": -688.713269150712,
+   "deltaSeconds": -696.071602217148,
    "deltaSlots": -10,
-   "reason": "688.7 s slower",
+   "reason": "696.1 s slower",
    "weapons": [
     "Tumeken's shadow"
    ]
@@ -597,20 +597,20 @@
      "weapon": "elderMaul",
      "carriers": 2,
      "drivers": [
-      "Bork + Smorks (4.4 s)",
-      "Ocellus (4.0 s)"
+      "Ocellus (11.4 s)",
+      "Bork + Smorks (4.4 s)"
      ],
-     "lastSaved": 8.369653015330641
+     "lastSaved": 15.72798608176663
     },
     {
      "weapon": "tonalztics",
      "carriers": 2,
      "drivers": [
-      "Ocellus (9.8 s)",
+      "Ocellus (17.2 s)",
       "Archive Guardian (3.5 s)",
       "Bork + Smorks (3.1 s)"
      ],
-     "lastSaved": 16.42141262729251
+     "lastSaved": 23.7797456937285
     }
    ],
    "perTarget": [
@@ -902,12 +902,12 @@
  "excluded": [],
  "droppedPinned": [],
  "ownershipNotices": [],
- "searchRows": "aa0a814178491298a953b151d4ffb98728ccf6dc60ce9c004f8fe592fb4cb78c",
- "objectiveSeconds": 1434.7669897727703,
+ "searchRows": "19326c5e535f2f09cf9e10b9c08fb35fa89b098e7e587481d4f719f4a3891d37",
+ "objectiveSeconds": 1427.4086567063343,
  "fightSeconds": null,
  "plannedRoute": {
   "id": "archive-guardian>bork-smorks>moia>xarth>ocellus",
-  "seconds": 1434.7669897727703,
+  "seconds": 1427.4086567063343,
   "surgeDoses": null,
   "encounters": [
    {
@@ -983,7 +983,7 @@
    },
    {
     "id": "ocellus",
-    "seconds": 795.6512725317009,
+    "seconds": 788.2929394652649,
     "events": [
      {
       "npc": "Ocellus",
@@ -1011,7 +1011,7 @@
        "tonalztics": 3,
        "elderMaul": 1
       },
-      "hp": 1090.7758326333644
+      "hp": 1097.3102448985514
      }
     ],
     "damage": {},

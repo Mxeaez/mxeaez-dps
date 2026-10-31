@@ -1,4 +1,5 @@
 import { describe, expect, test } from '@jest/globals';
+import { ocellusDrainPhase } from '@/lib/fracturedArchive/ocellus';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { Monster } from '@/types/Monster';
@@ -231,7 +232,8 @@ const valueByHand = (id: string, a: BestSetupAssumptions, drain: 'team' | 'solo'
   return without.reduce((t, r0) => {
     const ev = rowEv.get(r0.key) ?? npcEv.get(findTarget(r0.targetKey).npc ?? findTarget(r0.targetKey).name);
     if (ev !== ei || findTarget(r0.targetKey).noDrains || !(r0.damage > 0)) return t;
-    const b = boss(r0.targetKey, r0.phase, a);
+    // phase 40d review: Ocellus's void rows drain like their plain Deflect (the specs are thrown outside the explosions)
+    const b = boss(r0.targetKey, ocellusDrainPhase(r0.phase), a);
     const att = attemptsFromCounts(b.m, counts).filter((w): w is DefenceDrainWeapon => w !== 'ayak');
     if (!att.length || b.m.def <= b.m.floor) return t;
     const seq = seqOf(defenceOutcome(b.m, att).steps!);
@@ -255,10 +257,11 @@ const HP_PINS: Record<string, number> = {
   'team|xarth|0': 192.7,
   'team|ocellus|0': 414.9,
   'team|ocellus|1': 195.4,
-  // phase 40d: P3's event also pays the void-explosion rows (2-tick, hits halved): 718.2 → 739.6, solo 495.9 → 512.6
-  'team|ocellus|2': 739.6,
+  // phase 40d: P3's event also pays the void-explosion rows (2-tick, hits halved): 718.2 → 739.6, solo 495.9 → 512.6;
+  // review fix (the void rows drain like their plain Deflect): 741.1, solo 521.0
+  'team|ocellus|2': 741.1,
   'solo|archive-guardian|0': 338.5,
-  'solo|ocellus|2': 512.6,
+  'solo|ocellus|2': 521.0,
 };
 const ENCOUNTERS = ['archive-guardian', 'bork-smorks', 'ezekiel', 'moia', 'xarth', 'dagonhai', 'ocellus'];
 describe.each([['team', TEAM_A], ['solo', SOLO_A]] as ['team' | 'solo', BestSetupAssumptions][])('per FA boss (%s): each event\'s HP value = Σ P(d) × H × g ÷ (1 + g) by hand', (drain, a) => {
@@ -383,7 +386,9 @@ describe('carrier sets valued by the HP the bars really pay (review 38h-2 N1)', 
     // / 3548.7 / 3582.9. Phase 40 (the Xarth freezer keeps 80% of their DPS on Xarth's
     // phase 2): the plan's carriers 3615.4. Phase 40b (stun-swap Bork; the Scythe kit): 3742.8 vs 3686.0 / 3738.2 / 3625.8 /
     // 3655.3. Phase 40b-2 (25-tick stuns; the Inquisitor's + Scythe / mace kit): 4006.4 vs 3956.6 / 4002.9 / 3901.8 / 3929.7.
-    // Phase 40d (+ Scythe #2 and Elder maul loadouts, Ultor ring): 3606.3 vs 3553.1 / 3602.4 / 3492.3 / 3522.4
+    // Phase 40d (+ Scythe #2 and Elder maul loadouts, Ultor ring): 3606.3 vs 3553.1 / 3602.4 / 3492.3 / 3522.4; review fix
+    // (Tbow, Inquisitor's + Scythe, Torva + Scythe; carriers 2 Elder maul + 3 Tonalztics = the 2nd alternative): 3767.7 vs
+    // 3694.5 / 3767.7 / 3634.1 / 3690.1
     const sets: Record<string, number>[] = [
       { elderMaul: 1, tonalztics: 3, ayak: 1 }, { elderMaul: 2, tonalztics: 3 }, { tonalztics: 4, ayak: 1 },
       { elderMaul: 2, tonalztics: 2, ayak: 1 },
@@ -392,6 +397,6 @@ describe('carrier sets valued by the HP the bars really pay (review 38h-2 N1)', 
     // eslint-disable-next-line no-console
     if (process.env.PRINT_PINS) console.log(JSON.stringify([r.assumptions.team.carriers, planned, alternatives]));
     alternatives.forEach((x) => expect(planned.hp).toBeGreaterThanOrEqual(x.hp - 1e-6));
-    expect(Math.round(planned.hp * 10) / 10).toBe(3606.3);
+    expect(Math.round(planned.hp * 10) / 10).toBe(3767.7);
   }, 300000);
 });

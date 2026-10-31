@@ -129,6 +129,11 @@ export interface RowOutcome {
    * the later downs), added as they are (not scaled by damage specs).
    */
   extra?: number;
+  /**
+   * Phase 40d review: seconds saved per net damage of a damage spec when it is not seconds ÷ damage (a row of a
+   * time-split phase: 1 ÷ (multiplier × the blended rate), `PhaseTime.blendDps`).
+   */
+  secondsPerDamage?: number;
 }
 
 export interface AllocationProblem {
@@ -278,6 +283,7 @@ export const rowSecondsAfter = (o: RowOutcome, counts: Record<string, number>): 
   if (!(o.damage > 0) || !Number.isFinite(o.seconds)) return o.seconds + extra;
   const removed = o.damageSpecs.reduce((t, c) => t + (counts[c.weapon] ?? 0) * c.net, 0);
   if (removed <= 0) return o.seconds + extra;
+  if (o.secondsPerDamage !== undefined) return Math.max(0, o.seconds - Math.min(o.damage, removed) * o.secondsPerDamage) + extra;
   return o.seconds * Math.max(0, 1 - removed / o.damage) + extra;
 };
 

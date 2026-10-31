@@ -14,12 +14,14 @@ import {
   FA_TIME_MODEL, RAID_TIME_DEFAULTS, raidTimeAssumptionsFrom, RaidKit, RaidTimeSettings, requiredPhaseTargets,
 } from '@/lib/fracturedArchive/raidTime';
 import { raidConfig } from '@/lib/raids';
+import { rowSecondsAfter } from '@/lib/fracturedArchive/specBudget';
+import { drainModelOf, findTarget, specCountsDrainKey } from '@/lib/fracturedArchive/bestSetup';
 import { Monster } from '@/types/Monster';
 import { Player } from '@/types/Player';
 
 // Phase 40d: Ocellus's void explosions (the user, 2026-10-30; the wiki calls the speed-up "unconfirmed"): every attack
 // is 2-tick and hits are halved (rounded down), the Deflects still apply, about half of the last quadrant's time.
-// Docs: docs/BEST_SETUP.md *Phase 40d*; UNVERIFIED B5.
+// Docs: docs/BEST_SETUP.md *Phase 40d*; UNVERIFIED D38.
 
 const p3 = (phase: string): Monster => scaleMonster(getTestMonster('Ocellus', 'Phase 3', { inputs: { phase } }));
 
@@ -137,5 +139,44 @@ describe('the time model: the last quadrant split by time', () => {
     expect(phases).toEqual(expect.arrayContaining([OCELLUS_P3_DEFLECT_MELEE_VOID_PHASE, OCELLUS_P3_DEFLECT_RANGED_VOID_PHASE]));
     expect(requiredPhaseTargets({ ...RAID_TIME_DEFAULTS, ocellusVoidTimeShare: 0 }).map((t) => t.phase))
       .not.toContain(OCELLUS_P3_DEFLECT_MELEE_VOID_PHASE);
+  });
+});
+
+describe('review fixes (phase 40d)', () => {
+  test('a spec on the plain row saves at the blended rate: net ÷ (mult × ((1 − s)n + s·v)), not net ÷ (mult × n)', () => {
+    // toy: plain row 40 hp at n = 2 (20 s); blended rate 2.5, mult 1: a 10-hp spec saves 10 ÷ 2.5 = 4 s (not 5)
+    const choice = {
+      weapon: 'zcb', label: 'Zaryte crossbow', cost: 75, net: 10, count: 0, expected: 10, ticks: 5,
+    } as Parameters<typeof rowSecondsAfter>[0]['damageSpecs'][number];
+    const o = { seconds: 20, damage: 40, damageSpecs: [choice] };
+    expect(rowSecondsAfter(o, { zcb: 1 })).toBeCloseTo(15, 12);
+    expect(rowSecondsAfter({ ...o, secondsPerDamage: 1 / 2.5 }, { zcb: 1 })).toBeCloseTo(16, 12);
+    // the row's damage caps what a spec takes off: 5 specs (50 hp > 40) save 40 ÷ 2.5 = 16 s
+    expect(rowSecondsAfter({ ...o, secondsPerDamage: 1 / 2.5 }, { zcb: 5 })).toBeCloseTo(4, 12);
+  });
+
+  test('the time model marks the plain row with the blended rate (toy kit: 0.5 × 1 + 0.5 × 1.25 = 1.125)', () => {
+    const kit: RaidKit = {
+      best: (q) => ({
+        loadout: 'x',
+        style: 'x',
+        dps: ({ [OCELLUS_P3_DEFLECT_RANGED_PHASE]: 1, [OCELLUS_P3_DEFLECT_RANGED_VOID_PHASE]: 1.25 } as Record<string, number>)[q.phase ?? ''] ?? 2,
+      }),
+    };
+    const ta = raidTimeAssumptionsFrom(raidConfig('fractured-archive').defaultAssumptions, 'none', RAID_TIME_DEFAULTS, FA_TIME_MODEL);
+    const rows = FA_TIME_MODEL.encounterPass('ocellus', kit, ta, 'none', 90);
+    expect(rows.find((r) => r.key === 'ocellus-p3-last')!.blendDps).toBeCloseTo(1.125, 12);
+    expect(rows.find((r) => r.key === 'ocellus-p3-void')!.blendDps).toBeUndefined();
+  });
+
+  test('a void phase drains like its plain Deflect (specs thrown outside the explosions)', () => {
+    const t = findTarget('ocellus-p3');
+    const a = raidConfig('fractured-archive').defaultAssumptions;
+    const counts = { tonalztics: 3 };
+    [[OCELLUS_P3_DEFLECT_MELEE_VOID_PHASE, OCELLUS_P3_DEFLECT_MELEE_PHASE], [OCELLUS_P3_DEFLECT_RANGED_VOID_PHASE, OCELLUS_P3_DEFLECT_RANGED_PHASE]]
+      .forEach(([v, plain]) => {
+        expect(drainModelOf(t, v, a)).toEqual(drainModelOf(t, plain, a));
+        expect(specCountsDrainKey(t, v, 'team', a, counts)).toBe(specCountsDrainKey(t, plain, 'team', a, counts));
+      });
   });
 });

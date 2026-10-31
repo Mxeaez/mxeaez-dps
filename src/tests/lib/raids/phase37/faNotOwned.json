@@ -180,97 +180,7 @@
    "key": "melee|24419,21295,29801,0,22325,24420,0,24421,22981,31097,28307"
   },
   {
-   "label": "Scythe of Vitur #2",
-   "kind": "search",
-   "group": "melee",
-   "equipment": {
-    "weapon": {
-     "id": 22325,
-     "name": "Scythe of Vitur",
-     "version": "Charged",
-     "slot": "weapon",
-     "twoHanded": true
-    },
-    "head": {
-     "id": 26382,
-     "name": "Torva full helm",
-     "version": "Restored",
-     "slot": "head"
-    },
-    "body": {
-     "id": 24420,
-     "name": "Inquisitor's hauberk",
-     "version": "",
-     "slot": "body"
-    },
-    "legs": {
-     "id": 24421,
-     "name": "Inquisitor's plateskirt",
-     "version": "",
-     "slot": "legs"
-    },
-    "cape": {
-     "id": 21295,
-     "name": "Infernal cape",
-     "version": "Normal",
-     "slot": "cape"
-    },
-    "neck": {
-     "id": 29801,
-     "name": "Amulet of rancour",
-     "version": "",
-     "slot": "neck"
-    },
-    "hands": {
-     "id": 22981,
-     "name": "Ferocious gloves",
-     "version": "",
-     "slot": "hands"
-    },
-    "feet": {
-     "id": 31097,
-     "name": "Avernic treads (max)",
-     "version": "",
-     "slot": "feet"
-    },
-    "ring": {
-     "id": 28307,
-     "name": "Ultor ring",
-     "version": "",
-     "slot": "ring"
-    }
-   },
-   "options": [
-    {
-     "style": {
-      "name": "Jab",
-      "type": "crush",
-      "stance": "Aggressive"
-     },
-     "spell": null
-    },
-    {
-     "style": {
-      "name": "Reap",
-      "type": "slash",
-      "stance": "Accurate"
-     },
-     "spell": null
-    },
-    {
-     "style": {
-      "name": "Chop",
-      "type": "slash",
-      "stance": "Aggressive"
-     },
-     "spell": null
-    }
-   ],
-   "source": "search: Dagon'hai Elder + Monks (Shielded (shield gauge))",
-   "key": "melee|26382,21295,29801,0,22325,24420,0,24421,22981,31097,28307"
-  },
-  {
-   "label": "Inquisitor's mace (full crush)",
+   "label": "Torva + Scythe (slash)",
    "kind": "preset",
    "group": "melee",
    "equipment": {
@@ -305,48 +215,51 @@
      "slot": "ring"
     },
     "head": {
-     "id": 24419,
-     "name": "Inquisitor's great helm",
-     "version": "",
+     "id": 26382,
+     "name": "Torva full helm",
+     "version": "Restored",
      "slot": "head"
     },
     "body": {
-     "id": 24420,
-     "name": "Inquisitor's hauberk",
-     "version": "",
+     "id": 26384,
+     "name": "Torva platebody",
+     "version": "Restored",
      "slot": "body"
     },
     "legs": {
-     "id": 24421,
-     "name": "Inquisitor's plateskirt",
-     "version": "",
+     "id": 26386,
+     "name": "Torva platelegs",
+     "version": "Restored",
      "slot": "legs"
     },
     "weapon": {
-     "id": 24417,
-     "name": "Inquisitor's mace",
-     "version": "",
-     "slot": "weapon"
-    },
-    "shield": {
-     "id": 22322,
-     "name": "Avernic defender",
-     "version": "Normal",
-     "slot": "shield"
+     "id": 22325,
+     "name": "Scythe of Vitur",
+     "version": "Charged",
+     "slot": "weapon",
+     "twoHanded": true
     }
    },
    "options": [
     {
      "style": {
-      "name": "Pound",
-      "type": "crush",
+      "name": "Reap",
+      "type": "slash",
       "stance": "Accurate"
      },
      "spell": null
     },
     {
      "style": {
-      "name": "Pummel",
+      "name": "Chop",
+      "type": "slash",
+      "stance": "Aggressive"
+     },
+     "spell": null
+    },
+    {
+     "style": {
+      "name": "Jab",
       "type": "crush",
       "stance": "Aggressive"
      },
@@ -354,81 +267,7 @@
     }
    ],
    "source": "preset",
-   "key": "melee|24419,21295,29801,0,24417,24420,22322,24421,22981,31097,28307"
-  },
-  {
-   "label": "Elder maul",
-   "kind": "search",
-   "group": "melee",
-   "equipment": {
-    "weapon": {
-     "id": 21003,
-     "name": "Elder maul",
-     "version": "",
-     "slot": "weapon",
-     "twoHanded": true
-    },
-    "head": {
-     "id": 26382,
-     "name": "Torva full helm",
-     "version": "Restored",
-     "slot": "head"
-    },
-    "body": {
-     "id": 24420,
-     "name": "Inquisitor's hauberk",
-     "version": "",
-     "slot": "body"
-    },
-    "legs": {
-     "id": 24421,
-     "name": "Inquisitor's plateskirt",
-     "version": "",
-     "slot": "legs"
-    },
-    "cape": {
-     "id": 21295,
-     "name": "Infernal cape",
-     "version": "Normal",
-     "slot": "cape"
-    },
-    "neck": {
-     "id": 29801,
-     "name": "Amulet of rancour",
-     "version": "",
-     "slot": "neck"
-    },
-    "hands": {
-     "id": 22981,
-     "name": "Ferocious gloves",
-     "version": "",
-     "slot": "hands"
-    },
-    "feet": {
-     "id": 31097,
-     "name": "Avernic treads (max)",
-     "version": "",
-     "slot": "feet"
-    },
-    "ring": {
-     "id": 28307,
-     "name": "Ultor ring",
-     "version": "",
-     "slot": "ring"
-    }
-   },
-   "options": [
-    {
-     "style": {
-      "name": "Pummel",
-      "type": "crush",
-      "stance": "Aggressive"
-     },
-     "spell": null
-    }
-   ],
-   "source": "search: Ocellus P3 (Last quadrant: Deflect Ranged + void explosions)",
-   "key": "melee|26382,21295,29801,0,21003,24420,0,24421,22981,31097,28307"
+   "key": "melee|26382,21295,29801,0,22325,26384,0,26386,22981,31097,28307"
   }
  ],
  "kitMarginal": [
@@ -437,35 +276,27 @@
    "seconds": "Infinity"
   },
   {
-   "slots": 0,
-   "seconds": 4.33025760196233
+   "slots": 3,
+   "seconds": 76.57613409476312
   },
   {
-   "slots": 0,
-   "seconds": 2.407415473540823
-  },
-  {
-   "slots": 2,
-   "seconds": 9.955914293587512
-  },
-  {
-   "slots": 1,
-   "seconds": 8.173815108107192
+   "slots": 3,
+   "seconds": 2.022427526091633
   }
  ],
  "slots": {
   "total": 28,
   "supplies": 12,
   "nonItem": 1,
-  "carriedItems": 24,
+  "carriedItems": 23,
   "wornItems": 10,
   "minLoadoutItems": 10,
   "keptAmmo": 0,
-  "inventoryItems": 14,
+  "inventoryItems": 13,
   "swapReserve": 0,
   "quiverAmmo": 0,
-  "used": 27,
-  "free": 1,
+  "used": 26,
+  "free": 2,
   "overfull": false
  },
  "inventory": [
@@ -620,35 +451,23 @@
   },
   {
    "kind": "switch",
-   "label": "Inquisitor's mace",
+   "label": "Torva platebody",
    "item": {
-    "id": 24417,
-    "name": "Inquisitor's mace",
-    "version": "",
-    "slot": "weapon"
+    "id": 26384,
+    "name": "Torva platebody",
+    "version": "Restored",
+    "slot": "body"
    },
    "group": "melee"
   },
   {
    "kind": "switch",
-   "label": "Avernic defender",
+   "label": "Torva platelegs",
    "item": {
-    "id": 22322,
-    "name": "Avernic defender",
-    "version": "Normal",
-    "slot": "shield"
-   },
-   "group": "melee"
-  },
-  {
-   "kind": "switch",
-   "label": "Elder maul",
-   "item": {
-    "id": 21003,
-    "name": "Elder maul",
-    "version": "",
-    "slot": "weapon",
-    "twoHanded": true
+    "id": 26386,
+    "name": "Torva platelegs",
+    "version": "Restored",
+    "slot": "legs"
    },
    "group": "melee"
   },
@@ -690,6 +509,10 @@
   {
    "kind": "free",
    "label": "Free slot"
+  },
+  {
+   "kind": "free",
+   "label": "Free slot"
   }
  ],
  "specItems": [
@@ -714,27 +537,59 @@
   }
  ],
  "pinnedItems": [],
- "comparison": "c563d6be29eb3251572f13ed006d9ff516d6ba6ec368e569684606e18d8a8ab2",
+ "comparison": "7e98535b6a8f9d6be66260f7399ca44f95b9bdf8a115a2ab7c057c942a5a9fbd",
  "planned": 5,
  "rejected": [
   {
-   "label": "Torva + Scythe (slash)",
+   "label": "Inquisitor's mace (full crush)",
    "kind": "addition",
-   "deltaSeconds": 0.37130570282397457,
+   "deltaSeconds": 3.2873515679289085,
    "deltaSlots": 2,
-   "reason": "needs 2 more slots, 1 free",
+   "reason": "fits (not taken)",
    "weapons": [
-    "Scythe of Vitur"
+    "Inquisitor's mace"
+   ]
+  },
+  {
+   "label": "Elder maul",
+   "kind": "addition",
+   "deltaSeconds": 1.4954691683260535,
+   "deltaSlots": 1,
+   "reason": "fits (not taken)",
+   "weapons": [
+    "Elder maul"
+   ]
+  },
+  {
+   "label": "Elder maul #2",
+   "kind": "addition",
+   "deltaSeconds": 1.1628954725460972,
+   "deltaSlots": 1,
+   "reason": "fits (not taken)",
+   "weapons": [
+    "Elder maul"
    ]
   }
  ],
  "alternatives": [
   {
+   "label": "Lighter kit: Inquisitor's + Scythe (slash) / Twisted bow (Masori) / Scythe of Vitur #2",
+   "kind": "alternative",
+   "deltaSeconds": 0.27267354272862576,
+   "deltaSlots": -2,
+   "reason": "−2 slots for +-0.3 s (each freed slot cost < 1 s)",
+   "weapons": [
+    "Scythe of Vitur",
+    "Twisted bow",
+    "Scythe of Vitur"
+   ]
+  },
+  {
    "label": "melee + magic: Tumeken's shadow (Ancestral) / Harmonised Nightmare staff #4 / Harmonised Nightmare staff / Scythe of Vitur #2 + Oathplate chest / Scythe of Vitur #2",
    "kind": "alternative",
-   "deltaSeconds": -90.23567108949328,
-   "deltaSlots": 1,
-   "reason": "90.2 s slower",
+   "deltaSeconds": -90.43594125242726,
+   "deltaSlots": 2,
+   "reason": "90.4 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Harmonised Nightmare staff",
@@ -744,24 +599,24 @@
    ]
   },
   {
-   "label": "ranged + magic: Tumeken's shadow (Ancestral) / Twisted bow (Masori) / Toxic blowpipe + Dragon dart #2 / Twisted bow + Seeking dragon arrow",
+   "label": "ranged + magic: Tumeken's shadow (Ancestral) / Twisted bow (Masori) / Twisted bow + Seeking dragon arrow / Toxic blowpipe + Dragon dart #2",
    "kind": "alternative",
-   "deltaSeconds": -231.1301180561618,
-   "deltaSlots": 1,
-   "reason": "231.1 s slower",
+   "deltaSeconds": -221.5391906145951,
+   "deltaSlots": 2,
+   "reason": "221.5 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Twisted bow",
-    "Toxic blowpipe",
-    "Twisted bow"
+    "Twisted bow",
+    "Toxic blowpipe"
    ]
   },
   {
    "label": "magic: Tumeken's shadow (Ancestral) / Harmonised Nightmare staff / Harmonised Nightmare staff #4",
    "kind": "alternative",
-   "deltaSeconds": -786.5040793419785,
-   "deltaSlots": -8,
-   "reason": "786.5 s slower",
+   "deltaSeconds": -780.030263794768,
+   "deltaSlots": -7,
+   "reason": "780.0 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Harmonised Nightmare staff",
@@ -772,7 +627,7 @@
    "label": "melee: Scythe of Vitur #2",
    "kind": "alternative",
    "deltaSeconds": "-Infinity",
-   "deltaSlots": -12,
+   "deltaSlots": -11,
    "reason": "cannot clear the route",
    "weapons": [
     "Scythe of Vitur"
@@ -782,7 +637,7 @@
    "label": "ranged: Twisted bow (Masori)",
    "kind": "alternative",
    "deltaSeconds": "-Infinity",
-   "deltaSlots": -12,
+   "deltaSlots": -11,
    "reason": "cannot clear the route",
    "weapons": [
     "Twisted bow"
@@ -820,7 +675,7 @@
   "items": [
    {
     "item": "Zaryte crossbow",
-    "hp": 580.4772259288784,
+    "hp": 580.4772259288779,
     "slots": 1,
     "how": "a free slot"
    },
@@ -973,20 +828,21 @@
    "rows": [
     {
      "weapon": "tonalztics",
-     "carriers": 4,
+     "carriers": 3,
      "drivers": [
-      "Ocellus (2.9 s)",
-      "Bork + Smorks (0.2 s)"
+      "Ocellus (5.4 s)",
+      "Bork + Smorks (0.4 s)"
      ],
-     "lastSaved": 3.1041843322645946
+     "lastSaved": 5.830285520127518
     },
     {
      "weapon": "elderMaul",
-     "carriers": 1,
+     "carriers": 2,
      "drivers": [
-      "Ocellus (10.6 s)"
+      "Ocellus (10.7 s)",
+      "Bork + Smorks (0.1 s)"
      ],
-     "lastSaved": 10.582404167892264
+     "lastSaved": 10.870040709643717
     }
    ],
    "perTarget": [
@@ -1134,12 +990,12 @@
      "ayak": 0
     }
    ],
-   "text": "6-man: 4 Tonalztics, 1 Elder maul",
+   "text": "6-man: 3 Tonalztics, 2 Elder maul",
    "carriers": {
-    "elderMaul": 1,
+    "elderMaul": 2,
     "dwh": 0,
     "bgs": 0,
-    "tonalztics": 4,
+    "tonalztics": 3,
     "ayak": 0
    },
    "mode": "auto"
@@ -1153,7 +1009,7 @@
   "notes": [
    "Filler: no other damage weapon adds HP with the energy left",
    "Surge potion(4) (second): adds no HP the bars pay",
-   "Your spec bar goes to Zaryte crossbow / Crimson kisten / surge doses: 5 carriers (party − 1); the bars pay 3577 HP on the route vs 2829 HP if you carry a drain weapon instead."
+   "Your spec bar goes to Zaryte crossbow / Crimson kisten / surge doses: 5 carriers (party − 1); the bars pay 3578 HP on the route vs 2831 HP if you carry a drain weapon instead."
   ]
  },
  "ring": {
@@ -1162,12 +1018,17 @@
   "screened": [
    {
     "ring": "Ultor ring",
-    "seconds": 1348.601546115341,
+    "seconds": 1349.2670103350547,
     "full": true
    },
    {
     "ring": "Lightbearer",
     "seconds": 1356.4394358524187,
+    "full": true
+   },
+   {
+    "ring": "Ring of shadows",
+    "seconds": 1370.2836074935506,
     "full": true
    },
    {
@@ -1177,12 +1038,7 @@
    },
    {
     "ring": "Bellator ring",
-    "seconds": 1376.0152413418052,
-    "full": true
-   },
-   {
-    "ring": "Ring of shadows",
-    "seconds": 1383.3816208879366,
+    "seconds": 1376.9887272376432,
     "full": true
    },
    {
@@ -1199,17 +1055,17 @@
   "moia|": 11.036477579707563,
   "dagonhai|Shielded (shield gauge)": 13.385111772491891,
   "ocellus-p1|At a corner": 10.577438056830585,
-  "ocellus-p2|": 14.523571136411118,
+  "ocellus-p2|": 14.482538422103595,
   "ocellus-p3|Quadrants 1-3": 10.634027878616607,
   "ocellus-p3|Last quadrant: Deflect Melee": 8.166997701078248,
   "ocellus-p3|Last quadrant: Deflect Melee + void explosions": 10.468359045093257,
   "ocellus-p3|Last quadrant: Deflect Ranged": 10.634027878616607,
   "ocellus-p3|Last quadrant: Deflect Ranged + void explosions": 12.809169944697276,
   "xarth|": 12.10495851373083,
-  "dreadnoth|": 14.536233605918198,
-  "smorks|": 12.307173425378544,
+  "dreadnoth|": 14.554971206766947,
+  "smorks|": 12.422405512978914,
   "bork|Stunned (armour 0)": 14.711538461538462,
-  "bork|Smorks 25-0% HP (armour 14)": 5.702762732721754
+  "bork|Smorks 25-0% HP (armour 14)": 3.7141469946846084
  },
  "variants": [
   {
@@ -1267,11 +1123,11 @@
      "slot": "hands"
     }
    ],
-   "freeSlots": 1,
+   "freeSlots": 2,
    "droppedSupplies": [
     {
      "type": "brew",
-     "count": 2
+     "count": 1
     }
    ],
    "overfull": false,
@@ -1288,12 +1144,12 @@
  ],
  "droppedPinned": [],
  "ownershipNotices": [],
- "searchRows": "de9fc87e502ab0e108ed82a751c2d3839cb8ad02034b20b8fb82123deffbcc7e",
- "objectiveSeconds": 1354.431526560315,
+ "searchRows": "d5bd28e8874f9c6ea437a0610eab3cfcca4db24b70731b9c7698e3276aeb089c",
+ "objectiveSeconds": 1358.724101250246,
  "fightSeconds": null,
  "plannedRoute": {
   "id": "archive-guardian>bork-smorks>moia>xarth>ocellus",
-  "seconds": 1348.601546115341,
+  "seconds": 1349.2670103350547,
   "surgeDoses": [
    "archive-guardian",
    "xarth"
@@ -1309,7 +1165,7 @@
       "counts": {
        "tonalztics": 4
       },
-      "hp": 401.0028838183099
+      "hp": 411.09030025926785
      }
     ],
     "damage": {
@@ -1321,7 +1177,7 @@
    },
    {
     "id": "bork-smorks",
-    "seconds": 141.22992466909648,
+    "seconds": 140.8586189662725,
     "events": [
      {
       "npc": "Bork",
@@ -1332,10 +1188,10 @@
       "npc": "Smorks",
       "firstRowKey": "smorks",
       "counts": {
-       "tonalztics": 7,
-       "elderMaul": 2
+       "elderMaul": 3,
+       "tonalztics": 6
       },
-      "hp": 300.4830448565794
+      "hp": 302.9352353639044
      }
     ],
     "damage": {
@@ -1391,7 +1247,7 @@
    },
    {
     "id": "ocellus",
-    "seconds": 756.987153829249,
+    "seconds": 758.0239237517867,
     "events": [
      {
       "npc": "Ocellus",
@@ -1406,19 +1262,20 @@
       "reset": "P1",
       "firstRowKey": "ocellus-p2",
       "counts": {
-       "elderMaul": 2,
-       "tonalztics": 3
+       "elderMaul": 3,
+       "tonalztics": 2
       },
-      "hp": 288.8855565617853
+      "hp": 288.2265686796396
      },
      {
       "npc": "Ocellus",
       "reset": "P2",
       "firstRowKey": "ocellus-p3",
       "counts": {
-       "tonalztics": 5
+       "tonalztics": 4,
+       "elderMaul": 1
       },
-      "hp": 981.9720852127132
+      "hp": 1131.8327363769513
      }
     ],
     "damage": {

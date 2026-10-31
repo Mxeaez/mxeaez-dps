@@ -46,3 +46,13 @@ export const getOcellusDamageDivisor = (m: Monster): number => (OCELLUS_P3_IDS.i
  * "unconfirmed": unverified). Specs keep their own speed (thrown before the 2-tick cycle).
  */
 export const getOcellusVoidAttackSpeed = (m: Monster): number | undefined => (getOcellusDamageDivisor(m) === 2 ? 2 : undefined);
+
+/**
+ * Phase 40d review: the drain specs are thrown outside the explosions (P3's drain event is made on quadrants 1-3), so a
+ * void phase drains like its plain Deflect (hits not halved); the void phase only changes the DPS.
+ */
+export const ocellusDrainPhase = (phase: string | undefined): string | undefined => {
+  if (phase === OCELLUS_P3_DEFLECT_MELEE_VOID_PHASE) return OCELLUS_P3_DEFLECT_MELEE_PHASE;
+  if (phase === OCELLUS_P3_DEFLECT_RANGED_VOID_PHASE) return OCELLUS_P3_DEFLECT_RANGED_PHASE;
+  return phase;
+};

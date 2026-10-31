@@ -138,7 +138,7 @@ export const RAID_TIME_DEFAULTS: RaidTimeSettings = {
   // Assumption: the last of four quadrants = 25% of P3's hp, all of it during a Deflect.
   ocellusLastQuadrantFraction: 0.25,
   // Phase 40d (the user, 2026-10-30): about half of the last quadrant is void explosions, during which every attack is
-  // 2-tick (the wiki: speed-up "unconfirmed"; UNVERIFIED B5) and Ocellus takes 50% less damage.
+  // 2-tick (the wiki: speed-up "unconfirmed"; UNVERIFIED D38) and Ocellus takes 50% less damage.
   ocellusVoidTimeShare: 0.5,
 };
 
@@ -464,6 +464,12 @@ export interface PhaseTime {
    */
   fixedWall?: boolean;
   /**
+   * Phase 40d review: the DPS a damage spec's net damage is worth here when this row is one part of a time-split phase
+   * (Ocellus's last quadrant: the plain part's damage done sooner shortens the whole quadrant, plain and void parts in
+   * their time shares): the blended rate (1 − s)·n + s·v instead of the row's own DPS.
+   */
+  blendDps?: number;
+  /**
    * Phase 38h-2: the share of this fixed-length phase's damage that comes off a later phase (Ocellus P2 → P3, the
    * carry-over): a drain's HP value here is the extra damage dealt × this share.
    */
@@ -762,7 +768,7 @@ const evalEncounterPass = (
       if (!(rate > 0)) return [n];
       const split = (r: PhaseTime, damage: number): PhaseTime => ({ ...r, damage, seconds: timeOf(damage, r.dps * mult) });
       return [
-        split(n, (H * (1 - share) * n.dps) / rate),
+        { ...split(n, (H * (1 - share) * n.dps) / rate), blendDps: rate },
         { ...split(v, (H * share * v.dps) / rate), noDamageSpecs: VOID_NO_SPECS },
       ];
     });

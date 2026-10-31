@@ -279,7 +279,7 @@
   },
   {
    "slots": 1,
-   "seconds": 130.77167869156892
+   "seconds": 121.2973964501
   }
  ],
  "slots": {
@@ -560,16 +560,16 @@
   }
  ],
  "pinnedItems": [],
- "comparison": "381567afc60c7778b5ee82560fbf3ebc9bec49b0cf1773d0be27da6de0422ed6",
+ "comparison": "aae607028c90d5c2801622f933df1b8dd79b705766c4b32810513c2c63bbfe8b",
  "planned": 5,
  "rejected": [],
  "alternatives": [
   {
    "label": "melee + magic: Tumeken's shadow (Ancestral) / Inquisitor's + Obligator",
    "kind": "alternative",
-   "deltaSeconds": -107.73645512613393,
+   "deltaSeconds": -107.99058970070723,
    "deltaSlots": -1,
-   "reason": "107.7 s slower",
+   "reason": "108.0 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Obligator"
@@ -578,9 +578,9 @@
   {
    "label": "ranged + magic: Tumeken's shadow (Ancestral) / Twisted bow (Masori) / Ascension crossbows + diamond (e) (Masori) / Ascension crossbows + onyx (e) (Masori)",
    "kind": "alternative",
-   "deltaSeconds": -369.766484580771,
+   "deltaSeconds": -367.72382655343563,
    "deltaSlots": 1,
-   "reason": "369.8 s slower",
+   "reason": "367.7 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Twisted bow",
@@ -591,9 +591,9 @@
   {
    "label": "magic: Tumeken's shadow (Ancestral) / Harmonised Nightmare staff / Harmonised Nightmare staff #3",
    "kind": "alternative",
-   "deltaSeconds": -827.7290475736586,
+   "deltaSeconds": -827.9831821482314,
    "deltaSlots": -5,
-   "reason": "827.7 s slower",
+   "reason": "828.0 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Harmonised Nightmare staff",
@@ -872,32 +872,32 @@
   "screened": [
    {
     "ring": "Ultor ring",
-    "seconds": 1283.6974954505354,
+    "seconds": 1285.7401534778708,
     "full": true
    },
    {
     "ring": "Lightbearer",
-    "seconds": 1287.150328077842,
+    "seconds": 1289.1929861051772,
     "full": true
    },
    {
     "ring": "Venator ring",
-    "seconds": 1336.2470192813616,
+    "seconds": 1338.2330979997478,
     "full": true
    },
    {
     "ring": "Bellator ring",
-    "seconds": 1337.326144936777,
+    "seconds": 1338.3474739504447,
     "full": true
    },
    {
     "ring": "Ring of shadows",
-    "seconds": 1350.2719108920633,
+    "seconds": 1351.276948787804,
     "full": true
    },
    {
     "ring": "Magus ring",
-    "seconds": 1375.5567850292996,
+    "seconds": 1376.5781140429674,
     "full": true
    }
   ]
@@ -926,7 +926,7 @@
  "droppedPinned": [],
  "ownershipNotices": [],
  "searchRows": "5b46a985bcd92aa5e74d3ff1fa4c8a69173250237da0a44f7f9a1def811f890e",
- "objectiveSeconds": 1283.6974954505354,
+ "objectiveSeconds": 1285.7401534778708,
  "fightSeconds": {
   "archive-guardian": 230,
   "ezekiel": 229,
@@ -939,7 +939,7 @@
  },
  "plannedRoute": {
   "id": "archive-guardian>bork-smorks>moia>xarth>ocellus",
-  "seconds": 1283.6974954505354,
+  "seconds": 1285.7401534778708,
   "surgeDoses": [
    "archive-guardian",
    "bork-smorks",
@@ -1041,7 +1041,7 @@
    },
    {
     "id": "ocellus",
-    "seconds": 699.2231139399909,
+    "seconds": 701.2657719673263,
     "events": [
      {
       "npc": "Ocellus",
@@ -1064,7 +1064,7 @@
       "counts": {
        "tonalztics": 2
       },
-      "hp": 595.1255937256205
+      "hp": 603.9837938566147
      }
     ],
     "damage": {

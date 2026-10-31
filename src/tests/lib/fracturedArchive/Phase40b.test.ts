@@ -81,10 +81,10 @@ describe('hand-computed Bork + Smorks (headline kits, drains None, party 6)', ()
     expect(Math.round(e.seconds * 100) / 100).toBe(175.41);
   });
 
-  test('faNotOwned (Scythe of Vitur #2, 14.7115 stunned DPS): the 25-tick stuns cover Bork (phase 40b-2; 40d kit)', () => {
+  test('faNotOwned (Torva + Scythe, 14.7115 stunned DPS): the 25-tick stuns cover Bork (phase 40b-2; 40d kit)', () => {
     const e = undrained('faNotOwned');
     expect(e.phases.map((p) => [p.key, Math.round(p.dps * 1e4) / 1e4, p.choice!.loadout])).toEqual([
-      ['bork-stunned', 14.7115, 'Scythe of Vitur #2'],
+      ['bork-stunned', 14.7115, 'Torva + Scythe (slash)'],
       ['smorks', 6.1317, 'Twisted bow (Masori)'],
     ]);
     // cap = 60 s × 6 × 14.7115 = 5296.1 ≥ 1500 (40b's 7 ticks left 17 hp at armour 14):
@@ -120,9 +120,9 @@ describe('hand-computed Bork + Smorks (headline kits, drains None, party 6)', ()
     expect(e.seconds).toBeCloseTo(375 / 8.9455 + 375 / 8.4875 + 375 / 8.0298 + 375 / 7.5728 + 600 / 7.5258, 1);
   });
 
-  test('the pinned headline (with the spec budget): fa Bork + Smorks 128.98 s, faNotOwned 141.23 s, faSolo 177.99 s (40d)', () => {
+  test('the pinned headline (with the spec budget): fa Bork + Smorks 128.98 s, faNotOwned 140.86 s, faSolo 177.99 s (40d)', () => {
     expect(headline('fa').encounters['bork-smorks']).toBe(128.98);
-    expect(headline('faNotOwned').encounters['bork-smorks']).toBe(141.23);
+    expect(headline('faNotOwned').encounters['bork-smorks']).toBe(140.86);
     expect(headline('faSolo').encounters['bork-smorks']).toBe(177.99);
   });
 });

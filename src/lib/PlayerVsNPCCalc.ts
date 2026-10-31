@@ -2304,7 +2304,8 @@ export default class PlayerVsNPCCalc extends BaseCalc {
   }
 
   public getWeaponDelayProvider(): WeaponDelayProvider {
-    const baseSpeed = this.getAttackSpeed();
+    // Fractured Archive: Ocellus's void explosions (2-tick; the TTK chart matches the DPS)
+    const baseSpeed = getOcellusVoidAttackSpeed(this.monster) ?? this.getAttackSpeed();
 
     if (this.isWearingBloodMoonSet()) {
       return (wh) => {
@@ -2339,7 +2340,7 @@ export default class PlayerVsNPCCalc extends BaseCalc {
     }
 
     // todo thralls, iterMax = ... * max(speed, thrall_speed) // or don't maybe also
-    const speed = this.getAttackSpeed();
+    const speed = getOcellusVoidAttackSpeed(this.monster) ?? this.getAttackSpeed();
     const iterMax = TTK_DIST_MAX_ITER_ROUNDS * speed;
 
     const playerDist = this.getDistribution()

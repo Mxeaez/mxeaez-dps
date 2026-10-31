@@ -275,7 +275,7 @@
   },
   {
    "slots": 1,
-   "seconds": 116.96757742709633
+   "seconds": 112.60235144101534
   },
   {
    "slots": 8,
@@ -508,16 +508,16 @@
   }
  ],
  "pinnedItems": [],
- "comparison": "3656b73543b1e64a116c7c8503321f63991d99cb2316918e986bc530b4491b46",
+ "comparison": "08c1d6d6e0fa754e2e6486f888560086536cfb20bbef7e89d2ec29fc23a303e7",
  "planned": 5,
  "rejected": [],
  "alternatives": [
   {
    "label": "melee + magic: Tumeken's shadow (Ancestral) / Inquisitor's + Obligator / Harmonised Nightmare staff / Harmonised Nightmare staff #4",
    "kind": "alternative",
-   "deltaSeconds": -87.85140572689534,
+   "deltaSeconds": -88.15379495481375,
    "deltaSlots": 3,
-   "reason": "87.9 s slower",
+   "reason": "88.2 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Obligator",
@@ -528,9 +528,9 @@
   {
    "label": "ranged + magic: Tumeken's shadow (Ancestral) / Ascension crossbows + diamond (e) (Masori) / Twisted bow (Masori) / Ascension crossbows + Onyx ascension bolts (e)",
    "kind": "alternative",
-   "deltaSeconds": -310.2991476573925,
+   "deltaSeconds": -309.38043521256714,
    "deltaSlots": 5,
-   "reason": "310.3 s slower",
+   "reason": "309.4 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Ascension crossbows",
@@ -541,9 +541,9 @@
   {
    "label": "magic: Tumeken's shadow (Ancestral) / Harmonised Nightmare staff / Harmonised Nightmare staff #4",
    "kind": "alternative",
-   "deltaSeconds": -928.310949405618,
+   "deltaSeconds": -928.6133386335359,
    "deltaSlots": -5,
-   "reason": "928.3 s slower",
+   "reason": "928.6 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Harmonised Nightmare staff",
@@ -606,13 +606,13 @@
   "items": [
    {
     "item": "Zaryte crossbow",
-    "hp": 606.353756889268,
+    "hp": 606.3537568892684,
     "slots": 1,
     "how": "a free slot"
    },
    {
     "item": "Surge potion(4)",
-    "hp": 125.04778554686072,
+    "hp": 125.04778554686027,
     "slots": 1,
     "how": "a free slot"
    }
@@ -931,7 +931,7 @@
   "notes": [
    "Filler: no other damage weapon adds HP with the energy left",
    "Surge potion(4) (second): adds no HP the bars pay",
-   "Your spec bar goes to Zaryte crossbow / surge doses: 4 carriers (party − 1); the bars pay 3025 HP on the route vs 2293 HP if you carry a drain weapon instead."
+   "Your spec bar goes to Zaryte crossbow / surge doses: 4 carriers (party − 1); the bars pay 3028 HP on the route vs 2297 HP if you carry a drain weapon instead."
   ]
  },
  "ring": {
@@ -940,32 +940,32 @@
   "screened": [
    {
     "ring": "Ultor ring",
-    "seconds": 1206.7946760517016,
+    "seconds": 1207.713388496527,
     "full": true
    },
    {
     "ring": "Bellator ring",
-    "seconds": 1248.0145181167159,
+    "seconds": 1248.9332305615412,
     "full": true
    },
    {
     "ring": "Lightbearer",
-    "seconds": 1249.0196586836632,
+    "seconds": 1250.857083573314,
     "full": true
    },
    {
     "ring": "Venator ring",
-    "seconds": 1257.7683382636073,
+    "seconds": 1258.669226917732,
     "full": true
    },
    {
     "ring": "Ring of shadows",
-    "seconds": 1261.889497501234,
+    "seconds": 1262.7967738460688,
     "full": true
    },
    {
     "ring": "Magus ring",
-    "seconds": 1277.4317294817924,
+    "seconds": 1278.3504419266178,
     "full": true
    }
   ]
@@ -1058,12 +1058,12 @@
  "excluded": [],
  "droppedPinned": [],
  "ownershipNotices": [],
- "searchRows": "c2012f15a6b509b16b53bce4a0c98d3bb080de6881dcee0bc60338882f55b1db",
- "objectiveSeconds": 1213.0021682330585,
+ "searchRows": "73650c8506ce24cf7a5d3dcdbedf59806c8d18a328f1a75f471e0edfcf047e5b",
+ "objectiveSeconds": 1213.9208806778838,
  "fightSeconds": null,
  "plannedRoute": {
   "id": "archive-guardian>bork-smorks>moia>xarth>ocellus",
-  "seconds": 1206.7946760517016,
+  "seconds": 1207.713388496527,
   "surgeDoses": [
    "archive-guardian",
    "xarth"
@@ -1161,7 +1161,7 @@
    },
    {
     "id": "ocellus",
-    "seconds": 667.0914849293416,
+    "seconds": 668.010197374167,
     "events": [
      {
       "npc": "Ocellus",
@@ -1188,7 +1188,7 @@
       "counts": {
        "tonalztics": 5
       },
-      "hp": 820.4418121252661
+      "hp": 821.945849878937
      }
     ],
     "damage": {

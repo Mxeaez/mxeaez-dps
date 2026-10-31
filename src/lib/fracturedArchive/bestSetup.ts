@@ -26,6 +26,7 @@ import { BestSetupTarget } from '@/lib/raids/types';
 import { ALL_RAID_TARGETS, raidBase } from '@/lib/raids/base';
 import { assumptionsForTarget } from '@/lib/raids/toa/supplies';
 import { BEST_SETUP_TARGETS } from '@/lib/fracturedArchive/targets';
+import { ocellusDrainPhase } from '@/lib/fracturedArchive/ocellus';
 import {
   BestSetupAssumptions, PRESETS, PresetDef, StyleGroup,
 } from '@/lib/fracturedArchive/presets';
@@ -204,8 +205,10 @@ const drainModelKey = (target: BestSetupTarget, phase: string | undefined, assum
  * Phase 36 / 38g: the undrained drain model of a phase target (cached; null when drains never apply there: the target's `noDrains`).
  * Phase 38a: a room before the ToA supplies drains with the normal potions.
  */
-export const drainModelOf = (target: BestSetupTarget, phase: string | undefined, assumptions: BestSetupAssumptions): DrainModel | null => {
+export const drainModelOf = (target: BestSetupTarget, phase0: string | undefined, assumptions: BestSetupAssumptions): DrainModel | null => {
   if (target.noDrains) return null;
+  // phase 40d review: Ocellus's void phases drain like their plain Deflect
+  const phase = ocellusDrainPhase(phase0);
   const k = drainModelKey(target, phase, assumptions);
   let model = drainKeyModels.get(k);
   if (model === undefined) {
@@ -223,12 +226,13 @@ export const drainModelOf = (target: BestSetupTarget, phase: string | undefined,
  */
 export const specCountsDrainKey = (
   target: BestSetupTarget,
-  phase: string | undefined,
+  phase0: string | undefined,
   drain: DrainStateId,
   assumptions: BestSetupAssumptions,
   counts: SpecCounts,
 ): string => {
   if (drain === 'none' || target.noDrains) return 'none';
+  const phase = ocellusDrainPhase(phase0);
   const model = drainModelOf(target, phase, assumptions);
   if (!model) return 'none';
   const k = drainModelKey(target, phase, assumptions);
@@ -438,7 +442,10 @@ export const buildTargetMonster = (
   // phase 19: targets whose drains never stick (CoX Vanguards) stay undrained in every drain state
   const undrained = target.noDrains && drain !== 'none';
   // phase 38a: a room before the ToA supplies drains with the normal potions
-  const d0 = drainStateFor(m, undrained ? 'none' : drain, assumptionsForTarget(target, assumptions), specCounts);
+  // phase 40d review: Ocellus's void phases drain like their plain Deflect (the specs are thrown outside the explosions)
+  const drainPhase = ocellusDrainPhase(m.inputs.phase);
+  const dm = drainPhase !== m.inputs.phase ? withInputs(m, { phase: drainPhase }) : m;
+  const d0 = drainStateFor(dm, undrained ? 'none' : drain, assumptionsForTarget(target, assumptions), specCounts);
   const d = undrained ? { ...d0, id: drain, plan: `No drains: ${target.noDrains}` } : d0;
   return { monster: withInputs(m, { defenceReductions: d.reductions }), drain: d };
 };

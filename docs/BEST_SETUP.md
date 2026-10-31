@@ -1959,7 +1959,9 @@ is 2-tick, the Deflects still apply, hits are halved (B2), and the explosions ar
 - Hand check (Phase40d.test.ts, toy kit Deflect Melee 2 / void 3, Deflect Ranged 1 / void 1.25): rates 2.5 and 1.125 →
   Deflect Ranged; damage shares 4/9 and 5/9, each row H ÷ 1.125 ÷ 2 s. fa headline: Tbow 8.167 plain (Rapid) and 10.468
   in the explosions, H = 1079.5 hp: 473.1 hp + 606.4 hp, 57.93 s each = 115.9 s (was 1079.5 ÷ 8.167 = 132.2 s);
-  your ZCB spec on the plain row takes it to 50.49 s.
+  your ZCB spec on the plain row takes it to 51.40 s: review fix, a spec there shortens the whole quadrant,
+  so it saves net ÷ (mult × blended rate 9.318), not ÷ 8.167 (`PhaseTime.blendDps`; was 50.49 s). The void rows drain
+  like their plain Deflect (`ocellusDrainPhase`: the specs are thrown outside the explosions).
 
 ## Routes tab (phase 16: raid time model)
 

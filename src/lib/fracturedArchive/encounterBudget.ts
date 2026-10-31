@@ -306,6 +306,11 @@ export const damageLimited = (r: Pick<PhaseTime, 'seconds' | 'damage' | 'dps' | 
   return Math.abs(expect - r.seconds) <= 1e-6 * Math.max(1, r.seconds);
 };
 
+/** Phase 40d review: a time-split row's seconds per net damage of a spec (`RowOutcome.secondsPerDamage`). */
+const secondsPerDamageOf = (r: Pick<PhaseTime, 'blendDps'>, mult: number): { secondsPerDamage?: number } => (r.blendDps && r.blendDps > 0
+  ? { secondsPerDamage: 1 / (Math.max(1e-12, mult) * r.blendDps) }
+  : {});
+
 /** Per damage weapon on a row: its best variant's net damage at the row's DPS (only weapons with net > 0). */
 const damageChoices = (
   kit: RaidKit,
@@ -336,7 +341,8 @@ const damageChoices = (
       count: 0,
       expected: v.expected,
       ticks: v.ticks,
-      saved: specSecondsSaved(net, r.dps, mult),
+      // phase 40d review: a row of a time-split phase saves at the blended rate
+      saved: specSecondsSaved(net, r.blendDps ?? r.dps, mult),
       ...(filler.includes(w) ? { filler: true } : {}),
     });
   });
@@ -674,7 +680,9 @@ const withDamage = (
   const choices = damageChoices(kit, queryOf(r), r, cfg.damage, hits, mult, cfg.filler);
   const used = choices.filter((c) => (counts[c.weapon] ?? 0) > 0).map((c) => ({ ...c, count: counts[c.weapon]! }));
   if (!used.length) return r;
-  const o: RowOutcome = { seconds: r.seconds, damage: r.damage, damageSpecs: used };
+  const o: RowOutcome = {
+    seconds: r.seconds, damage: r.damage, damageSpecs: used, ...secondsPerDamageOf(r, mult),
+  };
   const seconds = rowSecondsAfter(o, Object.fromEntries(used.map((c) => [c.weapon, c.count])));
   return {
     ...r,
@@ -866,7 +874,9 @@ export const budgetedEncounter = (
       const damageSpecs = extra ? [] : damageChoices(kit, queryOf(r), r, cfg.damage, hitsOf[idx], mult, cfg.filler);
       outcomes.set(idx, prev
         ? { seconds: prev.seconds + r.seconds, damage: prev.damage, damageSpecs: prev.damageSpecs }
-        : { seconds: r.seconds, damage: r.damage, damageSpecs });
+        : {
+          seconds: r.seconds, damage: r.damage, damageSpecs, ...secondsPerDamageOf(r, mult),
+        });
     });
     return outcomes;
   };

@@ -21,9 +21,9 @@ ROADMAP 40d. DATA_SOURCES *Phase 40d*; UNVERIFIED D38 (D7 updated); BEST_SETUP *
     five rooms), no kisten. AG 175.15 → 178.08, Bork 180.75 → 177.99, Moia 42.06 → 53.69, Xarth 179.20 → 174.71,
     Ocellus 715.62 → 699.22.
   - faNotOwned 22:39.5 → **22:28.6** (−10.9 s): kit + Scythe of Vitur #2 (stunned Bork 14.71 DPS, Ocellus P2) + an
-    Elder maul DPS loadout (searched on "Deflect Ranged + void"; removing it costs 4.86 s, all on Ocellus, though the
-    final drained pass shows the Tbow on both last-quadrant rows: the maul works in other drain outcomes of the spec
-    budget — reviewer to confirm); ring Lightbearer → Ultor. AG 180.69 → 182.85, Bork 144.63 → 141.23, Moia 53.69 →
+    Elder maul DPS loadout (the review: best only on "Deflect Ranged + void", 12.81 DPS; without it Deflect Ranged
+    becomes the worse Deflect, T 118.25 vs 115.86 s, so the maul keeps the unseen Deflect from being the pessimistic
+    one); ring Lightbearer → Ultor. AG 180.69 → 182.85, Bork 144.63 → 141.23, Moia 53.69 →
     59.50, Xarth 215.21 → 208.03, Ocellus 765.33 → 756.99. Carriers unchanged (1 maul + 4 Tonalztics).
 - **Pins moved**: r27fa re-captured (1444.2 → 1434.8; memo counters within ±20%), PHASE37_MEMO faSolo (41714 / 32537 /
   1743392 / 10942: more ring runs), Phase27 FA switch 1451.6 → 1434.8,
@@ -40,6 +40,21 @@ ROADMAP 40d. DATA_SOURCES *Phase 40d*; UNVERIFIED D38 (D7 updated); BEST_SETUP *
   screenshot phase6-ocellus-p3-void.png updated.
 - **Run**: fast suite green; slow `CrossRaidHeadlines Phase27 Phase37 Phase31` green (Phase31 after the faSolo memo
   re-pin); tsc, lint clean.
+- **Review (PASS, 1 Medium + 4 Low), fix round**:
+  - M1: a damage spec on the plain last-quadrant row was credited net ÷ (mult × n); it shortens the whole quadrant, so
+    it now saves net ÷ (mult × blended rate) (`PhaseTime.blendDps`, `RowOutcome.secondsPerDamage`).
+  - L2: the void rows' drain outcome used halved spec hits; a void phase now drains like its plain Deflect
+    (`ocellusDrainPhase` in `drainModelOf` / `specCountsDrainKey` / `buildTargetMonster`).
+  - L3 UNVERIFIED refs B5 → D38; L4 the Elder maul reason above; L5 the TTK chart / delay provider use 2 ticks too.
+    ROADMAP 42 lists the Phase38h3b exception.
+  - **Final headlines**: fa **20:07.7** (+0.92 s on 20:06.8, the reviewer's ≈ 0.9: Ocellus 668.01), faSolo **21:25.7**
+    (+2.05 s, Ocellus 701.27; same kit), faNotOwned **22:29.3** (+0.67 s): kit Twisted bow, Inquisitor's + Scythe,
+    Torva + Scythe (no Elder maul / Scythe #2 / mace loadouts; the lighter kit is 0.27 s behind), carriers 2 Elder
+    maul + 3 Tonalztics, kisten back; Bork 140.86, Ocellus 758.02.
+  - Pins: Phase38h2 Ocellus P3 event 741.1 / solo 521.0 (the hand formula maps the void phase too), faNotOwned carriers
+    3767.7 (= the 2nd alternative); Phase27 FA switch 1427.4; Phase40b faNotOwned stunned loadout name, Bork 140.86; r27fa re-captured; memo
+    counters within ±20%. Tests: Phase40d +3 (blended saving by hand 10 ÷ 2.5 = 4 s, the plain row's blendDps, void
+    drains = plain). Fast suite, slow `CrossRaidHeadlines Phase27 Phase37 Phase31`, retime (FA gap 0), tsc, lint green.
 
 ## Phase 40c-2: Ranged / Magic prayer dropdowns (FA, numbers, 2026-10-30)
 
