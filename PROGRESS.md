@@ -49,12 +49,12 @@ ROADMAP 40d. DATA_SOURCES *Phase 40d*; UNVERIFIED D38 (D7 updated); BEST_SETUP *
     ROADMAP 42 lists the Phase38h3b exception.
   - **Final headlines**: fa **20:07.7** (+0.92 s on 20:06.8, the reviewer's ≈ 0.9: Ocellus 668.01), faSolo **21:25.7**
     (+2.05 s, Ocellus 701.27; same kit), faNotOwned **22:29.3** (+0.67 s): kit Twisted bow, Inquisitor's + Scythe,
-    Torva + Scythe (no Elder maul / Scythe #2 / mace loadouts; the lighter kit is 0.27 s behind), carriers 2 Elder
+    Torva + Scythe (no Elder maul / Scythe #2 / mace loadouts; the planner's lighter-kit alternative is 0.27 s behind, the old 2fc442d7 kit 0.253 s: the re-review), carriers 2 Elder
     maul + 3 Tonalztics, kisten back; Bork 140.86, Ocellus 758.02.
   - Pins: Phase38h2 Ocellus P3 event 741.1 / solo 521.0 (the hand formula maps the void phase too), faNotOwned carriers
     3767.7 (= the 2nd alternative); Phase27 FA switch 1427.4; Phase40b faNotOwned stunned loadout name, Bork 140.86; r27fa re-captured; memo
     counters within ±20%. Tests: Phase40d +3 (blended saving by hand 10 ÷ 2.5 = 4 s, the plain row's blendDps, void
-    drains = plain). Fast suite, slow `CrossRaidHeadlines Phase27 Phase37 Phase31`, retime (FA gap 0), tsc, lint green.
+    drains = plain); drainOutcome probe maps the void rows too. Re-review PASS. Fast suite, slow `CrossRaidHeadlines Phase27 Phase37 Phase31`, retime (FA gap 0), tsc, lint green.
 
 ## Phase 40c-2: Ranged / Magic prayer dropdowns (FA, numbers, 2026-10-30)
 

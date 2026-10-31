@@ -1,4 +1,5 @@
 import { generateEmptyPlayer } from '@/state';
+import { ocellusDrainPhase } from '@/lib/fracturedArchive/ocellus';
 import {
   compareRoutes, createKitEvaluator, EncounterTime, KitLoadout, RaidTimeAssumptions, raidTimeAssumptionsFrom,
   RouteComparison, routesFor, specBudgetFrom,
@@ -275,7 +276,8 @@ export const drainOutcome = (name: HeadlineName, encounter: string, retimed?: Re
       damage: (p.damageSpecs ?? []).map((d) => ({ weapon: d.label, count: d.count, energy: DAMAGE_SPEC_WEAPONS[d.weapon as DamageSpecWeapon]?.energy ?? NaN })),
     };
     if (drain === 'none' || target.noDrains) return row;
-    const model = drainModel(buildTargetMonster(target, p.phase, 'none', a).monster, a);
+    // phase 40d review: Ocellus's void rows drain like their plain Deflect (as the model)
+    const model = drainModel(buildTargetMonster(target, ocellusDrainPhase(p.phase), 'none', a).monster, a);
     const attempts = attemptsFromCounts(model, counts);
     const def = inUpstreamOrder(attempts.filter((w): w is Exclude<PlannerWeapon, 'ayak'> => w !== 'ayak'));
     const nAyak = attempts.length - def.length;
