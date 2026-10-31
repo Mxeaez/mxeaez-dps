@@ -49,6 +49,9 @@ export const FRACTURED_ARCHIVE_RAID: RaidConfig = {
     {
       key: 'ocellusLastQuadrantFraction', label: 'Ocellus last quadrant', kind: 'percent', title: 'Share of P3\'s hp dealt in the last quadrant, at the Deflect option that blocks the kit\'s best style (pessimistic)',
     },
+    {
+      key: 'ocellusVoidTimeShare', label: 'Void explosions', kind: 'percent', title: 'Share of the last quadrant\'s time in void explosions: every attack 2-tick, damage halved, no damage specs (user, unverified)',
+    },
   ],
   routesLabel: 'Routes',
   encounterTarget: {

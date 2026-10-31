@@ -44,16 +44,18 @@ describe('Ocellus: three drain events, P3 specs on quadrants 1-3, the Blade at 1
     const rows = FA_TIME_MODEL.encounterPass('ocellus', one, ta, 'none', 90);
     expect(rows.map((r) => [r.key, r.drainReset])).toEqual([
       ['ocellus-p1', undefined], ['ocellus-p2', 'P1'], ['ocellus-p3', 'P2'], ['ocellus-p3-last', undefined],
+      ['ocellus-p3-void', undefined],
     ]);
     // P2: DPS 1 × 120 s = 120 dealt to the Blade, half of it off P3
     const p2 = rows[1];
     expect(p2.seconds).toBe(120);
     expect(p2.damage).toBe(120);
-    const p3Hp = rows[2].damage + rows[3].damage;
+    // phase 40d: the last quadrant is split into its plain and void-explosion rows (DPS 1 on both: half the damage each)
+    const p3Hp = rows[2].damage + rows[3].damage + rows[4].damage;
     expect(rows[2].damage).toBeCloseTo(0.75 * p3Hp, 9);
     const { events, rowEvent } = drainEventsOf(rows);
-    expect(events.map((e) => [e.reset, e.rows])).toEqual([[undefined, [0]], ['P1', [1]], ['P2', [2, 3]]]);
-    expect(rowEvent).toEqual([0, 1, 2, 2]);
+    expect(events.map((e) => [e.reset, e.rows])).toEqual([[undefined, [0]], ['P1', [1]], ['P2', [2, 3, 4]]]);
+    expect(rowEvent).toEqual([0, 1, 2, 2, 2]);
     // fix round: P2 lasts 120 s on the spec budget's clock (fixedWall), not 120 ÷ party size; the others ÷ party
     const party6 = { dpsMultiplier: 1, partySize: 6 };
     expect(p2.fixedWall).toBe(true);
@@ -61,7 +63,9 @@ describe('Ocellus: three drain events, P3 specs on quadrants 1-3, the Blade at 1
     expect(rowWallSeconds(rows[0], party6)).toBeCloseTo(rows[0].seconds / 6, 9);
     // all of P3 in the last quadrant: the reset moves to it
     const allLast = FA_TIME_MODEL.encounterPass('ocellus', one, { ...ta, settings: { ...RAID_TIME_DEFAULTS, ocellusLastQuadrantFraction: 1 } }, 'none', 90);
-    expect(allLast.map((r) => [r.key, r.drainReset])).toEqual([['ocellus-p1', undefined], ['ocellus-p2', 'P1'], ['ocellus-p3-last', 'P2']]);
+    expect(allLast.map((r) => [r.key, r.drainReset])).toEqual([
+      ['ocellus-p1', undefined], ['ocellus-p2', 'P1'], ['ocellus-p3-last', 'P2'], ['ocellus-p3-void', undefined],
+    ]);
   });
 
   test('the Team spec plan: one event per phase, the P3 specs made on quadrants 1-3', () => {

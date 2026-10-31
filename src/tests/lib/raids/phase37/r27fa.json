@@ -2,7 +2,7 @@
  "cancelled": false,
  "kit": [
   {
-   "label": "Twisted bow switch +6 on Scythe of Vitur #4",
+   "label": "Twisted bow switch +6 on Scythe of Vitur",
    "kind": "partial",
    "group": "ranged",
    "equipment": {
@@ -86,8 +86,8 @@
      "spell": null
     }
    ],
-   "source": "Scythe of Vitur #4 → Twisted bow (Masori): Masori body (f), Necklace of rupture, Zaryte vambraces, Masori chaps (f), Dizana's quiver, Masori mask (f)",
-   "base": "Scythe of Vitur #4",
+   "source": "Scythe of Vitur → Twisted bow (Masori): Masori body (f), Necklace of rupture, Zaryte vambraces, Masori chaps (f), Dizana's quiver, Masori mask (f)",
+   "base": "Scythe of Vitur",
    "partner": "Twisted bow (Masori)",
    "pieces": [
     "body",
@@ -477,13 +477,13 @@
    "slot": "ring"
   }
  ],
- "comparison": "8ad7978ee2916094f1a083f852dc9892a01150501126586b2df5daa542e4ea6a",
+ "comparison": "a65f81bea61bc1b4db9c5ef87f9370bf2ad1eb238048b6299e195a3d22f39e22",
  "planned": 5,
  "rejected": [
   {
    "label": "Twisted bow (Masori)",
    "kind": "addition",
-   "deltaSeconds": 21.05858258018816,
+   "deltaSeconds": 21.72885898522736,
    "deltaSlots": 1,
    "reason": "needs 1 more slot, 0 free",
    "weapons": [
@@ -513,11 +513,11 @@
  ],
  "alternatives": [
   {
-   "label": "melee + magic: Tumeken's shadow (Ancestral) / Scythe of Vitur #4 + Oathplate chest / Scythe of Vitur #4",
+   "label": "melee + magic: Tumeken's shadow (Ancestral) / Scythe of Vitur / Scythe of Vitur #4",
    "kind": "alternative",
-   "deltaSeconds": -93.00767514184554,
+   "deltaSeconds": -86.62780599786743,
    "deltaSlots": 0,
-   "reason": "93.0 s slower",
+   "reason": "86.6 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Scythe of Vitur",
@@ -527,9 +527,9 @@
   {
    "label": "ranged + magic: Tumeken's shadow (Ancestral) / Twisted bow (Masori)",
    "kind": "alternative",
-   "deltaSeconds": -189.5570863955195,
+   "deltaSeconds": -180.53098634145795,
    "deltaSlots": -1,
-   "reason": "189.6 s slower",
+   "reason": "180.5 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Twisted bow"
@@ -538,9 +538,9 @@
   {
    "label": "magic: Tumeken's shadow (Ancestral)",
    "kind": "alternative",
-   "deltaSeconds": -698.4415754460215,
+   "deltaSeconds": -688.713269150712,
    "deltaSlots": -10,
-   "reason": "698.4 s slower",
+   "reason": "688.7 s slower",
    "weapons": [
     "Tumeken's shadow"
    ]
@@ -597,20 +597,20 @@
      "weapon": "elderMaul",
      "carriers": 2,
      "drivers": [
-      "Ocellus (7.5 s)",
-      "Bork + Smorks (4.4 s)"
+      "Bork + Smorks (4.4 s)",
+      "Ocellus (4.0 s)"
      ],
-     "lastSaved": 11.885290704270119
+     "lastSaved": 8.369653015330641
     },
     {
      "weapon": "tonalztics",
      "carriers": 2,
      "drivers": [
-      "Ocellus (19.6 s)",
+      "Ocellus (9.8 s)",
       "Archive Guardian (3.5 s)",
       "Bork + Smorks (3.1 s)"
      ],
-     "lastSaved": 26.233469824146596
+     "lastSaved": 16.42141262729251
     }
    ],
    "perTarget": [
@@ -728,6 +728,16 @@
      "ayak": 0
     },
     {
+     "key": "ocellus-p3|Last quadrant: Deflect Melee + void explosions",
+     "label": "Ocellus P3 (Last quadrant: Deflect Melee + void explosions)",
+     "group": "Ocellus P3",
+     "carriers": {
+      "tonalztics": 3
+     },
+     "pFloor": 0.9512266875778747,
+     "ayak": 0
+    },
+    {
      "key": "ocellus-p3|Last quadrant: Deflect Ranged",
      "label": "Ocellus P3 (Last quadrant: Deflect Ranged)",
      "group": "Ocellus P3",
@@ -735,6 +745,16 @@
       "elderMaul": 2
      },
      "pFloor": 0.9783670464274926,
+     "ayak": 0
+    },
+    {
+     "key": "ocellus-p3|Last quadrant: Deflect Ranged + void explosions",
+     "label": "Ocellus P3 (Last quadrant: Deflect Ranged + void explosions)",
+     "group": "Ocellus P3",
+     "carriers": {
+      "elderMaul": 2
+     },
+     "pFloor": 0.9783670464274915,
      "ayak": 0
     }
    ],
@@ -774,7 +794,9 @@
   "ocellus-p2|": 14.370223088405137,
   "ocellus-p3|Quadrants 1-3": 10.634027878616607,
   "ocellus-p3|Last quadrant: Deflect Melee": 8.166997701078248,
+  "ocellus-p3|Last quadrant: Deflect Melee + void explosions": 10.468359045093257,
   "ocellus-p3|Last quadrant: Deflect Ranged": 10.634027878616607,
+  "ocellus-p3|Last quadrant: Deflect Ranged + void explosions": 12.809169944697276,
   "xarth|": 12.10495851373083,
   "dreadnoth|": 14.381996812805731,
   "smorks|": 12.02360719241481,
@@ -880,12 +902,12 @@
  "excluded": [],
  "droppedPinned": [],
  "ownershipNotices": [],
- "searchRows": "5e85acdfbb9d366108d7cfd2952fc62153d1eec49c163a4fd74499f7c3c02d39",
- "objectiveSeconds": 1444.1801871414618,
+ "searchRows": "aa0a814178491298a953b151d4ffb98728ccf6dc60ce9c004f8fe592fb4cb78c",
+ "objectiveSeconds": 1434.7669897727703,
  "fightSeconds": null,
  "plannedRoute": {
   "id": "archive-guardian>bork-smorks>moia>xarth>ocellus",
-  "seconds": 1444.1801871414618,
+  "seconds": 1434.7669897727703,
   "surgeDoses": null,
   "encounters": [
    {
@@ -961,7 +983,7 @@
    },
    {
     "id": "ocellus",
-    "seconds": 805.0644699003924,
+    "seconds": 795.6512725317009,
     "events": [
      {
       "npc": "Ocellus",
@@ -989,7 +1011,7 @@
        "tonalztics": 3,
        "elderMaul": 1
       },
-      "hp": 1099.7494480124597
+      "hp": 1090.7758326333644
      }
     ],
     "damage": {},

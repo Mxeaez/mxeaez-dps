@@ -3,6 +3,44 @@
 Newest entry first. One entry per phase (or per notable fix). Keep entries short: what was done, how it was
 verified, what's unverified / left for later.
 
+## Phase 40d: Ocellus void explosions, 2-tick attacks (FA, numbers, 2026-10-30)
+
+ROADMAP 40d. DATA_SOURCES *Phase 40d*; UNVERIFIED D38 (D7 updated); BEST_SETUP *Ocellus void explosions (phase 40d)*.
+- **Calc**: on the P3 "… + void explosions" options every attack is 2-tick (`getOcellusVoidAttackSpeed`, ocellus.ts;
+  one line in `PlayerVsNPCCalc.getExpectedAttackSpeed`, not for specs). Hits still halved (B2). Slow styles win there
+  (Tbow Accurate 6 → 2 ticks beats Rapid). The calculator's Shadow on "Deflect Melee + void" 3.140 → 7.851 DPS.
+- **Time model**: new setting `ocellusVoidTimeShare` (Advanced "Void explosions", default 50%, the user). Per Deflect X:
+  T = H ÷ (mult × ((1 − s)n + s·v)); rows `ocellus-p3-last` (T(1 − s)) and `ocellus-p3-void` (T·s, no damage specs),
+  each its own gear choice; the worse Deflect = the larger T. s = 0 is the old row (tested).
+- **Headlines** (`pinHeadlines --full`; old kits re-timed first: fa −12.09, faSolo −4.47, faNotOwned −1.04 s):
+  - fa 20:18.9 → **20:06.8** (−12.1 s): same three loadouts, ring, carriers. Ocellus 677.28 → 667.09: the last
+    quadrant (Tbow, 1079.5 hp) 132.2 s → 2 × 57.93 s before specs. No damage specs in the explosions, so Crimson kisten
+    no longer pays for its slot (5 free slots) and the surge dose moves Ocellus → Xarth (2 ZCB): Xarth 183.63 → 181.72.
+  - faSolo 21:32.8 → **21:23.7** (−9.1 s): ring Lightbearer → Ultor; kit drops the Torva helm variant (Inquisitor's +
+    Obligator); brings Burning claws (filler, < 50% left with Ultor's 30 s ticks) and a 2nd surge potion (doses on all
+    five rooms), no kisten. AG 175.15 → 178.08, Bork 180.75 → 177.99, Moia 42.06 → 53.69, Xarth 179.20 → 174.71,
+    Ocellus 715.62 → 699.22.
+  - faNotOwned 22:39.5 → **22:28.6** (−10.9 s): kit + Scythe of Vitur #2 (stunned Bork 14.71 DPS, Ocellus P2) + an
+    Elder maul DPS loadout (searched on "Deflect Ranged + void"; removing it costs 4.86 s, all on Ocellus, though the
+    final drained pass shows the Tbow on both last-quadrant rows: the maul works in other drain outcomes of the spec
+    budget — reviewer to confirm); ring Lightbearer → Ultor. AG 180.69 → 182.85, Bork 144.63 → 141.23, Moia 53.69 →
+    59.50, Xarth 215.21 → 208.03, Ocellus 765.33 → 756.99. Carriers unchanged (1 maul + 4 Tonalztics).
+- **Pins moved**: r27fa re-captured (1444.2 → 1434.8; memo counters within ±20%), PHASE37_MEMO faSolo (41714 / 32537 /
+  1743392 / 10942: more ring runs), Phase27 FA switch 1451.6 → 1434.8,
+  Phase40b (new kits' Bork rows by hand: faNotOwned 1500 ÷ 14.7115 + 600 ÷ 6.1317 = 199.81 s; faSolo 60 + 559.40 ÷
+  7.5728 + 600 ÷ 7.5258 = 213.60 s), Phase40 (kit order, 5 free slots), Phase37c (faSolo AG: Ultor 10 ticks, 2
+  Tonalztics + ZCB + claws = 210, end 30), Phase38h2 (Ocellus P3 event HP 718.2 → 739.6, solo 495.9 → 512.6;
+  faNotOwned carriers 3606.3, still the best of the four), Phase38h3 / 38h3b (fa no filler; faSolo Burning claws, its
+  ZCB per bar), Ocellus.test (void DPS ÷ 1.2 s), RaidTime / Phase38c (row lists; toy tests at share 0).
+- **Open for 42**: faSolo's Plan fills with Burning claws (< 50% left after the ZCB with Ultor) where Search's per-boss
+  rule names Crimson kisten (AG grounded, Ocellus P1): Phase38h3b pins it as a known exception.
+- **Tests**: `Phase40d.test.ts` (8): 2-tick DPS = halved E[hit] ÷ 2 ticks by hand (Rune crossbow, Abyssal whip), other
+  phases / specs keep their speed, blocked style 0; the split by hand on a toy kit (shares 4/9, 5/9), 0% / 100%, the P3
+  reset with all of P3 in the last quadrant, required phase targets. `verifyOcellus.mjs` (void row 7.851) OK;
+  screenshot phase6-ocellus-p3-void.png updated.
+- **Run**: fast suite green; slow `CrossRaidHeadlines Phase27 Phase37 Phase31` green (Phase31 after the faSolo memo
+  re-pin); tsc, lint clean.
+
 ## Phase 40c-2: Ranged / Magic prayer dropdowns (FA, numbers, 2026-10-30)
 
 ROADMAP 40c-2 (user, after 40c). DATA_SOURCES *Phase 40c*; BEST_SETUP *Assumptions*.

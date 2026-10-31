@@ -77,7 +77,7 @@ describe('drain outcome: one encounter of a headline, for hand-checking', () => 
     expect(pool.me.end).toEqual([17.5]);
   }, 60000);
 
-  test('FA Solo Archive Guardian: 2 Tonalztics + 3 ZCB + the surge dose from one bar (phase 38j: the room time, Lightbearer)', () => {
+  test('FA Solo Archive Guardian: 2 Tonalztics + ZCB + Burning claws + the surge dose from one bar (phase 40d: Ultor ring)', () => {
     const d = drainOutcome('faSolo', 'archive-guardian');
     expect(d.eventsMatch).toBe(true);
     expect(d.surge).toBe(true);
@@ -85,9 +85,11 @@ describe('drain outcome: one encounter of a headline, for hand-checking', () => 
     // party 1: wall = DPS seconds (180.67 s: 6 ticks); 100 + 60 + 25 (dose) − (2 × 50 + 75) = 10; phase 38b: the
     // Guardian's death (Death Charge, party 1) +15% = 25 = the bar at the end. Phase 38j: the room time, no personal solo
     // time: the global best 178 s × the user's pace (mean personal ÷ global over the 24 pairs, 1.819193) = 323.82 s; the
-    // plan camps the Lightbearer (a tick per 15 s): 21 ticks; 100 + 210 + 25 − (2 × 50 + 3 × 75 = 325) + 15 = 25
+    // plan camps the Lightbearer (a tick per 15 s): 21 ticks; 100 + 210 + 25 − (2 × 50 + 3 × 75 = 325) + 15 = 25.
+    // Phase 40d: the plan camps the Ultor ring (a tick per 30 s): 10 ticks; 100 + 100 + 25 − (2 × 50 + ZCB 75 + Burning
+    // claws 35 = 210) + 15 = 30
     expect(d.wall).toBeCloseTo(178 * 1.819193, 3);
-    expect([me.group, me.ticks, me.spent, me.restored, me.balance, me.end]).toEqual(['me', 21, 325, 15, 25, [25]]);
+    expect([me.group, me.ticks, me.spent, me.restored, me.balance, me.end]).toEqual(['me', 10, 210, 15, 30, [30]]);
   }, 60000);
 
   slowTest('CLI: three tables, exit 0; an encounter on no headline route exits 2', () => {

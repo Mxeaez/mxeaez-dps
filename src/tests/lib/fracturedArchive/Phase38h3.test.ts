@@ -162,17 +162,19 @@ const ZCB_PER_BAR: Record<string, Record<string, [number, string | null]>> = {
     'ocellus-p3|Quadrants 1-3': [62.3, 'crimsonKisten'],
     'ocellus-p3|Last quadrant: Deflect Melee': [81.0, null],
   },
+  // phase 40d: faSolo's kit loses the Torva full helm and camps the Ultor ring (was Lightbearer): AG grounded 86.0 → 81.9,
+  // stunned Bork 79.1 → 74.7, armour 14 88.8 → 84.9, Xarth 79.2 → 74.9, Ocellus P1 90.6 → 86.5, P3 Q1-3 62.8 → 58.7
   faSolo: {
     'ag-flying|': [90.9, null],
-    'ag-grounded|': [86.0, 'crimsonKisten'],
+    'ag-grounded|': [81.9, 'crimsonKisten'],
     // phase 40b: the Bork route (was Ezekiel 71.4 / crimsonKisten); party 1: most of Bork at armour 14 (4 stuns × 4.2 s)
-    'bork|Stunned (armour 0)': [79.1, 'crimsonKisten'],
-    'bork|Smorks 25-0% HP (armour 14)': [88.8, 'voidwaker'],
+    'bork|Stunned (armour 0)': [74.7, 'crimsonKisten'],
+    'bork|Smorks 25-0% HP (armour 14)': [84.9, 'voidwaker'],
     'smorks|': [92.5, 'voidwaker'],
     'moia|': [85.5, null],
-    'xarth|': [79.2, 'crimsonKisten'],
-    'ocellus-p1|At a corner': [90.6, 'crimsonKisten'],
-    'ocellus-p3|Quadrants 1-3': [62.8, 'crimsonKisten'],
+    'xarth|': [74.9, 'crimsonKisten'],
+    'ocellus-p1|At a corner': [86.5, 'crimsonKisten'],
+    'ocellus-p3|Quadrants 1-3': [58.7, 'crimsonKisten'],
     'ocellus-p3|Last quadrant: Deflect Melee': [79.1, null],
   },
 };
@@ -202,8 +204,10 @@ describe.each([
     const { fx } = routeOf(name);
     // phase 38h-3b: a filler comes along (leftover energy), outside the bring rule; phase 38j: Crimson kisten (50%), not
     // Burning claws (35%): the room times' regen leaves ≥ 50% after the ZCB specs on Xarth / Ocellus P3
-    expect(fx.specs.damage).toEqual(['zcb', 'crimsonKisten']);
-    expect(fx.specs.filler).toBe('crimsonKisten');
+    // phase 40d (no damage specs in the void explosions): fa brings no filler; faSolo (Ultor ring: fewer regen ticks,
+    // < 50% left) Burning claws
+    expect(fx.specs.damage).toEqual(name === 'fa' ? ['zcb'] : ['zcb', 'burningClaws']);
+    expect(fx.specs.filler).toBe(name === 'fa' ? undefined : 'burningClaws');
     expect(fx.specs.bringRule).toMatchObject({ first: 'zcb', second: null, bring: ['zcb'] });
     // the plan's stored decision is the rule on its own stored gains
     expect(bringRule(fx.specs.bringRule!.gains, ALL)).toEqual(fx.specs.bringRule);
@@ -222,22 +226,24 @@ describe.each([
     expect(Object.keys(fx.specs.then ?? {})).toEqual(Object.keys(headline(name).encounters));
     // phase 38h-3b: "· leftover: <filler>" on the encounters where the plan makes a filler spec (phase 38j: Crimson kisten
     // on Xarth and Ocellus P3 (fa), Ocellus P3 (faSolo))
-    const fills = name === 'fa' ? ['xarth', 'ocellus'] : ['ocellus'];
+    // phase 40d: fa none; faSolo Burning claws on the Archive Guardian and Ocellus
+    const fills = name === 'fa' ? [] : ['archive-guardian', 'ocellus'];
     Object.entries(fx.specs.then ?? {}).forEach(([id, t]) => expect([id, t]).toEqual([id,
-      `Then: 1. Zaryte crossbow (per bar)${fills.includes(id) ? ' · leftover: Crimson kisten' : ''}`]));
+      `Then: 1. Zaryte crossbow (per bar)${fills.includes(id) ? ' · leftover: Burning claws' : ''}`]));
   }, 120000);
 });
 
 describe('no seconds in the spec choices (the headline plans)', () => {
   // phase 38j (room times: more energy): Elder maul 2 → 5 in the reference plan, 1 → 2 in the final one
-  test('Solo: brought ⇔ the plan with every owned one specs it (Elder maul 5, Tonalztics 12); the final plan makes 2 / 7', () => {
+  test('Solo: brought ⇔ the plan with every owned one specs it (Elder maul 2, Tonalztics 12; phase 40d); the final plan makes 1 / 7', () => {
     const fx = phase37Fixture('faSolo') as PlanResult;
     // review fix 3: `specs` = the final plan's route (the damage specs and the surge dose take energy), `refSpecs` = the
     // reference plan that chose them. Phase 40b-2 (25-tick stuns): Tonalztics 10 → 12 in the reference plan, and the
     // kit without the Elder maul fills every slot, so the maul passes the slot check (adds 107.4 HP ≥ costs 41.5)
     expect(fx.specs.solo!.perWeapon).toEqual([
+      // phase 40d: Elder maul 1 / 2 (a free slot: no slot check)
       {
-        weapon: 'elderMaul', chosen: true, specs: 2, refSpecs: 5, slot: { adds: expect.closeTo(107.36, 1), costs: expect.closeTo(41.47, 1) },
+        weapon: 'elderMaul', chosen: true, specs: 1, refSpecs: 2,
       },
       {
         weapon: 'dwh', chosen: false, specs: 0, refSpecs: 0,

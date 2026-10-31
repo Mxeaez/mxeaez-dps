@@ -93,7 +93,7 @@ import {
 import { burningClawDoT, burningClawSpec, dClawDist } from '@/lib/dists/claws';
 import { isImmuneToSpell, isOutOfMeleeReach } from '@/lib/fracturedArchive/immunities';
 import { getMagicResistance, hasGuaranteedMeleeAccuracy } from '@/lib/fracturedArchive/bork';
-import { getOcellusDamageDivisor, isBlockedByOcellusPrayer } from '@/lib/fracturedArchive/ocellus';
+import { getOcellusDamageDivisor, getOcellusVoidAttackSpeed, isBlockedByOcellusPrayer } from '@/lib/fracturedArchive/ocellus';
 import { isBlockedByToaPrayer } from '@/lib/raids/toa/prayers';
 import { getCoxMeleeDamageDivisor } from '@/lib/raids/cox/damage';
 import { isBlockedByTobStyle, isDawnbringerWrongTarget } from '@/lib/raids/tob/damage';
@@ -2185,6 +2185,10 @@ export default class PlayerVsNPCCalc extends BaseCalc {
   }
 
   public getExpectedAttackSpeed() {
+    // Fractured Archive: Ocellus's void explosions (every attack 2-tick; specs unchanged)
+    const ocellusSpeed = this.opts.usingSpecialAttack ? undefined : getOcellusVoidAttackSpeed(this.monster);
+    if (ocellusSpeed) return ocellusSpeed;
+
     if (this.isWearingBloodMoonSet()) {
       const acc = this.getHitChance();
       const procChance = this.opts.usingSpecialAttack

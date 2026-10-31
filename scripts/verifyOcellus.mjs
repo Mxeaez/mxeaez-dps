@@ -29,7 +29,8 @@ const EXPECTED = [
 // extra phase options: [version, phase, melee dps, mage max, mage dps, screenshot]
 const PHASE_OPTIONS = [
   ['Phase 1', 'Walking to a corner (Protect from Melee)', 0, 70, 7.847, null],
-  ['Phase 3', 'Last quadrant: Deflect Melee + void explosions', 0, 35, 3.140, 'p3-void'],
+  // phase 40d: every attack 2-tick in the explosions (was 3.140 at the Shadow's 5 ticks)
+  ['Phase 3', 'Last quadrant: Deflect Melee + void explosions', 0, 35, 7.851, 'p3-void'],
   ['Phase 3', 'Last quadrant: Deflect Ranged', 7.023, 70, 6.373, null],
   ['Phase 3', 'Last quadrant: Soul Split', 7.023, 70, 6.373, null],
 ];

@@ -49,8 +49,8 @@
      "slot": "feet"
     },
     "ring": {
-     "id": 25975,
-     "name": "Lightbearer",
+     "id": 28307,
+     "name": "Ultor ring",
      "version": "",
      "slot": "ring"
     },
@@ -87,7 +87,97 @@
     }
    ],
    "source": "preset",
-   "key": "ranged|27235,28951,33639,34696,34681,27238,0,27241,26235,31097,25975"
+   "key": "ranged|27235,28951,33639,34696,34681,27238,0,27241,26235,31097,28307"
+  },
+  {
+   "label": "Inquisitor's + Obligator",
+   "kind": "preset",
+   "group": "melee",
+   "equipment": {
+    "cape": {
+     "id": 21295,
+     "name": "Infernal cape",
+     "version": "Normal",
+     "slot": "cape"
+    },
+    "neck": {
+     "id": 29801,
+     "name": "Amulet of rancour",
+     "version": "",
+     "slot": "neck"
+    },
+    "hands": {
+     "id": 22981,
+     "name": "Ferocious gloves",
+     "version": "",
+     "slot": "hands"
+    },
+    "feet": {
+     "id": 31097,
+     "name": "Avernic treads (max)",
+     "version": "",
+     "slot": "feet"
+    },
+    "ring": {
+     "id": 28307,
+     "name": "Ultor ring",
+     "version": "",
+     "slot": "ring"
+    },
+    "head": {
+     "id": 24419,
+     "name": "Inquisitor's great helm",
+     "version": "",
+     "slot": "head"
+    },
+    "body": {
+     "id": 24420,
+     "name": "Inquisitor's hauberk",
+     "version": "",
+     "slot": "body"
+    },
+    "legs": {
+     "id": 24421,
+     "name": "Inquisitor's plateskirt",
+     "version": "",
+     "slot": "legs"
+    },
+    "weapon": {
+     "id": 34715,
+     "name": "Obligator",
+     "version": "Charged",
+     "slot": "weapon",
+     "twoHanded": true
+    }
+   },
+   "options": [
+    {
+     "style": {
+      "name": "Thrust",
+      "type": "crush",
+      "stance": "Accurate"
+     },
+     "spell": null
+    },
+    {
+     "style": {
+      "name": "Thrust",
+      "type": "crush",
+      "stance": "Aggressive"
+     },
+     "spell": null
+    },
+    {
+     "style": {
+      "name": "Smash",
+      "type": "crush",
+      "stance": "Aggressive"
+     },
+     "spell": null
+    }
+   ],
+   "source": "preset",
+   "key": "melee|24419,21295,29801,0,34715,24420,0,24421,22981,31097,28307"
   },
   {
    "label": "Twisted bow (Masori)",
@@ -137,8 +227,8 @@
      "slot": "feet"
     },
     "ring": {
-     "id": 25975,
-     "name": "Lightbearer",
+     "id": 28307,
+     "name": "Ultor ring",
      "version": "",
      "slot": "ring"
     },
@@ -175,131 +265,36 @@
     }
    ],
    "source": "preset",
-   "key": "ranged|27235,28951,33639,33595,20997,27238,0,27241,26235,31097,25975"
-  },
-  {
-   "label": "Inquisitor's + Obligator + Torva full helm",
-   "kind": "partial",
-   "group": "melee",
-   "equipment": {
-    "cape": {
-     "id": 21295,
-     "name": "Infernal cape",
-     "version": "Normal",
-     "slot": "cape"
-    },
-    "neck": {
-     "id": 29801,
-     "name": "Amulet of rancour",
-     "version": "",
-     "slot": "neck"
-    },
-    "hands": {
-     "id": 22981,
-     "name": "Ferocious gloves",
-     "version": "",
-     "slot": "hands"
-    },
-    "feet": {
-     "id": 31097,
-     "name": "Avernic treads (max)",
-     "version": "",
-     "slot": "feet"
-    },
-    "ring": {
-     "id": 25975,
-     "name": "Lightbearer",
-     "version": "",
-     "slot": "ring"
-    },
-    "head": {
-     "id": 26382,
-     "name": "Torva full helm",
-     "version": "Restored",
-     "slot": "head"
-    },
-    "body": {
-     "id": 24420,
-     "name": "Inquisitor's hauberk",
-     "version": "",
-     "slot": "body"
-    },
-    "legs": {
-     "id": 24421,
-     "name": "Inquisitor's plateskirt",
-     "version": "",
-     "slot": "legs"
-    },
-    "weapon": {
-     "id": 34715,
-     "name": "Obligator",
-     "version": "Charged",
-     "slot": "weapon",
-     "twoHanded": true
-    }
-   },
-   "options": [
-    {
-     "style": {
-      "name": "Thrust",
-      "type": "crush",
-      "stance": "Accurate"
-     },
-     "spell": null
-    },
-    {
-     "style": {
-      "name": "Thrust",
-      "type": "crush",
-      "stance": "Aggressive"
-     },
-     "spell": null
-    },
-    {
-     "style": {
-      "name": "Smash",
-      "type": "crush",
-      "stance": "Aggressive"
-     },
-     "spell": null
-    }
-   ],
-   "source": "Inquisitor's + Obligator with Torva full helm (head, from Torva + Obligator)",
-   "base": "Inquisitor's + Obligator",
-   "partner": "Torva + Obligator",
-   "pieces": [
-    "head"
-   ],
-   "key": "melee|26382,21295,29801,0,34715,24420,0,24421,22981,31097,25975"
+   "key": "ranged|27235,28951,33639,33595,20997,27238,0,27241,26235,31097,28307"
   }
  ],
  "kitMarginal": [
   {
    "slots": 1,
-   "seconds": 20.41394889925732
-  },
-  {
-   "slots": 1,
-   "seconds": 36.786760132291874
+   "seconds": 21.14637779400323
   },
   {
    "slots": 8,
    "seconds": "Infinity"
+  },
+  {
+   "slots": 1,
+   "seconds": 130.77167869156892
   }
  ],
  "slots": {
   "total": 28,
   "supplies": 12,
   "nonItem": 1,
-  "carriedItems": 24,
+  "carriedItems": 25,
   "wornItems": 10,
   "minLoadoutItems": 10,
   "keptAmmo": 0,
-  "inventoryItems": 14,
+  "inventoryItems": 15,
   "swapReserve": 0,
   "quiverAmmo": 1,
-  "used": 26,
-  "free": 2,
+  "used": 27,
+  "free": 1,
   "overfull": false
  },
  "inventory": [
@@ -365,11 +360,11 @@
   },
   {
    "kind": "switch",
-   "label": "Torva full helm",
+   "label": "Inquisitor's great helm",
    "item": {
-    "id": 26382,
-    "name": "Torva full helm",
-    "version": "Restored",
+    "id": 24419,
+    "name": "Inquisitor's great helm",
+    "version": "",
     "slot": "head"
    },
    "group": "melee"
@@ -486,10 +481,10 @@
   },
   {
    "kind": "spec",
-   "label": "Crimson kisten",
+   "label": "Burning claws",
    "item": {
-    "id": 33631,
-    "name": "Crimson kisten",
+    "id": 29577,
+    "name": "Burning claws",
     "version": "",
     "slot": "weapon",
     "twoHanded": true
@@ -506,12 +501,18 @@
    }
   },
   {
-   "kind": "non-item",
-   "label": "Rune pouch"
+   "kind": "spec",
+   "label": "Surge potion(4) (second)",
+   "item": {
+    "id": -9102,
+    "name": "Surge potion(4) (second)",
+    "version": "",
+    "slot": "ring"
+   }
   },
   {
-   "kind": "free",
-   "label": "Free slot"
+   "kind": "non-item",
+   "label": "Rune pouch"
   },
   {
    "kind": "free",
@@ -539,8 +540,8 @@
    "slot": "weapon"
   },
   {
-   "id": 33631,
-   "name": "Crimson kisten",
+   "id": 29577,
+   "name": "Burning claws",
    "version": "",
    "slot": "weapon",
    "twoHanded": true
@@ -550,42 +551,36 @@
    "name": "Surge potion(4)",
    "version": "",
    "slot": "ring"
+  },
+  {
+   "id": -9102,
+   "name": "Surge potion(4) (second)",
+   "version": "",
+   "slot": "ring"
   }
  ],
  "pinnedItems": [],
- "comparison": "1de749a041033472574046de22d1941bf4bdedd4250781d86f015b108a4d8d78",
+ "comparison": "381567afc60c7778b5ee82560fbf3ebc9bec49b0cf1773d0be27da6de0422ed6",
  "planned": 5,
- "rejected": [
-  {
-   "label": "Tumeken's shadow (Ancestral)",
-   "kind": "addition",
-   "deltaSeconds": 4.11505826523171,
-   "deltaSlots": 8,
-   "reason": "needs 8 more slots, 2 free",
-   "weapons": [
-    "Tumeken's shadow"
-   ]
-  }
- ],
+ "rejected": [],
  "alternatives": [
   {
-   "label": "melee + magic: Tumeken's shadow (Ancestral) / Inquisitor's + Obligator + Torva full helm / Harmonised Nightmare staff",
+   "label": "melee + magic: Tumeken's shadow (Ancestral) / Inquisitor's + Obligator",
    "kind": "alternative",
-   "deltaSeconds": -83.83883536445592,
-   "deltaSlots": 2,
-   "reason": "83.8 s slower",
+   "deltaSeconds": -107.73645512613393,
+   "deltaSlots": -1,
+   "reason": "107.7 s slower",
    "weapons": [
     "Tumeken's shadow",
-    "Obligator",
-    "Harmonised Nightmare staff"
+    "Obligator"
    ]
   },
   {
    "label": "ranged + magic: Tumeken's shadow (Ancestral) / Twisted bow (Masori) / Ascension crossbows + diamond (e) (Masori) / Ascension crossbows + onyx (e) (Masori)",
    "kind": "alternative",
-   "deltaSeconds": -290.2308046499079,
+   "deltaSeconds": -369.766484580771,
    "deltaSlots": 1,
-   "reason": "290.2 s slower",
+   "reason": "369.8 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Twisted bow",
@@ -596,9 +591,9 @@
   {
    "label": "magic: Tumeken's shadow (Ancestral) / Harmonised Nightmare staff / Harmonised Nightmare staff #3",
    "kind": "alternative",
-   "deltaSeconds": -695.449742795307,
+   "deltaSeconds": -827.7290475736586,
    "deltaSlots": -5,
-   "reason": "695.4 s slower",
+   "reason": "827.7 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Harmonised Nightmare staff",
@@ -606,7 +601,7 @@
    ]
   },
   {
-   "label": "melee: Inquisitor's + Obligator + Torva full helm",
+   "label": "melee: Inquisitor's + Obligator",
    "kind": "alternative",
    "deltaSeconds": "-Infinity",
    "deltaSlots": -9,
@@ -616,13 +611,13 @@
    ]
   },
   {
-   "label": "ranged: Ascension crossbows + diamond (e) (Masori)",
+   "label": "ranged: Twisted bow (Masori)",
    "kind": "alternative",
    "deltaSeconds": "-Infinity",
    "deltaSlots": -9,
    "reason": "cannot clear the route",
    "weapons": [
-    "Ascension crossbows"
+    "Twisted bow"
    ]
   }
  ],
@@ -652,35 +647,43 @@
    "elderMaul",
    "tonalztics"
   ],
-  "text": "Bring: Elder maul, Tonalztics, Zaryte crossbow, Crimson kisten, Surge potion",
+  "text": "Bring: Elder maul, Tonalztics, Zaryte crossbow, Burning claws, 2 Surge potions",
   "damage": [
    "zcb",
-   "crimsonKisten"
+   "burningClaws"
   ],
-  "surgePotions": 1,
+  "surgePotions": 2,
   "surgeAt": [
    "Archive Guardian",
+   "Bork + Smorks",
+   "Moia",
    "Xarth",
    "Ocellus"
   ],
   "items": [
    {
     "item": "Zaryte crossbow",
-    "hp": 1521.7573385142423,
+    "hp": 606.7596433343135,
     "slots": 1,
     "how": "a free slot"
    },
    {
     "item": "Surge potion(4)",
-    "hp": 46.751747169283135,
+    "hp": 109.37820382447671,
     "slots": 1,
     "how": "a free slot"
    },
    {
-    "item": "Crimson kisten",
-    "hp": 32.11592000544306,
+    "item": "Burning claws",
+    "hp": 12.176728740533235,
     "slots": 1,
     "how": "filler (leftover energy; a free slot)"
+   },
+   {
+    "item": "Surge potion(4) (second)",
+    "hp": 12.211609203969147,
+    "slots": 1,
+    "how": "a free slot"
    }
   ],
   "solo": {
@@ -688,12 +691,8 @@
     {
      "weapon": "elderMaul",
      "chosen": true,
-     "specs": 2,
-     "refSpecs": 5,
-     "slot": {
-      "adds": 107.35833093149449,
-      "costs": 41.47438494177662
-     }
+     "specs": 1,
+     "refSpecs": 2
     },
     {
      "weapon": "dwh",
@@ -760,33 +759,33 @@
      "key": "ag-grounded|",
      "label": "Grounded (70% of hp)",
      "gains": {
-      "voidwaker": 50.29129109081095,
-      "dragonClaws": 54.635300353787954,
-      "burningClaws": 44.725460926859725,
-      "zcb": 86.1461689366023,
-      "crimsonKisten": 64.93968025702222
+      "voidwaker": 46.143589303310755,
+      "dragonClaws": 47.386245122764926,
+      "burningClaws": 34.890312011340676,
+      "zcb": 81.86117841466015,
+      "crimsonKisten": 59.80546932506332
      }
     },
     {
      "key": "bork|Stunned (armour 0)",
-     "label": "Bork, stunned (4 × 25 ticks: 58.2% of hp)",
+     "label": "Bork, stunned (4 × 25 ticks: 62.7% of hp)",
      "gains": {
-      "voidwaker": 38.12943687500004,
-      "dragonClaws": 66.12943687500001,
-      "burningClaws": 52.97776696428574,
-      "zcb": 79.8231197517177,
-      "crimsonKisten": 67.12943687500001
+      "voidwaker": 32.75214462614235,
+      "dragonClaws": 60.752144626142325,
+      "burningClaws": 45.29592089448906,
+      "zcb": 75.34204287766964,
+      "crimsonKisten": 61.752144626142325
      }
     },
     {
      "key": "bork|Smorks 25-0% HP (armour 14)",
-     "label": "Bork, armour 14 after the stuns (41.8% of hp)",
+     "label": "Bork, armour 14 after the stuns (37.3% of hp)",
      "gains": {
-      "voidwaker": 66.72535812441927,
-      "dragonClaws": -4.800917151880036,
-      "burningClaws": -13.019784787751243,
-      "zcb": 88.81973544321886,
-      "crimsonKisten": 53.94195661038279
+      "voidwaker": 62.03833089299612,
+      "dragonClaws": -9.487944383303187,
+      "burningClaws": -19.715537975498602,
+      "zcb": 84.9138794170329,
+      "crimsonKisten": 49.254929378959645
      }
     },
     {
@@ -815,33 +814,33 @@
      "key": "xarth|",
      "label": "Xarth",
      "gains": {
-      "voidwaker": 46.31162215971021,
-      "dragonClaws": 60.621598097945174,
-      "burningClaws": 53.751897218314454,
-      "zcb": 79.19634958098777,
-      "crimsonKisten": 65.73061248901905
+      "voidwaker": 41.198554274409105,
+      "dragonClaws": 55.50853021264409,
+      "burningClaws": 46.44751452502716,
+      "zcb": 74.93545967657018,
+      "crimsonKisten": 60.617544603717946
      }
     },
     {
      "key": "ocellus-p1|At a corner",
      "label": "P1 at a corner",
      "gains": {
-      "voidwaker": 53.14443998056835,
-      "dragonClaws": 63.2185017872829,
-      "burningClaws": 58.75972243192613,
-      "zcb": 90.5575615453713,
-      "crimsonKisten": 64.2914371498552
+      "voidwaker": 48.25202182112817,
+      "dragonClaws": 58.32608362784271,
+      "burningClaws": 51.77055363272588,
+      "zcb": 86.4805464125045,
+      "crimsonKisten": 59.39901899041502
      }
     },
     {
      "key": "ocellus-p3|Quadrants 1-3",
      "label": "P3 quadrants 1-3 (75%)",
      "gains": {
-      "voidwaker": 53.388343852447974,
-      "dragonClaws": 48.96416563276558,
-      "burningClaws": 41.768570486549244,
-      "zcb": 62.773041035109756,
-      "crimsonKisten": 64.23184001088623
+      "voidwaker": 48.50380199292936,
+      "dragonClaws": 44.07962377324696,
+      "burningClaws": 34.79065354437979,
+      "zcb": 58.70258948551089,
+      "crimsonKisten": 59.34729815136763
      }
     },
     {
@@ -858,98 +857,100 @@
    ]
   },
   "then": {
-   "archive-guardian": "Then: 1. Zaryte crossbow (per bar)",
+   "archive-guardian": "Then: 1. Zaryte crossbow (per bar) · leftover: Burning claws",
    "bork-smorks": "Then: 1. Zaryte crossbow (per bar)",
    "moia": "Then: 1. Zaryte crossbow (per bar)",
    "xarth": "Then: 1. Zaryte crossbow (per bar)",
-   "ocellus": "Then: 1. Zaryte crossbow (per bar) · leftover: Crimson kisten"
+   "ocellus": "Then: 1. Zaryte crossbow (per bar) · leftover: Burning claws"
   },
-  "filler": "crimsonKisten",
-  "notes": [
-   "Surge potion(4) (second): adds no HP the bars pay"
-  ]
+  "filler": "burningClaws",
+  "notes": []
  },
  "ring": {
   "policy": "camp-one",
-  "ring": "Lightbearer",
+  "ring": "Ultor ring",
   "screened": [
    {
-    "ring": "Lightbearer",
-    "seconds": 1292.7826012568376,
-    "full": true
-   },
-   {
     "ring": "Ultor ring",
-    "seconds": 1301.5523226236674,
+    "seconds": 1283.6974954505354,
     "full": true
    },
    {
-    "ring": "Bellator ring",
-    "seconds": 1350.0380733583943,
+    "ring": "Lightbearer",
+    "seconds": 1287.150328077842,
     "full": true
    },
    {
     "ring": "Venator ring",
-    "seconds": 1354.492486226616,
+    "seconds": 1336.2470192813616,
+    "full": true
+   },
+   {
+    "ring": "Bellator ring",
+    "seconds": 1337.326144936777,
     "full": true
    },
    {
     "ring": "Ring of shadows",
-    "seconds": 1361.69967481422,
+    "seconds": 1350.2719108920633,
     "full": true
    },
    {
     "ring": "Magus ring",
-    "seconds": 1388.4398232072408,
+    "seconds": 1375.5567850292996,
     "full": true
    }
   ]
  },
  "matrixDps": {
   "ag-flying|": 10.846340471598758,
-  "ag-grounded|": 12.022647689414395,
-  "ezekiel|": 12.981703156854755,
+  "ag-grounded|": 13.06109641218821,
+  "ezekiel|": 14.051122312548666,
   "moia|": 11.036477579707563,
   "dagonhai|Shielded (shield gauge)": 13.742889868412762,
-  "ocellus-p1|At a corner": 11.428241670714934,
-  "ocellus-p2|": 14.434269156425662,
-  "ocellus-p3|Quadrants 1-3": 11.824146786490772,
+  "ocellus-p1|At a corner": 12.447495453931639,
+  "ocellus-p2|": 15.550595502974533,
+  "ocellus-p3|Quadrants 1-3": 12.856185391073009,
   "ocellus-p3|Last quadrant: Deflect Melee": 8.166997701078248,
-  "ocellus-p3|Last quadrant: Deflect Ranged": 11.824146786490772,
-  "xarth|": 12.851745383393713,
-  "dreadnoth|": 14.442494331961171,
-  "smorks|": 12.1312961575151,
-  "bork|Stunned (armour 0)": 14.556367317708332,
-  "bork|Smorks 25-0% HP (armour 14)": 7.922103886623431
+  "ocellus-p3|Last quadrant: Deflect Melee + void explosions": 10.468359045093257,
+  "ocellus-p3|Last quadrant: Deflect Ranged": 12.856185391073009,
+  "ocellus-p3|Last quadrant: Deflect Ranged + void explosions": 15.908356333600196,
+  "xarth|": 13.91696785949811,
+  "dreadnoth|": 15.559086291142291,
+  "smorks|": 10.720014499625943,
+  "bork|Stunned (armour 0)": 15.67663653622035,
+  "bork|Smorks 25-0% HP (armour 14)": 8.90904406005578
  },
  "unusedCarried": [],
  "excluded": [],
  "droppedPinned": [],
  "ownershipNotices": [],
- "searchRows": "7ccfe17dfd96a2bae893ad464bc7dd02d559c64871836c276d022c9c8cf5bb93",
- "objectiveSeconds": 1292.7826012568376,
+ "searchRows": "5b46a985bcd92aa5e74d3ff1fa4c8a69173250237da0a44f7f9a1def811f890e",
+ "objectiveSeconds": 1283.6974954505354,
  "fightSeconds": {
   "archive-guardian": 230,
-  "ezekiel": 253,
+  "ezekiel": 229,
   "moia": 79,
   "dagonhai": 268,
   "ocellus": 600,
-  "xarth": 224,
-  "dreadnoth": 166,
-  "bork-smorks": 269
+  "xarth": 203,
+  "dreadnoth": 151,
+  "bork-smorks": 233
  },
  "plannedRoute": {
   "id": "archive-guardian>bork-smorks>moia>xarth>ocellus",
-  "seconds": 1292.7826012568376,
+  "seconds": 1283.6974954505354,
   "surgeDoses": [
    "archive-guardian",
+   "bork-smorks",
+   "moia",
    "xarth",
    "ocellus"
   ],
   "encounters": [
    {
     "id": "archive-guardian",
-    "seconds": 175.1523396178016,
+    "seconds": 178.08382463125662,
     "events": [
      {
       "npc": "Archive Guardian",
@@ -957,22 +958,22 @@
       "counts": {
        "tonalztics": 2
       },
-      "hp": 310.25615780513397
+      "hp": 307.92540004347313
      }
     ],
     "damage": {
      "ag-shield": {
-      "zcb": 2
-     },
-     "ag-flying": {
       "zcb": 1
+     },
+     "ag-grounded": {
+      "burningClaws": 1
      }
     },
     "surge": true
    },
    {
     "id": "bork-smorks",
-    "seconds": 180.74656343914302,
+    "seconds": 177.9936460676902,
     "events": [
      {
       "npc": "Bork",
@@ -980,7 +981,7 @@
       "counts": {
        "elderMaul": 1
       },
-      "hp": 67.89424811247949
+      "hp": 57.44411840997796
      },
      {
       "npc": "Smorks",
@@ -989,21 +990,18 @@
      }
     ],
     "damage": {
-     "bork-stunned": {
-      "zcb": 1
-     },
      "bork-14": {
-      "zcb": 2
+      "zcb": 1
      },
      "smorks": {
       "zcb": 2
      }
     },
-    "surge": false
+    "surge": true
    },
    {
     "id": "moia",
-    "seconds": 42.06425312489184,
+    "seconds": 53.68965846507962,
     "events": [
      {
       "npc": "Moia",
@@ -1016,14 +1014,14 @@
     ],
     "damage": {
      "moia": {
-      "zcb": 5
+      "zcb": 3
      }
     },
-    "surge": false
+    "surge": true
    },
    {
     "id": "xarth",
-    "seconds": 179.1985150940757,
+    "seconds": 174.70725234651803,
     "events": [
      {
       "npc": "Xarth",
@@ -1031,19 +1029,19 @@
       "counts": {
        "tonalztics": 1
       },
-      "hp": 179.4403983107423
+      "hp": 171.000694540365
      }
     ],
     "damage": {
      "xarth": {
-      "zcb": 5
+      "zcb": 3
      }
     },
     "surge": true
    },
    {
     "id": "ocellus",
-    "seconds": 715.6209299809254,
+    "seconds": 699.2231139399909,
     "events": [
      {
       "npc": "Ocellus",
@@ -1051,16 +1049,13 @@
       "counts": {
        "tonalztics": 1
       },
-      "hp": 316.74856167184004
+      "hp": 347.89836762194966
      },
      {
       "npc": "Ocellus",
       "reset": "P1",
       "firstRowKey": "ocellus-p2",
-      "counts": {
-       "elderMaul": 1
-      },
-      "hp": 58.498248955208794
+      "counts": {}
      },
      {
       "npc": "Ocellus",
@@ -1069,19 +1064,19 @@
       "counts": {
        "tonalztics": 2
       },
-      "hp": 632.9490132860708
+      "hp": 595.1255937256205
      }
     ],
     "damage": {
      "ocellus-p1": {
-      "zcb": 4
+      "zcb": 2
      },
      "ocellus-p3": {
-      "zcb": 4,
-      "crimsonKisten": 1
+      "zcb": 1,
+      "burningClaws": 1
      },
      "ocellus-p3-last": {
-      "zcb": 4
+      "zcb": 2
      }
     },
     "surge": true

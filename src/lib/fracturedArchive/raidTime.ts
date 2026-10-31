@@ -32,7 +32,9 @@ import {
   OCELLUS_P1_PHASES,
   OCELLUS_P1_WALKING_PHASE,
   OCELLUS_P3_DEFLECT_MELEE_PHASE,
+  OCELLUS_P3_DEFLECT_MELEE_VOID_PHASE,
   OCELLUS_P3_DEFLECT_RANGED_PHASE,
+  OCELLUS_P3_DEFLECT_RANGED_VOID_PHASE,
   OCELLUS_P3_PHASES,
 } from '@/lib/fracturedArchive/constants';
 import { dagonhaiEncounterDamage } from '@/lib/fracturedArchive/dagonhai';
@@ -102,6 +104,8 @@ export type RaidTimeSettings = {
   ocellusP2CarryOver: number;
   /** Fraction of P3's remaining hp dealt in the last quadrant (at the worse Deflect option for the kit); 0–1. */
   ocellusLastQuadrantFraction: number;
+  /** Phase 40d: share of the last quadrant's time spent in void explosions (2-tick attacks, damage halved); 0–1. */
+  ocellusVoidTimeShare: number;
 };
 
 export type BorkKillOrder = 'stun-swap' | 'evenly';
@@ -133,6 +137,9 @@ export const RAID_TIME_DEFAULTS: RaidTimeSettings = {
   ocellusP2CarryOver: 0.5,
   // Assumption: the last of four quadrants = 25% of P3's hp, all of it during a Deflect.
   ocellusLastQuadrantFraction: 0.25,
+  // Phase 40d (the user, 2026-10-30): about half of the last quadrant is void explosions, during which every attack is
+  // 2-tick (the wiki: speed-up "unconfirmed"; UNVERIFIED B5) and Ocellus takes 50% less damage.
+  ocellusVoidTimeShare: 0.5,
 };
 
 // --- routes --------------------------------------------------------------------------------------------------------
@@ -319,6 +326,9 @@ export interface PlannedPhase {
    */
   kills?: number;
 }
+
+/** Phase 40d: the void explosions' rows take no damage specs (thrown before the 2-tick cycle: the user). */
+const VOID_NO_SPECS = 'void explosions (specs thrown before the 2-tick cycle)';
 
 const pctText = (f: number): string => `${Math.round(f * 1000) / 10}%`;
 
@@ -648,6 +658,8 @@ export const timeOf = (damage: number, dps: number): number => {
  * Time of one planned phase with the kit's best choice. `dpsFactor` (phase 18): the damage dealt per second of the
  * user's DPS (ToA: the party size — every member is assumed to deal the user's DPS; the Fractured Archive: 1).
  */
+const sumSeconds = (rows: PhaseTime[]) => rows.reduce((t, r) => t + r.seconds, 0);
+
 export const phaseTime = (
   p: PlannedPhase,
   kit: RaidKit,
@@ -724,17 +736,40 @@ const evalEncounterPass = (
   };
   if (q13.damage > 0) rows.push(phaseTime(q13, kit, drain, fightSeconds, mult));
   if (p3Total * last > 0) {
-    // Pessimistic: the Deflect that hurts the kit most (= the one blocking the kit's best style; magic is never
-    // deflected in our model, so a magic-best kit gets the lower of the two)
-    const options = [OCELLUS_P3_DEFLECT_MELEE_PHASE, OCELLUS_P3_DEFLECT_RANGED_PHASE].map((phase) => phaseTime({
-      key: 'ocellus-p3-last', label: `P3 last quadrant, ${phase.replace('Last quadrant: ', '')} (${pctText(last)})`, targetKey: 'ocellus-p3', phase, damage: p3Total * last, ...(q13.damage > 0 ? {} : p3Reset),
-    }, kit, drain, fightSeconds, mult));
-    rows.push(options[1].dps < options[0].dps ? options[1] : options[0]);
+    // Pessimistic: the Deflect that hurts the kit most (magic is never deflected in our model). Phase 40d: the void
+    // explosions take `ocellusVoidTimeShare` of the quadrant's time (same Deflect, every attack 2-tick, hits halved):
+    // at DPS n outside and v inside, time T = H ÷ ((1 − s)n + s·v), split into a T(1 − s) row and a T·s row, each with
+    // its own gear choice; the worse Deflect is the one with the larger T.
+    const share = Math.min(1, Math.max(0, settings.ocellusVoidTimeShare));
+    const options = ([
+      [OCELLUS_P3_DEFLECT_MELEE_PHASE, OCELLUS_P3_DEFLECT_MELEE_VOID_PHASE],
+      [OCELLUS_P3_DEFLECT_RANGED_PHASE, OCELLUS_P3_DEFLECT_RANGED_VOID_PHASE],
+    ] as const).map(([phase, voidPhase]) => {
+      const H = p3Total * last;
+      const reset = q13.damage > 0 ? {} : p3Reset;
+      const plain: PlannedPhase = {
+        key: 'ocellus-p3-last', label: `P3 last quadrant, ${phase.replace('Last quadrant: ', '')} (${pctText(last)})`, targetKey: 'ocellus-p3', phase, damage: H, ...reset,
+      };
+      if (!(share > 0)) return [phaseTime(plain, kit, drain, fightSeconds, mult)];
+      const exploding: PlannedPhase = {
+        key: 'ocellus-p3-void', label: `P3 last quadrant, ${voidPhase.replace('Last quadrant: ', '')} (2-tick)`, targetKey: 'ocellus-p3', phase: voidPhase, damage: H, ...(share < 1 ? {} : reset),
+      };
+      if (share >= 1) return [{ ...phaseTime(exploding, kit, drain, fightSeconds, mult), noDamageSpecs: VOID_NO_SPECS }];
+      const n = phaseTime(plain, kit, drain, fightSeconds, mult);
+      const v = phaseTime(exploding, kit, drain, fightSeconds, mult);
+      const rate = (1 - share) * n.dps + share * v.dps;
+      // rate 0: nothing in the kit hits through this Deflect (∞ on the plain row, as before)
+      if (!(rate > 0)) return [n];
+      const split = (r: PhaseTime, damage: number): PhaseTime => ({ ...r, damage, seconds: timeOf(damage, r.dps * mult) });
+      return [
+        split(n, (H * (1 - share) * n.dps) / rate),
+        { ...split(v, (H * share * v.dps) / rate), noDamageSpecs: VOID_NO_SPECS },
+      ];
+    });
+    rows.push(...(sumSeconds(options[1]) > sumSeconds(options[0]) ? options[1] : options[0]));
   }
   return rows;
 };
-
-const sumSeconds = (rows: PhaseTime[]) => rows.reduce((t, r) => t + r.seconds, 0);
 
 /** The target / phase options the model may query for these settings (for precomputing per-phase search results). */
 export const requiredPhaseTargets = (settings: RaidTimeSettings, partySize = 6): { targetKey: string, phase?: string }[] => {
@@ -750,6 +785,10 @@ export const requiredPhaseTargets = (settings: RaidTimeSettings, partySize = 6):
   if (settings.ocellusLastQuadrantFraction > 0) {
     out.push({ targetKey: 'ocellus-p3', phase: OCELLUS_P3_DEFLECT_MELEE_PHASE });
     out.push({ targetKey: 'ocellus-p3', phase: OCELLUS_P3_DEFLECT_RANGED_PHASE });
+    if (settings.ocellusVoidTimeShare > 0) {
+      out.push({ targetKey: 'ocellus-p3', phase: OCELLUS_P3_DEFLECT_MELEE_VOID_PHASE });
+      out.push({ targetKey: 'ocellus-p3', phase: OCELLUS_P3_DEFLECT_RANGED_VOID_PHASE });
+    }
   }
   const seen = new Set<string>();
   return out.filter((t) => {

@@ -40,3 +40,9 @@ export const isBlockedByOcellusPrayer = (m: Monster, styleType: CombatStyleType,
 /** Divisor applied to each hitsplat (1 = no reduction). */
 export const getOcellusDamageDivisor = (m: Monster): number => (OCELLUS_P3_IDS.includes(m.id)
   && VOID_EXPLOSION_PHASES.includes(m.inputs.phase || '') ? 2 : 1);
+
+/**
+ * Phase 40d: during the void explosions every attack is 2-tick (the user, 2026-10-30; the wiki calls the speed-up
+ * "unconfirmed": unverified). Specs keep their own speed (thrown before the 2-tick cycle).
+ */
+export const getOcellusVoidAttackSpeed = (m: Monster): number | undefined => (getOcellusDamageDivisor(m) === 2 ? 2 : undefined);

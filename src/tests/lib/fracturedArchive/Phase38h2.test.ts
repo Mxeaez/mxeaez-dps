@@ -255,9 +255,10 @@ const HP_PINS: Record<string, number> = {
   'team|xarth|0': 192.7,
   'team|ocellus|0': 414.9,
   'team|ocellus|1': 195.4,
-  'team|ocellus|2': 718.2,
+  // phase 40d: P3's event also pays the void-explosion rows (2-tick, hits halved): 718.2 → 739.6, solo 495.9 → 512.6
+  'team|ocellus|2': 739.6,
   'solo|archive-guardian|0': 338.5,
-  'solo|ocellus|2': 495.9,
+  'solo|ocellus|2': 512.6,
 };
 const ENCOUNTERS = ['archive-guardian', 'bork-smorks', 'ezekiel', 'moia', 'xarth', 'dagonhai', 'ocellus'];
 describe.each([['team', TEAM_A], ['solo', SOLO_A]] as ['team' | 'solo', BestSetupAssumptions][])('per FA boss (%s): each event\'s HP value = Σ P(d) × H × g ÷ (1 + g) by hand', (drain, a) => {
@@ -381,7 +382,8 @@ describe('carrier sets valued by the HP the bars really pay (review 38h-2 N1)', 
     // the plan (1 Elder maul + 4 Tonalztics on the Ultor kit; kits ranked by their own spec plan) 3614.7 vs 3602.5 / 3611.1
     // / 3548.7 / 3582.9. Phase 40 (the Xarth freezer keeps 80% of their DPS on Xarth's
     // phase 2): the plan's carriers 3615.4. Phase 40b (stun-swap Bork; the Scythe kit): 3742.8 vs 3686.0 / 3738.2 / 3625.8 /
-    // 3655.3. Phase 40b-2 (25-tick stuns; the Inquisitor's + Scythe / mace kit): 4006.4 vs 3956.6 / 4002.9 / 3901.8 / 3929.7
+    // 3655.3. Phase 40b-2 (25-tick stuns; the Inquisitor's + Scythe / mace kit): 4006.4 vs 3956.6 / 4002.9 / 3901.8 / 3929.7.
+    // Phase 40d (+ Scythe #2 and Elder maul loadouts, Ultor ring): 3606.3 vs 3553.1 / 3602.4 / 3492.3 / 3522.4
     const sets: Record<string, number>[] = [
       { elderMaul: 1, tonalztics: 3, ayak: 1 }, { elderMaul: 2, tonalztics: 3 }, { tonalztics: 4, ayak: 1 },
       { elderMaul: 2, tonalztics: 2, ayak: 1 },
@@ -390,6 +392,6 @@ describe('carrier sets valued by the HP the bars really pay (review 38h-2 N1)', 
     // eslint-disable-next-line no-console
     if (process.env.PRINT_PINS) console.log(JSON.stringify([r.assumptions.team.carriers, planned, alternatives]));
     alternatives.forEach((x) => expect(planned.hp).toBeGreaterThanOrEqual(x.hp - 1e-6));
-    expect(Math.round(planned.hp * 10) / 10).toBe(4006.4);
+    expect(Math.round(planned.hp * 10) / 10).toBe(3606.3);
   }, 300000);
 });

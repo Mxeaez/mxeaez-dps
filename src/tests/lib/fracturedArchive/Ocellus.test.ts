@@ -300,10 +300,11 @@ describe('phase options', () => {
     (phase) => {
       // Shadow vs P3: roll 89845, magic def roll 81576, max 70; each roll d = 0..70 (accurate 0 -> 1) becomes
       // trunc(d / 2): sum = 0 + 0 + (1 + 1) + ... + (34 + 34) + 35 = 2 * 595 + 35 = 1225.
+      // Phase 40d: every attack is 2-tick in the explosions (the user; was the Shadow's 5 ticks = 3 s): 1.2 s.
       const m = p3({ phase });
       const r = calculatePlayerVsNpc(m, maxMageShadow(m));
       expect(r.maxHit).toBe(35);
-      expect(r.dps).toBeCloseTo((hitAcc(SHADOW_ROLL, 81576) * 1225) / 71 / 3, 10);
+      expect(r.dps).toBeCloseTo((hitAcc(SHADOW_ROLL, 81576) * 1225) / 71 / 1.2, 10);
     },
   );
 

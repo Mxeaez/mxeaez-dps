@@ -150,8 +150,9 @@ export const PHASE37_MEMO: Record<string, MemoCounters> = {
   // phase 38j (the room times: Solo plans every camp ring in full): faSolo was 23993 / 18648 / 1141713 / 7065
   // phase 38j (own spec plans): faSolo was 25386 / 23603 / 1088304 / 3478
   // phase 40b (the Bork route): faSolo was 30958 / 26363 / 1430156 / 6290
+  // phase 40d (Ocellus's void-explosion rows: the Ultor ring wins, more ring runs): faSolo was 33780 / 31211 / 1493422 / 4320
   faSolo: {
-    encounterRuns: 33780, passRuns: 31211, encounterHits: 1493422, passHits: 4320,
+    encounterRuns: 41714, passRuns: 32537, encounterHits: 1743392, passHits: 10942,
   },
   // phase 38h-1 (2 Elder maul + 3 Tonalztics carriers cover every boss, so you are no longer a carrier: free slots, the
   // item beam re-optimises kits with damage specs / surge): faNotOwned was 9153 / 9086 / 583727 / 227

@@ -359,7 +359,7 @@ tests `src/tests/lib/fracturedArchive/Ocellus.test.ts`, UI check `scripts/verify
 | P3 | Censers: Bandosian/Armadylean "appears to make the next melee/ranged attack max hit" | single-hit buff, upstream has no "next hit is max" option (only per-monster `ALWAYS_MAX_HIT_MONSTERS`) — not modelled |
 | P3 last quadrant ("Phase 4") | cycle Deflect Melee (floating) → Soul Split (landed) → Deflect Range → Soul Split (Strategies) | Phase options **Last quadrant: Deflect Melee**, **… Deflect Ranged** (that style deals 0), **… Soul Split** (no reduction; his healing from it is not modelled). Default **Quadrants 1-3** = no prayer |
 | P3 last quadrant | "While the explosions are occurring the boss takes 50% less damage" (Strategies + page body) | Phase options **… Deflect Melee + void explosions**, **… Deflect Ranged + void explosions**: each hitsplat `trunc(hit / 2)` (rounding **unverified**). Explosions happen during the deflect states (Strategies steps 1–3, 6–7) |
-| P3 last quadrant | tick-perfect dodges speed up the player's next attack by an "unconfirmed amount" (Strategies + page body) | not modelled (amount unknown); last-quadrant DPS and rankings are therefore low-confidence, faster weapons may gain more than shown |
+| P3 last quadrant | tick-perfect dodges speed up the player's next attack by an "unconfirmed amount" (Strategies + page body) | not modelled as a per-dodge speed-up; phase 40d (the user): every attack is 2-tick during the void explosions (*Phase 40d*, D38); last-quadrant DPS and rankings stay low-confidence |
 | P3 last quadrant | void crystals always max-hit by standard ranged | adds, not Ocellus — not modelled |
 
 Unverified in the phase 6 model:
@@ -1158,3 +1158,18 @@ https://oldschool.runescape.wiki/w/The_Fractured_Archive (Rewards). User request
   "permanently override Eagle Eye and Mystic Might when unlocked" (wiki); upstream `PrayerMap` matches. Phase 40c-2
   (user, 2026-10-30): the checkboxes became a choice of three per style (Rigour / Deadeye / Eagle Eye, Augury /
   Mystic Vigour / Mystic Might).
+
+## Phase 40d — Ocellus void explosions: 2-tick attacks (2026-10-30)
+
+Sources: the user, in-game (2026-10-30); https://oldschool.runescape.wiki/w/The_Fractured_Archive/Strategies#Ocellus
+and https://oldschool.runescape.wiki/w/Ocellus (re-read 2026-10-30: during the explosions "the boss takes 50% less
+damage"; tick-perfect dodges speed up the player's next attack by an "unconfirmed amount").
+
+- The user: during the last quadrant's void explosions **every attack is 2-tick** (Tbow, Scythe, ...), the explosions are
+  **about half of the last quadrant's time**, and the Deflects still apply. Specs are thrown at normal speed before the
+  2-tick cycle (the user throws the ZCB first). Marked **unverified** (the wiki calls the speed-up unconfirmed):
+  UNVERIFIED D38.
+- Model: the calculator's expected attack speed is 2 ticks on the P3 "… + void explosions" phase options (every weapon,
+  every style; specs keep their own speed); hits halved and rounded down as before (B2). The time model splits the last
+  quadrant by time: `ocellusVoidTimeShare` (default 50%, Advanced → "Void explosions") of it at "Deflect X + void
+  explosions", the rest at "Deflect X"; no damage specs in the explosion part.

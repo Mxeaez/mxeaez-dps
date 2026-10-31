@@ -156,17 +156,18 @@ describe('the fa headline (phase37/fa.json)', () => {
     expect(v.headcount).toBe(1);
     expect(v.label).toBe('freezes corpses (Ice Barrage, ≥75 magic attack: Kodai wand + Ancestral robe top + Confliction gauntlets), then back to DPS');
     // phase 40b: the same three loadouts (listed in another order)
-    expect(headline('fa').kit).toEqual(['Ascension crossbows + diamond (e) (Masori)', "Inquisitor's + Obligator", 'Twisted bow (Masori)']);
+    // (phase 40d: the order again)
+    expect(headline('fa').kit).toEqual(['Ascension crossbows + diamond (e) (Masori)', 'Twisted bow (Masori)', "Inquisitor's + Obligator"]);
   });
   test('the blend on Xarth is the hand formula of the pinned DPS (freezer at 0.8 × yours, half the HP)', () => {
     expect(v.variantDps).toBeCloseTo(0.8 * v.baseDps, 9);
     expect(v.teamDps).toBeCloseTo(variantRowDps(v.baseDps, v.variantDps, 6, 1, 0.5), 9);
   });
-  test('the switch worn over Inquisitor + Obligator (Xarth): 3 items the kit lacks, 75 worn, in its 4 free slots (display only)', () => {
+  test('the switch worn over Inquisitor + Obligator (Xarth): 3 items the kit lacks, 75 worn, in its 5 free slots (display only; 40d: no Crimson kisten)', () => {
     expect(v.switchItems.map((it) => it.name)).toEqual(['Kodai wand', 'Ancestral robe top', 'Confliction gauntlets']);
     expect(v.magicAttack).toBe(75);
     expect(v.extraItems.length).toBe(3);
-    expect(v.freeSlots).toBe(4);
+    expect(v.freeSlots).toBe(5);
     expect(v.droppedSupplies).toEqual([]);
   });
   test('the Plan tab lines', () => {

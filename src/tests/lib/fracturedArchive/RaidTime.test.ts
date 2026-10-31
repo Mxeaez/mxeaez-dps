@@ -183,19 +183,20 @@ describe('Raid time: encounters (toy kit, hand-computed)', () => {
   });
 
   test('Ocellus defaults: P1 2500 at a corner, P3 75% at quadrants 1-3, 25% at the worse Deflect', () => {
-    // phase 38c: P2 (120 s by default) is in the plan; without it here (its own test below)
-    const e = encounterTime('ocellus', kit, assume({ ocellusP2Seconds: 0 }));
+    // phase 38c: P2 (120 s by default) is in the plan; without it here (its own test below). Phase 40d: without the
+    // void explosions too (Phase40d.test.ts)
+    const e = encounterTime('ocellus', kit, assume({ ocellusP2Seconds: 0, ocellusVoidTimeShare: 0 }));
     expect(e.phases.map((p) => p.key)).toEqual(['ocellus-p1', 'ocellus-p3', 'ocellus-p3-last']);
     const last = e.phases[2];
     expect(last.phase).toBe(OCELLUS_P3_DEFLECT_MELEE_PHASE); // 7 < 9: the deflect that hurts this kit most
     expect(e.seconds).toBeCloseTo(2500 / 10 + 3937.5 / 12 + 1312.5 / 7, 9);
     // a kit whose ranged side is worse gets Deflect Ranged
     const kit2 = toyKit({ ...BASE_DPS, [phaseKey('ocellus-p3', OCELLUS_P3_DEFLECT_RANGED_PHASE)]: 5 });
-    expect(encounterTime('ocellus', kit2, assume({ ocellusP2Seconds: 0 })).phases[2].phase).toBe(OCELLUS_P3_DEFLECT_RANGED_PHASE);
+    expect(encounterTime('ocellus', kit2, assume({ ocellusP2Seconds: 0, ocellusVoidTimeShare: 0 })).phases[2].phase).toBe(OCELLUS_P3_DEFLECT_RANGED_PHASE);
   });
 
   test('Ocellus P2: fixed duration, 50% of the Blade damage comes off P3; walking fraction', () => {
-    const e = encounterTime('ocellus', kit, assume({ ocellusP2Seconds: 30, ocellusWalkingFraction: 0.1 }));
+    const e = encounterTime('ocellus', kit, assume({ ocellusP2Seconds: 30, ocellusWalkingFraction: 0.1, ocellusVoidTimeShare: 0 }));
     const p2 = e.phases.find((p) => p.key === 'ocellus-p2')!;
     expect(p2.damage).toBe(300); // 10 DPS × 30 s
     expect(p2.seconds).toBe(30);

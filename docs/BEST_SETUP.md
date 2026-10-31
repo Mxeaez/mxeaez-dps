@@ -1944,6 +1944,23 @@ The user (2026-10-30): the team hits Bork only while a heavy cannonball has him 
 Hand check (RaidTime.test.ts, toy kit 15 stunned / 6 at armour 14 / 12 Smorks DPS): party 6, 25 ticks: cap 4 × 15 × 6 ×
 15 = 5400 ≥ 1500 → 1500 / 15 + 600 / 12 = 150 s; 5 ticks: cap 1080 → 72 + 420 / 6 + 50 = 192 s; party 1, 25 ticks: cap
 900 → 60 + 600 / 6 + 50 = 210 s. Phase40b.test.ts: faSolo undrained 60 + 626.62 ÷ 6.6697 + 600 ÷ 7.5258 = 233.68 s.
+### Ocellus void explosions (phase 40d, FA)
+
+The user (2026-10-30; DATA_SOURCES *Phase 40d*, UNVERIFIED D38): during the last quadrant's void explosions every attack
+is 2-tick, the Deflects still apply, hits are halved (B2), and the explosions are about half of the quadrant's time.
+- Calculator: `getExpectedAttackSpeed()` is 2 on the P3 "… + void explosions" options (`getOcellusVoidAttackSpeed`,
+  ocellus.ts; one line in PlayerVsNPCCalc), so DPS = halved E[hit] ÷ 1.2 s. Specs keep their speed (the spec calc, the
+  damage-spec ticks). A weapon's slow styles win there (Tbow Accurate, 6 ticks → 2, over Rapid's 5).
+- Time model (`raidTime.ts`, the Ocellus pass): for each Deflect X, n = the kit's DPS at "Deflect X", v = at "Deflect X +
+  void explosions" (each row its own gear choice), s = `ocellusVoidTimeShare` (default 0.5). The quadrant's H hp take
+  T = H ÷ (mult × ((1 − s)·n + s·v)): row `ocellus-p3-last` deals H(1 − s)n ÷ ((1 − s)n + s·v) in T(1 − s), row
+  `ocellus-p3-void` the rest in T·s (seconds still damage ÷ (DPS × mult)). The worse Deflect is the one with the larger
+  T. The void row takes no damage specs (`noDamageSpecs`); both rows share P3's drain event. s = 0 is the pre-40d row.
+- Hand check (Phase40d.test.ts, toy kit Deflect Melee 2 / void 3, Deflect Ranged 1 / void 1.25): rates 2.5 and 1.125 →
+  Deflect Ranged; damage shares 4/9 and 5/9, each row H ÷ 1.125 ÷ 2 s. fa headline: Tbow 8.167 plain (Rapid) and 10.468
+  in the explosions, H = 1079.5 hp: 473.1 hp + 606.4 hp, 57.93 s each = 115.9 s (was 1079.5 ÷ 8.167 = 132.2 s);
+  your ZCB spec on the plain row takes it to 50.49 s.
+
 ## Routes tab (phase 16: raid time model)
 
 **Phase 23: the tab is gone.** Its route table is now part of the Plan tab's results (the *planned* kit timed on every
@@ -1975,7 +1992,7 @@ damage is infinite (shown ∞; e.g. a melee-only kit on the AG shield). Settings
 | Bork + Smorks | phase 40b, stun-swap (default, `borkKillOrder`): Bork at Stunned, min(1500, `borkStunsPerKill` 4 × `borkStunTicks` 7 × 0.6 s × party × the kit's stunned DPS); the rest at armour 14; Smorks 600. Killed evenly (option): Bork's 1500 in four quarters at armour 8 / 10 / 12 / 14; Smorks 600 |
 | Ezekiel / Moia / Dreadnoth / Xarth | 3000 / 785 / 2100 (jellies ignored) / 2600 |
 | Dagon'hai trio | `dagonhaiEncounterDamage(640)` = 3207 at Shielded |
-| Ocellus | P1 2500 × (1 − `ocellusWalkingFraction`, default 0) at a corner, the rest at Walking; P2 lasts `ocellusP2Seconds` (default 120 s: phase 38c, D5 / D35) and the damage dealt to the Blade in that time × `ocellusP2CarryOver` 50% comes off P3's 5250; P3 remainder × (1 − `ocellusLastQuadrantFraction` 25%) at Quadrants 1-3, the rest at the Deflect option that is worse for the kit (= the one blocking the kit's best style; for a magic-best kit, where magic is never deflected in our model, the lower of the two) |
+| Ocellus | P1 2500 × (1 − `ocellusWalkingFraction`, default 0) at a corner, the rest at Walking; P2 lasts `ocellusP2Seconds` (default 120 s: phase 38c, D5 / D35) and the damage dealt to the Blade in that time × `ocellusP2CarryOver` 50% comes off P3's 5250; P3 remainder × (1 − `ocellusLastQuadrantFraction` 25%) at Quadrants 1-3, the rest at the Deflect option that is worse for the kit (= the one blocking the kit's best style; for a magic-best kit, where magic is never deflected in our model, the lower of the two); phase 40d: `ocellusVoidTimeShare` (50%) of the last quadrant's time in void explosions (2-tick attacks, hits halved, no damage specs; the worse Deflect by total time) |
 
 - **Drains** (None / Solo / Team = the drain buttons above the tab): per encounter, a first pass without drains gives
   the encounter's time; that × team-DPS multiplier ÷ party size (phase 28; = the time when the multiplier is the party

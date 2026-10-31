@@ -90,6 +90,94 @@
    "key": "ranged|27235,28951,33639,34696,34681,27238,0,27241,26235,31097,28307"
   },
   {
+   "label": "Twisted bow (Masori)",
+   "kind": "preset",
+   "group": "ranged",
+   "equipment": {
+    "head": {
+     "id": 27235,
+     "name": "Masori mask (f)",
+     "version": "",
+     "slot": "head"
+    },
+    "body": {
+     "id": 27238,
+     "name": "Masori body (f)",
+     "version": "",
+     "slot": "body"
+    },
+    "legs": {
+     "id": 27241,
+     "name": "Masori chaps (f)",
+     "version": "",
+     "slot": "legs"
+    },
+    "cape": {
+     "id": 28951,
+     "name": "Dizana's quiver",
+     "version": "Charged",
+     "slot": "cape"
+    },
+    "neck": {
+     "id": 33639,
+     "name": "Necklace of rupture",
+     "version": "",
+     "slot": "neck"
+    },
+    "hands": {
+     "id": 26235,
+     "name": "Zaryte vambraces",
+     "version": "",
+     "slot": "hands"
+    },
+    "feet": {
+     "id": 31097,
+     "name": "Avernic treads (max)",
+     "version": "",
+     "slot": "feet"
+    },
+    "ring": {
+     "id": 28307,
+     "name": "Ultor ring",
+     "version": "",
+     "slot": "ring"
+    },
+    "weapon": {
+     "id": 20997,
+     "name": "Twisted bow",
+     "version": "",
+     "slot": "weapon",
+     "twoHanded": true
+    },
+    "ammo": {
+     "id": 33595,
+     "name": "Seeking dragon arrow",
+     "version": "",
+     "slot": "ammo"
+    }
+   },
+   "options": [
+    {
+     "style": {
+      "name": "Accurate",
+      "type": "ranged",
+      "stance": "Accurate"
+     },
+     "spell": null
+    },
+    {
+     "style": {
+      "name": "Rapid",
+      "type": "ranged",
+      "stance": "Rapid"
+     },
+     "spell": null
+    }
+   ],
+   "source": "preset",
+   "key": "ranged|27235,28951,33639,33595,20997,27238,0,27241,26235,31097,28307"
+  },
+  {
    "label": "Inquisitor's + Obligator",
    "kind": "preset",
    "group": "melee",
@@ -178,123 +266,35 @@
    ],
    "source": "preset",
    "key": "melee|24419,21295,29801,0,34715,24420,0,24421,22981,31097,28307"
-  },
-  {
-   "label": "Twisted bow (Masori)",
-   "kind": "preset",
-   "group": "ranged",
-   "equipment": {
-    "head": {
-     "id": 27235,
-     "name": "Masori mask (f)",
-     "version": "",
-     "slot": "head"
-    },
-    "body": {
-     "id": 27238,
-     "name": "Masori body (f)",
-     "version": "",
-     "slot": "body"
-    },
-    "legs": {
-     "id": 27241,
-     "name": "Masori chaps (f)",
-     "version": "",
-     "slot": "legs"
-    },
-    "cape": {
-     "id": 28951,
-     "name": "Dizana's quiver",
-     "version": "Charged",
-     "slot": "cape"
-    },
-    "neck": {
-     "id": 33639,
-     "name": "Necklace of rupture",
-     "version": "",
-     "slot": "neck"
-    },
-    "hands": {
-     "id": 26235,
-     "name": "Zaryte vambraces",
-     "version": "",
-     "slot": "hands"
-    },
-    "feet": {
-     "id": 31097,
-     "name": "Avernic treads (max)",
-     "version": "",
-     "slot": "feet"
-    },
-    "ring": {
-     "id": 28307,
-     "name": "Ultor ring",
-     "version": "",
-     "slot": "ring"
-    },
-    "weapon": {
-     "id": 20997,
-     "name": "Twisted bow",
-     "version": "",
-     "slot": "weapon",
-     "twoHanded": true
-    },
-    "ammo": {
-     "id": 33595,
-     "name": "Seeking dragon arrow",
-     "version": "",
-     "slot": "ammo"
-    }
-   },
-   "options": [
-    {
-     "style": {
-      "name": "Accurate",
-      "type": "ranged",
-      "stance": "Accurate"
-     },
-     "spell": null
-    },
-    {
-     "style": {
-      "name": "Rapid",
-      "type": "ranged",
-      "stance": "Rapid"
-     },
-     "spell": null
-    }
-   ],
-   "source": "preset",
-   "key": "ranged|27235,28951,33639,33595,20997,27238,0,27241,26235,31097,28307"
   }
  ],
  "kitMarginal": [
   {
    "slots": 1,
-   "seconds": 7.5697292621537144
+   "seconds": 7.569729262153487
+  },
+  {
+   "slots": 1,
+   "seconds": 116.96757742709633
   },
   {
    "slots": 8,
    "seconds": "Infinity"
-  },
-  {
-   "slots": 1,
-   "seconds": 41.50522692244522
   }
  ],
  "slots": {
   "total": 28,
   "supplies": 12,
   "nonItem": 1,
-  "carriedItems": 22,
+  "carriedItems": 21,
   "wornItems": 10,
   "minLoadoutItems": 10,
   "keptAmmo": 0,
-  "inventoryItems": 12,
+  "inventoryItems": 11,
   "swapReserve": 0,
   "quiverAmmo": 1,
-  "used": 24,
-  "free": 4,
+  "used": 23,
+  "free": 5,
   "overfull": false
  },
  "inventory": [
@@ -460,17 +460,6 @@
   },
   {
    "kind": "spec",
-   "label": "Crimson kisten",
-   "item": {
-    "id": 33631,
-    "name": "Crimson kisten",
-    "version": "",
-    "slot": "weapon",
-    "twoHanded": true
-   }
-  },
-  {
-   "kind": "spec",
    "label": "Surge potion(4)",
    "item": {
     "id": -9101,
@@ -498,6 +487,10 @@
   {
    "kind": "free",
    "label": "Free slot"
+  },
+  {
+   "kind": "free",
+   "label": "Free slot"
   }
  ],
  "specItems": [
@@ -508,13 +501,6 @@
    "slot": "weapon"
   },
   {
-   "id": 33631,
-   "name": "Crimson kisten",
-   "version": "",
-   "slot": "weapon",
-   "twoHanded": true
-  },
-  {
    "id": -9101,
    "name": "Surge potion(4)",
    "version": "",
@@ -522,16 +508,16 @@
   }
  ],
  "pinnedItems": [],
- "comparison": "7610960c04e3206532a652c18d871015641077db8f789f3517d3f8e1630d0bc7",
+ "comparison": "3656b73543b1e64a116c7c8503321f63991d99cb2316918e986bc530b4491b46",
  "planned": 5,
  "rejected": [],
  "alternatives": [
   {
    "label": "melee + magic: Tumeken's shadow (Ancestral) / Inquisitor's + Obligator / Harmonised Nightmare staff / Harmonised Nightmare staff #4",
    "kind": "alternative",
-   "deltaSeconds": -86.5898634819157,
+   "deltaSeconds": -87.85140572689534,
    "deltaSlots": 3,
-   "reason": "86.6 s slower",
+   "reason": "87.9 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Obligator",
@@ -540,24 +526,24 @@
    ]
   },
   {
-   "label": "ranged + magic: Tumeken's shadow (Ancestral) / Twisted bow (Masori) / Ascension crossbows + diamond (e) (Masori) / Ascension crossbows + Diamond ascension bolts (e)",
+   "label": "ranged + magic: Tumeken's shadow (Ancestral) / Ascension crossbows + diamond (e) (Masori) / Twisted bow (Masori) / Ascension crossbows + Onyx ascension bolts (e)",
    "kind": "alternative",
-   "deltaSeconds": -322.08339106743506,
-   "deltaSlots": 4,
-   "reason": "322.1 s slower",
+   "deltaSeconds": -310.2991476573925,
+   "deltaSlots": 5,
+   "reason": "310.3 s slower",
    "weapons": [
     "Tumeken's shadow",
-    "Twisted bow",
     "Ascension crossbows",
+    "Twisted bow",
     "Ascension crossbows"
    ]
   },
   {
    "label": "magic: Tumeken's shadow (Ancestral) / Harmonised Nightmare staff / Harmonised Nightmare staff #4",
    "kind": "alternative",
-   "deltaSeconds": -929.3112794210638,
+   "deltaSeconds": -928.310949405618,
    "deltaSlots": -5,
-   "reason": "929.3 s slower",
+   "reason": "928.3 s slower",
    "weapons": [
     "Tumeken's shadow",
     "Harmonised Nightmare staff",
@@ -575,13 +561,13 @@
    ]
   },
   {
-   "label": "ranged: Ascension crossbows + diamond (e) (Masori)",
+   "label": "ranged: Twisted bow (Masori)",
    "kind": "alternative",
    "deltaSeconds": "-Infinity",
    "deltaSlots": -9,
    "reason": "cannot clear the route",
    "weapons": [
-    "Ascension crossbows"
+    "Twisted bow"
    ]
   }
  ],
@@ -608,34 +594,27 @@
   "mode": "auto",
   "drain": "team",
   "bring": [],
-  "text": "Bring: Zaryte crossbow, Crimson kisten, Surge potion",
+  "text": "Bring: Zaryte crossbow, Surge potion",
   "damage": [
-   "zcb",
-   "crimsonKisten"
+   "zcb"
   ],
   "surgePotions": 1,
   "surgeAt": [
    "Archive Guardian",
-   "Ocellus"
+   "Xarth"
   ],
   "items": [
    {
     "item": "Zaryte crossbow",
-    "hp": 606.3537568892689,
+    "hp": 606.353756889268,
     "slots": 1,
     "how": "a free slot"
    },
    {
     "item": "Surge potion(4)",
-    "hp": 125.04778554685981,
+    "hp": 125.04778554686072,
     "slots": 1,
     "how": "a free slot"
-   },
-   {
-    "item": "Crimson kisten",
-    "hp": 17.922512430047846,
-    "slots": 1,
-    "how": "filler (leftover energy; a free slot)"
    }
   ],
   "bringRule": {
@@ -762,10 +741,9 @@
    "archive-guardian": "Then: 1. Zaryte crossbow (per bar)",
    "bork-smorks": "Then: 1. Zaryte crossbow (per bar)",
    "moia": "Then: 1. Zaryte crossbow (per bar)",
-   "xarth": "Then: 1. Zaryte crossbow (per bar) · leftover: Crimson kisten",
-   "ocellus": "Then: 1. Zaryte crossbow (per bar) · leftover: Crimson kisten"
+   "xarth": "Then: 1. Zaryte crossbow (per bar)",
+   "ocellus": "Then: 1. Zaryte crossbow (per bar)"
   },
-  "filler": "crimsonKisten",
   "team": {
    "partySize": 6,
    "mages": 0,
@@ -775,18 +753,18 @@
      "weapon": "tonalztics",
      "carriers": 4,
      "drivers": [
-      "Ocellus (1.8 s)",
+      "Ocellus (1.7 s)",
       "Bork + Smorks (0.1 s)"
      ],
-     "lastSaved": 1.8864194247162231
+     "lastSaved": 1.8104122862728218
     },
     {
      "weapon": "elderMaul",
      "carriers": 1,
      "drivers": [
-      "Ocellus (6.5 s)"
+      "Ocellus (6.2 s)"
      ],
-     "lastSaved": 6.483018058213929
+     "lastSaved": 6.2074921813568835
     }
    ],
    "perTarget": [
@@ -904,6 +882,16 @@
      "ayak": 0
     },
     {
+     "key": "ocellus-p3|Last quadrant: Deflect Melee + void explosions",
+     "label": "Ocellus P3 (Last quadrant: Deflect Melee + void explosions)",
+     "group": "Ocellus P3",
+     "carriers": {
+      "tonalztics": 3
+     },
+     "pFloor": 0.9512266875778747,
+     "ayak": 0
+    },
+    {
      "key": "ocellus-p3|Last quadrant: Deflect Ranged",
      "label": "Ocellus P3 (Last quadrant: Deflect Ranged)",
      "group": "Ocellus P3",
@@ -911,6 +899,16 @@
       "elderMaul": 2
      },
      "pFloor": 0.9783670464274926,
+     "ayak": 0
+    },
+    {
+     "key": "ocellus-p3|Last quadrant: Deflect Ranged + void explosions",
+     "label": "Ocellus P3 (Last quadrant: Deflect Ranged + void explosions)",
+     "group": "Ocellus P3",
+     "carriers": {
+      "elderMaul": 2
+     },
+     "pFloor": 0.9783670464274915,
      "ayak": 0
     }
    ],
@@ -927,12 +925,13 @@
   "share": {
    "weapon": null,
    "carry": false,
-   "reason": "your spec energy goes to your Zaryte crossbow specs / Crimson kisten specs / surge doses — let a teammate carry Tonalztics (most needed: 4 carriers)",
+   "reason": "your spec energy goes to your Zaryte crossbow specs / surge doses — let a teammate carry Tonalztics (most needed: 4 carriers)",
    "manual": false
   },
   "notes": [
+   "Filler: no other damage weapon adds HP with the energy left",
    "Surge potion(4) (second): adds no HP the bars pay",
-   "Your spec bar goes to Zaryte crossbow / Crimson kisten / surge doses: 4 carriers (party − 1); the bars pay 3049 HP on the route vs 2299 HP if you carry a drain weapon instead."
+   "Your spec bar goes to Zaryte crossbow / surge doses: 4 carriers (party − 1); the bars pay 3025 HP on the route vs 2293 HP if you carry a drain weapon instead."
   ]
  },
  "ring": {
@@ -941,32 +940,32 @@
   "screened": [
    {
     "ring": "Ultor ring",
-    "seconds": 1218.887600189203,
+    "seconds": 1206.7946760517016,
     "full": true
    },
    {
     "ring": "Bellator ring",
-    "seconds": 1260.4298312015635,
+    "seconds": 1248.0145181167159,
     "full": true
    },
    {
     "ring": "Lightbearer",
-    "seconds": 1262.8579926403468,
+    "seconds": 1249.0196586836632,
     "full": true
    },
    {
     "ring": "Venator ring",
-    "seconds": 1270.9192019942443,
+    "seconds": 1257.7683382636073,
     "full": true
    },
    {
     "ring": "Ring of shadows",
-    "seconds": 1274.407016959447,
+    "seconds": 1261.889497501234,
     "full": true
    },
    {
     "ring": "Magus ring",
-    "seconds": 1290.1516405114273,
+    "seconds": 1277.4317294817924,
     "full": true
    }
   ]
@@ -981,7 +980,9 @@
   "ocellus-p2|": 15.550595502974533,
   "ocellus-p3|Quadrants 1-3": 12.856185391073009,
   "ocellus-p3|Last quadrant: Deflect Melee": 8.166997701078248,
+  "ocellus-p3|Last quadrant: Deflect Melee + void explosions": 10.468359045093257,
   "ocellus-p3|Last quadrant: Deflect Ranged": 11.082554084919341,
+  "ocellus-p3|Last quadrant: Deflect Ranged + void explosions": 13.713649430702434,
   "xarth|": 13.91696785949811,
   "dreadnoth|": 15.559086291142291,
   "smorks|": 14.645399161189738,
@@ -1044,28 +1045,28 @@
      "slot": "hands"
     }
    ],
-   "freeSlots": 4,
+   "freeSlots": 5,
    "droppedSupplies": [],
    "overfull": false,
    "baseDps": 13.91696785949811,
    "variantDps": 11.133574287598488,
    "teamDps": 13.681087048320176,
-   "seconds": 3.020795253773232
+   "seconds": 2.978372463668258
   }
  ],
  "unusedCarried": [],
  "excluded": [],
  "droppedPinned": [],
  "ownershipNotices": [],
- "searchRows": "2c49c5549ebaed6716df64e56364e4472dd54416d3bbd9c6a6edca0e39687c37",
- "objectiveSeconds": 1225.370618247417,
+ "searchRows": "c2012f15a6b509b16b53bce4a0c98d3bb080de6881dcee0bc60338882f55b1db",
+ "objectiveSeconds": 1213.0021682330585,
  "fightSeconds": null,
  "plannedRoute": {
   "id": "archive-guardian>bork-smorks>moia>xarth>ocellus",
-  "seconds": 1218.887600189203,
+  "seconds": 1206.7946760517016,
   "surgeDoses": [
    "archive-guardian",
-   "ocellus"
+   "xarth"
   ],
   "encounters": [
    {
@@ -1139,7 +1140,7 @@
    },
    {
     "id": "xarth",
-    "seconds": 183.62691997262115,
+    "seconds": 181.72397535642767,
     "events": [
      {
       "npc": "Xarth",
@@ -1153,15 +1154,14 @@
     ],
     "damage": {
      "xarth": {
-      "zcb": 1,
-      "crimsonKisten": 1
+      "zcb": 2
      }
     },
-    "surge": false
+    "surge": true
    },
    {
     "id": "ocellus",
-    "seconds": 677.2814644506498,
+    "seconds": 667.0914849293416,
     "events": [
      {
       "npc": "Ocellus",
@@ -1188,7 +1188,7 @@
       "counts": {
        "tonalztics": 5
       },
-      "hp": 824.800970379218
+      "hp": 820.4418121252661
      }
     ],
     "damage": {
@@ -1196,13 +1196,13 @@
       "zcb": 2
      },
      "ocellus-p3": {
-      "crimsonKisten": 1
+      "zcb": 1
      },
      "ocellus-p3-last": {
-      "zcb": 2
+      "zcb": 1
      }
     },
-    "surge": true
+    "surge": false
    }
   ]
  }

@@ -76,6 +76,6 @@ export const BEST_SETUP_TARGETS: BestSetupTarget[] = [
     version: 'Phase 3',
     phases: OCELLUS_P3_PHASES,
     summaryPhases: OCELLUS_P3_PHASES,
-    note: 'Last-quadrant options are low-confidence (deflect strength and dodge speed-up unverified).',
+    note: 'Last-quadrant options are low-confidence (deflect strength unverified; void explosions: every attack 2-tick, hits halved: the user, unverified).',
   },
 ];

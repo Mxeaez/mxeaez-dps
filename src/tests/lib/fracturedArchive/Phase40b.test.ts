@@ -81,33 +81,33 @@ describe('hand-computed Bork + Smorks (headline kits, drains None, party 6)', ()
     expect(Math.round(e.seconds * 100) / 100).toBe(175.41);
   });
 
-  test('faNotOwned (Inquisitor\'s + Scythe, 14.0458 stunned DPS): the 25-tick stuns cover Bork (phase 40b-2)', () => {
+  test('faNotOwned (Scythe of Vitur #2, 14.7115 stunned DPS): the 25-tick stuns cover Bork (phase 40b-2; 40d kit)', () => {
     const e = undrained('faNotOwned');
     expect(e.phases.map((p) => [p.key, Math.round(p.dps * 1e4) / 1e4, p.choice!.loadout])).toEqual([
-      ['bork-stunned', 14.0458, 'Inquisitor\'s + Scythe (slash)'],
+      ['bork-stunned', 14.7115, 'Scythe of Vitur #2'],
       ['smorks', 6.1317, 'Twisted bow (Masori)'],
     ]);
-    // cap = 60 s × 6 × 14.0458 = 5056.5 ≥ 1500 (40b's 7 ticks left 17 hp at armour 14):
-    // 1500 ÷ 14.0458 + 600 ÷ 6.1317 = 106.79 + 97.85 = 204.65 s
+    // cap = 60 s × 6 × 14.7115 = 5296.1 ≥ 1500 (40b's 7 ticks left 17 hp at armour 14):
+    // 1500 ÷ 14.7115 + 600 ÷ 6.1317 = 101.96 + 97.85 = 199.81 s
     expect(e.phases[0].damage).toBe(1500);
-    expect(e.seconds).toBeCloseTo(1500 / 14.0458 + 600 / 6.1317, 1);
-    expect(Math.round(e.seconds * 100) / 100).toBe(204.65);
+    expect(e.seconds).toBeCloseTo(1500 / 14.7115 + 600 / 6.1317, 1);
+    expect(Math.round(e.seconds * 100) / 100).toBe(199.81);
   });
 
-  test('faSolo (party 1, 14.5564 stunned DPS): 4 × 25 ticks cover 58.2% of Bork, the rest at armour 14 (phase 40b-2)', () => {
+  test('faSolo (party 1, 15.6766 stunned DPS): 4 × 25 ticks cover 62.7% of Bork, the rest at armour 14 (phase 40b-2; 40d kit)', () => {
     const e = undrained('faSolo');
     expect(e.phases.map((p) => [p.key, Math.round(p.dps * 1e4) / 1e4, p.choice!.loadout])).toEqual([
-      ['bork-stunned', 14.5564, 'Inquisitor\'s + Obligator + Torva full helm'],
-      ['bork-14', 6.6697, 'Inquisitor\'s + Obligator + Torva full helm'],
+      ['bork-stunned', 15.6766, 'Inquisitor\'s + Obligator'],
+      ['bork-14', 7.5728, 'Inquisitor\'s + Obligator'],
       ['smorks', 7.5258, 'Ascension crossbows + diamond (e) (Masori)'],
     ]);
-    // cap = 4 × 25 × 0.6 s × 1 player × 14.5564 = 873.38 hp (58.2%; 7 ticks: 16.3%); 1500 − 873.38 = 626.62 at armour 14
-    expect(e.phases[0].damage).toBeCloseTo(873.38, 1);
-    expect(e.phases[1].damage).toBeCloseTo(626.62, 1);
-    expect(e.phases[0].label).toBe('Bork, stunned (4 × 25 ticks: 58.2% of hp)');
-    // 60 s stunned + 626.62 ÷ 6.6697 + 600 ÷ 7.5258 = 60 + 93.95 + 79.73 = 233.68 s
-    expect(e.seconds).toBeCloseTo(60 + 626.62 / 6.6697 + 600 / 7.5258, 1);
-    expect(Math.round(e.seconds * 100) / 100).toBe(233.68);
+    // cap = 4 × 25 × 0.6 s × 1 player × 15.6766 = 940.60 hp (62.7%); 1500 − 940.60 = 559.40 at armour 14
+    expect(e.phases[0].damage).toBeCloseTo(940.60, 1);
+    expect(e.phases[1].damage).toBeCloseTo(559.40, 1);
+    expect(e.phases[0].label).toBe('Bork, stunned (4 × 25 ticks: 62.7% of hp)');
+    // 60 s stunned + 559.40 ÷ 7.5728 + 600 ÷ 7.5258 = 60 + 73.87 + 79.73 = 213.60 s
+    expect(e.seconds).toBeCloseTo(60 + 559.40 / 7.5728 + 600 / 7.5258, 1);
+    expect(Math.round(e.seconds * 100) / 100).toBe(213.6);
   });
 
   test('killed evenly (the option) is the pre-40b model: fa four quarters at armour 8 / 10 / 12 / 14', () => {
@@ -120,9 +120,9 @@ describe('hand-computed Bork + Smorks (headline kits, drains None, party 6)', ()
     expect(e.seconds).toBeCloseTo(375 / 8.9455 + 375 / 8.4875 + 375 / 8.0298 + 375 / 7.5728 + 600 / 7.5258, 1);
   });
 
-  test('the pinned headline (with the spec budget): fa Bork + Smorks 128.98 s, faNotOwned 144.63 s, faSolo 180.75 s', () => {
+  test('the pinned headline (with the spec budget): fa Bork + Smorks 128.98 s, faNotOwned 141.23 s, faSolo 177.99 s (40d)', () => {
     expect(headline('fa').encounters['bork-smorks']).toBe(128.98);
-    expect(headline('faNotOwned').encounters['bork-smorks']).toBe(144.63);
-    expect(headline('faSolo').encounters['bork-smorks']).toBe(180.75);
+    expect(headline('faNotOwned').encounters['bork-smorks']).toBe(141.23);
+    expect(headline('faSolo').encounters['bork-smorks']).toBe(177.99);
   });
 });
